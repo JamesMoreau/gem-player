@@ -6,6 +6,19 @@ use std::path::{Path, PathBuf};
 
 mod song;
 
+/*
+TODO:
+
+- Change font
+- Add sorting
+- Add searching
+- file watcher / update on change
+- play controls
+- volume controls
+- progress bar / currently playing
+
+*/
+
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
@@ -24,6 +37,7 @@ struct MyApp {
     name: String,
     age: u32,
     songs: Vec<Song>,
+    selected_song: Option<usize>,
 }
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -33,16 +47,18 @@ impl MyApp {
         // This gives us image support:
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
-        let music_directory_result = dirs::audio_dir();
-        let music_directory = match music_directory_result {
+        let default_self = Self {
+            name: "Arthur".to_owned(),
+            age: 42,
+            songs: Vec::new(),
+            selected_song: None,
+        };
+
+        let music_directory = match dirs::audio_dir() {
             Some(dir) => dir,
             None => {
                 println!("No music directory found.");
-                return Self {
-                    name: "Arthur".to_owned(),
-                    age: 42,
-                    songs: Vec::new(),
-                };
+                return default_self;
             }
         };
 
@@ -54,9 +70,8 @@ impl MyApp {
         println!("Found {} songs", &songs.len());
 
         Self {
-            name: "Arthur".to_owned(),
-            age: 42,
             songs,
+            ..default_self
         }
     }
 }
@@ -64,25 +79,11 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            // ui.heading("My egui Music App");
-
-            // ui.horizontal(|ui| {
-            //     let name_label = ui.label("Your name: ");
-            //     ui.text_edit_singleline(&mut self.name)
-            //         .labelled_by(name_label.id);
-            // });
-            // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
-            // if ui.button("Increment").clicked() {
-            //     self.age += 1;
-            // }
-            // ui.label(format!("Hello '{}', age {}", self.name, self.age));
-
-            // ui.image(egui::include_image!("../assets/ferris.png"));
-
             let headers = ["Title", "Artist", "Album", "Time"];
 
             TableBuilder::new(ui)
                 .striped(true)
+                .sense(egui::Sense::click())
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                 .columns(egui_extras::Column::remainder(), headers.len())
                 .header(16.0, |mut header| {
@@ -93,24 +94,30 @@ impl eframe::App for MyApp {
                     }
                 })
                 .body(|mut body| {
-                    for song in &self.songs {
+                    for (i, song) in self.songs.iter().enumerate() {
                         body.row(28.0, |mut row| {
+                            row.set_selected(self.selected_song == Some(i));
+
                             row.col(|ui| {
-                                ui.label(song.title.as_ref().unwrap_or(&"Unknown".to_string()));
+                                ui.add(egui::Label::new(song.title.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
                             });
 
                             row.col(|ui| {
-                                ui.label(song.artist.as_ref().unwrap_or(&"Unknown".to_string()));
+                                ui.add(egui::Label::new(song.artist.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
                             });
 
                             row.col(|ui| {
-                                ui.label(song.album.as_ref().unwrap_or(&"Unknown".to_string()));
+                                ui.add(egui::Label::new(song.album.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
                             });
 
                             row.col(|ui| {
                                 let duration_string = format_duration(song.duration);
-                                ui.label(duration_string);
+                                ui.add(egui::Label::new(duration_string).selectable(false));
                             });
+
+                            if row.response().clicked() {
+                                self.selected_song = Some(i);
+                            }
                         });
                     }
                 });
@@ -183,3 +190,18 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
 //         ui.label("No Artwork");
 //     }
 // });
+
+// ui.heading("My egui Music App");
+
+// ui.horizontal(|ui| {
+//     let name_label = ui.label("Your name: ");
+//     ui.text_edit_singleline(&mut self.name)
+//         .labelled_by(name_label.id);
+// });
+// ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
+// if ui.button("Increment").clicked() {
+//     self.age += 1;
+// }
+// ui.label(format!("Hello '{}', age {}", self.name, self.age));
+
+// ui.image(egui::include_image!("../assets/ferris.png"));
