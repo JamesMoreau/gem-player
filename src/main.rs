@@ -10,7 +10,7 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([900.0, 600.0]),
         ..Default::default()
     };
     eframe::run_native(
@@ -81,8 +81,12 @@ impl eframe::App for MyApp {
 
             TableBuilder::new(ui)
                 .striped(true)
-                .columns(egui_extras::Column::remainder(), 4)
+                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                .columns(egui_extras::Column::remainder(), 5)
                 .header(18.0, |mut header| {
+                    header.col(|ui| {
+                        ui.strong("Artwork");
+                    });
                     header.col(|ui| {
                         ui.strong("Title");
                     });
@@ -98,7 +102,11 @@ impl eframe::App for MyApp {
                 })
                 .body(|mut body| {
                     for song in &self.songs {
-                        body.row(18.0, |mut row| {
+                        body.row(32.0, |mut row| {
+                            row.col(|ui| {
+                                ui.add(egui::Image::new("https://picsum.photos/seed/1.759706314/1024"));
+                            });
+
                             row.col(|ui| {
                                 ui.label(song.title.as_ref().unwrap_or(&"Unknown".to_string()));
                             });
