@@ -4,6 +4,7 @@ use std::{
     time::Duration,
 };
 
+#[derive(Debug)]
 pub struct Song {
     pub title: Option<String>,
     pub artist: Option<String>,

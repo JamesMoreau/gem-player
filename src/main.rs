@@ -79,34 +79,22 @@ impl eframe::App for MyApp {
 
             // ui.image(egui::include_image!("../assets/ferris.png"));
 
+            let headers = ["Title", "Artist", "Album", "Time"];
+
             TableBuilder::new(ui)
                 .striped(true)
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .columns(egui_extras::Column::remainder(), 5)
-                .header(18.0, |mut header| {
-                    header.col(|ui| {
-                        ui.strong("Artwork");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Title");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Artist");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Album");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Time");
-                    });
+                .columns(egui_extras::Column::remainder(), headers.len())
+                .header(16.0, |mut header| {
+                    for h in &headers {
+                        header.col(|ui| {
+                            ui.strong(h.to_string());
+                        });
+                    }
                 })
                 .body(|mut body| {
                     for song in &self.songs {
-                        body.row(32.0, |mut row| {
-                            row.col(|ui| {
-                                ui.add(egui::Image::new("https://picsum.photos/seed/1.759706314/1024"));
-                            });
-
+                        body.row(28.0, |mut row| {
                             row.col(|ui| {
                                 ui.label(song.title.as_ref().unwrap_or(&"Unknown".to_string()));
                             });
@@ -181,3 +169,17 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
 
     songs
 }
+
+
+// row.col(|ui| {
+//     let has_artwork = song.artwork.is_some();
+//     if has_artwork {
+//         let uri = format!("bytes://{}", song.artwork.clone().unwrap().len());
+//         let image = egui::Image::from_bytes(uri, song.artwork.clone().unwrap())
+//             .fit_to_exact_size(egui::vec2(48.0, 48.0))
+//             .rounding(4.0);
+//         ui.add(image);
+//     } else {
+//         ui.label("No Artwork");
+//     }
+// });
