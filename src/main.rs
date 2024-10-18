@@ -16,7 +16,6 @@ TODO:
 - play controls
 - volume controls
 - progress bar / currently playing
-
 */
 
 fn main() -> eframe::Result {
@@ -99,11 +98,13 @@ impl eframe::App for MyApp {
                             row.set_selected(self.selected_song == Some(i));
 
                             row.col(|ui| {
-                                ui.add(egui::Label::new(song.title.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
+                                let binding = song.file_path.file_name().unwrap_or_default().to_string_lossy();
+                                let title = song.title.as_deref().unwrap_or(&binding);
+                                ui.add(egui::Label::new(title).selectable(false));
                             });
 
                             row.col(|ui| {
-                                ui.add(egui::Label::new(song.artist.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
+                                ui.add(egui::Label::new(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())).selectable(false));
                             });
 
                             row.col(|ui| {
