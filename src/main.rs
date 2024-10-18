@@ -9,7 +9,6 @@ mod song;
 /*
 TODO:
 
-- Change font
 - Add sorting
 - Add searching
 - file watcher / update on change
@@ -26,7 +25,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "My egui App",
+        "Gem Player",
         options,
         Box::new(|cc| Ok(Box::new(MyApp::new(cc)))),
     )
@@ -45,6 +44,15 @@ impl MyApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This gives us image support:
         egui_extras::install_image_loaders(&cc.egui_ctx);
+
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
+            "my_font".to_owned(),
+            egui::FontData::from_static(include_bytes!("../assets/Inconsolata-VariableFont_wdth,wght.ttf")),
+        );
+        fonts.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "my_font".to_owned());
+        fonts.families.get_mut(&egui::FontFamily::Monospace).unwrap().push("my_font".to_owned());
+        cc.egui_ctx.set_fonts(fonts);
 
         let default_self = Self {
             name: "Arthur".to_owned(),
@@ -177,7 +185,6 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
 
     songs
 }
-
 
 // row.col(|ui| {
 //     let has_artwork = song.artwork.is_some();
