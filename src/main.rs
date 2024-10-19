@@ -13,6 +13,7 @@ TODO:
   - Pause button
   - Volume slider
   - Playback progress slider
+  - song artwork
   - Search bar
   - Music Visualizer
   - Sorting
@@ -41,6 +42,8 @@ struct MyApp {
     songs: Vec<Song>,
     selected_song: Option<usize>,
     search_text: String,
+
+    music_directory: Option<PathBuf>,
 
     volume: f32,
 }
@@ -71,27 +74,30 @@ impl MyApp {
             .push("my_font".to_owned());
         cc.egui_ctx.set_fonts(fonts);
 
-        let default_self = Self {
+        let mut default_self = Self {
             age: 42,
             songs: Vec::new(),
             selected_song: None,
             search_text: String::new(),
             volume: 0.0,
+            music_directory: None,
         };
 
-        let music_directory = match dirs::audio_dir() {
+        // Find the music directory.
+        let audio_directory = match dirs::audio_dir() {
             Some(dir) => dir,
             None => {
                 println!("No music directory found.");
                 return default_self;
             }
         };
-
-        let my_music_directory = music_directory.join("MyMusic");
-        let songs = read_music_from_directory(&my_music_directory);
-        for song in &songs {
-            println!("Found song: {:?} at path: {:?}", song.title, song.file_path);
-        }
+        let my_music_directory = audio_directory.join("MyMusic");
+        default_self.music_directory = Some(my_music_directory);
+        
+        let songs = match &default_self.music_directory {
+            Some(path) => read_music_from_directory(path),
+            None => Vec::new(),
+        };
         println!("Found {} songs", &songs.len());
 
         Self {
@@ -265,31 +271,3 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
 
     songs
 }
-
-// row.col(|ui| {
-//     let has_artwork = song.artwork.is_some();
-//     if has_artwork {
-//         let uri = format!("bytes://{}", song.artwork.clone().unwrap().len());
-//         let image = egui::Image::from_bytes(uri, song.artwork.clone().unwrap())
-//             .fit_to_exact_size(egui::vec2(48.0, 48.0))
-//             .rounding(4.0);
-//         ui.add(image);
-//     } else {
-//         ui.label("No Artwork");
-//     }
-// });
-
-// ui.heading("My egui Music App");
-
-// ui.horizontal(|ui| {
-//     let name_label = ui.label("Your name: ");
-//     ui.text_edit_singleline(&mut self.name)
-//         .labelled_by(name_label.id);
-// });
-// ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
-// if ui.button("Increment").clicked() {
-//     self.age += 1;
-// }
-// ui.label(format!("Hello '{}', age {}", self.name, self.age));
-
-// ui.image(egui::include_image!("../assets/ferris.png"));
