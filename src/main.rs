@@ -1,5 +1,5 @@
 use crate::song::Song;
-use eframe::egui;
+use eframe::egui::{self};
 use egui_extras::TableBuilder;
 use glob::glob;
 use std::path::{Path, PathBuf};
@@ -8,13 +8,18 @@ mod song;
 
 /*
 TODO:
+- In the controls ui we want the following:
+  - Play button
+  - Pause button
+  - Volume slider
+  - Playback progress slider
+  - Search bar
+  - Music Visualizer
+  - Sorting
 
-- Add sorting
-- Add searching
+Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
+
 - file watcher / update on change
-- play controls
-- volume controls
-- progress bar / currently playing
 */
 
 fn main() -> eframe::Result {
@@ -32,10 +37,12 @@ fn main() -> eframe::Result {
 }
 
 struct MyApp {
-    name: String,
     age: u32,
     songs: Vec<Song>,
     selected_song: Option<usize>,
+    search_text: String,
+
+    volume: f32,
 }
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -48,17 +55,28 @@ impl MyApp {
         let mut fonts = egui::FontDefinitions::default();
         fonts.font_data.insert(
             "my_font".to_owned(),
-            egui::FontData::from_static(include_bytes!("../assets/Inconsolata-VariableFont_wdth,wght.ttf")),
+            egui::FontData::from_static(include_bytes!(
+                "../assets/Inconsolata-VariableFont_wdth,wght.ttf"
+            )),
         );
-        fonts.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "my_font".to_owned());
-        fonts.families.get_mut(&egui::FontFamily::Monospace).unwrap().push("my_font".to_owned());
+        fonts
+            .families
+            .get_mut(&egui::FontFamily::Proportional)
+            .unwrap()
+            .insert(0, "my_font".to_owned());
+        fonts
+            .families
+            .get_mut(&egui::FontFamily::Monospace)
+            .unwrap()
+            .push("my_font".to_owned());
         cc.egui_ctx.set_fonts(fonts);
 
         let default_self = Self {
-            name: "Arthur".to_owned(),
             age: 42,
             songs: Vec::new(),
             selected_song: None,
+            search_text: String::new(),
+            volume: 0.0,
         };
 
         let music_directory = match dirs::audio_dir() {
@@ -85,6 +103,52 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("top_panel")
+            .resizable(false)
+            .min_height(48.0)
+            .show(ctx, |ui| {
+                egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
+                    ui.horizontal_centered(|ui| {
+                        let play_icon = egui::include_image!(
+                            "../assets/play_arrow_26dp_E8EAED_FILL0_wght400_GRAD0_opsz24.png"
+                        );
+                        ui.add(egui::Button::image(play_icon));
+
+                        let pause_icon = egui::include_image!(
+                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.png"
+                        );
+                        ui.add(egui::Button::image(pause_icon));
+
+                        ui.separator();
+
+                        let volume_icon = egui::include_image!(
+                            "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.png"
+                        );
+                        ui.add(egui::Button::image(volume_icon));
+
+                        let volume_slider = egui::Slider::new(&mut self.volume, 0.0..=1.0)
+                            .trailing_fill(true)
+                            .show_value(false);
+                        ui.add(volume_slider);
+
+                        ui.separator();
+
+                        ui.style_mut().spacing.slider_width = 500.0;
+                        let playback_progress = egui::Slider::new(&mut self.age, 0..=100)
+                            .trailing_fill(true)
+                            .show_value(false);
+                        ui.add(playback_progress);
+
+                        ui.separator();
+
+                        let search_bar = egui::TextEdit::singleline(&mut self.search_text)
+                            .hint_text("Search")
+                            .desired_width(200.0);
+                        ui.add(search_bar);
+                    });
+                });
+            });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             let headers = ["Title", "Artist", "Album", "Time"];
 
@@ -106,17 +170,33 @@ impl eframe::App for MyApp {
                             row.set_selected(self.selected_song == Some(i));
 
                             row.col(|ui| {
-                                let binding = song.file_path.file_name().unwrap_or_default().to_string_lossy();
+                                let binding = song
+                                    .file_path
+                                    .file_name()
+                                    .unwrap_or_default()
+                                    .to_string_lossy();
                                 let title = song.title.as_deref().unwrap_or(&binding);
                                 ui.add(egui::Label::new(title).selectable(false));
                             });
 
                             row.col(|ui| {
-                                ui.add(egui::Label::new(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())).selectable(false));
+                                ui.add(
+                                    egui::Label::new(
+                                        song.artist
+                                            .as_ref()
+                                            .unwrap_or(&"Unknown Artist".to_string()),
+                                    )
+                                    .selectable(false),
+                                );
                             });
 
                             row.col(|ui| {
-                                ui.add(egui::Label::new(song.album.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
+                                ui.add(
+                                    egui::Label::new(
+                                        song.album.as_ref().unwrap_or(&"Unknown".to_string()),
+                                    )
+                                    .selectable(false),
+                                );
                             });
 
                             row.col(|ui| {
