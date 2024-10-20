@@ -35,7 +35,9 @@ pub fn get_song_from_file(path: &Path) -> Option<Song> {
         None => tagged_file.first_tag()?,
     };
 
-    let title = tag.get_string(&ItemKey::TrackTitle).map(|t| t.to_owned());
+    let title = tag.get_string(&ItemKey::TrackTitle).map(|t| t.to_owned())
+        .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
+
     let artist = tag.get_string(&ItemKey::TrackArtist).map(|a| a.to_owned());
     let album = tag.get_string(&ItemKey::AlbumTitle).map(|a| a.to_owned());
 

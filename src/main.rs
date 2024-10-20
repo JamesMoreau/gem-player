@@ -40,6 +40,7 @@ fn main() -> eframe::Result {
 struct MyApp {
     age: u32,
     songs: Vec<Song>,
+    
     selected_song: Option<usize>,
     search_text: String,
 
@@ -93,7 +94,7 @@ impl MyApp {
         };
         let my_music_directory = audio_directory.join("MyMusic");
         default_self.music_directory = Some(my_music_directory);
-        
+
         let songs = match &default_self.music_directory {
             Some(path) => read_music_from_directory(path),
             None => Vec::new(),
@@ -114,21 +115,21 @@ impl eframe::App for MyApp {
             .min_height(48.0)
             .show(ctx, |ui| {
                 egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-                    ui.horizontal_centered(|ui| {
+                    ui.horizontal(|ui| {
                         let play_icon = egui::include_image!(
-                            "../assets/play_arrow_26dp_E8EAED_FILL0_wght400_GRAD0_opsz24.png"
+                            "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
                         ui.add(egui::Button::image(play_icon));
 
                         let pause_icon = egui::include_image!(
-                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.png"
+                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
                         ui.add(egui::Button::image(pause_icon));
 
                         ui.separator();
 
                         let volume_icon = egui::include_image!(
-                            "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.png"
+                            "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
                         ui.add(egui::Button::image(volume_icon));
 
@@ -147,6 +148,23 @@ impl eframe::App for MyApp {
 
                         ui.separator();
 
+                        let filter_icon = egui::include_image!(
+                            "../assets/filter_list_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        );
+                        // egui::ComboBox::from_id_salt("songs_sort")
+                        //     .width(32.0)
+                        //     .show_ui(ui, |ui| {
+                        //     ui.selectable_value(&mut self.age, Enum::First, "Title");
+                        //     ui.selectable_value(&mut self.age, 1, "Artist");
+                        //     ui.selectable_value(&mut self.age, 2, "Album");
+                        //     ui.selectable_value(&mut self.age, 3, "Time");
+
+                        //     ui.separator();
+
+                        //     ui.radio_value(&mut self.age, 0, "Ascending");
+                        //     ui.radio_value(&mut self.age, 1, "Descending");
+                        // });
+
                         let search_bar = egui::TextEdit::singleline(&mut self.search_text)
                             .hint_text("Search")
                             .desired_width(200.0);
@@ -156,15 +174,15 @@ impl eframe::App for MyApp {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let headers = ["Title", "Artist", "Album", "Time"];
+            let header_labels = ["Title", "Artist", "Album", "Time"];
 
             TableBuilder::new(ui)
                 .striped(true)
                 .sense(egui::Sense::click())
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .columns(egui_extras::Column::remainder(), headers.len())
+                .columns(egui_extras::Column::remainder(), header_labels.len())
                 .header(16.0, |mut header| {
-                    for h in &headers {
+                    for h in &header_labels {
                         header.col(|ui| {
                             ui.strong(h.to_string());
                         });
@@ -176,13 +194,12 @@ impl eframe::App for MyApp {
                             row.set_selected(self.selected_song == Some(i));
 
                             row.col(|ui| {
-                                let binding = song
-                                    .file_path
-                                    .file_name()
-                                    .unwrap_or_default()
-                                    .to_string_lossy();
-                                let title = song.title.as_deref().unwrap_or(&binding);
-                                ui.add(egui::Label::new(title).selectable(false));
+                                ui.add(
+                                    egui::Label::new(
+                                        song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
+                                    )
+                                    .selectable(false),
+                                );
                             });
 
                             row.col(|ui| {

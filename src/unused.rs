@@ -1,4 +1,4 @@
-eate_async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::Result<Event>>)> {
+// ceate_async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::Result<Event>>)> {
 	//     let (mut tx, rx) = channel(1);
 	//     let watcher = RecommendedWatcher::new(
 	//         move |res| {
