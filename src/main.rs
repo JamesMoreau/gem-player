@@ -8,17 +8,21 @@ mod song;
 
 /*
 TODO:
+figure out why shrinking the window horizontally causes buttons to shrink and then crash.
+
 - In the controls ui we want the following:
   - Play button
   - Pause button
   - Volume slider
   - Playback progress slider
+  - Current song info
   - song artwork
   - Search bar
   - Music Visualizer
   - Sorting
 
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
+Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
 
 - file watcher / update on change
 */
@@ -41,12 +45,27 @@ struct MyApp {
     age: u32,
     songs: Vec<Song>,
     
-    selected_song: Option<usize>,
     search_text: String,
-
+    sort_by: SortBy,
+    sort_order: SortOrder,
+    
     music_directory: Option<PathBuf>,
-
+    
+    selected_song: Option<usize>,
     volume: f32,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum SortBy {
+    Title,
+    Artist,
+    Album,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum SortOrder {
+    Ascending,
+    Descending,
 }
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -82,6 +101,8 @@ impl MyApp {
             search_text: String::new(),
             volume: 0.0,
             music_directory: None,
+            sort_by: SortBy::Title,
+            sort_order: SortOrder::Ascending,
         };
 
         // Find the music directory.
@@ -115,16 +136,11 @@ impl eframe::App for MyApp {
             .min_height(48.0)
             .show(ctx, |ui| {
                 egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-                    ui.horizontal(|ui| {
+                    ui.horizontal_centered(|ui| {
                         let play_icon = egui::include_image!(
                             "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
                         ui.add(egui::Button::image(play_icon));
-
-                        let pause_icon = egui::include_image!(
-                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        );
-                        ui.add(egui::Button::image(pause_icon));
 
                         ui.separator();
 
@@ -151,22 +167,17 @@ impl eframe::App for MyApp {
                         let filter_icon = egui::include_image!(
                             "../assets/filter_list_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
-                        // egui::ComboBox::from_id_salt("songs_sort")
-                        //     .width(32.0)
-                        //     .show_ui(ui, |ui| {
-                        //     ui.selectable_value(&mut self.age, Enum::First, "Title");
-                        //     ui.selectable_value(&mut self.age, 1, "Artist");
-                        //     ui.selectable_value(&mut self.age, 2, "Album");
-                        //     ui.selectable_value(&mut self.age, 3, "Time");
-
-                        //     ui.separator();
-
-                        //     ui.radio_value(&mut self.age, 0, "Ascending");
-                        //     ui.radio_value(&mut self.age, 1, "Descending");
-                        // });
+                        ui.menu_image_button(filter_icon, |ui| {
+                            ui.radio_value(&mut self.sort_by, SortBy::Title, "Title");
+                            ui.radio_value(&mut self.sort_by, SortBy::Artist, "Artist");
+                            ui.radio_value(&mut self.sort_by, SortBy::Album, "Album");
+                            ui.separator();
+                            ui.radio_value(&mut self.sort_order, SortOrder::Ascending, "Ascending"); 
+                            ui.radio_value(&mut self.sort_order, SortOrder::Descending, "Descending");                           
+                        });
 
                         let search_bar = egui::TextEdit::singleline(&mut self.search_text)
-                            .hint_text("Search")
+                            .hint_text("Search...")
                             .desired_width(200.0);
                         ui.add(search_bar);
                     });
