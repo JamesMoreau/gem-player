@@ -26,6 +26,8 @@ figure out why shrinking the window horizontally causes buttons to shrink and th
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
 
+- tab bar at the bottom for playlists, queue, settings, etc.
+
 - file watcher / update on change
 */
 
@@ -33,12 +35,10 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            // .with_inner_size([900.0, 600.0])
-            // .with_titlebar_shown(false)
-            // .with_title_shown(false)
-            // .with_fullsize_content_view(true)
-            ,
+        viewport: egui::ViewportBuilder::default(), // .with_inner_size([900.0, 600.0])
+        // .with_titlebar_shown(false)
+        // .with_title_shown(false)
+        // .with_fullsize_content_view(true)
         ..Default::default()
     };
     eframe::run_native(
@@ -59,7 +59,7 @@ struct GemPlayer {
     music_directory: Option<PathBuf>,
 
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    current_song: Option<Song>,  // The currently playing song.
+    current_song: Option<Song>,   // The currently playing song.
     volume: f32,
 }
 
@@ -181,7 +181,7 @@ impl eframe::App for GemPlayer {
                             ui.radio_value(&mut self.sort_by, SortBy::Title, "Title");
                             ui.radio_value(&mut self.sort_by, SortBy::Artist, "Artist");
                             ui.radio_value(&mut self.sort_by, SortBy::Album, "Album");
-                            ui.radio_value(&mut self.sort_by, SortBy::Time, "Album");
+                            ui.radio_value(&mut self.sort_by, SortBy::Time, "Time");
                             ui.separator();
                             ui.radio_value(&mut self.sort_order, SortOrder::Ascending, "Ascending");
                             ui.radio_value(
@@ -200,6 +200,20 @@ impl eframe::App for GemPlayer {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            let search_lower = self.search_text.to_lowercase();
+            let filtered_songs: Vec<&Song> = self
+                .songs
+                .iter()
+                .filter(|song| {
+                    let search_fields = [&song.title, &song.artist, &song.album];
+                    search_fields.iter().any(|field| {
+                        field
+                            .as_ref()
+                            .map_or(false, |text| text.to_lowercase().contains(&search_lower))
+                    })
+                })
+                .collect();
+            
             let header_labels = ["Title", "Artist", "Album", "Time"];
 
             TableBuilder::new(ui)
@@ -215,7 +229,7 @@ impl eframe::App for GemPlayer {
                     }
                 })
                 .body(|mut body| {
-                    for (i, song) in self.songs.iter().enumerate() {
+                    for (i, song) in filtered_songs.iter().enumerate() {
                         body.row(28.0, |mut row| {
                             row.set_selected(self.selected_song == Some(i));
 
