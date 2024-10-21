@@ -20,6 +20,8 @@ figure out why shrinking the window horizontally causes buttons to shrink and th
   - Search bar
   - Music Visualizer
   - Sorting
+  - Queue
+  - Repeat / Shuffle.
 
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
@@ -31,27 +33,33 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([900.0, 600.0]),
+        viewport: egui::ViewportBuilder::default()
+            // .with_inner_size([900.0, 600.0])
+            // .with_titlebar_shown(false)
+            // .with_title_shown(false)
+            // .with_fullsize_content_view(true)
+            ,
         ..Default::default()
     };
     eframe::run_native(
         "Gem Player",
         options,
-        Box::new(|cc| Ok(Box::new(MyApp::new(cc)))),
+        Box::new(|cc| Ok(Box::new(GemPlayer::new(cc)))),
     )
 }
 
-struct MyApp {
+struct GemPlayer {
     age: u32,
     songs: Vec<Song>,
-    
+
     search_text: String,
     sort_by: SortBy,
     sort_order: SortOrder,
-    
+
     music_directory: Option<PathBuf>,
-    
-    selected_song: Option<usize>,
+
+    selected_song: Option<usize>, // Index of the selected song in the songs vector.
+    current_song: Option<Song>,  // The currently playing song.
     volume: f32,
 }
 
@@ -60,6 +68,7 @@ pub enum SortBy {
     Title,
     Artist,
     Album,
+    Time,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -70,7 +79,7 @@ pub enum SortOrder {
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
-impl MyApp {
+impl GemPlayer {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This gives us image support:
         egui_extras::install_image_loaders(&cc.egui_ctx);
@@ -103,6 +112,7 @@ impl MyApp {
             music_directory: None,
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
+            current_song: None,
         };
 
         // Find the music directory.
@@ -129,14 +139,14 @@ impl MyApp {
     }
 }
 
-impl eframe::App for MyApp {
+impl eframe::App for GemPlayer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel")
             .resizable(false)
             .min_height(48.0)
             .show(ctx, |ui| {
                 egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-                    ui.horizontal_centered(|ui| {
+                    ui.horizontal(|ui| {
                         let play_icon = egui::include_image!(
                             "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
@@ -171,9 +181,14 @@ impl eframe::App for MyApp {
                             ui.radio_value(&mut self.sort_by, SortBy::Title, "Title");
                             ui.radio_value(&mut self.sort_by, SortBy::Artist, "Artist");
                             ui.radio_value(&mut self.sort_by, SortBy::Album, "Album");
+                            ui.radio_value(&mut self.sort_by, SortBy::Time, "Album");
                             ui.separator();
-                            ui.radio_value(&mut self.sort_order, SortOrder::Ascending, "Ascending"); 
-                            ui.radio_value(&mut self.sort_order, SortOrder::Descending, "Descending");                           
+                            ui.radio_value(&mut self.sort_order, SortOrder::Ascending, "Ascending");
+                            ui.radio_value(
+                                &mut self.sort_order,
+                                SortOrder::Descending,
+                                "Descending",
+                            );
                         });
 
                         let search_bar = egui::TextEdit::singleline(&mut self.search_text)
