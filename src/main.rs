@@ -3,12 +3,14 @@ use eframe::egui::{self};
 use egui_extras::TableBuilder;
 use glob::glob;
 use std::path::{Path, PathBuf};
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 mod song;
 
 /*
 TODO:
-figure out why shrinking the window horizontally causes buttons to shrink and then crash.
+-figure out why shrinking the window horizontally causes buttons to shrink and then crash.
 
 - In the controls ui we want the following:
   - Play button
@@ -27,7 +29,8 @@ Perhaps we could have the top panel contain the searching and sorting controls, 
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
 
 - tab bar at the bottom for playlists, queue, settings, etc.
-
+- context menu on song row.
+- should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>?
 - file watcher / update on change
 */
 
@@ -63,7 +66,7 @@ struct GemPlayer {
     volume: f32,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {
     Title,
     Artist,
@@ -71,7 +74,7 @@ pub enum SortBy {
     Time,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortOrder {
     Ascending,
     Descending,
@@ -131,6 +134,7 @@ impl GemPlayer {
             None => Vec::new(),
         };
         println!("Found {} songs", &songs.len());
+        sort_songs(&mut default_self.songs, default_self.sort_by, default_self.sort_order);
 
         Self {
             songs,
@@ -178,17 +182,23 @@ impl eframe::App for GemPlayer {
                             "../assets/filter_list_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
                         ui.menu_image_button(filter_icon, |ui| {
-                            ui.radio_value(&mut self.sort_by, SortBy::Title, "Title");
-                            ui.radio_value(&mut self.sort_by, SortBy::Artist, "Artist");
-                            ui.radio_value(&mut self.sort_by, SortBy::Album, "Album");
-                            ui.radio_value(&mut self.sort_by, SortBy::Time, "Time");
+                            let mut should_sort_songs = false;
+                            
+                            for sort_by in SortBy::iter() {
+                                let response = ui.radio_value(&mut self.sort_by, sort_by, format!("{:?}", sort_by));
+                                should_sort_songs |= response.clicked();
+                            }
+
                             ui.separator();
-                            ui.radio_value(&mut self.sort_order, SortOrder::Ascending, "Ascending");
-                            ui.radio_value(
-                                &mut self.sort_order,
-                                SortOrder::Descending,
-                                "Descending",
-                            );
+                            
+                            for sort_order in SortOrder::iter() {
+                                let response = ui.radio_value(&mut self.sort_order, sort_order, format!("{:?}", sort_order));
+                                should_sort_songs |= response.clicked();
+                            }
+
+                            if should_sort_songs {
+                                sort_songs(&mut self.songs, self.sort_by, self.sort_order);
+                            }
                         });
 
                         let search_bar = egui::TextEdit::singleline(&mut self.search_text)
@@ -327,4 +337,20 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
     }
 
     songs
+}
+
+fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
+    songs.sort_by(|a, b| {
+        let ord = match sort_by {
+            SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
+            SortBy::Artist => a.artist.as_deref().unwrap_or("").cmp(b.artist.as_deref().unwrap_or("")),
+            SortBy::Album => a.album.as_deref().unwrap_or("").cmp(b.album.as_deref().unwrap_or("")),
+            SortBy::Time => a.duration.cmp(&b.duration),
+        };
+
+        match sort_order {
+            SortOrder::Ascending => ord,
+            SortOrder::Descending => ord.reverse(),
+        }
+    });
 }
