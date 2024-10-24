@@ -28,10 +28,12 @@ TODO:
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
 
+- put spacing before title column
 - tab bar at the bottom for playlists, queue, settings, etc.
 - context menu on song row.
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>?
 - file watcher / update on change
+- remove the toolbar / titlebar on window.
 */
 
 fn main() -> eframe::Result {
@@ -134,7 +136,11 @@ impl GemPlayer {
             None => Vec::new(),
         };
         println!("Found {} songs", &songs.len());
-        sort_songs(&mut default_self.songs, default_self.sort_by, default_self.sort_order);
+        sort_songs(
+            &mut default_self.songs,
+            default_self.sort_by,
+            default_self.sort_order,
+        );
 
         Self {
             songs,
@@ -145,6 +151,7 @@ impl GemPlayer {
 
 impl eframe::App for GemPlayer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Control UI.
         egui::TopBottomPanel::top("top_panel")
             .resizable(false)
             .min_height(48.0)
@@ -183,16 +190,24 @@ impl eframe::App for GemPlayer {
                         );
                         ui.menu_image_button(filter_icon, |ui| {
                             let mut should_sort_songs = false;
-                            
+
                             for sort_by in SortBy::iter() {
-                                let response = ui.radio_value(&mut self.sort_by, sort_by, format!("{:?}", sort_by));
+                                let response = ui.radio_value(
+                                    &mut self.sort_by,
+                                    sort_by,
+                                    format!("{:?}", sort_by),
+                                );
                                 should_sort_songs |= response.clicked();
                             }
 
                             ui.separator();
-                            
+
                             for sort_order in SortOrder::iter() {
-                                let response = ui.radio_value(&mut self.sort_order, sort_order, format!("{:?}", sort_order));
+                                let response = ui.radio_value(
+                                    &mut self.sort_order,
+                                    sort_order,
+                                    format!("{:?}", sort_order),
+                                );
                                 should_sort_songs |= response.clicked();
                             }
 
@@ -210,6 +225,7 @@ impl eframe::App for GemPlayer {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            // Songs list.
             let search_lower = self.search_text.to_lowercase();
             let filtered_songs: Vec<&Song> = self
                 .songs
@@ -223,18 +239,34 @@ impl eframe::App for GemPlayer {
                     })
                 })
                 .collect();
-            
+
             let header_labels = ["Title", "Artist", "Album", "Time"];
+
+            let available_width = ui.available_width();
+            let time_width = 80.0;
+            let remaining_width = available_width - time_width;
+            let title_width = remaining_width * (2.0 / 4.0);
+            let artist_width = remaining_width * (1.0 / 4.0);
+            let album_width = remaining_width * (1.0 / 4.0);
 
             TableBuilder::new(ui)
                 .striped(true)
                 .sense(egui::Sense::click())
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .columns(egui_extras::Column::remainder(), header_labels.len())
+                .column(egui_extras::Column::exact(title_width))
+                .column(egui_extras::Column::exact(artist_width))
+                .column(egui_extras::Column::exact(album_width))
+                .column(egui_extras::Column::exact(time_width))
                 .header(16.0, |mut header| {
-                    for h in &header_labels {
+                    for (i, h) in header_labels.iter().enumerate() {
                         header.col(|ui| {
-                            ui.strong(h.to_string());
+                            if i == 0 {
+                                ui.add_space(16.0);
+                            }
+                            ui.add(
+                                egui::Label::new(egui::RichText::new(*h).strong())
+                                    .selectable(false),
+                            );
                         });
                     }
                 })
@@ -244,6 +276,7 @@ impl eframe::App for GemPlayer {
                             row.set_selected(self.selected_song == Some(i));
 
                             row.col(|ui| {
+                                ui.add_space(16.0);
                                 ui.add(
                                     egui::Label::new(
                                         song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
@@ -342,9 +375,21 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
 fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
     songs.sort_by(|a, b| {
         let ord = match sort_by {
-            SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
-            SortBy::Artist => a.artist.as_deref().unwrap_or("").cmp(b.artist.as_deref().unwrap_or("")),
-            SortBy::Album => a.album.as_deref().unwrap_or("").cmp(b.album.as_deref().unwrap_or("")),
+            SortBy::Title => a
+                .title
+                .as_deref()
+                .unwrap_or("")
+                .cmp(b.title.as_deref().unwrap_or("")),
+            SortBy::Artist => a
+                .artist
+                .as_deref()
+                .unwrap_or("")
+                .cmp(b.artist.as_deref().unwrap_or("")),
+            SortBy::Album => a
+                .album
+                .as_deref()
+                .unwrap_or("")
+                .cmp(b.album.as_deref().unwrap_or("")),
             SortBy::Time => a.duration.cmp(&b.duration),
         };
 
