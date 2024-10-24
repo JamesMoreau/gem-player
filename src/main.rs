@@ -309,9 +309,27 @@ impl eframe::App for GemPlayer {
                                 ui.add(egui::Label::new(duration_string).selectable(false));
                             });
 
-                            if row.response().clicked() {
+                            let response = row.response();
+                            if response.clicked() || response.double_clicked() {
+                                // Play the song.
                                 self.selected_song = Some(i);
                             }
+
+                            row.response().context_menu(|ui| {
+                                if ui.button("Play").clicked() {
+                                    println!("Play song");
+                                }
+
+                                if ui.button("Add to queue").clicked() {
+                                    println!("Add to queue");
+                                }
+
+                                ui.separator();
+
+                                if ui.button("Remove from library").clicked() {
+                                    println!("Remove from library");
+                                }
+                            });
                         });
                     }
                 });
