@@ -28,7 +28,6 @@ TODO:
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
 
-- put spacing before title column
 - tab bar at the bottom for playlists, queue, settings, etc.
 - context menu on song row.
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>?
@@ -224,8 +223,8 @@ impl eframe::App for GemPlayer {
                 });
             });
 
+        // Songs list.
         egui::CentralPanel::default().show(ctx, |ui| {
-            // Songs list.
             let search_lower = self.search_text.to_lowercase();
             let filtered_songs: Vec<&Song> = self
                 .songs
@@ -373,29 +372,15 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
 }
 
 fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
-    songs.sort_by(|a, b| {
-        let ord = match sort_by {
-            SortBy::Title => a
-                .title
-                .as_deref()
-                .unwrap_or("")
-                .cmp(b.title.as_deref().unwrap_or("")),
-            SortBy::Artist => a
-                .artist
-                .as_deref()
-                .unwrap_or("")
-                .cmp(b.artist.as_deref().unwrap_or("")),
-            SortBy::Album => a
-                .album
-                .as_deref()
-                .unwrap_or("")
-                .cmp(b.album.as_deref().unwrap_or("")),
-            SortBy::Time => a.duration.cmp(&b.duration),
-        };
+    let key = |song: &Song| match sort_by {
+        SortBy::Title => song.title.as_deref().unwrap_or("").to_string(),
+        SortBy::Artist => song.artist.as_deref().unwrap_or("").to_string(),
+        SortBy::Album => song.album.as_deref().unwrap_or("").to_string(),
+        SortBy::Time => song.duration.as_secs().to_string(),
+    };
 
-        match sort_order {
-            SortOrder::Ascending => ord,
-            SortOrder::Descending => ord.reverse(),
-        }
+    songs.sort_by(|a, b| match sort_order {
+        SortOrder::Ascending => key(a).cmp(&key(b)),
+        SortOrder::Descending => key(a).cmp(&key(b)).reverse(),
     });
 }
