@@ -305,7 +305,7 @@ impl eframe::App for GemPlayer {
                             });
 
                             row.col(|ui| {
-                                let duration_string = format_duration(song.duration);
+                                let duration_string = format_duration_to_mmss(song.duration);
                                 ui.add(egui::Label::new(duration_string).selectable(false));
                             });
 
@@ -318,16 +318,19 @@ impl eframe::App for GemPlayer {
                             row.response().context_menu(|ui| {
                                 if ui.button("Play").clicked() {
                                     println!("Play song");
+                                    ui.close_menu();
                                 }
 
                                 if ui.button("Add to queue").clicked() {
                                     println!("Add to queue");
+                                    ui.close_menu();
                                 }
 
                                 ui.separator();
 
                                 if ui.button("Remove from library").clicked() {
                                     println!("Remove from library");
+                                    ui.close_menu();
                                 }
                             });
                         });
@@ -337,7 +340,7 @@ impl eframe::App for GemPlayer {
     }
 }
 
-fn format_duration(duration: std::time::Duration) -> String {
+fn format_duration_to_mmss(duration: std::time::Duration) -> String {
     let seconds_in_a_minute = 60.0;
     let total_seconds = duration.as_secs_f64();
     let minutes = total_seconds / seconds_in_a_minute;
