@@ -1,5 +1,5 @@
 use crate::song::Song;
-use eframe::egui::{self};
+use eframe::egui::{self, Vec2};
 use egui_extras::TableBuilder;
 use glob::glob;
 use std::path::{Path, PathBuf};
@@ -10,36 +10,31 @@ mod song;
 
 /*
 TODO:
--figure out why shrinking the window horizontally causes buttons to shrink and then crash.
+- tab bar at the bottom for playlists, queue, settings, etc.
+- should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path.
+- file watcher / update on change
+- remove the toolbar / titlebar on window.
 
 - In the controls ui we want the following:
-  - Play button
-  - Pause button
+  - Play button / Pause button
+  - Next song, previous song
   - Volume slider
-  - Playback progress slider
-  - Current song info
-  - song artwork
-  - Search bar
-  - Music Visualizer
-  - Sorting
-  - Queue
+  - Current song info: song artwork, Playback progress slider, Visualizer, song title, artist, album, duration.
   - Repeat / Shuffle.
+  - Queue
+  - Sorting
+  - Search bar
 
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
-
-- tab bar at the bottom for playlists, queue, settings, etc.
-- context menu on song row.
-- should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>?
-- file watcher / update on change
-- remove the toolbar / titlebar on window.
 */
 
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default(), // .with_inner_size([900.0, 600.0])
+        viewport: egui::ViewportBuilder::default().with_min_inner_size(Vec2::new(900.0, 400.0)),
+        // .with_inner_size([900.0, 600.0])
         // .with_titlebar_shown(false)
         // .with_title_shown(false)
         // .with_fullsize_content_view(true)
@@ -310,12 +305,15 @@ impl eframe::App for GemPlayer {
                             });
 
                             let response = row.response();
-                            if response.clicked() || response.double_clicked() {
-                                // Play the song.
+                            if response.clicked() {
                                 self.selected_song = Some(i);
                             }
 
-                            row.response().context_menu(|ui| {
+                            if response.double_clicked() {
+                                println!("Play song: {:?}", song.title);
+                            }
+
+                            response.context_menu(|ui| {
                                 if ui.button("Play").clicked() {
                                     println!("Play song");
                                     ui.close_menu();
