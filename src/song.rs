@@ -5,7 +5,7 @@ use std::{
 };
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Song {
     pub title: Option<String>,
     pub artist: Option<String>,

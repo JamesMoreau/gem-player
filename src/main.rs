@@ -2,11 +2,11 @@ use crate::song::Song;
 use eframe::egui::{self, Vec2};
 use egui_extras::TableBuilder;
 use glob::glob;
+use rodio::{Decoder, OutputStream, Sink};
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use std::io::BufReader;
-use rodio::{OutputStream, Sink, Decoder};
 
 mod song;
 
@@ -49,23 +49,6 @@ fn main() -> eframe::Result {
     )
 }
 
-struct GemPlayer {
-    age: u32,
-    songs: Vec<Song>,
-
-    search_text: String,
-    sort_by: SortBy,
-    sort_order: SortOrder,
-
-    music_directory: Option<PathBuf>,
-
-    selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    // current_song: usize,   // The currently playing song.
-    volume: f32,
-    _stream: OutputStream,    // Holds the OutputStream to keep it alive
-    sink: Sink,               // Controls playback (play, pause, stop, etc.)
-}
-
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {
     Title,
@@ -81,6 +64,23 @@ pub enum SortOrder {
 }
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
+
+struct GemPlayer {
+    age: u32,
+    songs: Vec<Song>,
+
+    search_text: String,
+    sort_by: SortBy,
+    sort_order: SortOrder,
+
+    music_directory: Option<PathBuf>,
+
+    selected_song: Option<usize>, // Index of the selected song in the songs vector.
+    // current_song: usize,   // The currently playing song.
+    volume: f32,
+    _stream: OutputStream, // Holds the OutputStream to keep it alive
+    sink: Sink,            // Controls playback (play, pause, stop, etc.)
+}
 
 impl GemPlayer {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -251,11 +251,11 @@ impl eframe::App for GemPlayer {
 
         // Songs list.
         egui::CentralPanel::default().show(ctx, |ui| {
-            let search_lower = self.search_text.to_lowercase();
-            let filtered_songs: Vec<&Song> = self
+            let filtered_songs: Vec<Song> = self
                 .songs
                 .iter()
                 .filter(|song| {
+                    let search_lower = self.search_text.to_lowercase();
                     let search_fields = [&song.title, &song.artist, &song.album];
                     search_fields.iter().any(|field| {
                         field
@@ -263,6 +263,7 @@ impl eframe::App for GemPlayer {
                             .map_or(false, |text| text.to_lowercase().contains(&search_lower))
                     })
                 })
+                .cloned()
                 .collect();
 
             let header_labels = ["Title", "Artist", "Album", "Time"];
@@ -342,7 +343,7 @@ impl eframe::App for GemPlayer {
 
                             if response.double_clicked() {
                                 println!("Play song: {:?}", song.title);
-                                // self.load_song(song);
+                                self.load_song(song);
                             }
 
                             response.context_menu(|ui| {
