@@ -5,6 +5,8 @@ use glob::glob;
 use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use std::io::BufReader;
+use rodio::{OutputStream, Sink, Decoder};
 
 mod song;
 
@@ -58,8 +60,10 @@ struct GemPlayer {
     music_directory: Option<PathBuf>,
 
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    current_song: Option<Song>,   // The currently playing song.
+    // current_song: usize,   // The currently playing song.
     volume: f32,
+    _stream: OutputStream,    // Holds the OutputStream to keep it alive
+    sink: Sink,               // Controls playback (play, pause, stop, etc.)
 }
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
@@ -102,6 +106,9 @@ impl GemPlayer {
             .push("my_font".to_owned());
         cc.egui_ctx.set_fonts(fonts);
 
+        let (_stream, handle) = OutputStream::try_default().unwrap();
+        let sink = Sink::try_new(&handle).unwrap();
+
         let mut default_self = Self {
             age: 42,
             songs: Vec::new(),
@@ -111,7 +118,9 @@ impl GemPlayer {
             music_directory: None,
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
-            current_song: None,
+            // current_song: None,
+            _stream,
+            sink,
         };
 
         // Find the music directory.
@@ -140,6 +149,28 @@ impl GemPlayer {
             songs,
             ..default_self
         }
+    }
+
+    fn load_song(&mut self, song: &Song) {
+        let file = std::fs::File::open(&song.file_path).unwrap();
+        let source = Decoder::new(BufReader::new(file)).unwrap();
+
+        self.sink.append(source);
+    }
+
+    fn play_song(&mut self) {
+        self.sink.play();
+    }
+
+    fn pause_song(&mut self) {
+        self.sink.pause();
+    }
+
+    fn play_next_song(&mut self) {
+        self.sink.stop();
+        // self.current_song = (self.current_song + 1) % self.songs.len();
+        // self.load_song(&self.songs[self.current_song]);
+        // self.play_song();
     }
 }
 
@@ -311,6 +342,7 @@ impl eframe::App for GemPlayer {
 
                             if response.double_clicked() {
                                 println!("Play song: {:?}", song.title);
+                                // self.load_song(song);
                             }
 
                             response.context_menu(|ui| {
