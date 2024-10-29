@@ -18,14 +18,12 @@ TODO:
 - remove the toolbar / titlebar on window.
 
 - In the controls ui we want the following:
-  - Play button / Pause button
-  - Next song, previous song
+  - Play button / Pause button, Next song, previous song
   - Volume slider
   - Current song info: song artwork, Playback progress slider, Visualizer, song title, artist, album, duration.
   - Repeat / Shuffle.
   - Queue
-  - Sorting
-  - Search bar
+  - Sorting, Search bar
 
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
@@ -77,6 +75,7 @@ struct GemPlayer {
 
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
     // current_song: usize,   // The currently playing song.
+    // queue: Vec<Song>,
     volume: f32,
     _stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
@@ -108,6 +107,7 @@ impl GemPlayer {
 
         let (_stream, handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&handle).unwrap();
+        sink.pause();
 
         let mut default_self = Self {
             age: 42,
@@ -119,6 +119,7 @@ impl GemPlayer {
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
             // current_song: None,
+            // queue: Vec::new(),
             _stream,
             sink,
         };
@@ -151,11 +152,33 @@ impl GemPlayer {
         }
     }
 
-    fn load_song(&mut self, song: &Song) {
-        let file = std::fs::File::open(&song.file_path).unwrap();
-        let source = Decoder::new(BufReader::new(file)).unwrap();
+    fn is_playing(&self) -> bool {
+        !self.sink.is_paused()
+    }
 
+    // TODO: Is this ok to call this function from the UI thread?
+    fn load_and_play_song(&mut self, song: &Song) {
+        let file_result = std::fs::File::open(&song.file_path);
+        let file = match file_result {
+            Ok(file) => file,
+            Err(e) => {
+                println!("Error opening file: {:?}", e);
+                return;
+            }
+        };
+
+        let source_result = Decoder::new(BufReader::new(file));
+        let source = match source_result {
+            Ok(source) => source,
+            Err(e) => {
+                println!("Error decoding file: {:?}", e);
+                return;
+            }
+        };
+
+        self.sink.stop(); // Stop the current song if any.
         self.sink.append(source);
+        self.sink.play();
     }
 
     fn play_song(&mut self) {
@@ -186,7 +209,22 @@ impl eframe::App for GemPlayer {
                         let play_icon = egui::include_image!(
                             "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         );
-                        ui.add(egui::Button::image(play_icon));
+                        let pause_icon = egui::include_image!(
+                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        );
+                        let current_icon = if self.is_playing() {
+                            pause_icon
+                        } else {
+                            play_icon
+                        };
+
+                        if ui.add(egui::Button::image(current_icon)).clicked() {
+                            if self.is_playing() {
+                                self.pause_song();
+                            } else {
+                                self.play_song();
+                            }
+                        }
 
                         ui.separator();
 
@@ -342,25 +380,21 @@ impl eframe::App for GemPlayer {
                             }
 
                             if response.double_clicked() {
-                                println!("Play song: {:?}", song.title);
-                                self.load_song(song);
+                                self.load_and_play_song(song);
                             }
 
                             response.context_menu(|ui| {
                                 if ui.button("Play").clicked() {
-                                    println!("Play song");
                                     ui.close_menu();
                                 }
 
                                 if ui.button("Add to queue").clicked() {
-                                    println!("Add to queue");
                                     ui.close_menu();
                                 }
 
                                 ui.separator();
 
                                 if ui.button("Remove from library").clicked() {
-                                    println!("Remove from library");
                                     ui.close_menu();
                                 }
                             });
