@@ -12,6 +12,7 @@ mod song;
 
 /*
 TODO:
+- play next song after current song ends
 - tab bar at the bottom for playlists, queue, settings, etc.
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path.
 - file watcher / update on change
@@ -27,6 +28,8 @@ TODO:
 
 Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
 Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
+
+Could remove object oriented programming and just have a struct with functions that take a mutable reference to self.
 */
 
 fn main() -> eframe::Result {
@@ -158,6 +161,8 @@ impl GemPlayer {
 
     // TODO: Is this ok to call this function from the UI thread?
     fn load_and_play_song(&mut self, song: &Song) {
+        self.sink.stop(); // Stop the current song if any.
+
         let file_result = std::fs::File::open(&song.file_path);
         let file = match file_result {
             Ok(file) => file,
@@ -171,30 +176,37 @@ impl GemPlayer {
         let source = match source_result {
             Ok(source) => source,
             Err(e) => {
-                println!("Error decoding file: {:?}", e);
+                println!("Error decoding file: {}, Error: {:?}", song.file_path.to_string_lossy(), e);
                 return;
             }
         };
 
-        self.sink.stop(); // Stop the current song if any.
         self.sink.append(source);
         self.sink.play();
     }
 
-    fn play_song(&mut self) {
-        self.sink.play();
+    fn play_or_pause(&mut self) {
+        if self.sink.is_paused() {
+            self.sink.play()
+        } else {
+            self.sink.pause()
+        }
     }
 
-    fn pause_song(&mut self) {
-        self.sink.pause();
+    fn volume(&self) -> f32 {
+        self.sink.volume()
     }
 
-    fn play_next_song(&mut self) {
+    fn set_volume(&mut self, new_volume: f32) {
+        self.sink.set_volume(new_volume);
+    }
+
+    /*fn play_next_song(&mut self) {
         self.sink.stop();
         // self.current_song = (self.current_song + 1) % self.songs.len();
         // self.load_song(&self.songs[self.current_song]);
         // self.play_song();
-    }
+    }*/
 }
 
 impl eframe::App for GemPlayer {
@@ -206,24 +218,18 @@ impl eframe::App for GemPlayer {
             .show(ctx, |ui| {
                 egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        let play_icon = egui::include_image!(
-                            "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        );
-                        let pause_icon = egui::include_image!(
-                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        );
                         let current_icon = if self.is_playing() {
-                            pause_icon
+                            egui::include_image!(
+                                "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                            )
                         } else {
-                            play_icon
+                            egui::include_image!(
+                                "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                            )
                         };
 
                         if ui.add(egui::Button::image(current_icon)).clicked() {
-                            if self.is_playing() {
-                                self.pause_song();
-                            } else {
-                                self.play_song();
-                            }
+                            self.play_or_pause();
                         }
 
                         ui.separator();
@@ -393,6 +399,10 @@ impl eframe::App for GemPlayer {
                                 }
 
                                 ui.separator();
+
+                                if ui.button("Open file location").clicked() {
+                                    ui.close_menu();
+                                }
 
                                 if ui.button("Remove from library").clicked() {
                                     ui.close_menu();
