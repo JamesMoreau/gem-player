@@ -9,6 +9,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 mod song;
+mod constants;
 
 /*
 TODO:
@@ -63,8 +64,6 @@ pub enum SortOrder {
     Ascending,
     Descending,
 }
-
-pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
 struct GemPlayer {
     age: u32,
@@ -194,10 +193,12 @@ impl GemPlayer {
     }
 
     fn volume(&self) -> f32 {
+        assert!((0.0..=1.0).contains(&self.sink.volume()));
         self.sink.volume()
     }
 
     fn set_volume(&mut self, new_volume: f32) {
+        assert!((0.0..=1.0).contains(&new_volume));
         self.sink.set_volume(new_volume);
     }
 
@@ -416,19 +417,27 @@ impl eframe::App for GemPlayer {
 }
 
 fn format_duration_to_mmss(duration: std::time::Duration) -> String {
-    let seconds_in_a_minute = 60.0;
-    let total_seconds = duration.as_secs_f64();
-    let minutes = total_seconds / seconds_in_a_minute;
-    let seconds = total_seconds % seconds_in_a_minute;
+    let total_seconds: f64 = duration.as_secs_f64();
+    let minutes = total_seconds / constants::SECONDS_PER_MINUTE as f64;
+    let seconds = total_seconds % constants::SECONDS_PER_MINUTE as f64;
 
     format!("{:.0}:{:02.0}", minutes, seconds)
+}
+
+fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
+    let total_seconds: f64 = duration.as_secs_f64();
+    let hours = total_seconds / constants::MINUTES_PER_HOUR as f64;
+    let minutes = total_seconds / constants::SECONDS_PER_MINUTE as f64;
+    let seconds = total_seconds % constants::SECONDS_PER_MINUTE as f64;
+
+    format!("{:.0}:{:02.0}:{:02.0}", hours, minutes, seconds)
 }
 
 fn read_music_from_directory(path: &Path) -> Vec<Song> {
     let mut songs = Vec::new();
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
-    let patterns = SUPPORTED_AUDIO_FILE_TYPES
+    let patterns = constants::SUPPORTED_AUDIO_FILE_TYPES
         .iter()
         .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
         .collect::<Vec<String>>();
