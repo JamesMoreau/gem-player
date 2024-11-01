@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-mod song;
 mod constants;
+mod song;
 
 /*
 TODO:
@@ -81,7 +81,7 @@ struct GemPlayer {
     // queue: Vec<Song>,
     _stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
-    last_unmuted_volume: f32,
+    last_unmuted_volume: Option<f32>,
 }
 
 impl GemPlayer {
@@ -124,7 +124,7 @@ impl GemPlayer {
             // queue: Vec::new(),
             _stream,
             sink,
-            last_unmuted_volume: 0.0,
+            last_unmuted_volume: None,
         };
 
         // Find the music directory.
@@ -176,7 +176,11 @@ impl GemPlayer {
         let source = match source_result {
             Ok(source) => source,
             Err(e) => {
-                println!("Error decoding file: {}, Error: {:?}", song.file_path.to_string_lossy(), e);
+                println!(
+                    "Error decoding file: {}, Error: {:?}",
+                    song.file_path.to_string_lossy(),
+                    e
+                );
                 return;
             }
         };
@@ -185,7 +189,7 @@ impl GemPlayer {
         self.sink.play();
     }
 
-    fn play_or_pause(&mut self) { 
+    fn play_or_pause(&mut self) {
         if self.sink.is_paused() {
             self.sink.play()
         } else {
@@ -240,13 +244,36 @@ impl eframe::App for GemPlayer {
                         };
                         let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
                         if clicked {
-                            if volume > 0.0 {
-                                self.last_unmuted_volume = volume;
-                                self.sink.set_volume(0.0);
+                            if let Some(v) = self.last_unmuted_volume {
+                                // Restore the volume before muting.
+                                self.sink.set_volume(v);
+                                self.last_unmuted_volume = None;
                             } else {
-                                self.sink.set_volume(self.last_unmuted_volume);
+                                // Save the volume before muting.
+                                self.last_unmuted_volume = Some(volume);
+                                self.sink.set_volume(0.0);
                             }
                         }
+                        // match self.last_unmuted_volume {
+                        //     Some(last_volume) => {
+                        //         // Restore the volume before muting.
+                        //         self.sink.set_volume(last_volume);
+                        //         self.last_unmuted_volume = None;
+                        //     }
+                        //     None => {
+                        //         // Save the volume before muting.
+                        //         self.last_unmuted_volume = Some(volume);
+                        //         self.sink.set_volume(0.0);
+                        //     }
+                        // }
+                        // if clicked {
+                        //     if volume > 0.0 { // Save the volume before muting.
+                        //         self.last_unmuted_volume = Some(volume);
+                        //         self.sink.set_volume(0.0);
+                        //     } else { // Restore the volume before muting.
+                        //         self.sink.set_volume(self.last_unmuted_volume.unwrap_or(1.0));
+                        //     }
+                        // }
 
                         let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
                             .trailing_fill(true)
