@@ -13,6 +13,7 @@ mod constants;
 
 /*
 TODO:
+- selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
 - tab bar at the bottom for playlists, queue, settings, etc.
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path.
@@ -78,9 +79,9 @@ struct GemPlayer {
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
     // current_song: usize,   // The currently playing song.
     // queue: Vec<Song>,
-    volume: f32,
     _stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
+    last_unmuted_volume: f32,
 }
 
 impl GemPlayer {
@@ -116,7 +117,6 @@ impl GemPlayer {
             songs: Vec::new(),
             selected_song: None,
             search_text: String::new(),
-            volume: 0.0,
             music_directory: None,
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
@@ -124,6 +124,7 @@ impl GemPlayer {
             // queue: Vec::new(),
             _stream,
             sink,
+            last_unmuted_volume: 0.0,
         };
 
         // Find the music directory.
@@ -184,22 +185,12 @@ impl GemPlayer {
         self.sink.play();
     }
 
-    fn play_or_pause(&mut self) {
+    fn play_or_pause(&mut self) { 
         if self.sink.is_paused() {
             self.sink.play()
         } else {
             self.sink.pause()
         }
-    }
-
-    fn volume(&self) -> f32 {
-        assert!((0.0..=1.0).contains(&self.sink.volume()));
-        self.sink.volume()
-    }
-
-    fn set_volume(&mut self, new_volume: f32) {
-        assert!((0.0..=1.0).contains(&new_volume));
-        self.sink.set_volume(new_volume);
     }
 
     /*fn play_next_song(&mut self) {
@@ -219,7 +210,7 @@ impl eframe::App for GemPlayer {
             .show(ctx, |ui| {
                 egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        let current_icon = if self.is_playing() {
+                        let play_pause_icon = if self.is_playing() {
                             egui::include_image!(
                                 "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                             )
@@ -228,22 +219,42 @@ impl eframe::App for GemPlayer {
                                 "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                             )
                         };
-
-                        if ui.add(egui::Button::image(current_icon)).clicked() {
+                        let clicked = ui.add(egui::Button::image(play_pause_icon)).clicked();
+                        if clicked {
                             self.play_or_pause();
                         }
 
                         ui.separator();
 
-                        let volume_icon = egui::include_image!(
-                            "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        );
-                        ui.add(egui::Button::image(volume_icon));
+                        let mut volume = self.sink.volume();
+                        let volume_icon = match volume {
+                            0.0 => egui::include_image!(
+                                "../assets/volume_mute_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                            ),
+                            v if v < 0.5 => egui::include_image!(
+                                "../assets/volume_down_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                            ),
+                            _ => egui::include_image!(
+                                "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                            ),
+                        };
+                        let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
+                        if clicked {
+                            if volume > 0.0 {
+                                self.last_unmuted_volume = volume;
+                                self.sink.set_volume(0.0);
+                            } else {
+                                self.sink.set_volume(self.last_unmuted_volume);
+                            }
+                        }
 
-                        let volume_slider = egui::Slider::new(&mut self.volume, 0.0..=1.0)
+                        let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
                             .trailing_fill(true)
                             .show_value(false);
-                        ui.add(volume_slider);
+                        let changed = ui.add(volume_slider).changed();
+                        if changed {
+                            self.sink.set_volume(volume);
+                        }
 
                         ui.separator();
 
