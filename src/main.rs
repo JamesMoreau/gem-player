@@ -39,10 +39,9 @@ fn main() -> eframe::Result {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_min_inner_size(Vec2::new(900.0, 400.0)),
-        // .with_inner_size([900.0, 600.0])
         // .with_titlebar_shown(false)
         // .with_title_shown(false)
-        // .with_fullsize_content_view(true)
+        // .with_fullsize_content_view(true),
         ..Default::default()
     };
     eframe::run_native(
@@ -232,7 +231,7 @@ impl eframe::App for GemPlayer {
 
                         let mut volume = self.sink.volume();
                         let volume_icon = match volume {
-                            0.0 => egui::include_image!(
+                            v if v == 0.0 => egui::include_image!(
                                 "../assets/volume_mute_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                             ),
                             v if v < 0.5 => egui::include_image!(
@@ -244,36 +243,24 @@ impl eframe::App for GemPlayer {
                         };
                         let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
                         if clicked {
-                            if let Some(v) = self.last_unmuted_volume {
-                                // Restore the volume before muting.
-                                self.sink.set_volume(v);
-                                self.last_unmuted_volume = None;
-                            } else {
-                                // Save the volume before muting.
-                                self.last_unmuted_volume = Some(volume);
-                                self.sink.set_volume(0.0);
+                            match self.last_unmuted_volume {
+                                Some(v) if v > 0.0 => {
+                                    // Restore the previous volume if there was one saved and it's non-zero
+                                    self.sink.set_volume(v);
+                                    self.last_unmuted_volume = None;
+                                }
+                                _ => {
+                                    // Either mute, or if volume is 0, reset to 50%
+                                    if volume == 0.0 {
+                                        self.sink.set_volume(0.5);
+                                        self.last_unmuted_volume = Some(0.5);
+                                    } else {
+                                        self.last_unmuted_volume = Some(volume);
+                                        self.sink.set_volume(0.0);
+                                    }
+                                }
                             }
                         }
-                        // match self.last_unmuted_volume {
-                        //     Some(last_volume) => {
-                        //         // Restore the volume before muting.
-                        //         self.sink.set_volume(last_volume);
-                        //         self.last_unmuted_volume = None;
-                        //     }
-                        //     None => {
-                        //         // Save the volume before muting.
-                        //         self.last_unmuted_volume = Some(volume);
-                        //         self.sink.set_volume(0.0);
-                        //     }
-                        // }
-                        // if clicked {
-                        //     if volume > 0.0 { // Save the volume before muting.
-                        //         self.last_unmuted_volume = Some(volume);
-                        //         self.sink.set_volume(0.0);
-                        //     } else { // Restore the volume before muting.
-                        //         self.sink.set_volume(self.last_unmuted_volume.unwrap_or(1.0));
-                        //     }
-                        // }
 
                         let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
                             .trailing_fill(true)
