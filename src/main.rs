@@ -245,15 +245,12 @@ impl eframe::App for GemPlayer {
                         };
                         let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
                         if clicked {
+                            self.muted = !self.muted;
                             if self.muted {
-                                if let Some(previous_volume) = self.volume_before_mute {
-                                    volume = previous_volume;
-                                }
-                                self.muted = false;
-                            } else {
                                 self.volume_before_mute = Some(volume);
                                 volume = 0.0;
-                                self.muted = true;
+                            } else if let Some(previous_volume) = self.volume_before_mute {
+                                volume = previous_volume;
                             }
                         }
 
