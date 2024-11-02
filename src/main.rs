@@ -80,8 +80,8 @@ struct GemPlayer {
     // queue: Vec<Song>,
     _stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
-    previous_volume: f32,
     muted: bool,
+    volume_before_mute: Option<f32>,
 }
 
 impl GemPlayer {
@@ -124,8 +124,8 @@ impl GemPlayer {
             // queue: Vec::new(),
             _stream,
             sink,
-            previous_volume: 0.5,
             muted: false,
+            volume_before_mute: None,
         };
 
         // Find the music directory.
@@ -246,12 +246,15 @@ impl eframe::App for GemPlayer {
                         let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
                         if clicked {
                             if self.muted {
-                                volume = self.previous_volume; // Unmute to previous volume
+                                if let Some(previous_volume) = self.volume_before_mute {
+                                    volume = previous_volume;
+                                }
+                                self.muted = false;
                             } else {
-                                self.previous_volume = volume; // Store current volume before muting
-                                volume = 0.0;                  // Mute
+                                self.volume_before_mute = Some(volume);
+                                volume = 0.0;
+                                self.muted = true;
                             }
-                            self.muted = !self.muted;
                         }
 
                         let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
@@ -260,7 +263,7 @@ impl eframe::App for GemPlayer {
                         let changed = ui.add(volume_slider).changed();
                         if changed {
                             self.muted = false;
-                            self.previous_volume = volume;
+                            self.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
                         }
 
                         self.sink.set_volume(volume);
