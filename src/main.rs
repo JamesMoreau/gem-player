@@ -80,7 +80,8 @@ struct GemPlayer {
     // queue: Vec<Song>,
     _stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
-    last_unmuted_volume: Option<f32>,
+    previous_volume: f32,
+    muted: bool,
 }
 
 impl GemPlayer {
@@ -123,7 +124,8 @@ impl GemPlayer {
             // queue: Vec::new(),
             _stream,
             sink,
-            last_unmuted_volume: None,
+            previous_volume: 0.5,
+            muted: false,
         };
 
         // Find the music directory.
@@ -243,23 +245,13 @@ impl eframe::App for GemPlayer {
                         };
                         let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
                         if clicked {
-                            match self.last_unmuted_volume {
-                                Some(v) if v > 0.0 => {
-                                    // Restore the previous volume if there was one saved and it's non-zero
-                                    self.sink.set_volume(v);
-                                    self.last_unmuted_volume = None;
-                                }
-                                _ => {
-                                    // Either mute, or if volume is 0, reset to 50%
-                                    if volume == 0.0 {
-                                        self.sink.set_volume(0.5);
-                                        self.last_unmuted_volume = Some(0.5);
-                                    } else {
-                                        self.last_unmuted_volume = Some(volume);
-                                        self.sink.set_volume(0.0);
-                                    }
-                                }
+                            if self.muted {
+                                volume = self.previous_volume; // Unmute to previous volume
+                            } else {
+                                self.previous_volume = volume; // Store current volume before muting
+                                volume = 0.0;                  // Mute
                             }
+                            self.muted = !self.muted;
                         }
 
                         let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
@@ -267,8 +259,11 @@ impl eframe::App for GemPlayer {
                             .show_value(false);
                         let changed = ui.add(volume_slider).changed();
                         if changed {
-                            self.sink.set_volume(volume);
+                            self.muted = false;
+                            self.previous_volume = volume;
                         }
+
+                        self.sink.set_volume(volume);
 
                         ui.separator();
 
