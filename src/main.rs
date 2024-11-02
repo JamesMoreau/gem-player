@@ -249,8 +249,8 @@ impl eframe::App for GemPlayer {
                             if self.muted {
                                 self.volume_before_mute = Some(volume);
                                 volume = 0.0;
-                            } else if let Some(previous_volume) = self.volume_before_mute {
-                                volume = previous_volume;
+                            } else if let Some(v) = self.volume_before_mute {
+                                volume = v;
                             }
                         }
 
