@@ -16,6 +16,7 @@ mod song;
 TODO:
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
+- loading icon when songs are being loaded.
 - tab bar at the bottom for playlists, queue, settings, etc.
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path.
 - file watcher / update on change
@@ -67,7 +68,6 @@ pub enum SortOrder {
 }
 
 struct GemPlayer {
-    age: u32,
     songs: Vec<Song>,
 
     search_text: String,
@@ -116,7 +116,6 @@ impl GemPlayer {
         sink.set_volume(0.6);
 
         let mut default_self = Self {
-            age: 42,
             songs: Vec::new(),
             selected_song: None,
             search_text: String::new(),
@@ -208,7 +207,7 @@ impl eframe::App for GemPlayer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 
         // Necessary to keep ui up to date with the current state of the sink / player.
-        // ctx.request_repaint();
+        ctx.request_repaint_after_secs(1.0);
 
         // Control UI.
         egui::TopBottomPanel::top("top_panel")
@@ -272,10 +271,15 @@ impl eframe::App for GemPlayer {
                         let mut playback_progress = 0.0;
 
                         if let Some(song) = &self.current_song {
-                            let current_position = self.sink.get_pos().as_secs_f32();
-                            let duration = song.duration.as_secs_f32();
-
-                            playback_progress = current_position / duration;
+                            let current_position_secs = self.sink.get_pos().as_secs();
+                            let duration_secs = song.duration.as_secs();
+                            
+                            // Avoid division by zero if duration is 0
+                            playback_progress = if duration_secs == 0 {
+                                0.0
+                            } else {
+                                current_position_secs as f32 / duration_secs as f32
+                            };
                         }
 
                         ui.style_mut().spacing.slider_width = 500.0;
@@ -287,9 +291,16 @@ impl eframe::App for GemPlayer {
                             if let Some(song) = &self.current_song {
                                 let new_position_secs = playback_progress * song.duration.as_secs_f32();
                                 let new_position = Duration::from_secs_f32(new_position_secs);
+
+                                // We need to mute the sink here otherwise it causes a sort-of scratchy music sound.
+                                let volume = self.sink.volume();
+                                self.sink.set_volume(0.0);
+
                                 if let Err(e) = self.sink.try_seek(new_position) {
                                     println!("Error seeking to new position: {:?}", e);
                                 }
+
+                                self.sink.set_volume(volume);
                             }
                         }
 
@@ -383,7 +394,7 @@ impl eframe::App for GemPlayer {
                 })
                 .body(|mut body| {
                     for (i, song) in filtered_songs.iter().enumerate() {
-                        body.row(28.0, |mut row| {
+                        body.row(26.0, |mut row| {
                             row.set_selected(self.selected_song == Some(i));
 
                             row.col(|ui| {
