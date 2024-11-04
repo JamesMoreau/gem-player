@@ -5,6 +5,7 @@ use glob::glob;
 use rodio::{Decoder, OutputStream, Sink};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -76,13 +77,14 @@ struct GemPlayer {
     music_directory: Option<PathBuf>,
 
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    // current_song: usize,   // The currently playing song.
     // queue: Vec<Song>,
+    current_song: Option<Song>,   // The currently playing song.
     _stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
     muted: bool,
     volume_before_mute: Option<f32>,
 }
+
 
 impl GemPlayer {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -111,6 +113,7 @@ impl GemPlayer {
         let (_stream, handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&handle).unwrap();
         sink.pause();
+        sink.set_volume(0.6);
 
         let mut default_self = Self {
             age: 42,
@@ -120,7 +123,7 @@ impl GemPlayer {
             music_directory: None,
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
-            // current_song: None,
+            current_song: None,
             // queue: Vec::new(),
             _stream,
             sink,
@@ -160,7 +163,7 @@ impl GemPlayer {
         !self.sink.is_paused()
     }
 
-    // TODO: Is this ok to call this function from the UI thread?
+    // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
     fn load_and_play_song(&mut self, song: &Song) {
         self.sink.stop(); // Stop the current song if any.
 
@@ -186,6 +189,8 @@ impl GemPlayer {
             }
         };
 
+        self.current_song = Some(song.clone());
+
         self.sink.append(source);
         self.sink.play();
     }
@@ -197,17 +202,14 @@ impl GemPlayer {
             self.sink.pause()
         }
     }
-
-    /*fn play_next_song(&mut self) {
-        self.sink.stop();
-        // self.current_song = (self.current_song + 1) % self.songs.len();
-        // self.load_song(&self.songs[self.current_song]);
-        // self.play_song();
-    }*/
 }
 
 impl eframe::App for GemPlayer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+
+        // Necessary to keep ui up to date with the current state of the sink / player.
+        // ctx.request_repaint();
+
         // Control UI.
         egui::TopBottomPanel::top("top_panel")
             .resizable(false)
@@ -267,11 +269,29 @@ impl eframe::App for GemPlayer {
 
                         ui.separator();
 
+                        let mut playback_progress = 0.0;
+
+                        if let Some(song) = &self.current_song {
+                            let current_position = self.sink.get_pos().as_secs_f32();
+                            let duration = song.duration.as_secs_f32();
+
+                            playback_progress = current_position / duration;
+                        }
+
                         ui.style_mut().spacing.slider_width = 500.0;
-                        let playback_progress = egui::Slider::new(&mut self.age, 0..=100)
+                        let playback_progress_slider = egui::Slider::new(&mut playback_progress, 0.0..=1.0)
                             .trailing_fill(true)
                             .show_value(false);
-                        ui.add(playback_progress);
+                        let changed = ui.add(playback_progress_slider).changed();
+                        if changed {
+                            if let Some(song) = &self.current_song {
+                                let new_position_secs = playback_progress * song.duration.as_secs_f32();
+                                let new_position = Duration::from_secs_f32(new_position_secs);
+                                if let Err(e) = self.sink.try_seek(new_position) {
+                                    println!("Error seeking to new position: {:?}", e);
+                                }
+                            }
+                        }
 
                         ui.separator();
 
