@@ -83,6 +83,7 @@ struct GemPlayer {
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
     muted: bool,
     volume_before_mute: Option<f32>,
+    scrubbing: bool,
 }
 
 
@@ -128,6 +129,7 @@ impl GemPlayer {
             sink,
             muted: false,
             volume_before_mute: None,
+            scrubbing: false
         };
 
         // Find the music directory.
@@ -216,7 +218,7 @@ impl eframe::App for GemPlayer {
             .show(ctx, |ui| {
                 egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        let play_pause_icon = if self.is_playing() {
+                        let play_pause_icon = if self.is_playing() || self.scrubbing {
                             egui::include_image!(
                                 "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                             )
@@ -274,7 +276,7 @@ impl eframe::App for GemPlayer {
                             let current_position_secs = self.sink.get_pos().as_secs();
                             let duration_secs = song.duration.as_secs();
                             
-                            // Avoid division by zero if duration is 0
+                            // Avoid division by zero.
                             playback_progress = if duration_secs == 0 {
                                 0.0
                             } else {
@@ -286,22 +288,28 @@ impl eframe::App for GemPlayer {
                         let playback_progress_slider = egui::Slider::new(&mut playback_progress, 0.0..=1.0)
                             .trailing_fill(true)
                             .show_value(false);
-                        let changed = ui.add(playback_progress_slider).changed();
-                        if changed {
+
+                        let response: egui::Response = ui.add(playback_progress_slider);
+
+                        // We pause the audio during seeking to avoid scrubbing sound.
+                        if response.dragged() {
+                            self.scrubbing = true;
+                            self.sink.pause();
+                        }
+
+                        if response.drag_stopped() {
                             if let Some(song) = &self.current_song {
                                 let new_position_secs = playback_progress * song.duration.as_secs_f32();
                                 let new_position = Duration::from_secs_f32(new_position_secs);
 
-                                // We need to mute the sink here otherwise it causes a sort-of scratchy music sound.
-                                let volume = self.sink.volume();
-                                self.sink.set_volume(0.0);
-
                                 if let Err(e) = self.sink.try_seek(new_position) {
                                     println!("Error seeking to new position: {:?}", e);
                                 }
-
-                                self.sink.set_volume(volume);
                             }
+
+                            // Resume playback after seeking
+                            self.scrubbing = false;
+                            self.sink.play();
                         }
 
                         ui.separator();
