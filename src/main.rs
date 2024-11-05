@@ -80,14 +80,13 @@ struct GemPlayer {
 
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
     // queue: Vec<Song>,
-    current_song: Option<Song>,   // The currently playing song.
-    _stream: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink,            // Controls playback (play, pause, stop, etc.)
+    current_song: Option<Song>, // The currently playing song.
+    _stream: OutputStream,      // Holds the OutputStream to keep it alive
+    sink: Sink,                 // Controls playback (play, pause, stop, etc.)
     muted: bool,
     volume_before_mute: Option<f32>,
     scrubbing: bool,
 }
-
 
 impl GemPlayer {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -131,7 +130,7 @@ impl GemPlayer {
             sink,
             muted: false,
             volume_before_mute: None,
-            scrubbing: false
+            scrubbing: false,
         };
 
         // Find the music directory.
@@ -209,7 +208,6 @@ impl GemPlayer {
 
 impl eframe::App for GemPlayer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
         // Necessary to keep ui up to date with the current state of the sink / player.
         ctx.request_repaint_after_secs(1.0);
 
@@ -265,7 +263,8 @@ impl eframe::App for GemPlayer {
                         let changed = ui.add(volume_slider).changed();
                         if changed {
                             self.muted = false;
-                            self.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                            self.volume_before_mute =
+                                if volume == 0.0 { None } else { Some(volume) }
                         }
 
                         self.sink.set_volume(volume);
@@ -275,27 +274,37 @@ impl eframe::App for GemPlayer {
                         let default_artwork = egui::Image::new(egui::include_image!(
                             "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         ))
-                            .fit_to_exact_size(egui::vec2(48.0, 48.0));
-                        
-                        let artwork = self.current_song
+                        .fit_to_exact_size(egui::vec2(48.0, 48.0));
+
+                        let artwork = self
+                            .current_song
                             .as_ref()
                             .and_then(|song| song.artwork.as_ref())
-                            .map_or(default_artwork, |artwork_bytes| {
+                            .map(|artwork_bytes| {
                                 egui::Image::from_bytes(
-                                    format!("bytes://artwork-{}", self.current_song.as_ref().unwrap().title.as_deref().unwrap_or("default")),
+                                    format!(
+                                        "bytes://artwork-{}",
+                                        self.current_song
+                                            .as_ref()
+                                            .unwrap()
+                                            .title
+                                            .as_deref()
+                                            .unwrap_or("default")
+                                    ),
                                     artwork_bytes.clone(),
                                 )
                                 .fit_to_exact_size(egui::vec2(100.0, 100.0))
-                            });
+                            })
+                            .unwrap_or(default_artwork);
 
                         ui.add(artwork);
-                        
+
                         let mut playback_progress = 0.0;
 
                         if let Some(song) = &self.current_song {
                             let current_position_secs = self.sink.get_pos().as_secs();
                             let duration_secs = song.duration.as_secs();
-                            
+
                             // Avoid division by zero.
                             playback_progress = if duration_secs == 0 {
                                 0.0
@@ -305,9 +314,10 @@ impl eframe::App for GemPlayer {
                         }
 
                         ui.style_mut().spacing.slider_width = 500.0;
-                        let playback_progress_slider = egui::Slider::new(&mut playback_progress, 0.0..=1.0)
-                            .trailing_fill(true)
-                            .show_value(false);
+                        let playback_progress_slider =
+                            egui::Slider::new(&mut playback_progress, 0.0..=1.0)
+                                .trailing_fill(true)
+                                .show_value(false);
 
                         let response: egui::Response = ui.add(playback_progress_slider);
 
@@ -319,7 +329,8 @@ impl eframe::App for GemPlayer {
 
                         if response.drag_stopped() {
                             if let Some(song) = &self.current_song {
-                                let new_position_secs = playback_progress * song.duration.as_secs_f32();
+                                let new_position_secs =
+                                    playback_progress * song.duration.as_secs_f32();
                                 let new_position = Duration::from_secs_f32(new_position_secs);
 
                                 if let Err(e) = self.sink.try_seek(new_position) {
