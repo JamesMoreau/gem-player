@@ -2,7 +2,9 @@ use crate::song::Song;
 use eframe::egui::{self, Vec2};
 use egui_extras::TableBuilder;
 use glob::glob;
+use rodio::cpal::FromSample;
 use rodio::{Decoder, OutputStream, Sink};
+use std::borrow::Cow;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -270,6 +272,19 @@ impl eframe::App for GemPlayer {
 
                         ui.separator();
 
+                        let mut artwork = egui::Image::new(egui::include_image!(
+                            "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        ));
+                        
+                        if let Some(song) = &self.current_song {
+                            if let Some(artwork_bytes) = &song.artwork {
+                                // Load the artwork bytes as an ImageSource
+                                artwork = egui::Image::from_bytes("bytes://", artwork_bytes.clone())
+                            }
+                        }
+
+                        ui.add(artwork);
+                        
                         let mut playback_progress = 0.0;
 
                         if let Some(song) = &self.current_song {
