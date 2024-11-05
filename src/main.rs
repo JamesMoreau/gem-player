@@ -1,5 +1,5 @@
 use crate::song::Song;
-use eframe::egui::{self, Vec2};
+use eframe::egui::{self, Rounding, Vec2};
 use egui_extras::TableBuilder;
 use glob::glob;
 use rodio::cpal::FromSample;
@@ -272,18 +272,20 @@ impl eframe::App for GemPlayer {
 
                         ui.separator();
 
-                        let mut artwork = egui::Image::new(egui::include_image!(
+                        let default_artwork = egui::Image::new(egui::include_image!(
                             "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        ));
+                        ))
+                            .fit_to_exact_size(egui::vec2(48.0, 48.0));
                         
                         if let Some(song) = &self.current_song {
                             if let Some(artwork_bytes) = &song.artwork {
-                                // Load the artwork bytes as an ImageSource
-                                artwork = egui::Image::from_bytes("bytes://", artwork_bytes.clone())
+                                // Use a unique URI for each image based on song metadata
+                                let uri = format!("bytes://artwork-{}", song.title.as_deref().unwrap_or("default"));
+                                let artwork = egui::Image::from_bytes(uri, artwork_bytes.clone());
                             }
                         }
 
-                        ui.add(artwork);
+                        ui.add(default_artwork);
                         
                         let mut playback_progress = 0.0;
 
