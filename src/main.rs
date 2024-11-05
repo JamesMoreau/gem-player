@@ -281,19 +281,18 @@ impl eframe::App for GemPlayer {
                             .as_ref()
                             .and_then(|song| song.artwork.as_ref())
                             .map(|artwork_bytes| {
-                                egui::Image::from_bytes(
-                                    format!(
-                                        "bytes://artwork-{}",
-                                        self.current_song
-                                            .as_ref()
-                                            .unwrap()
-                                            .title
-                                            .as_deref()
-                                            .unwrap_or("default")
-                                    ),
-                                    artwork_bytes.clone(),
-                                )
-                                .fit_to_exact_size(egui::vec2(100.0, 100.0))
+                                let artwork_uri = format!(
+                                    "bytes://artwork-{}",
+                                    self.current_song
+                                        .as_ref()
+                                        .unwrap()
+                                        .title
+                                        .as_deref()
+                                        .unwrap_or("default")
+                                );
+
+                                egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                                    .fit_to_exact_size(egui::vec2(100.0, 100.0))
                             })
                             .unwrap_or(default_artwork);
 
