@@ -277,15 +277,18 @@ impl eframe::App for GemPlayer {
                         ))
                             .fit_to_exact_size(egui::vec2(48.0, 48.0));
                         
-                        if let Some(song) = &self.current_song {
-                            if let Some(artwork_bytes) = &song.artwork {
-                                // Use a unique URI for each image based on song metadata
-                                let uri = format!("bytes://artwork-{}", song.title.as_deref().unwrap_or("default"));
-                                let artwork = egui::Image::from_bytes(uri, artwork_bytes.clone());
-                            }
-                        }
+                        let artwork = self.current_song
+                            .as_ref()
+                            .and_then(|song| song.artwork.as_ref())
+                            .map_or(default_artwork, |artwork_bytes| {
+                                egui::Image::from_bytes(
+                                    format!("bytes://artwork-{}", self.current_song.as_ref().unwrap().title.as_deref().unwrap_or("default")),
+                                    artwork_bytes.clone(),
+                                )
+                                .fit_to_exact_size(egui::vec2(100.0, 100.0))
+                            });
 
-                        ui.add(default_artwork);
+                        ui.add(artwork);
                         
                         let mut playback_progress = 0.0;
 
