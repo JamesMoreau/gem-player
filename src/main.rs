@@ -1,10 +1,8 @@
 use crate::song::Song;
-use eframe::egui::{self, Rounding, Vec2};
+use eframe::egui::{self, TextureFilter, TextureOptions, TextureWrapMode, Vec2};
 use egui_extras::TableBuilder;
 use glob::glob;
-use rodio::cpal::FromSample;
 use rodio::{Decoder, OutputStream, Sink};
-use std::borrow::Cow;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -214,7 +212,7 @@ impl eframe::App for GemPlayer {
         // Control UI.
         egui::TopBottomPanel::top("top_panel")
             .resizable(false)
-            .min_height(48.0)
+            // .min_height(48.0)
             .show(ctx, |ui| {
                 egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                     ui.horizontal(|ui| {
@@ -271,10 +269,14 @@ impl eframe::App for GemPlayer {
 
                         ui.separator();
 
+                        let artwork_texture_options =
+                            TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
+                        let artwork_size = egui::vec2(64.0, 64.0);
                         let default_artwork = egui::Image::new(egui::include_image!(
                             "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                         ))
-                        .fit_to_exact_size(egui::vec2(48.0, 48.0));
+                        .texture_options(artwork_texture_options)
+                        .fit_to_exact_size(artwork_size);
 
                         let artwork = self
                             .current_song
@@ -292,7 +294,8 @@ impl eframe::App for GemPlayer {
                                 );
 
                                 egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                                    .fit_to_exact_size(egui::vec2(100.0, 100.0))
+                                    .texture_options(artwork_texture_options)
+                                    .fit_to_exact_size(artwork_size)
                             })
                             .unwrap_or(default_artwork);
 
