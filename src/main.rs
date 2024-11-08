@@ -1,5 +1,5 @@
 use crate::song::Song;
-use eframe::egui::{self, TextureFilter, TextureOptions, Vec2};
+use eframe::egui::{self, TextureFilter, TextureOptions, Vec2, ViewportCommand};
 use egui_extras::TableBuilder;
 use glob::glob;
 use rodio::{Decoder, OutputStream, Sink};
@@ -16,11 +16,9 @@ mod song;
 TODO:
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
-- loading icon when songs are being loaded.
 - tab bar at the bottom for playlists, queue, settings, etc.
-- should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path.
+- should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path. loading icon when songs are being loaded.
 - file watcher / update on change
-- remove the toolbar / titlebar on window.
 
 - In the controls ui we want the following:
   - Play button / Pause button, Next song, previous song
@@ -40,10 +38,10 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_min_inner_size(Vec2::new(1000.0, 500.0)),
-        // .with_titlebar_shown(false)
-        // .with_title_shown(false)
-        // .with_fullsize_content_view(true),
+        viewport: egui::ViewportBuilder::default()
+            .with_min_inner_size(Vec2::new(1000.0, 500.0))
+            .with_decorations(false)
+            .with_transparent(true),
         ..Default::default()
     };
     eframe::run_native(
@@ -203,207 +201,331 @@ impl GemPlayer {
     }
 }
 
+fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOnce(&mut egui::Ui)) {
+    use egui::{CentralPanel, UiBuilder};
+
+    let panel_frame = egui::Frame {
+        fill: ctx.style().visuals.window_fill(),
+        rounding: 10.0.into(),
+        stroke: ctx.style().visuals.widgets.noninteractive.fg_stroke,
+        outer_margin: 0.5.into(), // so the stroke is within the bounds
+        ..Default::default()
+    };
+
+    CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
+        let app_rect = ui.max_rect();
+
+        let title_bar_height = 32.0;
+        let title_bar_rect = {
+            let mut rect = app_rect;
+            rect.max.y = rect.min.y + title_bar_height;
+            rect
+        };
+        title_bar_ui(ui, title_bar_rect, title);
+
+        // Add the contents:
+        let content_rect = {
+            let mut rect = app_rect;
+            rect.min.y = title_bar_rect.max.y;
+            rect
+        }
+        .shrink(4.0);
+        let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
+        add_contents(&mut content_ui);
+    });
+}
+
+fn title_bar_ui(ui: &mut egui::Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
+    use egui::{vec2, Align2, FontId, Id, PointerButton, Sense, UiBuilder};
+
+    let painter = ui.painter();
+
+    let title_bar_response = ui.interact(
+        title_bar_rect,
+        Id::new("title_bar"),
+        Sense::click_and_drag(),
+    );
+
+    painter.text(
+        title_bar_rect.center(),
+        Align2::CENTER_CENTER,
+        title,
+        FontId::proportional(20.0),
+        ui.style().visuals.text_color(),
+    );
+
+    // Paint the line under the title:
+    painter.line_segment(
+        [
+            title_bar_rect.left_bottom() + vec2(1.0, 0.0),
+            title_bar_rect.right_bottom() + vec2(-1.0, 0.0),
+        ],
+        ui.visuals().widgets.noninteractive.bg_stroke,
+    );
+
+    if title_bar_response.double_clicked() {
+        let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
+        ui.ctx()
+            .send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
+    }
+
+    if title_bar_response.drag_started_by(PointerButton::Primary) {
+        ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
+    }
+
+    ui.allocate_new_ui(
+        UiBuilder::new()
+            .max_rect(title_bar_rect)
+            .layout(egui::Layout::right_to_left(egui::Align::Center)),
+        |ui| {
+            ui.spacing_mut().item_spacing.x = 0.0;
+            ui.visuals_mut().button_frame = false;
+            ui.add_space(8.0);
+            close_maximize_minimize(ui);
+        },
+    );
+}
+
+fn close_maximize_minimize(ui: &mut egui::Ui) {
+    use egui::{Button, RichText};
+
+    let button_height = 12.0;
+
+    let close_response = ui
+        .add(Button::new(RichText::new("❌").size(button_height)))
+        .on_hover_text("Close the window");
+    if close_response.clicked() {
+        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+
+    let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
+    if is_maximized {
+        let maximized_response = ui
+            .add(Button::new(RichText::new("🗗").size(button_height)))
+            .on_hover_text("Restore window");
+        if maximized_response.clicked() {
+            ui.ctx()
+                .send_viewport_cmd(ViewportCommand::Maximized(false));
+        }
+    } else {
+        let maximized_response = ui
+            .add(Button::new(RichText::new("🗗").size(button_height)))
+            .on_hover_text("Maximize window");
+        if maximized_response.clicked() {
+            ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(true));
+        }
+    }
+
+    let minimized_response = ui
+        .add(Button::new(RichText::new("🗕").size(button_height)))
+        .on_hover_text("Minimize the window");
+    if minimized_response.clicked() {
+        ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
+    }
+}
+
 impl eframe::App for GemPlayer {
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        egui::Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Necessary to keep ui up to date with the current state of the sink / player.
         ctx.request_repaint_after_secs(1.0);
 
-        // Control UI.
-        egui::TopBottomPanel::top("top_panel")
-            .resizable(false)
-            // .min_height(48.0)
-            .show(ctx, |ui| {
-                egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        let play_pause_icon = if self.is_playing() || self.scrubbing {
-                            egui::include_image!(
-                                "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                            )
-                        } else {
-                            egui::include_image!(
-                                "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                            )
-                        };
-                        let clicked = ui.add(egui::Button::image(play_pause_icon)).clicked();
-                        if clicked {
-                            self.play_or_pause();
+        custom_window_frame(ctx, "", |ui| {
+            // Control UI.
+
+            egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    let play_pause_icon = if self.is_playing() || self.scrubbing {
+                        egui::include_image!(
+                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        )
+                    } else {
+                        egui::include_image!(
+                            "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        )
+                    };
+                    let clicked = ui.add(egui::Button::image(play_pause_icon)).clicked();
+                    if clicked {
+                        self.play_or_pause();
+                    }
+
+                    ui.separator();
+
+                    let mut volume = self.sink.volume();
+                    let volume_icon = match volume {
+                        v if v == 0.0 => egui::include_image!(
+                            "../assets/volume_mute_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        ),
+                        v if v < 0.5 => egui::include_image!(
+                            "../assets/volume_down_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        ),
+                        _ => egui::include_image!(
+                            "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                        ),
+                    };
+                    let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
+                    if clicked {
+                        self.muted = !self.muted;
+                        if self.muted {
+                            self.volume_before_mute = Some(volume);
+                            volume = 0.0;
+                        } else if let Some(v) = self.volume_before_mute {
+                            volume = v;
+                        }
+                    }
+
+                    let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
+                        .trailing_fill(true)
+                        .show_value(false);
+                    let changed = ui.add(volume_slider).changed();
+                    if changed {
+                        self.muted = false;
+                        self.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                    }
+
+                    self.sink.set_volume(volume);
+
+                    ui.separator();
+
+                    let artwork_texture_options =
+                        TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
+                    let artwork_size = egui::vec2(64.0, 64.0);
+                    let default_artwork = egui::Image::new(egui::include_image!(
+                        "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                    ))
+                    .texture_options(artwork_texture_options)
+                    .fit_to_exact_size(artwork_size);
+
+                    let artwork = self
+                        .current_song
+                        .as_ref()
+                        .and_then(|song| song.artwork.as_ref())
+                        .map(|artwork_bytes| {
+                            let artwork_uri = format!(
+                                "bytes://artwork-{}",
+                                self.current_song
+                                    .as_ref()
+                                    .unwrap()
+                                    .title
+                                    .as_deref()
+                                    .unwrap_or("default")
+                            );
+
+                            egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                                .texture_options(artwork_texture_options)
+                                .fit_to_exact_size(artwork_size)
+                        })
+                        .unwrap_or(default_artwork);
+
+                    ui.add(artwork);
+
+                    ui.vertical(|ui| {
+                        let mut current_title = "None".to_string();
+                        let mut current_artist = "None".to_string();
+                        let mut current_duration = "0:00".to_string();
+
+                        if let Some(song) = &self.current_song {
+                            current_title =
+                                song.title.clone().unwrap_or("Unknown Title".to_string());
+                            current_artist =
+                                song.artist.clone().unwrap_or("Unknown Artist".to_string());
+                            current_duration = format_duration_to_mmss(song.duration);
+                        }
+                        ui.label(&current_title);
+                        ui.label(&current_artist);
+                        ui.label(&current_duration);
+
+                        let mut playback_progress = 0.0;
+
+                        if let Some(song) = &self.current_song {
+                            let current_position_secs = self.sink.get_pos().as_secs();
+                            let duration_secs = song.duration.as_secs();
+
+                            // Avoid division by zero.
+                            playback_progress = if duration_secs == 0 {
+                                0.0
+                            } else {
+                                current_position_secs as f32 / duration_secs as f32
+                            };
                         }
 
-                        ui.separator();
+                        ui.style_mut().spacing.slider_width = 500.0;
+                        let playback_progress_slider =
+                            egui::Slider::new(&mut playback_progress, 0.0..=1.0)
+                                .trailing_fill(true)
+                                .show_value(false);
 
-                        let mut volume = self.sink.volume();
-                        let volume_icon = match volume {
-                            v if v == 0.0 => egui::include_image!(
-                                "../assets/volume_mute_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                            ),
-                            v if v < 0.5 => egui::include_image!(
-                                "../assets/volume_down_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                            ),
-                            _ => egui::include_image!(
-                                "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                            ),
-                        };
-                        let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
-                        if clicked {
-                            self.muted = !self.muted;
-                            if self.muted {
-                                self.volume_before_mute = Some(volume);
-                                volume = 0.0;
-                            } else if let Some(v) = self.volume_before_mute {
-                                volume = v;
-                            }
+                        let response: egui::Response = ui.add(playback_progress_slider);
+
+                        // We pause the audio during seeking to avoid scrubbing sound.
+                        if response.dragged() {
+                            self.scrubbing = true;
+                            self.sink.pause();
                         }
 
-                        let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
-                            .trailing_fill(true)
-                            .show_value(false);
-                        let changed = ui.add(volume_slider).changed();
-                        if changed {
-                            self.muted = false;
-                            self.volume_before_mute =
-                                if volume == 0.0 { None } else { Some(volume) }
-                        }
-
-                        self.sink.set_volume(volume);
-
-                        ui.separator();
-
-                        let artwork_texture_options =
-                            TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-                        let artwork_size = egui::vec2(64.0, 64.0);
-                        let default_artwork = egui::Image::new(egui::include_image!(
-                            "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        ))
-                        .texture_options(artwork_texture_options)
-                        .fit_to_exact_size(artwork_size);
-
-                        let artwork = self
-                            .current_song
-                            .as_ref()
-                            .and_then(|song| song.artwork.as_ref())
-                            .map(|artwork_bytes| {
-                                let artwork_uri = format!(
-                                    "bytes://artwork-{}",
-                                    self.current_song
-                                        .as_ref()
-                                        .unwrap()
-                                        .title
-                                        .as_deref()
-                                        .unwrap_or("default")
-                                );
-
-                                egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                                    .texture_options(artwork_texture_options)
-                                    .fit_to_exact_size(artwork_size)
-                            })
-                            .unwrap_or(default_artwork);
-
-                        ui.add(artwork);
-
-                        ui.vertical(|ui| {
-                            let mut current_title = "None".to_string();
-                            let mut current_artist = "None".to_string();
-                            let mut current_duration = "0:00".to_string();
-
+                        if response.drag_stopped() {
                             if let Some(song) = &self.current_song {
-                                current_title =
-                                    song.title.clone().unwrap_or("Unknown Title".to_string());
-                                current_artist =
-                                    song.artist.clone().unwrap_or("Unknown Artist".to_string());
-                                current_duration = format_duration_to_mmss(song.duration);
-                            }
-                            ui.label(&current_title);
-                            ui.label(&current_artist);
-                            ui.label(&current_duration);
+                                let new_position_secs =
+                                    playback_progress * song.duration.as_secs_f32();
+                                let new_position = Duration::from_secs_f32(new_position_secs);
 
-                            let mut playback_progress = 0.0;
-
-                            if let Some(song) = &self.current_song {
-                                let current_position_secs = self.sink.get_pos().as_secs();
-                                let duration_secs = song.duration.as_secs();
-
-                                // Avoid division by zero.
-                                playback_progress = if duration_secs == 0 {
-                                    0.0
-                                } else {
-                                    current_position_secs as f32 / duration_secs as f32
-                                };
-                            }
-
-                            ui.style_mut().spacing.slider_width = 500.0;
-                            let playback_progress_slider =
-                                egui::Slider::new(&mut playback_progress, 0.0..=1.0)
-                                    .trailing_fill(true)
-                                    .show_value(false);
-
-                            let response: egui::Response = ui.add(playback_progress_slider);
-
-                            // We pause the audio during seeking to avoid scrubbing sound.
-                            if response.dragged() {
-                                self.scrubbing = true;
-                                self.sink.pause();
-                            }
-
-                            if response.drag_stopped() {
-                                if let Some(song) = &self.current_song {
-                                    let new_position_secs =
-                                        playback_progress * song.duration.as_secs_f32();
-                                    let new_position = Duration::from_secs_f32(new_position_secs);
-
-                                    if let Err(e) = self.sink.try_seek(new_position) {
-                                        println!("Error seeking to new position: {:?}", e);
-                                    }
+                                if let Err(e) = self.sink.try_seek(new_position) {
+                                    println!("Error seeking to new position: {:?}", e);
                                 }
-
-                                // Resume playback after seeking
-                                self.scrubbing = false;
-                                self.sink.play();
                             }
-                        });
+
+                            // Resume playback after seeking
+                            self.scrubbing = false;
+                            self.sink.play();
+                        }
+                    });
+
+                    ui.separator();
+
+                    let filter_icon = egui::include_image!(
+                        "../assets/filter_list_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+                    );
+                    ui.menu_image_button(filter_icon, |ui| {
+                        let mut should_sort_songs = false;
+
+                        for sort_by in SortBy::iter() {
+                            let response = ui.radio_value(
+                                &mut self.sort_by,
+                                sort_by,
+                                format!("{:?}", sort_by),
+                            );
+                            should_sort_songs |= response.clicked();
+                        }
 
                         ui.separator();
 
-                        let filter_icon = egui::include_image!(
-                            "../assets/filter_list_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        );
-                        ui.menu_image_button(filter_icon, |ui| {
-                            let mut should_sort_songs = false;
+                        for sort_order in SortOrder::iter() {
+                            let response = ui.radio_value(
+                                &mut self.sort_order,
+                                sort_order,
+                                format!("{:?}", sort_order),
+                            );
+                            should_sort_songs |= response.clicked();
+                        }
 
-                            for sort_by in SortBy::iter() {
-                                let response = ui.radio_value(
-                                    &mut self.sort_by,
-                                    sort_by,
-                                    format!("{:?}", sort_by),
-                                );
-                                should_sort_songs |= response.clicked();
-                            }
-
-                            ui.separator();
-
-                            for sort_order in SortOrder::iter() {
-                                let response = ui.radio_value(
-                                    &mut self.sort_order,
-                                    sort_order,
-                                    format!("{:?}", sort_order),
-                                );
-                                should_sort_songs |= response.clicked();
-                            }
-
-                            if should_sort_songs {
-                                sort_songs(&mut self.songs, self.sort_by, self.sort_order);
-                            }
-                        });
-
-                        let search_bar = egui::TextEdit::singleline(&mut self.search_text)
-                            .hint_text("Search...")
-                            .desired_width(200.0);
-                        ui.add(search_bar);
+                        if should_sort_songs {
+                            sort_songs(&mut self.songs, self.sort_by, self.sort_order);
+                        }
                     });
+
+                    let search_bar = egui::TextEdit::singleline(&mut self.search_text)
+                        .hint_text("Search...")
+                        .desired_width(200.0);
+                    ui.add(search_bar);
                 });
             });
 
-        // Songs list.
-        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.separator();
+
+            // Songs list.
             let filtered_songs: Vec<Song> = self
                 .songs
                 .iter()
