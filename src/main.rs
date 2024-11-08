@@ -1,5 +1,5 @@
 use crate::song::Song;
-use eframe::egui::{self, TextureFilter, TextureOptions, TextureWrapMode, Vec2};
+use eframe::egui::{self, TextureFilter, TextureOptions, Vec2};
 use egui_extras::TableBuilder;
 use glob::glob;
 use rodio::{Decoder, OutputStream, Sink};
@@ -40,7 +40,7 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_min_inner_size(Vec2::new(900.0, 400.0)),
+        viewport: egui::ViewportBuilder::default().with_min_inner_size(Vec2::new(1000.0, 500.0)),
         // .with_titlebar_shown(false)
         // .with_title_shown(false)
         // .with_fullsize_content_view(true),
@@ -88,7 +88,6 @@ struct GemPlayer {
 
 impl GemPlayer {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // This gives us image support:
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
         let mut fonts = egui::FontDefinitions::default();
@@ -301,49 +300,66 @@ impl eframe::App for GemPlayer {
 
                         ui.add(artwork);
 
-                        let mut playback_progress = 0.0;
+                        ui.vertical(|ui| {
+                            let mut current_title = "None".to_string();
+                            let mut current_artist = "None".to_string();
+                            let mut current_duration = "0:00".to_string();
 
-                        if let Some(song) = &self.current_song {
-                            let current_position_secs = self.sink.get_pos().as_secs();
-                            let duration_secs = song.duration.as_secs();
-
-                            // Avoid division by zero.
-                            playback_progress = if duration_secs == 0 {
-                                0.0
-                            } else {
-                                current_position_secs as f32 / duration_secs as f32
-                            };
-                        }
-
-                        ui.style_mut().spacing.slider_width = 500.0;
-                        let playback_progress_slider =
-                            egui::Slider::new(&mut playback_progress, 0.0..=1.0)
-                                .trailing_fill(true)
-                                .show_value(false);
-
-                        let response: egui::Response = ui.add(playback_progress_slider);
-
-                        // We pause the audio during seeking to avoid scrubbing sound.
-                        if response.dragged() {
-                            self.scrubbing = true;
-                            self.sink.pause();
-                        }
-
-                        if response.drag_stopped() {
                             if let Some(song) = &self.current_song {
-                                let new_position_secs =
-                                    playback_progress * song.duration.as_secs_f32();
-                                let new_position = Duration::from_secs_f32(new_position_secs);
+                                current_title =
+                                    song.title.clone().unwrap_or("Unknown Title".to_string());
+                                current_artist =
+                                    song.artist.clone().unwrap_or("Unknown Artist".to_string());
+                                current_duration = format_duration_to_mmss(song.duration);
+                            }
+                            ui.label(&current_title);
+                            ui.label(&current_artist);
+                            ui.label(&current_duration);
 
-                                if let Err(e) = self.sink.try_seek(new_position) {
-                                    println!("Error seeking to new position: {:?}", e);
-                                }
+                            let mut playback_progress = 0.0;
+
+                            if let Some(song) = &self.current_song {
+                                let current_position_secs = self.sink.get_pos().as_secs();
+                                let duration_secs = song.duration.as_secs();
+
+                                // Avoid division by zero.
+                                playback_progress = if duration_secs == 0 {
+                                    0.0
+                                } else {
+                                    current_position_secs as f32 / duration_secs as f32
+                                };
                             }
 
-                            // Resume playback after seeking
-                            self.scrubbing = false;
-                            self.sink.play();
-                        }
+                            ui.style_mut().spacing.slider_width = 500.0;
+                            let playback_progress_slider =
+                                egui::Slider::new(&mut playback_progress, 0.0..=1.0)
+                                    .trailing_fill(true)
+                                    .show_value(false);
+
+                            let response: egui::Response = ui.add(playback_progress_slider);
+
+                            // We pause the audio during seeking to avoid scrubbing sound.
+                            if response.dragged() {
+                                self.scrubbing = true;
+                                self.sink.pause();
+                            }
+
+                            if response.drag_stopped() {
+                                if let Some(song) = &self.current_song {
+                                    let new_position_secs =
+                                        playback_progress * song.duration.as_secs_f32();
+                                    let new_position = Duration::from_secs_f32(new_position_secs);
+
+                                    if let Err(e) = self.sink.try_seek(new_position) {
+                                        println!("Error seeking to new position: {:?}", e);
+                                    }
+                                }
+
+                                // Resume playback after seeking
+                                self.scrubbing = false;
+                                self.sink.play();
+                            }
+                        });
 
                         ui.separator();
 
@@ -433,76 +449,76 @@ impl eframe::App for GemPlayer {
                         });
                     }
                 })
-                .body(|mut body| {
-                    for (i, song) in filtered_songs.iter().enumerate() {
-                        body.row(26.0, |mut row| {
-                            row.set_selected(self.selected_song == Some(i));
+                .body(|body| {
+                    body.rows(26.0, filtered_songs.len(), |mut row| {
+                        let song = &filtered_songs[row.index()];
 
-                            row.col(|ui| {
-                                ui.add_space(16.0);
-                                ui.add(
-                                    egui::Label::new(
-                                        song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
-                                    )
-                                    .selectable(false),
-                                );
-                            });
+                        row.set_selected(self.selected_song == Some(row.index()));
 
-                            row.col(|ui| {
-                                ui.add(
-                                    egui::Label::new(
-                                        song.artist
-                                            .as_ref()
-                                            .unwrap_or(&"Unknown Artist".to_string()),
-                                    )
-                                    .selectable(false),
-                                );
-                            });
-
-                            row.col(|ui| {
-                                ui.add(
-                                    egui::Label::new(
-                                        song.album.as_ref().unwrap_or(&"Unknown".to_string()),
-                                    )
-                                    .selectable(false),
-                                );
-                            });
-
-                            row.col(|ui| {
-                                let duration_string = format_duration_to_mmss(song.duration);
-                                ui.add(egui::Label::new(duration_string).selectable(false));
-                            });
-
-                            let response = row.response();
-                            if response.clicked() {
-                                self.selected_song = Some(i);
-                            }
-
-                            if response.double_clicked() {
-                                self.load_and_play_song(song);
-                            }
-
-                            response.context_menu(|ui| {
-                                if ui.button("Play").clicked() {
-                                    ui.close_menu();
-                                }
-
-                                if ui.button("Add to queue").clicked() {
-                                    ui.close_menu();
-                                }
-
-                                ui.separator();
-
-                                if ui.button("Open file location").clicked() {
-                                    ui.close_menu();
-                                }
-
-                                if ui.button("Remove from library").clicked() {
-                                    ui.close_menu();
-                                }
-                            });
+                        row.col(|ui| {
+                            ui.add_space(16.0);
+                            ui.add(
+                                egui::Label::new(
+                                    song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
+                                )
+                                .selectable(false),
+                            );
                         });
-                    }
+
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    song.artist
+                                        .as_ref()
+                                        .unwrap_or(&"Unknown Artist".to_string()),
+                                )
+                                .selectable(false),
+                            );
+                        });
+
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    song.album.as_ref().unwrap_or(&"Unknown".to_string()),
+                                )
+                                .selectable(false),
+                            );
+                        });
+
+                        row.col(|ui| {
+                            let duration_string = format_duration_to_mmss(song.duration);
+                            ui.add(egui::Label::new(duration_string).selectable(false));
+                        });
+
+                        let response = row.response();
+                        if response.clicked() {
+                            self.selected_song = Some(row.index());
+                        }
+
+                        if response.double_clicked() {
+                            self.load_and_play_song(song);
+                        }
+
+                        response.context_menu(|ui| {
+                            if ui.button("Play").clicked() {
+                                ui.close_menu();
+                            }
+
+                            if ui.button("Add to queue").clicked() {
+                                ui.close_menu();
+                            }
+
+                            ui.separator();
+
+                            if ui.button("Open file location").clicked() {
+                                ui.close_menu();
+                            }
+
+                            if ui.button("Remove from library").clicked() {
+                                ui.close_menu();
+                            }
+                        });
+                    });
                 });
         });
     }
@@ -518,10 +534,11 @@ fn format_duration_to_mmss(duration: std::time::Duration) -> String {
 
 fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
     let total_seconds: f64 = duration.as_secs_f64();
-    let hours = total_seconds / constants::MINUTES_PER_HOUR as f64;
-    let minutes = total_seconds / constants::SECONDS_PER_MINUTE as f64;
+    let hours =
+        total_seconds / (constants::MINUTES_PER_HOUR as f64 * constants::SECONDS_PER_MINUTE as f64);
+    let minutes =
+        (total_seconds / constants::SECONDS_PER_MINUTE as f64) % constants::MINUTES_PER_HOUR as f64;
     let seconds = total_seconds % constants::SECONDS_PER_MINUTE as f64;
-
     format!("{:.0}:{:02.0}:{:02.0}", hours, minutes, seconds)
 }
 
