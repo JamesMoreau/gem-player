@@ -88,24 +88,7 @@ impl GemPlayer {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
-        let mut fonts = egui::FontDefinitions::default();
-        fonts.font_data.insert(
-            "my_font".to_owned(),
-            egui::FontData::from_static(include_bytes!(
-                "../assets/Inconsolata-VariableFont_wdth,wght.ttf"
-            )),
-        );
-        fonts
-            .families
-            .get_mut(&egui::FontFamily::Proportional)
-            .unwrap()
-            .insert(0, "my_font".to_owned());
-        fonts
-            .families
-            .get_mut(&egui::FontFamily::Monospace)
-            .unwrap()
-            .push("my_font".to_owned());
-        cc.egui_ctx.set_fonts(fonts);
+        egui_material_icons::initialize(&cc.egui_ctx);
 
         let (_stream, handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&handle).unwrap();
@@ -339,15 +322,11 @@ impl eframe::App for GemPlayer {
             egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                 ui.horizontal(|ui| {
                     let play_pause_icon = if self.is_playing() || self.scrubbing {
-                        egui::include_image!(
-                            "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        )
+                        egui_material_icons::icons::ICON_PAUSE
                     } else {
-                        egui::include_image!(
-                            "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        )
+                        egui_material_icons::icons::ICON_PLAY_ARROW
                     };
-                    let clicked = ui.add(egui::Button::image(play_pause_icon)).clicked();
+                    let clicked = ui.button(play_pause_icon).clicked();
                     if clicked {
                         self.play_or_pause();
                     }
@@ -355,18 +334,13 @@ impl eframe::App for GemPlayer {
                     ui.separator();
 
                     let mut volume = self.sink.volume();
+
                     let volume_icon = match volume {
-                        v if v == 0.0 => egui::include_image!(
-                            "../assets/volume_mute_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        ),
-                        v if v < 0.5 => egui::include_image!(
-                            "../assets/volume_down_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        ),
-                        _ => egui::include_image!(
-                            "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                        ),
+                        v if v == 0.0 => egui_material_icons::icons::ICON_VOLUME_OFF,
+                        v if v <= 0.5 => egui_material_icons::icons::ICON_VOLUME_DOWN,
+                        _ => egui_material_icons::icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
                     };
-                    let clicked = ui.add(egui::Button::image(volume_icon)).clicked();
+                    let clicked = ui.button(volume_icon).clicked();
                     if clicked {
                         self.muted = !self.muted;
                         if self.muted {
@@ -420,7 +394,7 @@ impl eframe::App for GemPlayer {
                         })
                         .unwrap_or(default_artwork);
 
-                    ui.add(artwork);
+                    // ui.add(artwork);
 
                     ui.vertical(|ui| {
                         let mut current_title = "None".to_string();
@@ -434,9 +408,9 @@ impl eframe::App for GemPlayer {
                                 song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             current_duration = format_duration_to_mmss(song.duration);
                         }
-                        ui.label(&current_title);
-                        ui.label(&current_artist);
-                        ui.label(&current_duration);
+                        // ui.label(&current_title);
+                        // ui.label(&current_artist);
+                        // ui.label(&current_duration);
 
                         let mut playback_progress = 0.0;
 
@@ -485,10 +459,8 @@ impl eframe::App for GemPlayer {
 
                     ui.separator();
 
-                    let filter_icon = egui::include_image!(
-                        "../assets/filter_list_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                    );
-                    ui.menu_image_button(filter_icon, |ui| {
+                    let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
+                    ui.menu_button(filter_icon, |ui| {
                         let mut should_sort_songs = false;
 
                         for sort_by in SortBy::iter() {

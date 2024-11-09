@@ -56,3 +56,44 @@
 	// ui.label(format!("Hello '{}', age {}", self.name, self.age));
 	
 	// ui.image(egui:
+
+
+	// egui::include_image!(
+	//     "../assets/pause_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+	// )
+
+	// egui::include_image!(
+	//     "../assets/play_arrow_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+	// )
+
+	// let volume_icon = match volume {
+	//     v if v == 0.0 => egui::include_image!(
+	//         "../assets/volume_mute_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+	//     ),
+	//     v if v < 0.5 => egui::include_image!(
+	//         "../assets/volume_down_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+	//     ),
+	//     _ => egui::include_image!(
+	//         "../assets/volume_up_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+	//     ),
+	// };
+
+
+	/*let mut fonts = egui::FontDefinitions::default();
+	fonts.font_data.insert(
+		"my_font".to_owned(),
+		egui::FontData::from_static(include_bytes!(
+			"../assets/Inconsolata-VariableFont_wdth,wght.ttf"
+		)),
+	);
+	fonts
+		.families
+		.get_mut(&egui::FontFamily::Proportional)
+		.unwrap()
+		.insert(0, "my_font".to_owned());
+	fonts
+		.families
+		.get_mut(&egui::FontFamily::Monospace)
+		.unwrap()
+		.push("my_font".to_owned());
+	cc.egui_ctx.set_fonts(fonts);*/
