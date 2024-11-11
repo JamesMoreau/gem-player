@@ -273,6 +273,7 @@ fn close_maximize_minimize(ui: &mut egui::Ui) {
     use egui::{Button, RichText};
 
     let button_height = 12.0;
+    let button_distance = 6.0;
 
     let close_response = ui
         .add(Button::new(RichText::new("❌").size(button_height)))
@@ -280,6 +281,8 @@ fn close_maximize_minimize(ui: &mut egui::Ui) {
     if close_response.clicked() {
         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
     }
+
+    ui.add_space(button_distance);
 
     let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
     if is_maximized {
@@ -298,6 +301,8 @@ fn close_maximize_minimize(ui: &mut egui::Ui) {
             ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(true));
         }
     }
+
+    ui.add_space(button_distance);
 
     let minimized_response = ui
         .add(Button::new(RichText::new("🗕").size(button_height)))
@@ -318,9 +323,8 @@ impl eframe::App for GemPlayer {
 
         custom_window_frame(ctx, "", |ui| {
             // Control UI.
-
             egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-                ui.horizontal(|ui| {
+                ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 64.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
                     let play_pause_icon = if self.is_playing() || self.scrubbing {
                         egui_material_icons::icons::ICON_PAUSE
                     } else {
@@ -330,8 +334,6 @@ impl eframe::App for GemPlayer {
                     if clicked {
                         self.play_or_pause();
                     }
-
-                    ui.separator();
 
                     let mut volume = self.sink.volume();
 
@@ -367,11 +369,13 @@ impl eframe::App for GemPlayer {
                     let artwork_texture_options =
                         TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                     let artwork_size = egui::vec2(64.0, 64.0);
+                    let rounding = 6.0;
                     let default_artwork = egui::Image::new(egui::include_image!(
                         "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                     ))
                     .texture_options(artwork_texture_options)
-                    .fit_to_exact_size(artwork_size);
+                    .fit_to_exact_size(artwork_size)
+                    .rounding(rounding);
 
                     let artwork = self
                         .current_song
@@ -391,26 +395,31 @@ impl eframe::App for GemPlayer {
                             egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
                                 .texture_options(artwork_texture_options)
                                 .fit_to_exact_size(artwork_size)
+                                .rounding(rounding)
                         })
                         .unwrap_or(default_artwork);
 
-                    // ui.add(artwork);
+                    ui.add(artwork);
 
                     ui.vertical(|ui| {
                         let mut current_title = "None".to_string();
                         let mut current_artist = "None".to_string();
-                        let mut current_duration = "0:00".to_string();
+                        let mut current_song_duration = "0:00".to_string();
+                        let mut current_song_position = "0:00".to_string();
 
                         if let Some(song) = &self.current_song {
                             current_title =
                                 song.title.clone().unwrap_or("Unknown Title".to_string());
                             current_artist =
                                 song.artist.clone().unwrap_or("Unknown Artist".to_string());
-                            current_duration = format_duration_to_mmss(song.duration);
+                            current_song_duration = format_duration_to_mmss(song.duration);
+                            current_song_position = format_duration_to_mmss(self.sink.get_pos());
                         }
-                        // ui.label(&current_title);
-                        // ui.label(&current_artist);
-                        // ui.label(&current_duration);
+                        ui.add(egui::Label::new(&current_title).selectable(false));
+                        ui.add(egui::Label::new(&current_artist).selectable(false));
+
+                        let song_position_out_of_duration = format!("{} / {}", current_song_position, current_song_duration);
+                        ui.add(egui::Label::new(&song_position_out_of_duration).selectable(false));
 
                         let mut playback_progress = 0.0;
 
@@ -490,8 +499,15 @@ impl eframe::App for GemPlayer {
 
                     let search_bar = egui::TextEdit::singleline(&mut self.search_text)
                         .hint_text("Search...")
-                        .desired_width(200.0);
+                        .desired_width(140.0);
                     ui.add(search_bar);
+
+                    if !self.search_text.is_empty() {
+                        let response = ui.button(egui_material_icons::icons::ICON_CLEAR);
+                        if response.clicked() {
+                            self.search_text.clear();
+                        }
+                    }
                 });
             });
 
