@@ -322,316 +322,322 @@ impl eframe::App for GemPlayer {
         ctx.request_repaint_after_secs(1.0);
 
         custom_window_frame(ctx, "", |ui| {
-            // Control UI.
-            egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-                ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 64.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                    let play_pause_icon = if self.is_playing() || self.scrubbing {
-                        egui_material_icons::icons::ICON_PAUSE
+            render_control_ui(ui, self);
+
+            ui.separator();
+
+            render_songs_ui(ui, self);
+        });
+    }
+}
+
+fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+    egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
+        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 64.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            let play_pause_icon = if gem_player.is_playing() || gem_player.scrubbing {
+                egui_material_icons::icons::ICON_PAUSE
+            } else {
+                egui_material_icons::icons::ICON_PLAY_ARROW
+            };
+            let clicked = ui.button(play_pause_icon).clicked();
+            if clicked {
+                gem_player.play_or_pause();
+            }
+
+            let mut volume = gem_player.sink.volume();
+
+            let volume_icon = match volume {
+                v if v == 0.0 => egui_material_icons::icons::ICON_VOLUME_OFF,
+                v if v <= 0.5 => egui_material_icons::icons::ICON_VOLUME_DOWN,
+                _ => egui_material_icons::icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
+            };
+            let clicked = ui.button(volume_icon).clicked();
+            if clicked {
+                gem_player.muted = !gem_player.muted;
+                if gem_player.muted {
+                    gem_player.volume_before_mute = Some(volume);
+                    volume = 0.0;
+                } else if let Some(v) = gem_player.volume_before_mute {
+                    volume = v;
+                }
+            }
+
+            let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
+                .trailing_fill(true)
+                .show_value(false);
+            let changed = ui.add(volume_slider).changed();
+            if changed {
+                gem_player.muted = false;
+                gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+            }
+
+            gem_player.sink.set_volume(volume);
+
+            ui.separator();
+
+            let artwork_texture_options =
+                TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
+            let artwork_size = egui::vec2(64.0, 64.0);
+            let rounding = 6.0;
+            let default_artwork = egui::Image::new(egui::include_image!(
+                "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
+            ))
+            .texture_options(artwork_texture_options)
+            .fit_to_exact_size(artwork_size)
+            .rounding(rounding);
+
+            let artwork = gem_player
+                .current_song
+                .as_ref()
+                .and_then(|song| song.artwork.as_ref())
+                .map(|artwork_bytes| {
+                    let artwork_uri = format!(
+                        "bytes://artwork-{}",
+                        gem_player.current_song
+                            .as_ref()
+                            .unwrap()
+                            .title
+                            .as_deref()
+                            .unwrap_or("default")
+                    );
+
+                    egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                        .texture_options(artwork_texture_options)
+                        .fit_to_exact_size(artwork_size)
+                        .rounding(rounding)
+                })
+                .unwrap_or(default_artwork);
+
+            ui.add(artwork);
+
+            ui.vertical(|ui| {
+                let mut current_title = "None".to_string();
+                let mut current_artist = "None".to_string();
+                let mut current_song_duration = "0:00".to_string();
+                let mut current_song_position = "0:00".to_string();
+
+                if let Some(song) = &gem_player.current_song {
+                    current_title =
+                        song.title.clone().unwrap_or("Unknown Title".to_string());
+                    current_artist =
+                        song.artist.clone().unwrap_or("Unknown Artist".to_string());
+                    current_song_duration = format_duration_to_mmss(song.duration);
+                    current_song_position = format_duration_to_mmss(gem_player.sink.get_pos());
+                }
+                ui.add(egui::Label::new(&current_title).selectable(false));
+                ui.add(egui::Label::new(&current_artist).selectable(false));
+
+                let song_position_out_of_duration = format!("{} / {}", current_song_position, current_song_duration);
+                ui.add(egui::Label::new(&song_position_out_of_duration).selectable(false));
+
+                let mut playback_progress = 0.0;
+
+                if let Some(song) = &gem_player.current_song {
+                    let current_position_secs = gem_player.sink.get_pos().as_secs();
+                    let duration_secs = song.duration.as_secs();
+
+                    // Avoid division by zero.
+                    playback_progress = if duration_secs == 0 {
+                        0.0
                     } else {
-                        egui_material_icons::icons::ICON_PLAY_ARROW
+                        current_position_secs as f32 / duration_secs as f32
                     };
-                    let clicked = ui.button(play_pause_icon).clicked();
-                    if clicked {
-                        self.play_or_pause();
-                    }
+                }
 
-                    let mut volume = self.sink.volume();
-
-                    let volume_icon = match volume {
-                        v if v == 0.0 => egui_material_icons::icons::ICON_VOLUME_OFF,
-                        v if v <= 0.5 => egui_material_icons::icons::ICON_VOLUME_DOWN,
-                        _ => egui_material_icons::icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
-                    };
-                    let clicked = ui.button(volume_icon).clicked();
-                    if clicked {
-                        self.muted = !self.muted;
-                        if self.muted {
-                            self.volume_before_mute = Some(volume);
-                            volume = 0.0;
-                        } else if let Some(v) = self.volume_before_mute {
-                            volume = v;
-                        }
-                    }
-
-                    let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
+                ui.style_mut().spacing.slider_width = 500.0;
+                let playback_progress_slider =
+                    egui::Slider::new(&mut playback_progress, 0.0..=1.0)
                         .trailing_fill(true)
                         .show_value(false);
-                    let changed = ui.add(volume_slider).changed();
-                    if changed {
-                        self.muted = false;
-                        self.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-                    }
 
-                    self.sink.set_volume(volume);
+                let response: egui::Response = ui.add(playback_progress_slider);
 
-                    ui.separator();
+                // We pause the audio during seeking to avoid scrubbing sound.
+                if response.dragged() {
+                    gem_player.scrubbing = true;
+                    gem_player.sink.pause();
+                }
 
-                    let artwork_texture_options =
-                        TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-                    let artwork_size = egui::vec2(64.0, 64.0);
-                    let rounding = 6.0;
-                    let default_artwork = egui::Image::new(egui::include_image!(
-                        "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
-                    ))
-                    .texture_options(artwork_texture_options)
-                    .fit_to_exact_size(artwork_size)
-                    .rounding(rounding);
+                if response.drag_stopped() {
+                    if let Some(song) = &gem_player.current_song {
+                        let new_position_secs =
+                            playback_progress * song.duration.as_secs_f32();
+                        let new_position = Duration::from_secs_f32(new_position_secs);
 
-                    let artwork = self
-                        .current_song
-                        .as_ref()
-                        .and_then(|song| song.artwork.as_ref())
-                        .map(|artwork_bytes| {
-                            let artwork_uri = format!(
-                                "bytes://artwork-{}",
-                                self.current_song
-                                    .as_ref()
-                                    .unwrap()
-                                    .title
-                                    .as_deref()
-                                    .unwrap_or("default")
-                            );
-
-                            egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                                .texture_options(artwork_texture_options)
-                                .fit_to_exact_size(artwork_size)
-                                .rounding(rounding)
-                        })
-                        .unwrap_or(default_artwork);
-
-                    ui.add(artwork);
-
-                    ui.vertical(|ui| {
-                        let mut current_title = "None".to_string();
-                        let mut current_artist = "None".to_string();
-                        let mut current_song_duration = "0:00".to_string();
-                        let mut current_song_position = "0:00".to_string();
-
-                        if let Some(song) = &self.current_song {
-                            current_title =
-                                song.title.clone().unwrap_or("Unknown Title".to_string());
-                            current_artist =
-                                song.artist.clone().unwrap_or("Unknown Artist".to_string());
-                            current_song_duration = format_duration_to_mmss(song.duration);
-                            current_song_position = format_duration_to_mmss(self.sink.get_pos());
-                        }
-                        ui.add(egui::Label::new(&current_title).selectable(false));
-                        ui.add(egui::Label::new(&current_artist).selectable(false));
-
-                        let song_position_out_of_duration = format!("{} / {}", current_song_position, current_song_duration);
-                        ui.add(egui::Label::new(&song_position_out_of_duration).selectable(false));
-
-                        let mut playback_progress = 0.0;
-
-                        if let Some(song) = &self.current_song {
-                            let current_position_secs = self.sink.get_pos().as_secs();
-                            let duration_secs = song.duration.as_secs();
-
-                            // Avoid division by zero.
-                            playback_progress = if duration_secs == 0 {
-                                0.0
-                            } else {
-                                current_position_secs as f32 / duration_secs as f32
-                            };
-                        }
-
-                        ui.style_mut().spacing.slider_width = 500.0;
-                        let playback_progress_slider =
-                            egui::Slider::new(&mut playback_progress, 0.0..=1.0)
-                                .trailing_fill(true)
-                                .show_value(false);
-
-                        let response: egui::Response = ui.add(playback_progress_slider);
-
-                        // We pause the audio during seeking to avoid scrubbing sound.
-                        if response.dragged() {
-                            self.scrubbing = true;
-                            self.sink.pause();
-                        }
-
-                        if response.drag_stopped() {
-                            if let Some(song) = &self.current_song {
-                                let new_position_secs =
-                                    playback_progress * song.duration.as_secs_f32();
-                                let new_position = Duration::from_secs_f32(new_position_secs);
-
-                                if let Err(e) = self.sink.try_seek(new_position) {
-                                    println!("Error seeking to new position: {:?}", e);
-                                }
-                            }
-
-                            // Resume playback after seeking
-                            self.scrubbing = false;
-                            self.sink.play();
-                        }
-                    });
-
-                    ui.separator();
-
-                    let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
-                    ui.menu_button(filter_icon, |ui| {
-                        let mut should_sort_songs = false;
-
-                        for sort_by in SortBy::iter() {
-                            let response = ui.radio_value(
-                                &mut self.sort_by,
-                                sort_by,
-                                format!("{:?}", sort_by),
-                            );
-                            should_sort_songs |= response.clicked();
-                        }
-
-                        ui.separator();
-
-                        for sort_order in SortOrder::iter() {
-                            let response = ui.radio_value(
-                                &mut self.sort_order,
-                                sort_order,
-                                format!("{:?}", sort_order),
-                            );
-                            should_sort_songs |= response.clicked();
-                        }
-
-                        if should_sort_songs {
-                            sort_songs(&mut self.songs, self.sort_by, self.sort_order);
-                        }
-                    });
-
-                    let search_bar = egui::TextEdit::singleline(&mut self.search_text)
-                        .hint_text("Search...")
-                        .desired_width(140.0);
-                    ui.add(search_bar);
-
-                    if !self.search_text.is_empty() {
-                        let response = ui.button(egui_material_icons::icons::ICON_CLEAR);
-                        if response.clicked() {
-                            self.search_text.clear();
+                        if let Err(e) = gem_player.sink.try_seek(new_position) {
+                            println!("Error seeking to new position: {:?}", e);
                         }
                     }
-                });
+
+                    // Resume playback after seeking
+                    gem_player.scrubbing = false;
+                    gem_player.sink.play();
+                }
             });
 
             ui.separator();
 
-            // Songs list.
-            let filtered_songs: Vec<Song> = self
-                .songs
-                .iter()
-                .filter(|song| {
-                    let search_lower = self.search_text.to_lowercase();
-                    let search_fields = [&song.title, &song.artist, &song.album];
-                    search_fields.iter().any(|field| {
-                        field
-                            .as_ref()
-                            .map_or(false, |text| text.to_lowercase().contains(&search_lower))
-                    })
-                })
-                .cloned()
-                .collect();
+            let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
+            ui.menu_button(filter_icon, |ui| {
+                let mut should_sort_songs = false;
 
-            let header_labels = ["Title", "Artist", "Album", "Time"];
+                for sort_by in SortBy::iter() {
+                    let response = ui.radio_value(
+                        &mut gem_player.sort_by,
+                        sort_by,
+                        format!("{:?}", sort_by),
+                    );
+                    should_sort_songs |= response.clicked();
+                }
 
-            let available_width = ui.available_width();
-            let time_width = 80.0;
-            let remaining_width = available_width - time_width;
-            let title_width = remaining_width * (2.0 / 4.0);
-            let artist_width = remaining_width * (1.0 / 4.0);
-            let album_width = remaining_width * (1.0 / 4.0);
+                ui.separator();
 
-            TableBuilder::new(ui)
-                .striped(true)
-                .sense(egui::Sense::click())
-                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .column(egui_extras::Column::exact(title_width))
-                .column(egui_extras::Column::exact(artist_width))
-                .column(egui_extras::Column::exact(album_width))
-                .column(egui_extras::Column::exact(time_width))
-                .header(16.0, |mut header| {
-                    for (i, h) in header_labels.iter().enumerate() {
-                        header.col(|ui| {
-                            if i == 0 {
-                                ui.add_space(16.0);
-                            }
-                            ui.add(
-                                egui::Label::new(egui::RichText::new(*h).strong())
-                                    .selectable(false),
-                            );
-                        });
-                    }
-                })
-                .body(|body| {
-                    body.rows(26.0, filtered_songs.len(), |mut row| {
-                        let song = &filtered_songs[row.index()];
+                for sort_order in SortOrder::iter() {
+                    let response = ui.radio_value(
+                        &mut gem_player.sort_order,
+                        sort_order,
+                        format!("{:?}", sort_order),
+                    );
+                    should_sort_songs |= response.clicked();
+                }
 
-                        row.set_selected(self.selected_song == Some(row.index()));
+                if should_sort_songs {
+                    sort_songs(&mut gem_player.songs, gem_player.sort_by, gem_player.sort_order);
+                }
+            });
 
-                        row.col(|ui| {
-                            ui.add_space(16.0);
-                            ui.add(
-                                egui::Label::new(
-                                    song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
-                                )
-                                .selectable(false),
-                            );
-                        });
+            let search_bar = egui::TextEdit::singleline(&mut gem_player.search_text)
+                .hint_text("Search...")
+                .desired_width(140.0);
+            ui.add(search_bar);
 
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(
-                                    song.artist
-                                        .as_ref()
-                                        .unwrap_or(&"Unknown Artist".to_string()),
-                                )
-                                .selectable(false),
-                            );
-                        });
-
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(
-                                    song.album.as_ref().unwrap_or(&"Unknown".to_string()),
-                                )
-                                .selectable(false),
-                            );
-                        });
-
-                        row.col(|ui| {
-                            let duration_string = format_duration_to_mmss(song.duration);
-                            ui.add(egui::Label::new(duration_string).selectable(false));
-                        });
-
-                        let response = row.response();
-                        if response.clicked() {
-                            self.selected_song = Some(row.index());
-                        }
-
-                        if response.double_clicked() {
-                            self.load_and_play_song(song);
-                        }
-
-                        response.context_menu(|ui| {
-                            if ui.button("Play").clicked() {
-                                ui.close_menu();
-                            }
-
-                            if ui.button("Add to queue").clicked() {
-                                ui.close_menu();
-                            }
-
-                            ui.separator();
-
-                            if ui.button("Open file location").clicked() {
-                                ui.close_menu();
-                            }
-
-                            if ui.button("Remove from library").clicked() {
-                                ui.close_menu();
-                            }
-                        });
-                    });
-                });
+            if !gem_player.search_text.is_empty() {
+                let response = ui.button(egui_material_icons::icons::ICON_CLEAR);
+                if response.clicked() {
+                    gem_player.search_text.clear();
+                }
+            }
         });
-    }
+    });
+}
+
+fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+    let filtered_songs: Vec<Song> = gem_player
+        .songs
+        .iter()
+        .filter(|song| {
+            let search_lower = gem_player.search_text.to_lowercase();
+            let search_fields = [&song.title, &song.artist, &song.album];
+            search_fields.iter().any(|field| {
+                field
+                    .as_ref()
+                    .map_or(false, |text| text.to_lowercase().contains(&search_lower))
+            })
+        })
+        .cloned()
+        .collect();
+
+    let header_labels = ["Title", "Artist", "Album", "Time"];
+
+    let available_width = ui.available_width();
+    let time_width = 80.0;
+    let remaining_width = available_width - time_width;
+    let title_width = remaining_width * (2.0 / 4.0);
+    let artist_width = remaining_width * (1.0 / 4.0);
+    let album_width = remaining_width * (1.0 / 4.0);
+
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(egui::Sense::click())
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .column(egui_extras::Column::exact(title_width))
+        .column(egui_extras::Column::exact(artist_width))
+        .column(egui_extras::Column::exact(album_width))
+        .column(egui_extras::Column::exact(time_width))
+        .header(16.0, |mut header| {
+            for (i, h) in header_labels.iter().enumerate() {
+                header.col(|ui| {
+                    if i == 0 {
+                        ui.add_space(16.0);
+                    }
+                    ui.add(
+                        egui::Label::new(egui::RichText::new(*h).strong())
+                            .selectable(false),
+                    );
+                });
+            }
+        })
+        .body(|body| {
+            body.rows(26.0, filtered_songs.len(), |mut row| {
+                let song = &filtered_songs[row.index()];
+
+                row.set_selected(gem_player.selected_song == Some(row.index()));
+
+                row.col(|ui| {
+                    ui.add_space(16.0);
+                    ui.add(
+                        egui::Label::new(
+                            song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
+                        )
+                        .selectable(false),
+                    );
+                });
+
+                row.col(|ui| {
+                    ui.add(
+                        egui::Label::new(
+                            song.artist
+                                .as_ref()
+                                .unwrap_or(&"Unknown Artist".to_string()),
+                        )
+                        .selectable(false),
+                    );
+                });
+
+                row.col(|ui| {
+                    ui.add(
+                        egui::Label::new(
+                            song.album.as_ref().unwrap_or(&"Unknown".to_string()),
+                        )
+                        .selectable(false),
+                    );
+                });
+
+                row.col(|ui| {
+                    let duration_string = format_duration_to_mmss(song.duration);
+                    ui.add(egui::Label::new(duration_string).selectable(false));
+                });
+
+                let response = row.response();
+                if response.clicked() {
+                    gem_player.selected_song = Some(row.index());
+                }
+
+                if response.double_clicked() {
+                    gem_player.load_and_play_song(song);
+                }
+
+                response.context_menu(|ui| {
+                    if ui.button("Play").clicked() {
+                        ui.close_menu();
+                    }
+
+                    if ui.button("Add to queue").clicked() {
+                        ui.close_menu();
+                    }
+
+                    ui.separator();
+
+                    if ui.button("Open file location").clicked() {
+                        ui.close_menu();
+                    }
+
+                    if ui.button("Remove from library").clicked() {
+                        ui.close_menu();
+                    }
+                });
+            });
+        });
 }
 
 fn format_duration_to_mmss(duration: std::time::Duration) -> String {
