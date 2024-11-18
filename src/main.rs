@@ -334,13 +334,13 @@ impl eframe::App for GemPlayer {
 }
 
 fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
-    egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 100.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
-
-            let frame = egui::Frame::group(ui.style());
+    egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
+        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 76.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            // let frame = egui::Frame::group(ui.style());
+            let frame = egui::Frame::none().inner_margin(0.0);
             egui_flex::Flex::new()
                 .show(ui, |flex| {
-                    flex.add_frame(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), frame, |ui| {
+                    flex.add_frame(egui_flex::item().align_self_content(egui::Align2::LEFT_CENTER), frame, |ui| {
                         let play_pause_icon = if gem_player.is_playing() || gem_player.scrubbing {
                             egui_material_icons::icons::ICON_PAUSE
                         } else {
@@ -384,7 +384,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                     flex.add_frame(egui_flex::item().grow(10.0).align_self_content(egui::Align2::CENTER_CENTER), frame, |ui| {
                         let artwork_texture_options =
                             TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-                        let artwork_size = egui::vec2(64.0, 64.0);
+                        let artwork_size = egui::Vec2::splat(52.0);
                         let rounding = 6.0;
                         let default_artwork = egui::Image::new(egui::include_image!(
                             "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
@@ -420,6 +420,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         ui.vertical(|ui| {
                             let mut current_title = "None".to_string();
                             let mut current_artist = "None".to_string();
+                            let mut current_album = "None".to_string();
                             let mut current_song_duration = "0:00".to_string();
                             let mut current_song_position = "0:00".to_string();
 
@@ -428,14 +429,16 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                     song.title.clone().unwrap_or("Unknown Title".to_string());
                                 current_artist =
                                     song.artist.clone().unwrap_or("Unknown Artist".to_string());
+                                current_album =
+                                    song.album.clone().unwrap_or("Unknown Album".to_string());
                                 current_song_duration = format_duration_to_mmss(song.duration);
                                 current_song_position = format_duration_to_mmss(gem_player.sink.get_pos());
                             }
-                            ui.add(egui::Label::new(format!("{} - {}", current_title, current_artist)).selectable(false));
-                            ui.add(egui::Label::new(&current_artist).selectable(false));
 
-                            let song_position_out_of_duration = format!("{} / {}", current_song_position, current_song_duration);
-                            // ui.add(egui::Label::new(&song_position_out_of_duration).selectable(false));
+                            ui.horizontal(|ui| {
+                                ui.add(egui::Label::new(format!("{} by {} on {}", current_title, current_artist, current_album)).truncate().selectable(false));
+                                ui.add(egui::Label::new(format!("{} / {}", current_song_position, current_song_duration)).selectable(false));
+                            });
 
                             let mut playback_progress = 0.0;
 
@@ -483,7 +486,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         });
                     });
 
-                    flex.add_frame(egui_flex::item().grow(1.0).align_self_content(egui::Align2::RIGHT_CENTER), frame, |ui| {
+                    flex.add_frame(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), frame, |ui| {
                         let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
                         ui.menu_button(filter_icon, |ui| {
                             let mut should_sort_songs = false;
