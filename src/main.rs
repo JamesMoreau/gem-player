@@ -39,7 +39,7 @@ fn main() -> eframe::Result {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_min_inner_size(Vec2::new(1000.0, 500.0))
+            .with_min_inner_size(Vec2::new(1200.0, 500.0))
             .with_decorations(false)
             .with_transparent(true),
         ..Default::default()
@@ -335,12 +335,12 @@ impl eframe::App for GemPlayer {
 
 fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
     egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
-        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 150.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
-            // let frame = egui::Frame::group(ui.style());
-            let frame = egui::Frame::none().inner_margin(0.0);
+        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 120.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            let frame = egui::Frame::group(ui.style()); // For debugging layout
+            // let frame = egui::Frame::none().inner_margin(0.0);
             egui_flex::Flex::new()
                 .show(ui, |flex| {
-                    flex.add_frame(egui_flex::item().align_self_content(egui::Align2::LEFT_CENTER), frame, |ui| {
+                    flex.add_frame(egui_flex::item().basis(220.0).align_self_content(egui::Align2::LEFT_CENTER), frame, |ui| {
                         let play_pause_icon = if gem_player.is_playing() || gem_player.scrubbing {
                             egui_material_icons::icons::ICON_PAUSE
                         } else {
@@ -381,7 +381,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         gem_player.sink.set_volume(volume);
                     });
 
-                    flex.add_frame(egui_flex::item().grow(10.0).align_self_content(egui::Align2::CENTER_CENTER), frame, |ui| {
+                    flex.add_frame(egui_flex::item().grow(1.0).align_self_content(egui::Align2::CENTER_CENTER), frame, |ui| {
                         let artwork_texture_options =
                             TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                         let artwork_size = egui::Vec2::splat(52.0);
@@ -488,7 +488,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         });
                     });
 
-                    flex.add_frame(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), frame, |ui| {
+                    flex.add_frame(egui_flex::item().basis(300.0).align_self_content(egui::Align2::RIGHT_CENTER), frame, |ui| {
                         let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
                         ui.menu_button(filter_icon, |ui| {
                             let mut should_sort_songs = false;
