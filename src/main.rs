@@ -19,6 +19,7 @@ TODO:
 - tab bar at the bottom for playlists, queue, settings, etc.
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path. loading icon when songs are being loaded.
 - file watcher / update on change
+- register play pause commands with apple menu.
 
 - Play button / Pause button, Next song, previous song
 - Repeat / Shuffle.
@@ -435,9 +436,8 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             current_song_position = format_duration_to_mmss(gem_player.sink.get_pos());
                         }
 
-                        ui.horizontal(|ui| {
-                            let max_song_label_width = ui.available_width() - 100.0; // Reserve space for the time label
-                            ui.allocate_ui_with_layout(egui::vec2(max_song_label_width, 20.0), egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                        egui_flex::Flex::horizontal().show(ui, |flex| {
+                            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
                                 let song_label = egui::Label::new(format!(
                                     "{} by {} on {}",
                                     current_title,
@@ -446,13 +446,11 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 ))
                                 .truncate()
                                 .selectable(false);
-                
-                                ui.add(song_label);
+
+                                ui.add(song_label)
                             });
-                        
-                            ui.add_space(16.0);
-                        
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+
+                            flex.add_simple(egui_flex::item(), |ui| {
                                 let time_label = egui::Label::new(format!(
                                     "{} / {}",
                                     current_song_position,
