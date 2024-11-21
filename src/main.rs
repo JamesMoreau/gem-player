@@ -1,5 +1,5 @@
 use crate::song::Song;
-use eframe::egui::{self, TextureFilter, TextureOptions, Vec2, ViewportCommand};
+use eframe::egui::{self, RichText, TextureFilter, TextureOptions, Vec2, ViewportCommand};
 use egui_extras::TableBuilder;
 use glob::glob;
 use rodio::{Decoder, OutputStream, Sink};
@@ -436,18 +436,37 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             current_song_position = format_duration_to_mmss(gem_player.sink.get_pos());
                         }
 
-                        egui_flex::Flex::horizontal().show(ui, |flex| {
+                        egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
                             flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
-                                let song_label = egui::Label::new(format!(
-                                    "{} by {} on {}",
-                                    current_title,
-                                    current_artist,
-                                    current_album
-                                ))
-                                .truncate()
-                                .selectable(false);
+                                let mut job = egui::text::LayoutJob::default();
+                                let format = egui::TextFormat::simple(egui::FontId::default(), egui::Color32::WHITE);
 
-                                ui.add(song_label)
+                                job.append(&current_title, 0.0, format.clone());
+                                job.append(" by ", 0.0, egui::TextFormat::default());
+                                job.append(&current_artist, 0.0, format.clone());
+                                job.append(" on ", 0.0, egui::TextFormat::default());
+                                job.append(&current_album, 0.0, format.clone());
+                                ui.label(job);
+                                // Trick so we don't have to add spaces in the text below:
+                                // let width = ui.fonts(|f|f.glyph_width(&egui::TextStyle::Body.resolve(ui.style()), ' '));
+                                // ui.spacing_mut().item_spacing.x = width;
+
+                                // ui.label("by");
+                                // ui.strong(current_artist);
+                                // ui.label("on");
+                                // ui.strong(current_album);
+
+
+                                // let song_label = egui::Label::new(format!(
+                                //     "{} by {} on {}",
+                                //     current_title,
+                                //     current_artist,
+                                //     current_album
+                                // ))
+                                // .truncate()
+                                // .selectable(false);
+
+                                // ui.add(song_label)
                             });
 
                             flex.add_simple(egui_flex::item(), |ui| {
