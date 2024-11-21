@@ -20,16 +20,9 @@ TODO:
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path. loading icon when songs are being loaded.
 - file watcher / update on change
 
-- In the controls ui we want the following:
-  - Play button / Pause button, Next song, previous song
-  - Volume slider
-  - Current song info: song artwork, Playback progress slider, Visualizer, song title, artist, album, duration.
-  - Repeat / Shuffle.
-  - Queue
-  - Sorting, Search bar
-
-Perhaps we could have the top panel contain the searching and sorting controls, and the bottom panel contain the playback controls and the music visualizer.
-Or, we could have the control ui (current song, playback progress, artwork, visualizer) on the top panel be stacked vertically.
+- Play button / Pause button, Next song, previous song
+- Repeat / Shuffle.
+- Queue
 
 Could remove object oriented programming and just have a struct with functions that take a mutable reference to self.
 */
