@@ -335,7 +335,7 @@ impl eframe::App for GemPlayer {
 
 fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
     egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
-        ui.allocate_ui(egui::vec2(ui.available_width(), 120.0), |ui| {
+        // ui.allocate_ui(egui::vec2(ui.available_width(), 20.0), |ui| {
             egui_flex::Flex::horizontal()
                 .show(ui, |flex| {
                     flex.add_simple(egui_flex::item().align_self_content(egui::Align2::LEFT_CENTER), |ui| {
@@ -446,10 +446,42 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 }
         
                                 ui.horizontal(|ui| {
-                                    ui.add(egui::Label::new(format!("{} by {} on {}", current_title, current_artist, current_album)).truncate().selectable(false));
-                                    ui.add(egui::Label::new(format!("{} / {}", current_song_position, current_song_duration)).selectable(false));
+                                    ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                                        let max_song_label_width = ui.available_width() - 100.0; // Reserve space for the time label
+                                
+                                        ui.allocate_ui_with_layout(
+                                            egui::vec2(max_song_label_width, 20.0), 
+                                            egui::Layout::left_to_right(egui::Align::TOP), 
+                                            |ui| {
+                                                let song_label = egui::Label::new(format!(
+                                                    "{} by {} on {}",
+                                                    current_title,
+                                                    current_artist,
+                                                    current_album
+                                                ))
+                                                .truncate()
+                                                .selectable(false);
+                                
+                                                ui.add(song_label);
+                                            }
+                                        );
+                                    });
+                                
+                                    ui.add_space(16.0);
+                                
+                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+                                        let time_label = egui::Label::new(format!(
+                                            "{} / {}",
+                                            current_song_position,
+                                            current_song_duration
+                                        ))
+                                        .wrap()
+                                        .selectable(false);
+
+                                        ui.add(time_label);
+                                    });
                                 });
-        
+
                                 let mut playback_progress = 0.0;
         
                                 if let Some(song) = &gem_player.current_song {
@@ -539,7 +571,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         }
                     });
                 });
-        });
+        // });
     });
 }
 
