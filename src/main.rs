@@ -334,13 +334,17 @@ impl eframe::App for GemPlayer {
 }
 
 fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
-    egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
-        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 120.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
-            let frame = egui::Frame::group(ui.style()); // For debugging layout
-            // let frame = egui::Frame::none().inner_margin(0.0);
-            egui_flex::Flex::new()
+    egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+        ui.allocate_ui(egui::vec2(ui.available_width(), 120.0), |ui| {
+            egui_flex::Flex::horizontal()
                 .show(ui, |flex| {
-                    flex.add_frame(egui_flex::item().basis(220.0).align_self_content(egui::Align2::LEFT_CENTER), frame, |ui| {
+                    flex.add_simple(egui_flex::item().align_self_content(egui::Align2::LEFT_CENTER), |ui| {
+
+                        let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_PREVIOUS).clicked();
+                        if clicked {
+                            println!("Previous song");
+                        }
+
                         let play_pause_icon = if gem_player.is_playing() || gem_player.scrubbing {
                             egui_material_icons::icons::ICON_PAUSE
                         } else {
@@ -349,6 +353,11 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         let clicked = ui.button(play_pause_icon).clicked();
                         if clicked {
                             gem_player.play_or_pause();
+                        }
+
+                        let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_NEXT).clicked();
+                        if clicked {
+                            println!("Next song");
                         }
             
                         let mut volume = gem_player.sink.volume();
@@ -381,7 +390,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         gem_player.sink.set_volume(volume);
                     });
 
-                    flex.add_frame(egui_flex::item().grow(1.0).align_self_content(egui::Align2::CENTER_CENTER), frame, |ui| {
+                    flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::CENTER_CENTER), |ui| {
                         let artwork_texture_options =
                             TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                         let artwork_size = egui::Vec2::splat(52.0);
@@ -418,7 +427,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         ui.add(artwork);
 
                         egui_flex::Flex::vertical().show(ui, |flex| {
-                            flex.add_frame(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), frame, |ui| {
+                            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
                                 let mut current_title = "None".to_string();
                                 let mut current_artist = "None".to_string();
                                 let mut current_album = "None".to_string();
@@ -488,7 +497,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         });
                     });
 
-                    flex.add_frame(egui_flex::item().basis(300.0).align_self_content(egui::Align2::RIGHT_CENTER), frame, |ui| {
+                    flex.add_simple(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), |ui| {
                         let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
                         ui.menu_button(filter_icon, |ui| {
                             let mut should_sort_songs = false;
@@ -523,11 +532,10 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             .desired_width(140.0);
                         ui.add(search_bar);
 
-                        if !gem_player.search_text.is_empty() {
-                            let response = ui.button(egui_material_icons::icons::ICON_CLEAR);
-                            if response.clicked() {
-                                gem_player.search_text.clear();
-                            }
+                        let clear_button_is_visible = !gem_player.search_text.is_empty();
+                        let response = ui.add_visible(clear_button_is_visible, egui::Button::new(egui_material_icons::icons::ICON_CLEAR));
+                        if response.clicked() {
+                            gem_player.search_text.clear();
                         }
                     });
                 });

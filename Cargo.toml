@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 dirs = "5.0.1"
 eframe = {version = "0.29.1", features = ["default"]}
+egui-toast = "0.15.0"
+egui_alignments = "0.3.0"
 egui_extras = { version = "*", features = ["all_loaders"] }
 egui_flex = "0.1.1"
 egui_material_icons = "0.1.0"
