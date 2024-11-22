@@ -735,15 +735,17 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
 }
 
 fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
-    let key = |song: &Song| match sort_by {
-        SortBy::Title => song.title.as_deref().unwrap_or("").to_string(),
-        SortBy::Artist => song.artist.as_deref().unwrap_or("").to_string(),
-        SortBy::Album => song.album.as_deref().unwrap_or("").to_string(),
-        SortBy::Time => song.duration.as_secs().to_string(),
-    };
+    songs.sort_by(|a, b| {
+        let ordering = match sort_by {
+            SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
+            SortBy::Artist => a.artist.as_deref().unwrap_or("").cmp(b.artist.as_deref().unwrap_or("")),
+            SortBy::Album => a.album.as_deref().unwrap_or("").cmp(b.album.as_deref().unwrap_or("")),
+            SortBy::Time => a.duration.cmp(&b.duration),
+        };
 
-    songs.sort_by(|a, b| match sort_order {
-        SortOrder::Ascending => key(a).cmp(&key(b)),
-        SortOrder::Descending => key(a).cmp(&key(b)).reverse(),
+        match sort_order {
+            SortOrder::Ascending => ordering,
+            SortOrder::Descending => ordering.reverse(),
+        }
     });
 }
