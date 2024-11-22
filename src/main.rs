@@ -438,46 +438,26 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
                             flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
+                                let default_text_style = egui::TextStyle::Body.resolve(ui.style());
+                                let default_color = ui.visuals().text_color();
+                                let data_format = egui::TextFormat::simple(default_text_style.clone(),  egui::Color32::WHITE);
+                                
                                 let mut job = egui::text::LayoutJob::default();
-                                let format = egui::TextFormat::simple(egui::FontId::default(), egui::Color32::WHITE);
+                                job.append(&current_title, 0.0, data_format.clone());
+                                job.append(" by ", 0.0, egui::TextFormat::simple(default_text_style.clone(), default_color));
+                                job.append(&current_artist, 0.0, data_format.clone());
+                                job.append(" on ", 0.0, egui::TextFormat::simple(default_text_style.clone(), default_color));
+                                job.append(&current_album, 0.0, data_format.clone());
 
-                                job.append(&current_title, 0.0, format.clone());
-                                job.append(" by ", 0.0, egui::TextFormat::default());
-                                job.append(&current_artist, 0.0, format.clone());
-                                job.append(" on ", 0.0, egui::TextFormat::default());
-                                job.append(&current_album, 0.0, format.clone());
-                                ui.label(job);
-                                // Trick so we don't have to add spaces in the text below:
-                                // let width = ui.fonts(|f|f.glyph_width(&egui::TextStyle::Body.resolve(ui.style()), ' '));
-                                // ui.spacing_mut().item_spacing.x = width;
-
-                                // ui.label("by");
-                                // ui.strong(current_artist);
-                                // ui.label("on");
-                                // ui.strong(current_album);
-
-
-                                // let song_label = egui::Label::new(format!(
-                                //     "{} by {} on {}",
-                                //     current_title,
-                                //     current_artist,
-                                //     current_album
-                                // ))
-                                // .truncate()
-                                // .selectable(false);
-
-                                // ui.add(song_label)
+                                let song_label = egui::Label::new(job)
+                                    .truncate()
+                                    .selectable(false);
+                                ui.add(song_label);
                             });
 
-                            flex.add_simple(egui_flex::item(), |ui| {
-                                let time_label = egui::Label::new(format!(
-                                    "{} / {}",
-                                    current_song_position,
-                                    current_song_duration
-                                ))
-                                .wrap()
-                                .selectable(false);
-
+                            flex.add_simple(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), |ui| {
+                                let time_label = egui::Label::new(format!("{} / {}", current_song_position, current_song_duration))
+                                    .selectable(false);
                                 ui.add(time_label);
                             });
                         });
