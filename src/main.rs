@@ -463,6 +463,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         });
 
                         let mut playback_progress = 0.0;
+                        let mut seek_time_label = format!("{} / {}", current_song_position, current_song_duration);
 
                         if let Some(song) = &gem_player.current_song {
                             let current_position_secs = gem_player.sink.get_pos().as_secs();
@@ -484,27 +485,34 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                         let response: egui::Response = ui.add(playback_progress_slider);
 
-                        // We pause the audio during seeking to avoid scrubbing sound.
-                        if response.dragged() {
-                            gem_player.scrubbing = true;
-                            gem_player.sink.pause();
-                        }
+                        if let Some(song) = &gem_player.current_song {
+                            let new_position_secs = playback_progress * song.duration.as_secs_f32();
+                            let new_position = Duration::from_secs_f32(new_position_secs);
 
-                        if response.drag_stopped() {
-                            if let Some(song) = &gem_player.current_song {
-                                let new_position_secs =
-                                    playback_progress * song.duration.as_secs_f32();
-                                let new_position = Duration::from_secs_f32(new_position_secs);
+                            if response.dragged() {
+                                // We pause the audio during seeking to avoid scrubbing sound.
+                                gem_player.scrubbing = true;
+                                gem_player.sink.pause();
+                                
+                                seek_time_label = format!(
+                                    "{} / {}",
+                                    format_duration_to_mmss(new_position),
+                                    format_duration_to_mmss(song.duration)
+                                );
 
+                            }
+                            
+                            if response.drag_stopped() {
                                 if let Err(e) = gem_player.sink.try_seek(new_position) {
                                     println!("Error seeking to new position: {:?}", e);
                                 }
-                            }
 
-                            // Resume playback after seeking
-                            gem_player.scrubbing = false;
-                            gem_player.sink.play();
+                                gem_player.scrubbing = false;
+                                gem_player.sink.play();
+                            }
                         }
+
+                        ui.label(seek_time_label);
                     });
                 });
             });
