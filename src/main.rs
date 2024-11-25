@@ -23,7 +23,8 @@ TODO:
 - register play pause commands with apple menu.
 
 - Play button / Pause button, Next song, previous song
-- Repeat / Shuffle.
+- Repeat / Shuffle above the playback progress.
+- Music Visualizer ^.
 - Queue
 
 Could remove object oriented programming and just have a struct with functions that take a mutable reference to self.
@@ -314,7 +315,7 @@ impl eframe::App for GemPlayer {
         // Necessary to keep ui up to date with the current state of the sink / player.
         ctx.request_repaint_after_secs(1.0);
 
-        // println!("{}", ctx.input(|i: &egui::InputState| i.screen_rect()));
+        // println!("{}", ctx.input(|i: &egui::InputState| i.screen_rect())); // Prints the dimension of the window.
 
         custom_window_frame(ctx, "", |ui| {
             render_control_ui(ui, self);
@@ -381,10 +382,9 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
             });
 
             flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::CENTER_CENTER), |ui| {
-                let artwork_texture_options =
-                    TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
+                let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                 let artwork_size = egui::Vec2::splat(52.0);
-                let rounding = 6.0;
+                let rounding = 4.0;
                 let default_artwork = egui::Image::new(egui::include_image!(
                     "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                 ))
@@ -432,6 +432,28 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             current_duration_as_secs = song.duration.as_secs_f32();
                         }
 
+                        ui.style_mut().spacing.slider_width = 500.0;
+                        let playback_progress_slider =
+                            egui::Slider::new(&mut current_position_as_secs, 0.0..=current_duration_as_secs)
+                                .trailing_fill(true)
+                                .show_value(false)
+                                .step_by(1.0); // Step by 1 second.
+                        let response: egui::Response = ui.add(playback_progress_slider);
+
+                        if response.dragged() {
+                            // We pause the audio during seeking to avoid scrubbing sound.
+                            gem_player.sink.pause();
+                        }
+                        
+                        if response.drag_stopped() {
+                            let new_position = Duration::from_secs_f32(current_position_as_secs);
+                            if let Err(e) = gem_player.sink.try_seek(new_position) {
+                                println!("Error seeking to new position: {:?}", e);
+                            }
+
+                            gem_player.sink.play();
+                        }
+
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
                             flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
                                 let default_text_style = egui::TextStyle::Body.resolve(ui.style());
@@ -458,36 +480,6 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 ui.add(time_label);
                             });
                         });
-
-                        ui.style_mut().spacing.slider_width = 500.0;
-                        let playback_progress_slider =
-                            egui::Slider::new(&mut current_position_as_secs, 0.0..=current_duration_as_secs)
-                                .trailing_fill(true)
-                                .show_value(false)
-                                .step_by(1.0); // Step by 1 second.
-                        let response: egui::Response = ui.add(playback_progress_slider);
-
-                        if response.dragged() {
-                            // Update the displayed time dynamically as the slider is dragged.
-                            let current_position = Duration::from_secs_f32(current_position_as_secs);
-                            let current_duration = Duration::from_secs_f32(current_duration_as_secs);
-                            
-                            // Render the updated time label.
-                            let time_label_text = format!("{} / {}", format_duration_to_mmss(current_position), format_duration_to_mmss(current_duration));
-                            ui.add(egui::Label::new(time_label_text).selectable(false));
-
-                            // We pause the audio during seeking to avoid scrubbing sound.
-                            gem_player.sink.pause();
-                        }
-                        
-                        if response.drag_stopped() {
-                            let new_position = Duration::from_secs_f32(current_position_as_secs);
-                            if let Err(e) = gem_player.sink.try_seek(new_position) {
-                                println!("Error seeking to new position: {:?}", e);
-                            }
-
-                            gem_player.sink.play();
-                        }
                     });
                 });
             });
