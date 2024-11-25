@@ -422,18 +422,15 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         let mut current_title = "None".to_string();
                         let mut current_artist = "None".to_string();
                         let mut current_album = "None".to_string();
-                        let mut current_song_duration = "0:00".to_string();
-                        let mut current_song_position = "0:00".to_string();
+                        let mut current_duration = "0:00".to_string();
+                        let mut current_position = "0:00".to_string();
 
                         if let Some(song) = &gem_player.current_song {
-                            current_title =
-                                song.title.clone().unwrap_or("Unknown Title".to_string());
-                            current_artist =
-                                song.artist.clone().unwrap_or("Unknown Artist".to_string());
-                            current_album =
-                                song.album.clone().unwrap_or("Unknown Album".to_string());
-                            current_song_duration = format_duration_to_mmss(song.duration);
-                            current_song_position = format_duration_to_mmss(gem_player.sink.get_pos());
+                            current_title = song.title.clone().unwrap_or("Unknown Title".to_string());
+                            current_artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
+                            current_album = song.album.clone().unwrap_or("Unknown Album".to_string());
+                            current_duration = format_duration_to_mmss(song.duration);
+                            current_position = format_duration_to_mmss(gem_player.sink.get_pos());
                         }
 
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
@@ -449,21 +446,19 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 job.append(" on ", 0.0, egui::TextFormat::simple(default_text_style.clone(), default_color));
                                 job.append(&current_album, 0.0, data_format.clone());
 
-                                let song_label = egui::Label::new(job)
-                                    .truncate()
-                                    .selectable(false);
+                                let song_label = egui::Label::new(job).truncate().selectable(false);
                                 ui.add(song_label);
                             });
 
                             flex.add_simple(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), |ui| {
-                                let time_label = egui::Label::new(format!("{} / {}", current_song_position, current_song_duration))
+                                let time_label = egui::Label::new(format!("{} / {}", current_position, current_duration))
                                     .selectable(false);
                                 ui.add(time_label);
                             });
                         });
 
                         let mut playback_progress = 0.0;
-                        let mut seek_time_label = format!("{} / {}", current_song_position, current_song_duration);
+                        let mut seek_time_label = format!("{} / {}", current_position, current_duration);
 
                         if let Some(song) = &gem_player.current_song {
                             let current_position_secs = gem_player.sink.get_pos().as_secs();
@@ -682,11 +677,12 @@ fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 }
 
 fn format_duration_to_mmss(duration: std::time::Duration) -> String {
-    let total_seconds: f64 = duration.as_secs_f64();
-    let minutes = total_seconds / constants::SECONDS_PER_MINUTE as f64;
-    let seconds = total_seconds % constants::SECONDS_PER_MINUTE as f64;
+    let total_seconds = duration.as_secs();
+    let seconds_per_minute = 60;
+    let minutes = total_seconds / seconds_per_minute;
+    let seconds = total_seconds % seconds_per_minute;
 
-    format!("{:.0}:{:02.0}", minutes, seconds)
+    format!("{}:{:02}", minutes, seconds)
 }
 
 // fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
