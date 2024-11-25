@@ -463,7 +463,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         let playback_progress_slider =
                             egui::Slider::new(&mut current_position_as_secs, 0.0..=current_duration_as_secs)
                                 .trailing_fill(true)
-                                // .show_value(false)
+                                .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
                         let response: egui::Response = ui.add(playback_progress_slider);
 
