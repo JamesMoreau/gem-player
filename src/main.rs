@@ -15,8 +15,6 @@ mod song;
 /*
 TODO:
 
-- Do i still need pause variable.
-
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
 - tab bar at the bottom for playlists, queue, settings, etc.
