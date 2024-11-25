@@ -422,15 +422,19 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         let mut current_title = "None".to_string();
                         let mut current_artist = "None".to_string();
                         let mut current_album = "None".to_string();
-                        let mut current_duration = "0:00".to_string();
-                        let mut current_position = "0:00".to_string();
+                        let mut current_duration = 1.0; // We set to 1.0 so that when no song is playing, the slider is at the start.
+                        let mut current_position = 0.0;
+                        // let mut current_duration = "0:00".to_string();
+                        // let mut current_position = "0:00".to_string();
 
                         if let Some(song) = &gem_player.current_song {
                             current_title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             current_artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             current_album = song.album.clone().unwrap_or("Unknown Album".to_string());
-                            current_duration = format_duration_to_mmss(song.duration);
-                            current_position = format_duration_to_mmss(gem_player.sink.get_pos());
+                            current_duration = song.duration.as_secs_f32();
+                            current_position = gem_player.sink.get_pos().as_secs_f32();
+                            // current_duration = format_duration_to_mmss(song.duration);
+                            // current_position = format_duration_to_mmss(gem_player.sink.get_pos());
                         }
 
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
