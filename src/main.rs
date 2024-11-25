@@ -422,19 +422,15 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         let mut current_title = "None".to_string();
                         let mut current_artist = "None".to_string();
                         let mut current_album = "None".to_string();
-                        let mut current_duration = 1.0; // We set to 1.0 so that when no song is playing, the slider is at the start.
-                        let mut current_position = 0.0;
-                        // let mut current_duration = "0:00".to_string();
-                        // let mut current_position = "0:00".to_string();
+                        let mut current_position_as_secs = 0.0;
+                        let mut current_duration_as_secs = 1.0; // We set to 1.0 so that when no song is playing, the slider is at the start.
 
                         if let Some(song) = &gem_player.current_song {
                             current_title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             current_artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             current_album = song.album.clone().unwrap_or("Unknown Album".to_string());
-                            current_duration = song.duration.as_secs_f32();
-                            current_position = gem_player.sink.get_pos().as_secs_f32();
-                            // current_duration = format_duration_to_mmss(song.duration);
-                            // current_position = format_duration_to_mmss(gem_player.sink.get_pos());
+                            current_position_as_secs = gem_player.sink.get_pos().as_secs_f32();
+                            current_duration_as_secs = song.duration.as_secs_f32();
                         }
 
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
@@ -455,63 +451,38 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             });
 
                             flex.add_simple(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), |ui| {
-                                let time_label = egui::Label::new(format!("{} / {}", current_position, current_duration))
-                                    .selectable(false);
+                                let current_position = Duration::from_secs_f32(current_position_as_secs);
+                                let current_duration = Duration::from_secs_f32(current_duration_as_secs);
+                                let time_label_text = format!("{} / {}", format_duration_to_mmss(current_position), format_duration_to_mmss(current_duration));
+                                
+                                let time_label = egui::Label::new(time_label_text).selectable(false);
                                 ui.add(time_label);
                             });
                         });
 
-                        let mut playback_progress = 0.0;
-                        let mut seek_time_label = format!("{} / {}", current_position, current_duration);
-
-                        if let Some(song) = &gem_player.current_song {
-                            let current_position_secs = gem_player.sink.get_pos().as_secs();
-                            let duration_secs = song.duration.as_secs();
-
-                            // Avoid division by zero.
-                            playback_progress = if duration_secs == 0 {
-                                0.0
-                            } else {
-                                current_position_secs as f32 / duration_secs as f32
-                            };
-                        }
-
                         ui.style_mut().spacing.slider_width = 500.0;
                         let playback_progress_slider =
-                            egui::Slider::new(&mut playback_progress, 0.0..=1.0)
+                            egui::Slider::new(&mut current_position_as_secs, 0.0..=current_duration_as_secs)
                                 .trailing_fill(true)
-                                .show_value(false);
-
+                                .show_value(false)
+                                .step_by(1.0);
                         let response: egui::Response = ui.add(playback_progress_slider);
 
-                        if let Some(song) = &gem_player.current_song {
-                            let new_position_secs = playback_progress * song.duration.as_secs_f32();
-                            let new_position = Duration::from_secs_f32(new_position_secs);
-
-                            if response.dragged() {
-                                // We pause the audio during seeking to avoid scrubbing sound.
-                                gem_player.scrubbing = true;
-                                gem_player.sink.pause();
-                                
-                                seek_time_label = format!(
-                                    "{} / {}",
-                                    format_duration_to_mmss(new_position),
-                                    format_duration_to_mmss(song.duration)
-                                );
-
-                            }
-                            
-                            if response.drag_stopped() {
-                                if let Err(e) = gem_player.sink.try_seek(new_position) {
-                                    println!("Error seeking to new position: {:?}", e);
-                                }
-
-                                gem_player.scrubbing = false;
-                                gem_player.sink.play();
-                            }
+                        if response.dragged() {
+                            // We pause the audio during seeking to avoid scrubbing sound.
+                            gem_player.scrubbing = true;
+                            gem_player.sink.pause();
                         }
+                        
+                        if response.drag_stopped() {
+                            let new_position = Duration::from_secs_f32(current_position_as_secs);
+                            if let Err(e) = gem_player.sink.try_seek(new_position) {
+                                println!("Error seeking to new position: {:?}", e);
+                            }
 
-                        ui.label(seek_time_label);
+                            gem_player.scrubbing = false;
+                            gem_player.sink.play();
+                        }
                     });
                 });
             });
