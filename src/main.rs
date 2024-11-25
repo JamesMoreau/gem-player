@@ -14,6 +14,9 @@ mod song;
 
 /*
 TODO:
+
+- Do i still need pause variable.
+
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
 - tab bar at the bottom for playlists, queue, settings, etc.
@@ -75,7 +78,6 @@ struct GemPlayer {
     sink: Sink,                 // Controls playback (play, pause, stop, etc.)
     muted: bool,
     volume_before_mute: Option<f32>,
-    scrubbing: bool,
 }
 
 impl GemPlayer {
@@ -102,7 +104,6 @@ impl GemPlayer {
             sink,
             muted: false,
             volume_before_mute: None,
-            scrubbing: false,
         };
 
         // Find the music directory.
@@ -336,7 +337,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                     println!("Previous song");
                 }
 
-                let play_pause_icon = if gem_player.is_playing() || gem_player.scrubbing {
+                let play_pause_icon = if gem_player.is_playing() {
                     egui_material_icons::icons::ICON_PAUSE
                 } else {
                     egui_material_icons::icons::ICON_PLAY_ARROW
@@ -469,8 +470,15 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         let response: egui::Response = ui.add(playback_progress_slider);
 
                         if response.dragged() {
+                            // Update the displayed time dynamically as the slider is dragged.
+                            let current_position = Duration::from_secs_f32(current_position_as_secs);
+                            let current_duration = Duration::from_secs_f32(current_duration_as_secs);
+                            
+                            // Render the updated time label.
+                            let time_label_text = format!("{} / {}", format_duration_to_mmss(current_position), format_duration_to_mmss(current_duration));
+                            ui.add(egui::Label::new(time_label_text).selectable(false));
+
                             // We pause the audio during seeking to avoid scrubbing sound.
-                            gem_player.scrubbing = true;
                             gem_player.sink.pause();
                         }
                         
@@ -480,7 +488,6 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 println!("Error seeking to new position: {:?}", e);
                             }
 
-                            gem_player.scrubbing = false;
                             gem_player.sink.play();
                         }
                     });
