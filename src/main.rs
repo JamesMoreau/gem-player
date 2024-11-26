@@ -384,7 +384,24 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 gem_player.sink.set_volume(volume);
             });
 
-            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::CENTER_CENTER), |ui| {
+            flex.add_simple(egui_flex::item().grow(1.0), |ui| {
+                egui_flex::Flex::vertical().show(ui, |flex| {
+                    let repeat_button = egui::Button::new(egui_material_icons::icons::ICON_REPEAT);
+                    let shuffle_button = egui::Button::new(egui_material_icons::icons::ICON_SHUFFLE);
+
+                    flex.add_simple(egui_flex::item().grow(1.0), |ui| {
+                        let clicked = ui.add(repeat_button).clicked();
+                        if clicked {
+                            println!("Repeat");
+                        }
+
+                        let clicked = ui.add(shuffle_button).clicked();
+                        if clicked {
+                            println!("Shuffle");
+                        }
+                    });
+                });
+
                 let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                 let artwork_size = egui::Vec2::splat(52.0);
                 let rounding = 4.0;
@@ -420,7 +437,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 ui.add(artwork);
 
                 egui_flex::Flex::vertical().show(ui, |flex| {
-                    flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
+                    flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                         let mut title = "None".to_string();
                         let mut artist = "None".to_string();
                         let mut album = "None".to_string();
