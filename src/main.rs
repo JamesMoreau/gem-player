@@ -456,10 +456,8 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             }
                         
                             // Resume playback if the player was not paused before scrubbing
-                            if let Some(paused_before) = gem_player.paused_before_scrubbing {
-                                if !paused_before {
-                                    gem_player.sink.play();
-                                }
+                            if gem_player.paused_before_scrubbing == Some(false) {
+                                gem_player.sink.play();
                             }
                         
                             gem_player.paused_before_scrubbing = None;
