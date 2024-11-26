@@ -80,7 +80,7 @@ struct GemPlayer {
     volume_before_mute: Option<f32>,
 
     scrubbing: bool,
-    paused_before_scrubbing: bool,
+    paused_before_scrubbing: Option<bool>,
 }
 
 impl GemPlayer {
@@ -108,7 +108,7 @@ impl GemPlayer {
             muted: false,
             volume_before_mute: None,
             scrubbing: false,
-            paused_before_scrubbing: false,
+            paused_before_scrubbing: None,
         };
 
         // Find the music directory.
@@ -446,11 +446,15 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 .step_by(1.0); // Step by 1 second.
                         let response: egui::Response = ui.add(playback_progress_slider);
 
-                        if response.dragged() && !gem_player.scrubbing {
-                            // Enter scrubbing mode and record pre-scrub paused state
-                            gem_player.scrubbing = true;
-                            gem_player.paused_before_scrubbing = gem_player.sink.is_paused();
+                        if response.dragged() {
                             gem_player.sink.pause(); // Pause playback during scrubbing
+                            
+                            // Enter scrubbing mode and record pre-scrub paused state
+                            if !gem_player.scrubbing  {
+                                gem_player.scrubbing = true;
+                                gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
+                            }
+                            
                         }
                         
                         if response.drag_stopped() {
@@ -460,12 +464,13 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             }
 
                             // Resume playback if the player was not paused before scrubbing
-                            if !gem_player.paused_before_scrubbing {
-                                gem_player.sink.play();
+                            if let Some(paused_before_scrubbing) = gem_player.paused_before_scrubbing {
+                                if !paused_before_scrubbing {
+                                    gem_player.sink.play();
+                                }
                             }
 
-                            // Exit scrubbing mode
-                            gem_player.scrubbing = false;
+                            gem_player.paused_before_scrubbing = None;
                         }
 
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
