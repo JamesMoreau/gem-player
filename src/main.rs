@@ -79,7 +79,6 @@ struct GemPlayer {
     muted: bool,
     volume_before_mute: Option<f32>,
 
-    scrubbing: bool,
     paused_before_scrubbing: Option<bool>,
 }
 
@@ -107,7 +106,6 @@ impl GemPlayer {
             sink,
             muted: false,
             volume_before_mute: None,
-            scrubbing: false,
             paused_before_scrubbing: None,
         };
 
@@ -446,15 +444,9 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 .step_by(1.0); // Step by 1 second.
                         let response: egui::Response = ui.add(playback_progress_slider);
 
-                        if response.dragged() {
+                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
+                            gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
                             gem_player.sink.pause(); // Pause playback during scrubbing
-                            
-                            // Enter scrubbing mode and record pre-scrub paused state
-                            if !gem_player.scrubbing  {
-                                gem_player.scrubbing = true;
-                                gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
-                            }
-                            
                         }
                         
                         if response.drag_stopped() {
@@ -462,14 +454,14 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                             if let Err(e) = gem_player.sink.try_seek(new_position) {
                                 println!("Error seeking to new position: {:?}", e);
                             }
-
+                        
                             // Resume playback if the player was not paused before scrubbing
-                            if let Some(paused_before_scrubbing) = gem_player.paused_before_scrubbing {
-                                if !paused_before_scrubbing {
+                            if let Some(paused_before) = gem_player.paused_before_scrubbing {
+                                if !paused_before {
                                     gem_player.sink.play();
                                 }
                             }
-
+                        
                             gem_player.paused_before_scrubbing = None;
                         }
 
