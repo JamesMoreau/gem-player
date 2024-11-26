@@ -22,7 +22,7 @@ TODO:
 - register play pause commands with apple menu.
 
 - Play button / Pause button, Next song, previous song
-- Repeat / Shuffle above the playback progress.
+- Repeat / Shuffle above the playback progress. Could stack them vertically to the left of the artwork.
 - Music Visualizer ^.
 - Queue
 
