@@ -418,23 +418,23 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                 egui_flex::Flex::vertical().show(ui, |flex| {
                     flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
-                        let mut current_title = "None".to_string();
-                        let mut current_artist = "None".to_string();
-                        let mut current_album = "None".to_string();
-                        let mut current_position_as_secs = 0.0;
-                        let mut current_duration_as_secs = 1.0; // We set to 1.0 so that when no song is playing, the slider is at the start.
+                        let mut title = "None".to_string();
+                        let mut artist = "None".to_string();
+                        let mut album = "None".to_string();
+                        let mut position_as_secs = 0.0;
+                        let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
                         if let Some(song) = &gem_player.current_song {
-                            current_title = song.title.clone().unwrap_or("Unknown Title".to_string());
-                            current_artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
-                            current_album = song.album.clone().unwrap_or("Unknown Album".to_string());
-                            current_position_as_secs = gem_player.sink.get_pos().as_secs_f32();
-                            current_duration_as_secs = song.duration.as_secs_f32();
+                            title = song.title.clone().unwrap_or("Unknown Title".to_string());
+                            artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
+                            album = song.album.clone().unwrap_or("Unknown Album".to_string());
+                            position_as_secs = gem_player.sink.get_pos().as_secs_f32();
+                            song_duration_as_secs = song.duration.as_secs_f32();
                         }
 
                         ui.style_mut().spacing.slider_width = 500.0;
                         let playback_progress_slider =
-                            egui::Slider::new(&mut current_position_as_secs, 0.0..=current_duration_as_secs)
+                            egui::Slider::new(&mut position_as_secs, 0.0..=song_duration_as_secs)
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
@@ -446,7 +446,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         }
                         
                         if response.drag_stopped() {
-                            let new_position = Duration::from_secs_f32(current_position_as_secs);
+                            let new_position = Duration::from_secs_f32(position_as_secs);
                             if let Err(e) = gem_player.sink.try_seek(new_position) {
                                 println!("Error seeking to new position: {:?}", e);
                             }
@@ -461,20 +461,20 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 let data_format = egui::TextFormat::simple(default_text_style.clone(),  egui::Color32::WHITE);
                                 
                                 let mut job = egui::text::LayoutJob::default();
-                                job.append(&current_title, 0.0, data_format.clone());
+                                job.append(&title, 0.0, data_format.clone());
                                 job.append(" by ", 0.0, egui::TextFormat::simple(default_text_style.clone(), default_color));
-                                job.append(&current_artist, 0.0, data_format.clone());
+                                job.append(&artist, 0.0, data_format.clone());
                                 job.append(" on ", 0.0, egui::TextFormat::simple(default_text_style.clone(), default_color));
-                                job.append(&current_album, 0.0, data_format.clone());
+                                job.append(&album, 0.0, data_format.clone());
 
                                 let song_label = egui::Label::new(job).truncate().selectable(false);
                                 ui.add(song_label);
                             });
 
                             flex.add_simple(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), |ui| {
-                                let current_position = Duration::from_secs_f32(current_position_as_secs);
-                                let current_duration = Duration::from_secs_f32(current_duration_as_secs);
-                                let time_label_text = format!("{} / {}", format_duration_to_mmss(current_position), format_duration_to_mmss(current_duration));
+                                let position = Duration::from_secs_f32(position_as_secs);
+                                let song_duration = Duration::from_secs_f32(song_duration_as_secs);
+                                let time_label_text = format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
                                 
                                 let time_label = egui::Label::new(time_label_text).selectable(false);
                                 ui.add(time_label);
