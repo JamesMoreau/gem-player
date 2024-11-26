@@ -14,7 +14,6 @@ mod song;
 
 /*
 TODO:
-
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
 - tab bar at the bottom for playlists, queue, settings, etc.
@@ -64,10 +63,6 @@ pub enum SortOrder {
 struct GemPlayer {
     songs: Vec<Song>,
 
-    search_text: String,
-    sort_by: SortBy,
-    sort_order: SortOrder,
-
     music_directory: Option<PathBuf>,
 
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
@@ -79,7 +74,11 @@ struct GemPlayer {
     muted: bool,
     volume_before_mute: Option<f32>,
 
-    paused_before_scrubbing: Option<bool>,
+    paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
+
+    search_text: String,
+    sort_by: SortBy,
+    sort_order: SortOrder,
 }
 
 impl GemPlayer {
