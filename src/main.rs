@@ -467,6 +467,7 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         
                         if response.drag_stopped() {
                             let new_position = Duration::from_secs_f32(position_as_secs);
+                            println!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
                             if let Err(e) = gem_player.sink.try_seek(new_position) {
                                 println!("Error seeking to new position: {:?}", e);
                             }
