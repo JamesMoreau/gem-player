@@ -353,6 +353,8 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 if clicked {
                     println!("Next song");
                 }
+
+                ui.add_space(8.0);
     
                 let mut volume = gem_player.sink.volume();
     
@@ -386,21 +388,23 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
             flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                 egui_flex::Flex::vertical().show(ui, |flex| {
-                    let repeat_button = egui::Button::new(egui_material_icons::icons::ICON_REPEAT);
-                    let shuffle_button = egui::Button::new(egui_material_icons::icons::ICON_SHUFFLE);
-
                     flex.add_simple(egui_flex::item().grow(1.0), |ui| {
+                        let repeat_button = egui::Button::new(egui_material_icons::icons::ICON_REPEAT);
+                        let shuffle_button = egui::Button::new(egui_material_icons::icons::ICON_SHUFFLE);
+
                         let clicked = ui.add(repeat_button).clicked();
                         if clicked {
                             println!("Repeat");
                         }
-
+        
                         let clicked = ui.add(shuffle_button).clicked();
                         if clicked {
                             println!("Shuffle");
                         }
                     });
                 });
+
+                ui.add_space(8.0);
 
                 let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                 let artwork_size = egui::Vec2::splat(52.0);
@@ -443,7 +447,8 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         let mut album = "None".to_string();
                         let mut position_as_secs = 0.0;
                         let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
-
+                        
+                        let song_is_some = gem_player.current_song.is_some();
                         if let Some(song) = &gem_player.current_song {
                             title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
@@ -460,12 +465,12 @@ fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 .step_by(1.0); // Step by 1 second.
                         let response: egui::Response = ui.add(playback_progress_slider);
 
-                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
+                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() && song_is_some {
                             gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
                             gem_player.sink.pause(); // Pause playback during scrubbing
                         }
                         
-                        if response.drag_stopped() {
+                        if response.drag_stopped() && song_is_some {
                             let new_position = Duration::from_secs_f32(position_as_secs);
                             println!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
                             if let Err(e) = gem_player.sink.try_seek(new_position) {
