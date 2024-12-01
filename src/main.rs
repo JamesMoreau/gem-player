@@ -47,7 +47,7 @@ fn main() -> eframe::Result {
     )
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
     Library,
     Playlists,
@@ -324,21 +324,6 @@ impl eframe::App for GemPlayer {
         egui::Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
 
-    // fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-    //     // Necessary to keep ui up to date with the current state of the sink / player.
-    //     ctx.request_repaint_after_secs(1.0);
-
-    //     // println!("{}", ctx.input(|i: &egui::InputState| i.screen_rect())); // Prints the dimension of the window.
-
-    //     custom_window_frame(ctx, "", |ui| {
-    //         render_control_ui(ui, self);
-
-    //         ui.separator();
-
-    //         render_songs_ui(ui, self);
-    //     });
-    // }
-
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
@@ -386,17 +371,11 @@ impl eframe::App for GemPlayer {
                 },
                 |ui| {
                     ui.horizontal_centered(|ui| {
-                        if ui.selectable_label(self.current_view == View::Library, "Library").clicked() {
-                            self.current_view = View::Library;
-                            println!("Library");
-                        }
-                        if ui.selectable_label(self.current_view == View::Playlists, "Playlists").clicked() {
-                            self.current_view = View::Playlists;
-                            println!("Playlists");
-                        }
-                        if ui.selectable_label(self.current_view == View::Settings, "Settings").clicked() {
-                            self.current_view = View::Settings;
-                            println!("Settings");
+                        for view in View::iter() {
+                            let clicked = ui.selectable_label(self.current_view == view, format!("{:?}", view)).clicked();
+                            if clicked {
+                                switch_view(self, view);
+                            }
                         }
                     });
                 },
@@ -405,6 +384,10 @@ impl eframe::App for GemPlayer {
     }    
 }
 
+fn switch_view(gem_player: &mut GemPlayer, view: View) {
+    println!("Switching to view: {:?}", view);
+    gem_player.current_view = view;
+}
 
 fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
     egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 0.0)).show(ui, |ui| {

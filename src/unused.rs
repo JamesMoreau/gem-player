@@ -97,3 +97,19 @@
 		.unwrap()
 		.push("my_font".to_owned());
 	cc.egui_ctx.set_fonts(fonts);*/
+
+
+	// fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    //     // Necessary to keep ui up to date with the current state of the sink / player.
+    //     ctx.request_repaint_after_secs(1.0);
+
+    //     // println!("{}", ctx.input(|i: &egui::InputState| i.screen_rect())); // Prints the dimension of the window.
+
+    //     custom_window_frame(ctx, "", |ui| {
+    //         render_control_ui(ui, self);
+
+    //         ui.separator();
+
+    //         render_songs_ui(ui, self);
+    //     });
+    // }
