@@ -329,26 +329,25 @@ impl eframe::App for GemPlayer {
         ctx.request_repaint_after_secs(1.0);
     
         custom_window_frame(ctx, "", |ui| {
-            // Render control UI at the top
+
+            let control_ui_rect = ui.max_rect().with_max_y(50.0);
             ui.allocate_new_ui(
-                {
-                    let mut rect = ui.max_rect();
-                    rect.max.y = rect.min.y + 50.0; // Control UI height
-                    egui::UiBuilder::new().max_rect(rect)
-                },
+                egui::UiBuilder::new().max_rect(control_ui_rect),
                 |ui| {
                     render_control_ui(ui, self);
                 },
             );
+
+            ui.separator();
     
-            // Render content area
+            let content_ui_rect = {
+                let mut rect = ui.max_rect();
+                rect.min.y += 50.0; // Offset by control UI height
+                rect.max.y -= 50.0; // Offset by bottom bar height
+                rect
+            };
             ui.allocate_new_ui(
-                {
-                    let mut rect = ui.max_rect();
-                    rect.min.y += 50.0; // Offset by control UI height
-                    rect.max.y -= 50.0; // Offset by bottom bar height
-                    egui::UiBuilder::new().max_rect(rect)
-                },
+                egui::UiBuilder::new().max_rect(content_ui_rect),
                 |ui| {
                     match self.current_view {
                         View::Library => render_songs_ui(ui, self),
@@ -361,14 +360,12 @@ impl eframe::App for GemPlayer {
                     }
                 },
             );
+
+            ui.separator();
     
-            // Render bottom navigation bar
+            let navigation_bar_rect = ui.max_rect().with_min_y(ui.max_rect().max.y - 50.0);
             ui.allocate_new_ui(
-                {
-                    let mut rect = ui.max_rect();
-                    rect.min.y = rect.max.y - 50.0; // Bottom bar height
-                    egui::UiBuilder::new().max_rect(rect)
-                },
+                egui::UiBuilder::new().max_rect(navigation_bar_rect),
                 |ui| {
                     ui.horizontal_centered(|ui| {
                         for view in View::iter() {
