@@ -14,6 +14,7 @@ mod song;
 
 /*
 TODO:
+- could move filter/sort from the top UI to the bottom UI and have the visualizer at the top.
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
 - tab bar at the bottom for playlists, queue, settings, etc.
@@ -46,6 +47,13 @@ fn main() -> eframe::Result {
     )
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum View {
+    Library,
+    Playlists,
+    Settings,
+}
+
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {
     Title,
@@ -61,6 +69,7 @@ pub enum SortOrder {
 }
 
 struct GemPlayer {
+    current_view: View,
     songs: Vec<Song>,
 
     music_directory: Option<PathBuf>,
@@ -93,6 +102,7 @@ impl GemPlayer {
         sink.set_volume(0.6);
 
         let mut default_self = Self {
+            current_view: View::Library,
             songs: Vec::new(),
             selected_song: None,
             search_text: String::new(),
@@ -314,21 +324,87 @@ impl eframe::App for GemPlayer {
         egui::Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
 
+    // fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    //     // Necessary to keep ui up to date with the current state of the sink / player.
+    //     ctx.request_repaint_after_secs(1.0);
+
+    //     // println!("{}", ctx.input(|i: &egui::InputState| i.screen_rect())); // Prints the dimension of the window.
+
+    //     custom_window_frame(ctx, "", |ui| {
+    //         render_control_ui(ui, self);
+
+    //         ui.separator();
+
+    //         render_songs_ui(ui, self);
+    //     });
+    // }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Necessary to keep ui up to date with the current state of the sink / player.
+        // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
-
-        // println!("{}", ctx.input(|i: &egui::InputState| i.screen_rect())); // Prints the dimension of the window.
-
+    
         custom_window_frame(ctx, "", |ui| {
-            render_control_ui(ui, self);
-
-            ui.separator();
-
-            render_songs_ui(ui, self);
+            // Render control UI at the top
+            ui.allocate_new_ui(
+                {
+                    let mut rect = ui.max_rect();
+                    rect.max.y = rect.min.y + 50.0; // Control UI height
+                    egui::UiBuilder::new().max_rect(rect)
+                },
+                |ui| {
+                    render_control_ui(ui, self);
+                },
+            );
+    
+            // Render content area
+            ui.allocate_new_ui(
+                {
+                    let mut rect = ui.max_rect();
+                    rect.min.y += 50.0; // Offset by control UI height
+                    rect.max.y -= 50.0; // Offset by bottom bar height
+                    egui::UiBuilder::new().max_rect(rect)
+                },
+                |ui| {
+                    match self.current_view {
+                        View::Library => render_songs_ui(ui, self),
+                        View::Playlists => {
+                            ui.label("Playlists section coming soon");
+                        },
+                        View::Settings => {
+                            ui.label("Settings section coming soon");
+                        },
+                    }
+                },
+            );
+    
+            // Render bottom navigation bar
+            ui.allocate_new_ui(
+                {
+                    let mut rect = ui.max_rect();
+                    rect.min.y = rect.max.y - 50.0; // Bottom bar height
+                    egui::UiBuilder::new().max_rect(rect)
+                },
+                |ui| {
+                    ui.horizontal_centered(|ui| {
+                        if ui.selectable_label(self.current_view == View::Library, "Library").clicked() {
+                            self.current_view = View::Library;
+                            println!("Library");
+                        }
+                        if ui.selectable_label(self.current_view == View::Playlists, "Playlists").clicked() {
+                            self.current_view = View::Playlists;
+                            println!("Playlists");
+                        }
+                        if ui.selectable_label(self.current_view == View::Settings, "Settings").clicked() {
+                            self.current_view = View::Settings;
+                            println!("Settings");
+                        }
+                    });
+                },
+            );
         });
-    }
+    }    
 }
+
 
 fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
     egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
