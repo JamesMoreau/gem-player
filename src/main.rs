@@ -14,6 +14,7 @@ mod song;
 
 /*
 TODO:
+- instead of a sepator between ui sections, could just use a different color.
 - could move filter/sort from the top UI to the bottom UI and have the visualizer at the top.
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
@@ -329,56 +330,48 @@ impl eframe::App for GemPlayer {
         ctx.request_repaint_after_secs(1.0);
     
         custom_window_frame(ctx, "", |ui| {
+            ui.vertical(|ui| {
+                let control_ui_size = egui::vec2(ui.available_width(), 50.0);
+                let navigation_ui_size = egui::vec2(ui.available_width(), 50.0);
+                let content_ui_size = ui.available_size() - egui::vec2(0.0, control_ui_size.y + navigation_ui_size.y);
 
-            let control_ui_rect = ui.max_rect().with_max_y(50.0);
-            ui.allocate_new_ui(
-                egui::UiBuilder::new().max_rect(control_ui_rect),
-                |ui| {
-                    render_control_ui(ui, self);
-                },
-            );
+                ui.allocate_ui(
+                    control_ui_size,
+                    |ui| {
+                        render_control_ui(ui, self);
+                    },
+                );
 
-            ui.separator();
-    
-            let content_ui_rect = {
-                let mut rect = ui.max_rect();
-                rect.min.y += 50.0; // Offset by control UI height
-                rect.max.y -= 50.0; // Offset by bottom bar height
-                rect
-            };
-            ui.allocate_new_ui(
-                egui::UiBuilder::new().max_rect(content_ui_rect),
-                |ui| {
-                    match self.current_view {
-                        View::Library => render_songs_ui(ui, self),
-                        View::Playlists => {
-                            ui.label("Playlists section coming soon");
-                        },
-                        View::Settings => {
-                            ui.label("Settings section coming soon");
-                        },
-                    }
-                },
-            );
-
-            ui.separator();
-    
-            let navigation_bar_rect = ui.max_rect().with_min_y(ui.max_rect().max.y - 50.0);
-            ui.allocate_new_ui(
-                egui::UiBuilder::new().max_rect(navigation_bar_rect),
-                |ui| {
-                    ui.horizontal_centered(|ui| {
-                        for view in View::iter() {
-                            let clicked = ui.selectable_label(self.current_view == view, format!("{:?}", view)).clicked();
-                            if clicked {
-                                switch_view(self, view);
-                            }
+                ui.allocate_ui(
+                    content_ui_size,
+                    |ui| {
+                        match self.current_view {
+                            View::Library => render_songs_ui(ui, self),
+                            View::Playlists => {
+                                ui.label("Playlists section coming soon");
+                            },
+                            View::Settings => {
+                                ui.label("Settings section coming soon");
+                            },
                         }
-                    });
-                },
-            );
+                    },
+                );
+
+                ui.allocate_ui(
+                    navigation_ui_size,
+                    |ui| {
+                        ui.horizontal_centered(|ui| {
+                            for view in View::iter() {
+                                if ui.selectable_label(self.current_view == view, format!("{:?}", view)).clicked() {
+                                    switch_view(self, view);
+                                }
+                            }
+                        });
+                    },
+                );
+            });
         });
-    }    
+    }        
 }
 
 fn switch_view(gem_player: &mut GemPlayer, view: View) {
