@@ -335,15 +335,17 @@ impl eframe::App for GemPlayer {
                 let navigation_ui_size = egui::vec2(ui.available_width(), 50.0);
                 let content_ui_size = ui.available_size() - egui::vec2(0.0, control_ui_size.y + navigation_ui_size.y);
 
-                ui.allocate_ui(
+                ui.allocate_ui_with_layout(
                     control_ui_size,
+                    egui::Layout::top_down(egui::Align::Min),
                     |ui| {
                         render_control_ui(ui, self);
                     },
                 );
 
-                ui.allocate_ui(
+                ui.allocate_ui_with_layout(
                     content_ui_size,
+                    egui::Layout::top_down(egui::Align::Min),
                     |ui| {
                         match self.current_view {
                             View::Library => render_songs_ui(ui, self),
@@ -357,8 +359,9 @@ impl eframe::App for GemPlayer {
                     },
                 );
 
-                ui.allocate_ui(
+                ui.allocate_ui_with_layout(
                     navigation_ui_size,
+                    egui::Layout::top_down(egui::Align::Min),
                     |ui| {
                         ui.horizontal_centered(|ui| {
                             for view in View::iter() {
