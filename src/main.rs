@@ -206,7 +206,7 @@ fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOn
     CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
         let app_rect = ui.max_rect();
 
-        let title_bar_height = 32.0;
+        let title_bar_height = 24.0;
         let title_bar_rect = {
             let mut rect = app_rect;
             rect.max.y = rect.min.y + title_bar_height;
@@ -264,60 +264,60 @@ fn title_bar_ui(ui: &mut egui::Ui, title_bar_rect: eframe::epaint::Rect, title: 
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
+    let layout = if std::env::consts::OS == "macos" {
+        egui::Layout::left_to_right(egui::Align::Center)
+    } else {
+        egui::Layout::right_to_left(egui::Align::Center)
+    };
     ui.allocate_new_ui(
         UiBuilder::new()
             .max_rect(title_bar_rect)
-            .layout(egui::Layout::right_to_left(egui::Align::Center)),
+            .layout(layout),
         |ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
             ui.visuals_mut().button_frame = false;
             ui.add_space(8.0);
-            close_maximize_minimize(ui);
+            
+            let button_height = 12.0;
+            let button_distance = 6.0;
+
+            let close_response = ui
+                .add(egui::Button::new(egui::RichText::new("❌").size(button_height)))
+                .on_hover_text("Close the window");
+            if close_response.clicked() {
+                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+
+            ui.add_space(button_distance);
+
+            let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
+            if is_maximized {
+                let maximized_response = ui
+                    .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
+                    .on_hover_text("Restore window");
+                if maximized_response.clicked() {
+                    ui.ctx()
+                        .send_viewport_cmd(ViewportCommand::Maximized(false));
+                }
+            } else {
+                let maximized_response = ui
+                    .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
+                    .on_hover_text("Maximize window");
+                if maximized_response.clicked() {
+                    ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(true));
+                }
+            }
+
+            ui.add_space(button_distance);
+
+            let minimized_response = ui
+                .add(egui::Button::new(egui::RichText::new("🗕").size(button_height)))
+                .on_hover_text("Minimize the window");
+            if minimized_response.clicked() {
+                ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
+            }
         },
     );
-}
-
-fn close_maximize_minimize(ui: &mut egui::Ui) {
-    use egui::{Button, RichText};
-
-    let button_height = 12.0;
-    let button_distance = 6.0;
-
-    let close_response = ui
-        .add(Button::new(RichText::new("❌").size(button_height)))
-        .on_hover_text("Close the window");
-    if close_response.clicked() {
-        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-    }
-
-    ui.add_space(button_distance);
-
-    let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
-    if is_maximized {
-        let maximized_response = ui
-            .add(Button::new(RichText::new("🗗").size(button_height)))
-            .on_hover_text("Restore window");
-        if maximized_response.clicked() {
-            ui.ctx()
-                .send_viewport_cmd(ViewportCommand::Maximized(false));
-        }
-    } else {
-        let maximized_response = ui
-            .add(Button::new(RichText::new("🗗").size(button_height)))
-            .on_hover_text("Maximize window");
-        if maximized_response.clicked() {
-            ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(true));
-        }
-    }
-
-    ui.add_space(button_distance);
-
-    let minimized_response = ui
-        .add(Button::new(RichText::new("🗕").size(button_height)))
-        .on_hover_text("Minimize the window");
-    if minimized_response.clicked() {
-        ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
-    }
 }
 
 impl eframe::App for GemPlayer {
