@@ -227,94 +227,101 @@ fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOn
 }
 
 fn title_bar_ui(ui: &mut egui::Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
-    use egui::{vec2, Align2, FontId, Id, PointerButton, Sense, UiBuilder};
-
     let painter = ui.painter();
 
     let title_bar_response = ui.interact(
         title_bar_rect,
-        Id::new("title_bar"),
-        Sense::click_and_drag(),
+        egui::Id::new("title_bar"),
+        egui::Sense::click_and_drag(),
     );
 
     painter.text(
         title_bar_rect.center(),
-        Align2::CENTER_CENTER,
+        egui::Align2::CENTER_CENTER,
         title,
-        FontId::proportional(20.0),
+        egui::FontId::proportional(20.0),
         ui.style().visuals.text_color(),
     );
 
     // Paint the line under the title:
     painter.line_segment(
         [
-            title_bar_rect.left_bottom() + vec2(1.0, 0.0),
-            title_bar_rect.right_bottom() + vec2(-1.0, 0.0),
+            title_bar_rect.left_bottom() + egui::vec2(1.0, 0.0),
+            title_bar_rect.right_bottom() + egui::vec2(-1.0, 0.0),
         ],
         ui.visuals().widgets.noninteractive.bg_stroke,
     );
 
     if title_bar_response.double_clicked() {
         let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
-        ui.ctx()
-            .send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
+        ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
     }
 
-    if title_bar_response.drag_started_by(PointerButton::Primary) {
+    if title_bar_response.drag_started_by(egui::PointerButton::Primary) {
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
-    let layout = if std::env::consts::OS == "macos" {
-        egui::Layout::left_to_right(egui::Align::Center)
-    } else {
-        egui::Layout::right_to_left(egui::Align::Center)
-    };
     ui.allocate_new_ui(
-        UiBuilder::new()
+        egui::UiBuilder::new()
             .max_rect(title_bar_rect)
-            .layout(layout),
+            .layout(
+                if cfg!(target_os = "macos") {
+                    egui::Layout::left_to_right(egui::Align::Center)
+                } else {
+                    egui::Layout::right_to_left(egui::Align::Center)
+                }
+            ),
         |ui| {
-            ui.spacing_mut().item_spacing.x = 0.0;
-            ui.visuals_mut().button_frame = false;
             ui.add_space(8.0);
-            
+
+            ui.visuals_mut().button_frame = false;
             let button_height = 12.0;
-            let button_distance = 6.0;
 
-            let close_response = ui
-                .add(egui::Button::new(egui::RichText::new("❌").size(button_height)))
-                .on_hover_text("Close the window");
-            if close_response.clicked() {
-                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-            }
-
-            ui.add_space(button_distance);
-
-            let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
-            if is_maximized {
-                let maximized_response = ui
-                    .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
-                    .on_hover_text("Restore window");
-                if maximized_response.clicked() {
-                    ui.ctx()
-                        .send_viewport_cmd(ViewportCommand::Maximized(false));
+            let close_button = |ui: &mut egui::Ui| {
+                let close_response = ui
+                    .add(egui::Button::new(egui::RichText::new("❌").size(button_height)))
+                    .on_hover_text("Close the window");
+                if close_response.clicked() {
+                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                 }
+            };
+
+            let maximize_button = |ui: &mut egui::Ui| {
+                let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
+                if is_maximized {
+                    let maximize_response = ui
+                        .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
+                        .on_hover_text("Restore window");
+                    if maximize_response.clicked() {
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(false));
+                    }
+                } else {
+                    let maximize_response = ui
+                        .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
+                        .on_hover_text("Maximize window");
+                    if maximize_response.clicked() {
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(true));
+                    }
+                }
+            };
+
+            let minimize_button = |ui: &mut egui::Ui| {
+                let minimize_response = ui
+                    .add(egui::Button::new(egui::RichText::new("🗕").size(button_height)))
+                    .on_hover_text("Minimize the window");
+                if minimize_response.clicked() {
+                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+                }
+            };
+    
+            if cfg!(target_os = "macos") {
+                close_button(ui);
+                minimize_button(ui);
+                maximize_button(ui);
             } else {
-                let maximized_response = ui
-                    .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
-                    .on_hover_text("Maximize window");
-                if maximized_response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(true));
-                }
-            }
-
-            ui.add_space(button_distance);
-
-            let minimized_response = ui
-                .add(egui::Button::new(egui::RichText::new("🗕").size(button_height)))
-                .on_hover_text("Minimize the window");
-            if minimized_response.clicked() {
-                ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
+                minimize_button(ui);
+                maximize_button(ui);
+                close_button(ui);
             }
         },
     );
