@@ -288,20 +288,12 @@ fn title_bar_ui(ui: &mut egui::Ui, title_bar_rect: eframe::epaint::Rect, title: 
 
             let maximize_button = |ui: &mut egui::Ui| {
                 let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
-                if is_maximized {
-                    let maximize_response = ui
-                        .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
-                        .on_hover_text("Restore window");
-                    if maximize_response.clicked() {
-                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(false));
-                    }
-                } else {
-                    let maximize_response = ui
-                        .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
-                        .on_hover_text("Maximize window");
-                    if maximize_response.clicked() {
-                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(true));
-                    }
+                let tooltip = if is_maximized { "Restore window" } else { "Maximize window" };
+                let maximize_response = ui
+                    .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
+                    .on_hover_text(tooltip);
+                if maximize_response.clicked() {
+                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(!is_maximized));
                 }
             };
 
@@ -336,7 +328,7 @@ impl eframe::App for GemPlayer {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
     
-        custom_window_frame(ctx, "", |ui| {
+        custom_window_frame(ctx, "Gem Player", |ui| {
             ui.vertical(|ui| {
                 let control_ui_size = egui::vec2(ui.available_width(), 50.0);
                 let navigation_ui_size = egui::vec2(ui.available_width(), 50.0);
