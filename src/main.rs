@@ -193,8 +193,6 @@ impl GemPlayer {
 }
 
 fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOnce(&mut egui::Ui)) {
-    use egui::{CentralPanel, UiBuilder};
-
     let panel_frame = egui::Frame {
         fill: ctx.style().visuals.window_fill(),
         rounding: 10.0.into(),
@@ -203,7 +201,7 @@ fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOn
         ..Default::default()
     };
 
-    CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
+    egui::CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
         let app_rect = ui.max_rect();
 
         let title_bar_height = 24.0;
@@ -221,7 +219,7 @@ fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOn
             rect
         }
         .shrink(4.0);
-        let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
+        let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_rect));
         add_contents(&mut content_ui);
     });
 }
@@ -329,51 +327,50 @@ impl eframe::App for GemPlayer {
         ctx.request_repaint_after_secs(1.0);
     
         custom_window_frame(ctx, "Gem Player", |ui| {
-            ui.vertical(|ui| {
-                let control_ui_size = egui::vec2(ui.available_width(), 50.0);
-                let navigation_ui_size = egui::vec2(ui.available_width(), 50.0);
-                let content_ui_size = ui.available_size() - egui::vec2(0.0, control_ui_size.y + navigation_ui_size.y);
-
-                ui.allocate_ui_with_layout(
-                    control_ui_size,
-                    egui::Layout::top_down(egui::Align::Min),
-                    |ui| {
-                        render_control_ui(ui, self);
-                    },
-                );
-
-                ui.allocate_ui_with_layout(
-                    content_ui_size,
-                    egui::Layout::top_down(egui::Align::Min),
-                    |ui| {
-                        match self.current_view {
-                            View::Library => render_songs_ui(ui, self),
-                            View::Playlists => {
-                                ui.label("Playlists section coming soon");
-                            },
-                            View::Settings => {
-                                ui.label("Settings section coming soon");
-                            },
-                        }
-                    },
-                );
-
-                ui.allocate_ui_with_layout(
-                    navigation_ui_size,
-                    egui::Layout::top_down(egui::Align::Min),
-                    |ui| {
-                        ui.horizontal_centered(|ui| {
-                            for view in View::iter() {
-                                if ui.selectable_label(self.current_view == view, format!("{:?}", view)).clicked() {
-                                    switch_view(self, view);
-                                }
-                            }
-                        });
-                    },
-                );
+            let app_rect = ui.max_rect();
+            
+            let control_height = 80.0;
+            let control_rect = egui::Rect::from_min_max(
+                app_rect.min,
+                egui::pos2(app_rect.max.x, app_rect.min.y + control_height),
+            );
+            
+            let navigation_height = 42.0;
+            let navigation_rect = egui::Rect::from_min_max(
+                egui::pos2(app_rect.min.x, app_rect.max.y - navigation_height),
+                app_rect.max,
+            );
+    
+            let content_rect = egui::Rect::from_min_max(
+                egui::pos2(app_rect.min.x, control_rect.max.y),
+                egui::pos2(app_rect.max.x, navigation_rect.min.y),
+            );
+    
+            let mut control_ui = ui.new_child(egui::UiBuilder::new().max_rect(control_rect));
+            render_control_ui(&mut control_ui, self);
+    
+            let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_rect));
+            match self.current_view {
+                View::Library => render_songs_ui(&mut content_ui, self),
+                View::Playlists => {
+                    content_ui.label("Playlists section coming soon");
+                }
+                View::Settings => {
+                    content_ui.label("Settings section coming soon");
+                }
+            }
+    
+            let mut navigation_ui = ui.new_child(egui::UiBuilder::new().max_rect(navigation_rect));
+            navigation_ui.horizontal_centered(|ui| {
+                for view in View::iter() {
+                    let response = ui.selectable_label(self.current_view == view, format!("{:?}", view));
+                    if response.clicked() {
+                        switch_view(self, view);
+                    }
+                }
             });
         });
-    }        
+    }     
 }
 
 fn switch_view(gem_player: &mut GemPlayer, view: View) {
