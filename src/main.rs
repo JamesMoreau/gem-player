@@ -326,7 +326,7 @@ impl eframe::App for GemPlayer {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
     
-        custom_window_frame(ctx, "Gem Player", |ui| {
+        custom_window_frame(ctx, "", |ui| {
             let app_rect = ui.max_rect();
             
             let control_ui_height = 60.0;
