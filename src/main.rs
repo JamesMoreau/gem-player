@@ -329,19 +329,19 @@ impl eframe::App for GemPlayer {
         custom_window_frame(ctx, "Gem Player", |ui| {
             let app_rect = ui.max_rect();
             
-            let control_height = 80.0;
+            let control_ui_height = 60.0;
             let control_rect = egui::Rect::from_min_max(
                 app_rect.min,
-                egui::pos2(app_rect.max.x, app_rect.min.y + control_height),
+                egui::pos2(app_rect.max.x, app_rect.min.y + control_ui_height),
             );
             
-            let navigation_height = 42.0;
+            let navigation_ui_height = 32.0;
             let navigation_rect = egui::Rect::from_min_max(
-                egui::pos2(app_rect.min.x, app_rect.max.y - navigation_height),
+                egui::pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height),
                 app_rect.max,
             );
     
-            let content_rect = egui::Rect::from_min_max(
+            let content_ui_rect = egui::Rect::from_min_max(
                 egui::pos2(app_rect.min.x, control_rect.max.y),
                 egui::pos2(app_rect.max.x, navigation_rect.min.y),
             );
@@ -349,7 +349,7 @@ impl eframe::App for GemPlayer {
             let mut control_ui = ui.new_child(egui::UiBuilder::new().max_rect(control_rect));
             render_control_ui(&mut control_ui, self);
     
-            let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_rect));
+            let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_ui_rect));
             match self.current_view {
                 View::Library => render_songs_ui(&mut content_ui, self),
                 View::Playlists => {
