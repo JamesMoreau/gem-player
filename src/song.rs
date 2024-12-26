@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{SortBy, SortOrder};
+use crate::models::{SortBy, SortOrder};
 
 #[allow(unused)]
 #[derive(Debug, Clone)]

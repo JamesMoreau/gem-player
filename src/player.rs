@@ -1,8 +1,9 @@
-use std::{io::BufReader, path::PathBuf};
+use std::{io::BufReader, path::{Path, PathBuf}};
+use glob::glob;
 
 use rodio::{Decoder, OutputStream, Sink};
 
-use crate::{read_music_from_directory, song::{sort_songs, Song}, ui, SortBy, SortOrder};
+use crate::{constants, models::{SortBy, SortOrder}, song::{self, sort_songs, Song}, ui};
 
 pub struct GemPlayer {
     pub current_view: ui::View,
@@ -129,4 +130,47 @@ impl GemPlayer {
             self.sink.pause()
         }
     }
+}
+
+pub fn read_music_from_directory(path: &Path) -> Vec<Song> {
+    let mut songs = Vec::new();
+    let mut file_paths: Vec<PathBuf> = Vec::new();
+
+    let patterns = constants::SUPPORTED_AUDIO_FILE_TYPES
+        .iter()
+        .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
+        .collect::<Vec<String>>();
+
+    for pattern in patterns {
+        let file_paths_result = glob(&pattern);
+        match file_paths_result {
+            Ok(paths) => {
+                for path in paths.filter_map(Result::ok) {
+                    file_paths.push(path);
+                }
+            }
+            Err(e) => {
+                println!("Error reading pattern {}: {}", pattern, e);
+            }
+        }
+    }
+
+    if file_paths.is_empty() {
+        println!("No music files found in directory: {:?}", path);
+        return songs;
+    }
+
+    for entry in file_paths {
+        let song_option = song::get_song_from_file(&entry);
+        let song = match song_option {
+            Some(song) => song,
+            None => {
+                println!("Error reading song from file: {:?}", entry);
+                continue;
+            }
+        };
+        songs.push(song);
+    }
+
+    songs
 }

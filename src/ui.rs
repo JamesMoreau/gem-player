@@ -5,7 +5,7 @@ use egui_extras::TableBuilder;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use crate::{player::GemPlayer, song::{sort_songs, Song}, utils::{self, format_duration_to_mmss}, SortBy, SortOrder};
+use crate::{models::{SortBy, SortOrder}, player::{self, GemPlayer}, song::{sort_songs, Song}, utils::{self, format_duration_to_mmss}};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
@@ -13,6 +13,62 @@ pub enum View {
     Queue,
     Playlists,
     Settings,
+}
+
+impl eframe::App for player::GemPlayer {
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        egui::Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
+    }
+
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Necessary to keep UI up-to-date with the current state of the sink/player.
+        ctx.request_repaint_after_secs(1.0);
+    
+        custom_window_frame(ctx, "", |ui| {
+            let app_rect = ui.max_rect();
+            
+            let control_ui_height = 60.0;
+            let control_rect = egui::Rect::from_min_max(
+                app_rect.min,
+                egui::pos2(app_rect.max.x, app_rect.min.y + control_ui_height),
+            );
+            
+            let navigation_ui_height = 32.0;
+            let navigation_rect = egui::Rect::from_min_max(
+                egui::pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height),
+                app_rect.max,
+            );
+    
+            let content_ui_rect = egui::Rect::from_min_max(
+                egui::pos2(app_rect.min.x, control_rect.max.y),
+                egui::pos2(app_rect.max.x, navigation_rect.min.y),
+            );
+    
+            let mut control_ui = ui.new_child(egui::UiBuilder::new().max_rect(control_rect));
+            render_control_ui(&mut control_ui, self);
+    
+            let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_ui_rect));
+            match self.current_view {
+                View::Library => render_songs_ui(&mut content_ui, self),
+                View::Queue => render_queue_ui(&mut content_ui, self),
+                View::Playlists => {
+                    content_ui.label("Playlists section coming soon.");
+                }
+                View::Settings => render_settings_ui(&mut content_ui, self),
+            }
+    
+            let mut navigation_ui = ui.new_child(egui::UiBuilder::new().max_rect(navigation_rect));
+            navigation_ui.horizontal_centered(|ui| {
+                ui.add_space(16.0);
+                for view in View::iter() {
+                    let response = ui.selectable_label(self.current_view == view, format!("{:?}", view));
+                    if response.clicked() {
+                        switch_view(self, view);
+                    }
+                }
+            });
+        });
+    }     
 }
 
 pub fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOnce(&mut egui::Ui)) {
