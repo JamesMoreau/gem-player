@@ -3,7 +3,9 @@ use glob::glob;
 
 use rodio::{Decoder, OutputStream, Sink};
 
-use crate::{constants, models::{SortBy, SortOrder}, song::{self, sort_songs, Song}, ui};
+use crate::{models::{get_song_from_file, sort_songs, Song, SortBy, SortOrder}, ui};
+
+pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
 pub struct GemPlayer {
     pub current_view: ui::View,
@@ -136,7 +138,7 @@ pub fn read_music_from_directory(path: &Path) -> Vec<Song> {
     let mut songs = Vec::new();
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
-    let patterns = constants::SUPPORTED_AUDIO_FILE_TYPES
+    let patterns = SUPPORTED_AUDIO_FILE_TYPES
         .iter()
         .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
         .collect::<Vec<String>>();
@@ -161,7 +163,7 @@ pub fn read_music_from_directory(path: &Path) -> Vec<Song> {
     }
 
     for entry in file_paths {
-        let song_option = song::get_song_from_file(&entry);
+        let song_option = get_song_from_file(&entry);
         let song = match song_option {
             Some(song) => song,
             None => {
