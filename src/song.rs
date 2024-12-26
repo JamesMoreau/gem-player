@@ -4,6 +4,8 @@ use std::{
     time::Duration,
 };
 
+use crate::{SortBy, SortOrder};
+
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Song {
@@ -58,4 +60,20 @@ pub fn get_song_from_file(path: &Path) -> Option<Song> {
         artwork,
         file_path,
     })
+}
+
+pub fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
+    songs.sort_by(|a, b| {
+        let ordering = match sort_by {
+            SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
+            SortBy::Artist => a.artist.as_deref().unwrap_or("").cmp(b.artist.as_deref().unwrap_or("")),
+            SortBy::Album => a.album.as_deref().unwrap_or("").cmp(b.album.as_deref().unwrap_or("")),
+            SortBy::Time => a.duration.cmp(&b.duration),
+        };
+
+        match sort_order {
+            SortOrder::Ascending => ordering,
+            SortOrder::Descending => ordering.reverse(),
+        }
+    });
 }

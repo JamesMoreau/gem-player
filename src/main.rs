@@ -1,8 +1,6 @@
 use crate::song::Song;
 use eframe::egui::{self, Vec2};
 use glob::glob;
-use rodio::{Decoder, OutputStream, Sink};
-use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -11,6 +9,7 @@ mod constants;
 mod song;
 mod ui;
 mod utils;
+mod player;
 
 /*
 TODO:
@@ -46,7 +45,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Gem Player",
         options,
-        Box::new(|cc| Ok(Box::new(GemPlayer::new(cc)))),
+        Box::new(|cc| Ok(Box::new(player::GemPlayer::new(cc)))),
     )
 }
 
@@ -64,134 +63,7 @@ pub enum SortOrder {
     Descending,
 }
 
-struct GemPlayer {
-    current_view: ui::View,
-    songs: Vec<Song>,
-
-    music_directory: Option<PathBuf>,
-
-    selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    queue: Vec<Song>,
-    current_song: Option<Song>, // The currently playing song.
-    _stream: OutputStream,      // Holds the OutputStream to keep it alive
-    sink: Sink,                 // Controls playback (play, pause, stop, etc.)
-    
-    muted: bool,
-    volume_before_mute: Option<f32>,
-
-    paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
-
-    search_text: String,
-    sort_by: SortBy,
-    sort_order: SortOrder,
-
-    theme: String,
-}
-
-impl GemPlayer {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        egui_extras::install_image_loaders(&cc.egui_ctx);
-
-        egui_material_icons::initialize(&cc.egui_ctx);
-
-        let (_stream, handle) = OutputStream::try_default().unwrap();
-        let sink = Sink::try_new(&handle).unwrap();
-        sink.pause();
-        sink.set_volume(0.6);
-
-        let mut default_self = Self {
-            current_view: ui::View::Library,
-            songs: Vec::new(),
-            selected_song: None,
-            queue: Vec::new(),
-            search_text: String::new(),
-            music_directory: None,
-            sort_by: SortBy::Title,
-            sort_order: SortOrder::Ascending,
-            current_song: None,
-            // queue: Vec::new(),
-            _stream,
-            sink,
-            muted: false,
-            volume_before_mute: None,
-            paused_before_scrubbing: None,
-            theme: "Default".to_owned(),
-        };
-
-        // Find the music directory.
-        let audio_directory = match dirs::audio_dir() {
-            Some(dir) => dir,
-            None => {
-                println!("No music directory found.");
-                return default_self;
-            }
-        };
-        let my_music_directory = audio_directory.join("MyMusic");
-        default_self.music_directory = Some(my_music_directory);
-
-        let songs = match &default_self.music_directory {
-            Some(path) => read_music_from_directory(path),
-            None => Vec::new(),
-        };
-        println!("Found {} songs", &songs.len());
-        sort_songs(
-            &mut default_self.songs,
-            default_self.sort_by,
-            default_self.sort_order,
-        );
-
-        Self {
-            songs,
-            ..default_self
-        }
-    }
-
-    fn is_playing(&self) -> bool {
-        !self.sink.is_paused()
-    }
-
-    // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-    fn load_and_play_song(&mut self, song: &Song) {
-        self.sink.stop(); // Stop the current song if any.
-
-        let file_result = std::fs::File::open(&song.file_path);
-        let file = match file_result {
-            Ok(file) => file,
-            Err(e) => {
-                println!("Error opening file: {:?}", e);
-                return;
-            }
-        };
-
-        let source_result = Decoder::new(BufReader::new(file));
-        let source = match source_result {
-            Ok(source) => source,
-            Err(e) => {
-                println!(
-                    "Error decoding file: {}, Error: {:?}",
-                    song.file_path.to_string_lossy(),
-                    e
-                );
-                return;
-            }
-        };
-
-        self.current_song = Some(song.clone());
-
-        self.sink.append(source);
-        self.sink.play();
-    }
-
-    fn play_or_pause(&mut self) {
-        if self.sink.is_paused() {
-            self.sink.play()
-        } else {
-            self.sink.pause()
-        }
-    }
-}
-
-impl eframe::App for GemPlayer {
+impl eframe::App for player::GemPlayer {
     fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
         egui::Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
@@ -290,18 +162,3 @@ fn read_music_from_directory(path: &Path) -> Vec<Song> {
     songs
 }
 
-fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
-    songs.sort_by(|a, b| {
-        let ordering = match sort_by {
-            SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
-            SortBy::Artist => a.artist.as_deref().unwrap_or("").cmp(b.artist.as_deref().unwrap_or("")),
-            SortBy::Album => a.album.as_deref().unwrap_or("").cmp(b.album.as_deref().unwrap_or("")),
-            SortBy::Time => a.duration.cmp(&b.duration),
-        };
-
-        match sort_order {
-            SortOrder::Ascending => ordering,
-            SortOrder::Descending => ordering.reverse(),
-        }
-    });
-}

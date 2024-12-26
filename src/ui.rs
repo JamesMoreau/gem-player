@@ -5,7 +5,7 @@ use egui_extras::TableBuilder;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use crate::{song::Song, sort_songs, utils::{self, format_duration_to_mmss}, GemPlayer, SortBy, SortOrder};
+use crate::{player::GemPlayer, song::{sort_songs, Song}, utils::{self, format_duration_to_mmss}, SortBy, SortOrder};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
