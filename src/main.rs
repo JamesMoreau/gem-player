@@ -77,7 +77,7 @@ struct GemPlayer {
     music_directory: Option<PathBuf>,
 
     selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    // queue: Vec<Song>,
+    queue: Vec<Song>,
     current_song: Option<Song>, // The currently playing song.
     _stream: OutputStream,      // Holds the OutputStream to keep it alive
     sink: Sink,                 // Controls playback (play, pause, stop, etc.)
@@ -109,6 +109,7 @@ impl GemPlayer {
             current_view: View::Library,
             songs: Vec::new(),
             selected_song: None,
+            queue: Vec::new(),
             search_text: String::new(),
             music_directory: None,
             sort_by: SortBy::Title,
@@ -356,15 +357,11 @@ impl eframe::App for GemPlayer {
             let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_ui_rect));
             match self.current_view {
                 View::Library => render_songs_ui(&mut content_ui, self),
-                View::Queue => {
-                    content_ui.label("Queue section coming soon.");
-                }
+                View::Queue => render_queue_ui(&mut content_ui, self),
                 View::Playlists => {
                     content_ui.label("Playlists section coming soon.");
                 }
-                View::Settings => {
-                    render_settings_ui(&mut content_ui, self);
-                }
+                View::Settings => render_settings_ui(&mut content_ui, self),
             }
     
             let mut navigation_ui = ui.new_child(egui::UiBuilder::new().max_rect(navigation_rect));
@@ -735,55 +732,162 @@ fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-fn render_settings_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
-    egui::ScrollArea::vertical().show(ui, |ui| {
-        ui.group(|ui| {
-            ui.label("Music Library Path:");
-            ui.horizontal(|ui| {
-                let path = gem_player.music_directory.as_ref().map_or("No directory selected".to_string(), |p| p.to_string_lossy().to_string());
-                ui.label(path);
-                if ui.button("Browse").clicked() {
-                    // Add your folder picker logic here
-                    println!("Browse button clicked");
-                }
-            });
-        });
+fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+    let queue_songs: Vec<Song> = gem_player.queue.clone();
 
-        ui.separator();
+    let header_labels = ["Title", "Artist", "Album", "Time", "Actions"];
 
-        ui.group(|ui| {
-            ui.label("Theme:");
-            egui::ComboBox::from_label("Select Theme")
-                .selected_text(&gem_player.theme)
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(
-                        &mut gem_player.theme,
-                        "Light".to_string(),
-                        "Light",
-                    );
-                    ui.selectable_value(
-                        &mut gem_player.theme,
-                        "Dark".to_string(),
-                        "Dark",
-                    );
-                    ui.selectable_value(
-                        &mut gem_player.theme,
-                        "System".to_string(),
-                        "System (Follow OS)",
+    let available_width = ui.available_width();
+    let time_width = 80.0;
+    let actions_width = 60.0;
+    let remaining_width = available_width - time_width - actions_width;
+    let title_width = remaining_width * (2.0 / 4.0);
+    let artist_width = remaining_width * (1.0 / 4.0);
+    let album_width = remaining_width * (1.0 / 4.0);
+
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(egui::Sense::click())
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .column(egui_extras::Column::exact(title_width))
+        .column(egui_extras::Column::exact(artist_width))
+        .column(egui_extras::Column::exact(album_width))
+        .column(egui_extras::Column::exact(time_width))
+        .column(egui_extras::Column::exact(actions_width))
+        .header(16.0, |mut header| {
+            for (i, h) in header_labels.iter().enumerate() {
+                header.col(|ui| {
+                    if i == 0 {
+                        ui.add_space(16.0);
+                    }
+                    ui.add(
+                        egui::Label::new(egui::RichText::new(*h).strong())
+                            .selectable(false),
                     );
                 });
-        });
+            }
+        })
+        .body(|body| {
+            body.rows(26.0, queue_songs.len(), |mut row| {
+                let song = &queue_songs[row.index()];
 
-        ui.separator();
+                row.set_selected(gem_player.selected_song == Some(row.index()));
 
-        ui.group(|ui| {
-            ui.heading("About Gem Player");
-            let version = env!("CARGO_PKG_VERSION");
-            ui.label(format!("Version: {version}"));
-            ui.label("Gem Player is a modern, lightweight music player.");
-            ui.label("For support or inquiries, visit our website.");
+                row.col(|ui| {
+                    ui.add_space(16.0);
+                    ui.add(
+                        egui::Label::new(
+                            song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
+                        )
+                        .selectable(false),
+                    );
+                });
+
+                row.col(|ui| {
+                    ui.add(
+                        egui::Label::new(
+                            song.artist
+                                .as_ref()
+                                .unwrap_or(&"Unknown Artist".to_string()),
+                        )
+                        .selectable(false),
+                    );
+                });
+
+                row.col(|ui| {
+                    ui.add(
+                        egui::Label::new(
+                            song.album.as_ref().unwrap_or(&"Unknown".to_string()),
+                        )
+                        .selectable(false),
+                    );
+                });
+
+                row.col(|ui| {
+                    let duration_string = format_duration_to_mmss(song.duration);
+                    ui.add(egui::Label::new(duration_string).selectable(false));
+                });
+
+                let row_index = row.index();
+                row.col(|ui| {
+                    if ui.button("Remove").clicked() {
+                        gem_player.queue.remove(row_index);
+                    }
+                });
+
+                let response = row.response();
+                if response.clicked() {
+                    gem_player.selected_song = Some(row.index());
+                }
+
+                if response.double_clicked() {
+                    gem_player.load_and_play_song(song);
+                }
+
+                response.context_menu(|ui| {
+                    if ui.button("Play Next").clicked() {
+                        ui.close_menu();
+                    }
+
+                    if ui.button("Remove from Queue").clicked() {
+                        gem_player.queue.remove(row.index());
+                        ui.close_menu();
+                    }
+                });
+            });
         });
-    });
+}
+
+fn render_settings_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+    let available_width = ui.available_width();
+    egui::Frame::none()
+        .outer_margin(egui::Margin::symmetric(available_width * (1.0 / 4.0), 32.0))
+        .show(ui, |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.add(egui::Label::new("Music Library Path:").selectable(false));
+                ui.horizontal(|ui| {
+                    let path = gem_player.music_directory.as_ref().map_or("No directory selected".to_string(), |p| p.to_string_lossy().to_string());
+                    ui.label(path);
+                    
+                    let clicked = ui.button("Browse").clicked();
+                    if clicked {
+                        // Add folder picker logic here
+                        println!("Browse button clicked");
+                    }
+                });
+        
+                ui.add(egui::Separator::default().spacing(32.0));
+        
+                ui.label("Theme:");
+                egui::ComboBox::from_label("Select Theme")
+                    .selected_text(&gem_player.theme)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut gem_player.theme,
+                            "Light".to_string(),
+                            "Light",
+                        );
+                        ui.selectable_value(
+                            &mut gem_player.theme,
+                            "Dark".to_string(),
+                            "Dark",
+                        );
+                        ui.selectable_value(
+                            &mut gem_player.theme,
+                            "System".to_string(),
+                            "System",
+                        );
+                    });
+        
+                ui.add(egui::Separator::default().spacing(32.0));
+        
+                ui.heading("About Gem Player");
+                let version = env!("CARGO_PKG_VERSION");
+                ui.add(egui::Label::new(format!("Version: {version}")).selectable(false));
+                ui.add(egui::Label::new("Gem Player is a modern, lightweight music player.").selectable(false));
+                ui.add(egui::Label::new("For support or inquiries, visit our website.").selectable(false));
+            });
+        });
 }
 
 fn format_duration_to_mmss(duration: std::time::Duration) -> String {
