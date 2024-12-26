@@ -51,6 +51,7 @@ fn main() -> eframe::Result {
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
     Library,
+    Queue,
     Playlists,
     Settings,
 }
@@ -89,6 +90,8 @@ struct GemPlayer {
     search_text: String,
     sort_by: SortBy,
     sort_order: SortOrder,
+
+    theme: String,
 }
 
 impl GemPlayer {
@@ -117,6 +120,7 @@ impl GemPlayer {
             muted: false,
             volume_before_mute: None,
             paused_before_scrubbing: None,
+            theme: "Default".to_owned(),
         };
 
         // Find the music directory.
@@ -352,16 +356,20 @@ impl eframe::App for GemPlayer {
             let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_ui_rect));
             match self.current_view {
                 View::Library => render_songs_ui(&mut content_ui, self),
+                View::Queue => {
+                    content_ui.label("Queue section coming soon.");
+                }
                 View::Playlists => {
-                    content_ui.label("Playlists section coming soon");
+                    content_ui.label("Playlists section coming soon.");
                 }
                 View::Settings => {
-                    content_ui.label("Settings section coming soon");
+                    render_settings_ui(&mut content_ui, self);
                 }
             }
     
             let mut navigation_ui = ui.new_child(egui::UiBuilder::new().max_rect(navigation_rect));
             navigation_ui.horizontal_centered(|ui| {
+                ui.add_space(16.0);
                 for view in View::iter() {
                     let response = ui.selectable_label(self.current_view == view, format!("{:?}", view));
                     if response.clicked() {
@@ -725,6 +733,57 @@ fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 });
             });
         });
+}
+
+fn render_settings_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        ui.group(|ui| {
+            ui.label("Music Library Path:");
+            ui.horizontal(|ui| {
+                let path = gem_player.music_directory.as_ref().map_or("No directory selected".to_string(), |p| p.to_string_lossy().to_string());
+                ui.label(path);
+                if ui.button("Browse").clicked() {
+                    // Add your folder picker logic here
+                    println!("Browse button clicked");
+                }
+            });
+        });
+
+        ui.separator();
+
+        ui.group(|ui| {
+            ui.label("Theme:");
+            egui::ComboBox::from_label("Select Theme")
+                .selected_text(&gem_player.theme)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut gem_player.theme,
+                        "Light".to_string(),
+                        "Light",
+                    );
+                    ui.selectable_value(
+                        &mut gem_player.theme,
+                        "Dark".to_string(),
+                        "Dark",
+                    );
+                    ui.selectable_value(
+                        &mut gem_player.theme,
+                        "System".to_string(),
+                        "System (Follow OS)",
+                    );
+                });
+        });
+
+        ui.separator();
+
+        ui.group(|ui| {
+            ui.heading("About Gem Player");
+            let version = env!("CARGO_PKG_VERSION");
+            ui.label(format!("Version: {version}"));
+            ui.label("Gem Player is a modern, lightweight music player.");
+            ui.label("For support or inquiries, visit our website.");
+        });
+    });
 }
 
 fn format_duration_to_mmss(duration: std::time::Duration) -> String {
