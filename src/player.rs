@@ -3,7 +3,7 @@ use glob::glob;
 
 use rodio::{Decoder, OutputStream, Sink};
 
-use crate::{models::{get_song_from_file, sort_songs, Song, SortBy, SortOrder}, ui};
+use crate::{get_song_from_file, sort_songs, ui, Song, SortBy, SortOrder};
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 

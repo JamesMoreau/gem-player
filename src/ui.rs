@@ -8,7 +8,7 @@ use egui_extras::TableBuilder;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use crate::{models::{sort_songs, Song, SortBy, SortOrder}, player::{self, GemPlayer}, utils::{self, format_duration_to_mmss}};
+use crate::{sort_songs, Song, SortBy, SortOrder, player::{self, GemPlayer}, format_duration_to_mmss};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
@@ -379,7 +379,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                                 let position = Duration::from_secs_f32(position_as_secs);
                                 let song_duration = Duration::from_secs_f32(song_duration_as_secs);
-                                let time_label_text = format!("{} / {}", utils::format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
+                                let time_label_text = format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
                                 
                                 let time_label = Label::new(time_label_text).selectable(false);
                                 ui.add(time_label);
