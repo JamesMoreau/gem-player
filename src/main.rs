@@ -1,4 +1,4 @@
-use eframe::egui::{self, Vec2, ViewportBuilder};
+use eframe::egui::{Vec2, ViewportBuilder};
 
 mod ui;
 mod player;
