@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use eframe::egui::{self, TextureFilter, TextureOptions, ViewportCommand};
+use eframe::egui::{include_image, pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, Rect, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals};
 use egui_extras::TableBuilder;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -16,11 +16,11 @@ pub enum View {
 }
 
 impl eframe::App for player::GemPlayer {
-    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
-        egui::Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
+    fn clear_color(&self, _visuals: &Visuals) -> [f32; 4] {
+        Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
     
@@ -28,26 +28,26 @@ impl eframe::App for player::GemPlayer {
             let app_rect = ui.max_rect();
             
             let control_ui_height = 60.0;
-            let control_rect = egui::Rect::from_min_max(
+            let control_rect = Rect::from_min_max(
                 app_rect.min,
-                egui::pos2(app_rect.max.x, app_rect.min.y + control_ui_height),
+                pos2(app_rect.max.x, app_rect.min.y + control_ui_height),
             );
             
             let navigation_ui_height = 32.0;
-            let navigation_rect = egui::Rect::from_min_max(
-                egui::pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height),
+            let navigation_rect = Rect::from_min_max(
+                pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height),
                 app_rect.max,
             );
     
-            let content_ui_rect = egui::Rect::from_min_max(
-                egui::pos2(app_rect.min.x, control_rect.max.y),
-                egui::pos2(app_rect.max.x, navigation_rect.min.y),
+            let content_ui_rect = Rect::from_min_max(
+                pos2(app_rect.min.x, control_rect.max.y),
+                pos2(app_rect.max.x, navigation_rect.min.y),
             );
     
-            let mut control_ui = ui.new_child(egui::UiBuilder::new().max_rect(control_rect));
+            let mut control_ui = ui.new_child(UiBuilder::new().max_rect(control_rect));
             render_control_ui(&mut control_ui, self);
     
-            let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_ui_rect));
+            let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_ui_rect));
             match self.current_view {
                 View::Library => render_songs_ui(&mut content_ui, self),
                 View::Queue => render_queue_ui(&mut content_ui, self),
@@ -57,7 +57,7 @@ impl eframe::App for player::GemPlayer {
                 View::Settings => render_settings_ui(&mut content_ui, self),
             }
     
-            let mut navigation_ui = ui.new_child(egui::UiBuilder::new().max_rect(navigation_rect));
+            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_rect));
             navigation_ui.horizontal_centered(|ui| {
                 ui.add_space(16.0);
                 for view in View::iter() {
@@ -71,8 +71,8 @@ impl eframe::App for player::GemPlayer {
     }     
 }
 
-pub fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl FnOnce(&mut egui::Ui)) {
-    let panel_frame = egui::Frame {
+pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
+    let panel_frame = Frame {
         fill: ctx.style().visuals.window_fill(),
         rounding: 10.0.into(),
         stroke: ctx.style().visuals.widgets.noninteractive.fg_stroke,
@@ -80,7 +80,7 @@ pub fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl 
         ..Default::default()
     };
 
-    egui::CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
+    CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
         let app_rect = ui.max_rect();
 
         let title_bar_height = 24.0;
@@ -98,33 +98,33 @@ pub fn custom_window_frame(ctx: &egui::Context, title: &str, add_contents: impl 
             rect
         }
         .shrink(4.0);
-        let mut content_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_rect));
+        let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
         add_contents(&mut content_ui);
     });
 }
 
-pub fn title_bar_ui(ui: &mut egui::Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
+pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
     let painter = ui.painter();
 
     let title_bar_response = ui.interact(
         title_bar_rect,
-        egui::Id::new("title_bar"),
-        egui::Sense::click_and_drag(),
+        Id::new("title_bar"),
+        Sense::click_and_drag(),
     );
 
     painter.text(
         title_bar_rect.center(),
-        egui::Align2::CENTER_CENTER,
+        Align2::CENTER_CENTER,
         title,
-        egui::FontId::proportional(20.0),
+        FontId::proportional(20.0),
         ui.style().visuals.text_color(),
     );
 
     // Paint the line under the title:
     painter.line_segment(
         [
-            title_bar_rect.left_bottom() + egui::vec2(1.0, 0.0),
-            title_bar_rect.right_bottom() + egui::vec2(-1.0, 0.0),
+            title_bar_rect.left_bottom() + vec2(1.0, 0.0),
+            title_bar_rect.right_bottom() + vec2(-1.0, 0.0),
         ],
         ui.visuals().widgets.noninteractive.bg_stroke,
     );
@@ -134,18 +134,18 @@ pub fn title_bar_ui(ui: &mut egui::Ui, title_bar_rect: eframe::epaint::Rect, tit
         ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
     }
 
-    if title_bar_response.drag_started_by(egui::PointerButton::Primary) {
+    if title_bar_response.drag_started_by(PointerButton::Primary) {
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
     ui.allocate_new_ui(
-        egui::UiBuilder::new()
+        UiBuilder::new()
             .max_rect(title_bar_rect)
             .layout(
                 if cfg!(target_os = "macos") {
-                    egui::Layout::left_to_right(egui::Align::Center)
+                    Layout::left_to_right(Align::Center)
                 } else {
-                    egui::Layout::right_to_left(egui::Align::Center)
+                    Layout::right_to_left(Align::Center)
                 }
             ),
         |ui| {
@@ -154,32 +154,32 @@ pub fn title_bar_ui(ui: &mut egui::Ui, title_bar_rect: eframe::epaint::Rect, tit
             ui.visuals_mut().button_frame = false;
             let button_height = 12.0;
 
-            let close_button = |ui: &mut egui::Ui| {
+            let close_button = |ui: &mut Ui| {
                 let close_response = ui
-                    .add(egui::Button::new(egui::RichText::new("❌").size(button_height)))
+                    .add(Button::new(RichText::new("❌").size(button_height)))
                     .on_hover_text("Close the window");
                 if close_response.clicked() {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                    ui.ctx().send_viewport_cmd(ViewportCommand::Close);
                 }
             };
 
-            let maximize_button = |ui: &mut egui::Ui| {
+            let maximize_button = |ui: &mut Ui| {
                 let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
                 let tooltip = if is_maximized { "Restore window" } else { "Maximize window" };
                 let maximize_response = ui
-                    .add(egui::Button::new(egui::RichText::new("🗗").size(button_height)))
+                    .add(Button::new(RichText::new("🗗").size(button_height)))
                     .on_hover_text(tooltip);
                 if maximize_response.clicked() {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(!is_maximized));
+                    ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
                 }
             };
 
-            let minimize_button = |ui: &mut egui::Ui| {
+            let minimize_button = |ui: &mut Ui| {
                 let minimize_response = ui
-                    .add(egui::Button::new(egui::RichText::new("🗕").size(button_height)))
+                    .add(Button::new(RichText::new("🗕").size(button_height)))
                     .on_hover_text("Minimize the window");
                 if minimize_response.clicked() {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+                    ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
                 }
             };
     
@@ -201,10 +201,10 @@ pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
     gem_player.current_view = view;
 }
 
-pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
-    egui::Frame::none().inner_margin(egui::Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
-            flex.add_simple(egui_flex::item().align_self_content(egui::Align2::LEFT_CENTER), |ui| {
+            flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_PREVIOUS).clicked();
                 if clicked {
                     println!("Previous song");
@@ -245,7 +245,7 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                     }
                 }
     
-                let volume_slider = egui::Slider::new(&mut volume, 0.0..=1.0)
+                let volume_slider = Slider::new(&mut volume, 0.0..=1.0)
                     .trailing_fill(true)
                     .show_value(false);
                 let changed = ui.add(volume_slider).changed();
@@ -260,8 +260,8 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
             flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                 egui_flex::Flex::vertical().show(ui, |flex| {
                     flex.add_simple(egui_flex::item().grow(1.0), |ui| {
-                        let repeat_button = egui::Button::new(egui_material_icons::icons::ICON_REPEAT);
-                        let shuffle_button = egui::Button::new(egui_material_icons::icons::ICON_SHUFFLE);
+                        let repeat_button = Button::new(egui_material_icons::icons::ICON_REPEAT);
+                        let shuffle_button = Button::new(egui_material_icons::icons::ICON_SHUFFLE);
 
                         let clicked = ui.add(repeat_button).clicked();
                         if clicked {
@@ -278,9 +278,9 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
 
                 let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-                let artwork_size = egui::Vec2::splat(52.0);
+                let artwork_size = Vec2::splat(52.0);
                 let rounding = 4.0;
-                let default_artwork = egui::Image::new(egui::include_image!(
+                let default_artwork = Image::new(include_image!(
                     "../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"
                 ))
                 .texture_options(artwork_texture_options)
@@ -302,7 +302,7 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                                 .unwrap_or("default")
                         );
 
-                        egui::Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                        Image::from_bytes(artwork_uri, artwork_bytes.clone())
                             .texture_options(artwork_texture_options)
                             .fit_to_exact_size(artwork_size)
                             .rounding(rounding)
@@ -330,11 +330,11 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                         ui.style_mut().spacing.slider_width = 500.0;
                         let playback_progress_slider =
-                            egui::Slider::new(&mut position_as_secs, 0.0..=song_duration_as_secs)
+                            Slider::new(&mut position_as_secs, 0.0..=song_duration_as_secs)
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
-                        let response: egui::Response = ui.add(playback_progress_slider);
+                        let response = ui.add(playback_progress_slider);
 
                         if response.dragged() && gem_player.paused_before_scrubbing.is_none() && song_is_some {
                             gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
@@ -357,28 +357,28 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         }
 
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
-                            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(egui::Align2::LEFT_CENTER), |ui| {
-                                let default_text_style = egui::TextStyle::Body.resolve(ui.style());
+                            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
+                                let default_text_style = TextStyle::Body.resolve(ui.style());
                                 let default_color = ui.visuals().text_color();
-                                let data_format = egui::TextFormat::simple(default_text_style.clone(),  egui::Color32::WHITE);
+                                let data_format = TextFormat::simple(default_text_style.clone(),  Color32::WHITE);
                                 
-                                let mut job = egui::text::LayoutJob::default();
+                                let mut job = text::LayoutJob::default();
                                 job.append(&title, 0.0, data_format.clone());
-                                job.append(" by ", 0.0, egui::TextFormat::simple(default_text_style.clone(), default_color));
+                                job.append(" by ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
                                 job.append(&artist, 0.0, data_format.clone());
-                                job.append(" on ", 0.0, egui::TextFormat::simple(default_text_style.clone(), default_color));
+                                job.append(" on ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
                                 job.append(&album, 0.0, data_format.clone());
 
-                                let song_label = egui::Label::new(job).truncate().selectable(false);
+                                let song_label = Label::new(job).truncate().selectable(false);
                                 ui.add(song_label);
                             });
 
-                            flex.add_simple(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), |ui| {
+                            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                                 let position = Duration::from_secs_f32(position_as_secs);
                                 let song_duration = Duration::from_secs_f32(song_duration_as_secs);
                                 let time_label_text = format!("{} / {}", utils::format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
                                 
-                                let time_label = egui::Label::new(time_label_text).selectable(false);
+                                let time_label = Label::new(time_label_text).selectable(false);
                                 ui.add(time_label);
                             });
                         });
@@ -386,7 +386,7 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 });
             });
 
-            flex.add_simple(egui_flex::item().align_self_content(egui::Align2::RIGHT_CENTER), |ui| {
+            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                 let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
                 ui.menu_button(filter_icon, |ui| {
                     let mut should_sort_songs = false;
@@ -416,13 +416,13 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                     }
                 });
 
-                let search_bar = egui::TextEdit::singleline(&mut gem_player.search_text)
+                let search_bar = TextEdit::singleline(&mut gem_player.search_text)
                     .hint_text("Search...")
                     .desired_width(140.0);
                 ui.add(search_bar);
 
                 let clear_button_is_visible = !gem_player.search_text.is_empty();
-                let response = ui.add_visible(clear_button_is_visible, egui::Button::new(egui_material_icons::icons::ICON_CLEAR));
+                let response = ui.add_visible(clear_button_is_visible, Button::new(egui_material_icons::icons::ICON_CLEAR));
                 if response.clicked() {
                     gem_player.search_text.clear();
                 }
@@ -431,7 +431,7 @@ pub fn render_control_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let filtered_songs: Vec<Song> = gem_player
         .songs
         .iter()
@@ -458,8 +458,8 @@ pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
     TableBuilder::new(ui)
         .striped(true)
-        .sense(egui::Sense::click())
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .sense(Sense::click())
+        .cell_layout(Layout::left_to_right(Align::Center))
         .column(egui_extras::Column::exact(title_width))
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
@@ -471,7 +471,7 @@ pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         ui.add_space(16.0);
                     }
                     ui.add(
-                        egui::Label::new(egui::RichText::new(*h).strong())
+                        Label::new(RichText::new(*h).strong())
                             .selectable(false),
                     );
                 });
@@ -486,7 +486,7 @@ pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 row.col(|ui| {
                     ui.add_space(16.0);
                     ui.add(
-                        egui::Label::new(
+                        Label::new(
                             song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
                         )
                         .selectable(false),
@@ -495,7 +495,7 @@ pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add(
-                        egui::Label::new(
+                        Label::new(
                             song.artist
                                 .as_ref()
                                 .unwrap_or(&"Unknown Artist".to_string()),
@@ -506,7 +506,7 @@ pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add(
-                        egui::Label::new(
+                        Label::new(
                             song.album.as_ref().unwrap_or(&"Unknown".to_string()),
                         )
                         .selectable(false),
@@ -515,7 +515,7 @@ pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     let duration_string = format_duration_to_mmss(song.duration);
-                    ui.add(egui::Label::new(duration_string).selectable(false));
+                    ui.add(Label::new(duration_string).selectable(false));
                 });
 
                 let response = row.response();
@@ -550,7 +550,7 @@ pub fn render_songs_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let queue_songs: Vec<Song> = gem_player.queue.clone();
 
     let header_labels = ["Title", "Artist", "Album", "Time", "Actions"];
@@ -565,8 +565,8 @@ pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
     TableBuilder::new(ui)
         .striped(true)
-        .sense(egui::Sense::click())
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .sense(Sense::click())
+        .cell_layout(Layout::left_to_right(Align::Center))
         .column(egui_extras::Column::exact(title_width))
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
@@ -579,7 +579,7 @@ pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         ui.add_space(16.0);
                     }
                     ui.add(
-                        egui::Label::new(egui::RichText::new(*h).strong())
+                        Label::new(RichText::new(*h).strong())
                             .selectable(false),
                     );
                 });
@@ -594,7 +594,7 @@ pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                 row.col(|ui| {
                     ui.add_space(16.0);
                     ui.add(
-                        egui::Label::new(
+                        Label::new(
                             song.title.as_ref().unwrap_or(&"Unknown Title".to_string()),
                         )
                         .selectable(false),
@@ -603,7 +603,7 @@ pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add(
-                        egui::Label::new(
+                        Label::new(
                             song.artist
                                 .as_ref()
                                 .unwrap_or(&"Unknown Artist".to_string()),
@@ -614,7 +614,7 @@ pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add(
-                        egui::Label::new(
+                        Label::new(
                             song.album.as_ref().unwrap_or(&"Unknown".to_string()),
                         )
                         .selectable(false),
@@ -623,7 +623,7 @@ pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     let duration_string = format_duration_to_mmss(song.duration);
-                    ui.add(egui::Label::new(duration_string).selectable(false));
+                    ui.add(Label::new(duration_string).selectable(false));
                 });
 
                 let row_index = row.index();
@@ -656,13 +656,13 @@ pub fn render_queue_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_settings_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
+pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let available_width = ui.available_width();
-    egui::Frame::none()
-        .outer_margin(egui::Margin::symmetric(available_width * (1.0 / 4.0), 32.0))
+    Frame::none()
+        .outer_margin(Margin::symmetric(available_width * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.add(egui::Label::new("Music Library Path:").selectable(false));
+            ScrollArea::vertical().show(ui, |ui| {
+                ui.add(Label::new("Music Library Path:").selectable(false));
                 ui.horizontal(|ui| {
                     let path = gem_player.music_directory.as_ref().map_or("No directory selected".to_string(), |p| p.to_string_lossy().to_string());
                     ui.label(path);
@@ -674,10 +674,10 @@ pub fn render_settings_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                     }
                 });
         
-                ui.add(egui::Separator::default().spacing(32.0));
+                ui.add(Separator::default().spacing(32.0));
         
                 ui.label("Theme:");
-                egui::ComboBox::from_label("Select Theme")
+                ComboBox::from_label("Select Theme")
                     .selected_text(&gem_player.theme)
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
@@ -697,13 +697,13 @@ pub fn render_settings_ui(ui: &mut egui::Ui, gem_player: &mut GemPlayer) {
                         );
                     });
         
-                ui.add(egui::Separator::default().spacing(32.0));
+                ui.add(Separator::default().spacing(32.0));
         
                 ui.heading("About Gem Player");
                 let version = env!("CARGO_PKG_VERSION");
-                ui.add(egui::Label::new(format!("Version: {version}")).selectable(false));
-                ui.add(egui::Label::new("Gem Player is a modern, lightweight music player.").selectable(false));
-                ui.add(egui::Label::new("For support or inquiries, visit our website.").selectable(false));
+                ui.add(Label::new(format!("Version: {version}")).selectable(false));
+                ui.add(Label::new("Gem Player is a modern, lightweight music player.").selectable(false));
+                ui.add(Label::new("For support or inquiries, visit our website.").selectable(false));
             });
         });
 }

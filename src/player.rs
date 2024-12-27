@@ -6,7 +6,6 @@ use rodio::{Decoder, OutputStream, Sink};
 use crate::{models::{get_song_from_file, sort_songs, Song, SortBy, SortOrder}, ui};
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
-
 pub struct GemPlayer {
     pub current_view: ui::View,
     pub songs: Vec<Song>,
