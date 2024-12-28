@@ -40,9 +40,8 @@ fn main() -> eframe::Result {
     )
 }
 
-use std::{path::{Path, PathBuf}, time::Duration};
+use std::{path::PathBuf, time::Duration};
 
-use lofty::{file::{AudioFile, TaggedFileExt}, tag::ItemKey};
 use strum_macros::EnumIter;
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
@@ -68,51 +67,6 @@ pub struct Song {
     pub duration: Duration,
     pub artwork: Option<Vec<u8>>,
     pub file_path: PathBuf,
-}
-
-pub fn get_song_from_file(path: &Path) -> Option<Song> {
-    if !path.is_file() {
-        println!("Path is not a file: {:?}", path);
-        return None;
-    }
-
-    let result_file = lofty::read_from_path(path);
-    let tagged_file = match result_file {
-        Ok(file) => file,
-        Err(e) => {
-            println!("Error reading file {}: {}", path.display(), e);
-            return None;
-        }
-    };
-
-    let tag = match tagged_file.primary_tag() {
-        Some(tag) => tag,
-        None => tagged_file.first_tag()?,
-    };
-
-    let title = tag.get_string(&ItemKey::TrackTitle).map(|t| t.to_owned())
-        .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
-
-    let artist = tag.get_string(&ItemKey::TrackArtist).map(|a| a.to_owned());
-    
-    let album = tag.get_string(&ItemKey::AlbumTitle).map(|a| a.to_owned());
-
-    let properties = tagged_file.properties();
-    let duration = properties.duration();
-
-    let artwork_result = tag.pictures().first();
-    let artwork = artwork_result.map(|artwork| artwork.data().to_vec());
-
-    let file_path = path.to_path_buf();
-
-    Some(Song {
-        title,
-        artist,
-        album,
-        duration,
-        artwork,
-        file_path,
-    })
 }
 
 pub fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {

@@ -1,9 +1,10 @@
 use std::{io::BufReader, path::{Path, PathBuf}};
 use glob::glob;
 
+use lofty::{file::{AudioFile, TaggedFileExt}, tag::ItemKey};
 use rodio::{Decoder, OutputStream, Sink};
 
-use crate::{get_song_from_file, sort_songs, ui, Song, SortBy, SortOrder};
+use crate::{sort_songs, ui, Song, SortBy, SortOrder};
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -132,6 +133,51 @@ impl GemPlayer {
             self.sink.pause()
         }
     }
+}
+
+pub fn get_song_from_file(path: &Path) -> Option<Song> {
+    if !path.is_file() {
+        println!("Path is not a file: {:?}", path);
+        return None;
+    }
+
+    let result_file = lofty::read_from_path(path);
+    let tagged_file = match result_file {
+        Ok(file) => file,
+        Err(e) => {
+            println!("Error reading file {}: {}", path.display(), e);
+            return None;
+        }
+    };
+
+    let tag = match tagged_file.primary_tag() {
+        Some(tag) => tag,
+        None => tagged_file.first_tag()?,
+    };
+
+    let title = tag.get_string(&ItemKey::TrackTitle).map(|t| t.to_owned())
+        .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
+
+    let artist = tag.get_string(&ItemKey::TrackArtist).map(|a| a.to_owned());
+    
+    let album = tag.get_string(&ItemKey::AlbumTitle).map(|a| a.to_owned());
+
+    let properties = tagged_file.properties();
+    let duration = properties.duration();
+
+    let artwork_result = tag.pictures().first();
+    let artwork = artwork_result.map(|artwork| artwork.data().to_vec());
+
+    let file_path = path.to_path_buf();
+
+    Some(Song {
+        title,
+        artist,
+        album,
+        duration,
+        artwork,
+        file_path,
+    })
 }
 
 pub fn read_music_from_directory(path: &Path) -> Vec<Song> {
