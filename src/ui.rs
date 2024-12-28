@@ -86,7 +86,6 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
         };
         title_bar_ui(ui, title_bar_rect, title);
 
-        // Add the contents:
         let content_rect = {
             let mut rect = app_rect;
             rect.min.y = title_bar_rect.max.y;
@@ -240,7 +239,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 gem_player.sink.set_volume(volume);
             });
 
-            flex.add_simple(egui_flex::item().grow(1.0), |ui| {
+            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::RIGHT_CENTER), |ui| {
                 egui_flex::Flex::vertical().show(ui, |flex| {
                     flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                         let repeat_button = Button::new(egui_material_icons::icons::ICON_REPEAT);
@@ -360,40 +359,6 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         });
                     });
                 });
-            });
-
-            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
-                let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
-                ui.menu_button(filter_icon, |ui| {
-                    let mut should_sort_songs = false;
-
-                    for sort_by in SortBy::iter() {
-                        let response = ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
-                        should_sort_songs |= response.clicked();
-                    }
-
-                    ui.separator();
-
-                    for sort_order in SortOrder::iter() {
-                        let response = ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
-                        should_sort_songs |= response.clicked();
-                    }
-
-                    if should_sort_songs {
-                        sort_songs(&mut gem_player.songs, gem_player.sort_by, gem_player.sort_order);
-                    }
-                });
-
-                let search_bar = TextEdit::singleline(&mut gem_player.search_text)
-                    .hint_text("Search...")
-                    .desired_width(140.0);
-                ui.add(search_bar);
-
-                let clear_button_is_visible = !gem_player.search_text.is_empty();
-                let response = ui.add_visible(clear_button_is_visible, Button::new(egui_material_icons::icons::ICON_CLEAR));
-                if response.clicked() {
-                    gem_player.search_text.clear();
-                }
             });
         });
     });
@@ -626,13 +591,50 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    ui.horizontal_centered(|ui| {
-        ui.add_space(16.0);
-        for view in View::iter() {
-            let response = ui.selectable_label(gem_player.current_view == view, format!("{:?}", view));
-            if response.clicked() {
-                switch_view(gem_player, view);
-            }
-        }
+    Frame::none().inner_margin(Margin::symmetric(16.0, 8.0)).show(ui, |ui| {
+        egui_flex::Flex::horizontal().show(ui, |flex| {
+            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
+                for view in View::iter() {
+                    let response = ui.selectable_label(gem_player.current_view == view, format!("{:?}", view));
+                    if response.clicked() {
+                        switch_view(gem_player, view);
+                    }
+                }
+            });
+
+            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+                let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
+                ui.menu_button(filter_icon, |ui| {
+                    let mut should_sort_songs = false;
+
+                    for sort_by in SortBy::iter() {
+                        let response = ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
+                        should_sort_songs |= response.clicked();
+                    }
+
+                    ui.separator();
+
+                    for sort_order in SortOrder::iter() {
+                        let response = ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
+                        should_sort_songs |= response.clicked();
+                    }
+
+                    if should_sort_songs {
+                        sort_songs(&mut gem_player.songs, gem_player.sort_by, gem_player.sort_order);
+                    }
+                });
+
+                let search_bar = TextEdit::singleline(&mut gem_player.search_text)
+                    .hint_text("Search...")
+                    .desired_width(140.0);
+                ui.add(search_bar);
+
+                let clear_button_is_visible = !gem_player.search_text.is_empty();
+                let response = ui.add_visible(clear_button_is_visible, Button::new(egui_material_icons::icons::ICON_CLEAR));
+                if response.clicked() {
+                    gem_player.search_text.clear();
+                }
+            });
+        });
     });
 }
