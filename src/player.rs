@@ -1,7 +1,13 @@
-use std::{io::BufReader, path::{Path, PathBuf}};
 use glob::glob;
+use std::{
+    io::BufReader,
+    path::{Path, PathBuf},
+};
 
-use lofty::{file::{AudioFile, TaggedFileExt}, tag::ItemKey};
+use lofty::{
+    file::{AudioFile, TaggedFileExt},
+    tag::ItemKey,
+};
 use rodio::{Decoder, OutputStream, Sink};
 
 use crate::{sort_songs, ui, Song, SortBy, SortOrder};
@@ -19,7 +25,7 @@ pub struct GemPlayer {
     pub current_song: Option<Song>, // The currently playing song.
     pub _stream: OutputStream,      // Holds the OutputStream to keep it alive
     pub sink: Sink,                 // Controls playback (play, pause, stop, etc.)
-    
+
     pub muted: bool,
     pub volume_before_mute: Option<f32>,
 
@@ -78,16 +84,9 @@ impl GemPlayer {
             None => Vec::new(),
         };
         println!("Found {} songs", &songs.len());
-        sort_songs(
-            &mut default_self.songs,
-            default_self.sort_by,
-            default_self.sort_order,
-        );
+        sort_songs(&mut default_self.songs, default_self.sort_by, default_self.sort_order);
 
-        Self {
-            songs,
-            ..default_self
-        }
+        Self { songs, ..default_self }
     }
 
     pub fn is_playing(&self) -> bool {
@@ -111,11 +110,7 @@ impl GemPlayer {
         let source = match source_result {
             Ok(source) => source,
             Err(e) => {
-                println!(
-                    "Error decoding file: {}, Error: {:?}",
-                    song.file_path.to_string_lossy(),
-                    e
-                );
+                println!("Error decoding file: {}, Error: {:?}", song.file_path.to_string_lossy(), e);
                 return;
             }
         };
@@ -155,11 +150,13 @@ pub fn get_song_from_file(path: &Path) -> Option<Song> {
         None => tagged_file.first_tag()?,
     };
 
-    let title = tag.get_string(&ItemKey::TrackTitle).map(|t| t.to_owned())
+    let title = tag
+        .get_string(&ItemKey::TrackTitle)
+        .map(|t| t.to_owned())
         .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
 
     let artist = tag.get_string(&ItemKey::TrackArtist).map(|a| a.to_owned());
-    
+
     let album = tag.get_string(&ItemKey::AlbumTitle).map(|a| a.to_owned());
 
     let properties = tagged_file.properties();

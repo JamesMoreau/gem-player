@@ -1,7 +1,9 @@
 use eframe::egui::{Vec2, ViewportBuilder};
+use std::{path::PathBuf, time::Duration};
+use strum_macros::EnumIter;
 
-mod ui;
 mod player;
+mod ui;
 
 /*
 TODO:
@@ -29,16 +31,8 @@ fn main() -> eframe::Result {
             .with_transparent(true),
         ..Default::default()
     };
-    eframe::run_native(
-        "Gem Player",
-        options,
-        Box::new(|cc| Ok(Box::new(player::GemPlayer::new(cc)))),
-    )
+    eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(player::GemPlayer::new(cc)))))
 }
-
-use std::{path::PathBuf, time::Duration};
-
-use strum_macros::EnumIter;
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {
