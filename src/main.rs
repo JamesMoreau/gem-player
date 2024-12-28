@@ -9,13 +9,9 @@ TODO:
 - could move filter/sort from the top UI to the bottom UI and have the visualizer at the top.
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
-- tab bar at the bottom for playlists, queue, settings, etc.
 - should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path. loading icon when songs are being loaded.
 - file watcher / update on change
 - register play pause commands with apple menu.
-
-- Play button / Pause button, Next song, previous song
-- Repeat / Shuffle above the playback progress. Could stack them vertically to the left of the artwork.
 - Music Visualizer ^.
 - Queue
 
