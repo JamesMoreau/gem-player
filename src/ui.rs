@@ -31,23 +31,23 @@ impl eframe::App for player::GemPlayer {
             let app_rect = ui.max_rect();
             
             let control_ui_height = 60.0;
-            let control_rect = Rect::from_min_max(
+            let control_ui_rect = Rect::from_min_max(
                 app_rect.min,
                 pos2(app_rect.max.x, app_rect.min.y + control_ui_height),
             );
             
             let navigation_ui_height = 32.0;
-            let navigation_rect = Rect::from_min_max(
+            let navigation_ui_rect = Rect::from_min_max(
                 pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height),
                 app_rect.max,
             );
     
             let content_ui_rect = Rect::from_min_max(
-                pos2(app_rect.min.x, control_rect.max.y),
-                pos2(app_rect.max.x, navigation_rect.min.y),
+                pos2(app_rect.min.x, control_ui_rect.max.y),
+                pos2(app_rect.max.x, navigation_ui_rect.min.y),
             );
     
-            let mut control_ui = ui.new_child(UiBuilder::new().max_rect(control_rect));
+            let mut control_ui = ui.new_child(UiBuilder::new().max_rect(control_ui_rect));
             render_control_ui(&mut control_ui, self);
     
             let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_ui_rect));
@@ -60,16 +60,8 @@ impl eframe::App for player::GemPlayer {
                 View::Settings => render_settings_ui(&mut content_ui, self),
             }
     
-            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_rect));
-            navigation_ui.horizontal_centered(|ui| {
-                ui.add_space(16.0);
-                for view in View::iter() {
-                    let response = ui.selectable_label(self.current_view == view, format!("{:?}", view));
-                    if response.clicked() {
-                        switch_view(self, view);
-                    }
-                }
-            });
+            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_ui_rect));
+            render_navigation_ui(&mut navigation_ui, self);
         });
     }     
 }
@@ -709,4 +701,16 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(Label::new("For support or inquiries, visit our website.").selectable(false));
             });
         });
+}
+
+fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    ui.horizontal_centered(|ui| {
+        ui.add_space(16.0);
+        for view in View::iter() {
+            let response = ui.selectable_label(gem_player.current_view == view, format!("{:?}", view));
+            if response.clicked() {
+                switch_view(gem_player, view);
+            }
+        }
+    });
 }
