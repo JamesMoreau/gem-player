@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_mmss,
-    player::{self, GemPlayer},
+    player::{self, load_and_play_song, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -39,7 +39,7 @@ impl eframe::App for player::GemPlayer {
             let control_ui_height = 60.0;
             let control_ui_rect = Rect::from_min_max(app_rect.min, pos2(app_rect.max.x, app_rect.min.y + control_ui_height));
 
-            let navigation_ui_height = 32.0;
+            let navigation_ui_height = 40.0;
             let navigation_ui_rect = Rect::from_min_max(pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height), app_rect.max);
 
             let content_ui_rect = Rect::from_min_max(
@@ -435,7 +435,7 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.load_and_play_song(song);
+                    load_and_play_song(gem_player, song);
                 }
 
                 response.context_menu(|ui| {
@@ -462,14 +462,12 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let queue_songs: Vec<Song> = gem_player.queue.clone();
-
-    let header_labels = ["Title", "Artist", "Album", "Time", "Actions"];
+    let header_labels = ["Title", "Artist", "Album", "Time"/* , "Actions"*/];
 
     let available_width = ui.available_width();
     let time_width = 80.0;
-    let actions_width = 60.0;
-    let remaining_width = available_width - time_width - actions_width;
+    // let actions_width = 60.0;
+    let remaining_width = available_width - time_width /*- actions_width*/;
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
@@ -482,7 +480,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
         .column(egui_extras::Column::exact(time_width))
-        .column(egui_extras::Column::exact(actions_width))
+        // .column(egui_extras::Column::exact(actions_width))
         .header(16.0, |mut header| {
             for (i, h) in header_labels.iter().enumerate() {
                 header.col(|ui| {
@@ -494,8 +492,8 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, queue_songs.len(), |mut row| {
-                let song = &queue_songs[row.index()];
+            body.rows(26.0, gem_player.queue.len(), |mut row| {
+                let song = gem_player.queue[row.index()].clone();
 
                 row.set_selected(gem_player.selected_song == Some(row.index()));
 
@@ -517,12 +515,12 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     ui.add(Label::new(duration_string).selectable(false));
                 });
 
-                let row_index = row.index();
-                row.col(|ui| {
-                    if ui.button("Remove").clicked() {
-                        gem_player.queue.remove(row_index);
-                    }
-                });
+                // let row_index = row.index();
+                // row.col(|ui| {
+                //     if ui.button("Remove").clicked() {
+                //         gem_player.queue.remove(row_index);
+                //     }
+                // });
 
                 let response = row.response();
                 if response.clicked() {
@@ -530,7 +528,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.load_and_play_song(song);
+                    load_and_play_song(gem_player, &song);
                 }
 
                 response.context_menu(|ui| {
@@ -591,7 +589,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none().inner_margin(Margin::symmetric(16.0, 8.0)).show(ui, |ui| {
+    Frame::none().inner_margin(Margin::symmetric(16.0, 16.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
                 for view in View::iter() {

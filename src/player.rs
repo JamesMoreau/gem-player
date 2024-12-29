@@ -93,34 +93,6 @@ impl GemPlayer {
         !self.sink.is_paused()
     }
 
-    // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-    pub fn load_and_play_song(&mut self, song: &Song) {
-        self.sink.stop(); // Stop the current song if any.
-
-        let file_result = std::fs::File::open(&song.file_path);
-        let file = match file_result {
-            Ok(file) => file,
-            Err(e) => {
-                println!("Error opening file: {:?}", e);
-                return;
-            }
-        };
-
-        let source_result = Decoder::new(BufReader::new(file));
-        let source = match source_result {
-            Ok(source) => source,
-            Err(e) => {
-                println!("Error decoding file: {}, Error: {:?}", song.file_path.to_string_lossy(), e);
-                return;
-            }
-        };
-
-        self.current_song = Some(song.clone());
-
-        self.sink.append(source);
-        self.sink.play();
-    }
-
     pub fn play_or_pause(&mut self) {
         if self.sink.is_paused() {
             self.sink.play()
@@ -128,6 +100,34 @@ impl GemPlayer {
             self.sink.pause()
         }
     }
+}
+
+// TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
+pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) {
+    gem_player.sink.stop(); // Stop the current song if any.
+
+    let file_result = std::fs::File::open(&song.file_path);
+    let file = match file_result {
+        Ok(file) => file,
+        Err(e) => {
+            println!("Error opening file: {:?}", e);
+            return;
+        }
+    };
+
+    let source_result = Decoder::new(BufReader::new(file));
+    let source = match source_result {
+        Ok(source) => source,
+        Err(e) => {
+            println!("Error decoding file: {}, Error: {:?}", song.file_path.to_string_lossy(), e);
+            return;
+        }
+    };
+
+    gem_player.current_song = Some(song.clone());
+
+    gem_player.sink.append(source);
+    gem_player.sink.play();
 }
 
 pub fn get_song_from_file(path: &Path) -> Option<Song> {
