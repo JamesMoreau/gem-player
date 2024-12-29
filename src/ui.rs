@@ -208,38 +208,9 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if clicked {
                     println!("Next song");
                 }
-
-                ui.add_space(8.0);
-
-                let mut volume = gem_player.sink.volume();
-
-                let volume_icon = match volume {
-                    v if v == 0.0 => egui_material_icons::icons::ICON_VOLUME_OFF,
-                    v if v <= 0.5 => egui_material_icons::icons::ICON_VOLUME_DOWN,
-                    _ => egui_material_icons::icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
-                };
-                let clicked = ui.button(volume_icon).clicked();
-                if clicked {
-                    gem_player.muted = !gem_player.muted;
-                    if gem_player.muted {
-                        gem_player.volume_before_mute = Some(volume);
-                        volume = 0.0;
-                    } else if let Some(v) = gem_player.volume_before_mute {
-                        volume = v;
-                    }
-                }
-
-                let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-                let changed = ui.add(volume_slider).changed();
-                if changed {
-                    gem_player.muted = false;
-                    gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-                }
-
-                gem_player.sink.set_volume(volume);
             });
 
-            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::RIGHT_CENTER), |ui| {
+            flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                 egui_flex::Flex::vertical().show(ui, |flex| {
                     flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                         let repeat_button = Button::new(egui_material_icons::icons::ICON_REPEAT);
@@ -359,6 +330,35 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         });
                     });
                 });
+            });
+
+            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+                let mut volume = gem_player.sink.volume();
+    
+                let volume_icon = match volume {
+                    v if v == 0.0 => egui_material_icons::icons::ICON_VOLUME_OFF,
+                    v if v <= 0.5 => egui_material_icons::icons::ICON_VOLUME_DOWN,
+                    _ => egui_material_icons::icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
+                };
+                let clicked = ui.button(volume_icon).clicked();
+                if clicked {
+                    gem_player.muted = !gem_player.muted;
+                    if gem_player.muted {
+                        gem_player.volume_before_mute = Some(volume);
+                        volume = 0.0;
+                    } else if let Some(v) = gem_player.volume_before_mute {
+                        volume = v;
+                    }
+                }
+    
+                let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+                let changed = ui.add(volume_slider).changed();
+                if changed {
+                    gem_player.muted = false;
+                    gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                }
+    
+                gem_player.sink.set_volume(volume);
             });
         });
     });
