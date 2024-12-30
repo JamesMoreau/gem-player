@@ -213,16 +213,28 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                 egui_flex::Flex::vertical().show(ui, |flex| {
                     flex.add_simple(egui_flex::item().grow(1.0), |ui| {
-                        let repeat_button = Button::new(egui_material_icons::icons::ICON_REPEAT);
-                        let shuffle_button = Button::new(egui_material_icons::icons::ICON_SHUFFLE);
+                        let get_button_color = |is_active: bool| {
+                            if is_active { ui.visuals().selection.bg_fill } else { Color32::GRAY }
+                        };
+
+                        let repeat_button = Button::new(
+                            RichText::new(egui_material_icons::icons::ICON_REPEAT)
+                                .color(get_button_color(gem_player.repeat)),
+                        );
+                        let shuffle_button = Button::new(
+                            RichText::new(egui_material_icons::icons::ICON_SHUFFLE)
+                                .color(get_button_color(gem_player.shuffle)),
+                        );
 
                         let clicked = ui.add(repeat_button).clicked();
                         if clicked {
+                            gem_player.repeat = !gem_player.repeat;
                             println!("Repeat");
                         }
 
                         let clicked = ui.add(shuffle_button).clicked();
                         if clicked {
+                            gem_player.shuffle = !gem_player.shuffle;
                             println!("Shuffle");
                         }
                     });
@@ -334,7 +346,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                 let mut volume = gem_player.sink.volume();
-    
+
                 let volume_icon = match volume {
                     v if v == 0.0 => egui_material_icons::icons::ICON_VOLUME_OFF,
                     v if v <= 0.5 => egui_material_icons::icons::ICON_VOLUME_DOWN,
@@ -350,14 +362,14 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         volume = v;
                     }
                 }
-    
+
                 let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
                 let changed = ui.add(volume_slider).changed();
                 if changed {
                     gem_player.muted = false;
                     gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
                 }
-    
+
                 gem_player.sink.set_volume(volume);
             });
         });
@@ -462,12 +474,11 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let header_labels = ["Title", "Artist", "Album", "Time"/* , "Actions"*/];
+    let header_labels = ["Title", "Artist", "Album", "Time"];
 
     let available_width = ui.available_width();
     let time_width = 80.0;
-    // let actions_width = 60.0;
-    let remaining_width = available_width - time_width /*- actions_width*/;
+    let remaining_width = available_width - time_width;
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
@@ -480,7 +491,6 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
         .column(egui_extras::Column::exact(time_width))
-        // .column(egui_extras::Column::exact(actions_width))
         .header(16.0, |mut header| {
             for (i, h) in header_labels.iter().enumerate() {
                 header.col(|ui| {
@@ -514,13 +524,6 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let duration_string = format_duration_to_mmss(song.duration);
                     ui.add(Label::new(duration_string).selectable(false));
                 });
-
-                // let row_index = row.index();
-                // row.col(|ui| {
-                //     if ui.button("Remove").clicked() {
-                //         gem_player.queue.remove(row_index);
-                //     }
-                // });
 
                 let response = row.response();
                 if response.clicked() {

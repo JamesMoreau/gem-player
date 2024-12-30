@@ -22,6 +22,8 @@ pub struct GemPlayer {
 
     pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
     pub queue: Vec<Song>,
+    pub shuffle: bool,
+    pub repeat: bool,
     pub current_song: Option<Song>, // The currently playing song.
     pub _stream: OutputStream,      // Holds the OutputStream to keep it alive
     pub sink: Sink,                 // Controls playback (play, pause, stop, etc.)
@@ -60,6 +62,8 @@ impl GemPlayer {
             sort_order: SortOrder::Ascending,
             current_song: None,
             // queue: Vec::new(),
+            shuffle: false, 
+            repeat: false,
             _stream,
             sink,
             muted: false,
@@ -218,4 +222,12 @@ pub fn read_music_from_directory(path: &Path) -> Vec<Song> {
     }
 
     songs
+}
+
+pub fn add_song_to_queue(gem_player: &mut GemPlayer, song: Song) {
+    gem_player.queue.push(song);
+}
+
+pub fn remove_song_from_queue(gem_player: &mut GemPlayer, index: usize) {
+    gem_player.queue.remove(index);
 }
