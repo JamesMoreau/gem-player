@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_mmss,
-    player::{self, load_and_play_song, GemPlayer},
+    player::{self, add_song_to_queue, load_and_play_song, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -229,13 +229,13 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let clicked = ui.add(repeat_button).clicked();
                         if clicked {
                             gem_player.repeat = !gem_player.repeat;
-                            println!("Repeat");
+                            println!("Repeat: {}", if gem_player.repeat { "On" } else { "Off" });
                         }
 
                         let clicked = ui.add(shuffle_button).clicked();
                         if clicked {
                             gem_player.shuffle = !gem_player.shuffle;
-                            println!("Shuffle");
+                            println!("Shuffle: {}", if gem_player.shuffle { "On" } else { "Off" });
                         }
                     });
                 });
@@ -456,6 +456,7 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     if ui.button("Add to queue").clicked() {
+                        add_song_to_queue(gem_player, song.clone());
                         ui.close_menu();
                     }
 
@@ -528,10 +529,6 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
                 if response.clicked() {
                     gem_player.selected_song = Some(row.index());
-                }
-
-                if response.double_clicked() {
-                    load_and_play_song(gem_player, &song);
                 }
 
                 response.context_menu(|ui| {

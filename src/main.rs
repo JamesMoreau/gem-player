@@ -19,6 +19,8 @@ TODO:
 
 * Could remove object oriented programming and just have a struct with functions that take a mutable reference to self.
 
+* add a debug print to only print in debug mode
+
 */
 
 fn main() -> eframe::Result {

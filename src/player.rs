@@ -1,4 +1,5 @@
 use glob::glob;
+use rand::seq::SliceRandom;
 use std::{
     io::BufReader,
     path::{Path, PathBuf},
@@ -16,29 +17,28 @@ pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", 
 
 pub struct GemPlayer {
     pub current_view: ui::View,
-    pub songs: Vec<Song>,
-
-    pub music_directory: Option<PathBuf>,
-
-    pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    pub queue: Vec<Song>,
-    pub shuffle: bool,
-    pub repeat: bool,
-    pub current_song: Option<Song>, // The currently playing song.
-    pub _stream: OutputStream,      // Holds the OutputStream to keep it alive
-    pub sink: Sink,                 // Controls playback (play, pause, stop, etc.)
-
-    pub muted: bool,
-    pub volume_before_mute: Option<f32>,
-
-    pub paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
-
+    pub theme: String,
     pub search_text: String,
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
 
-    pub theme: String,
+    pub songs: Vec<Song>,
+    pub queue: Vec<Song>,
+    pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
+    pub current_song: Option<Song>,  // The currently playing song.
+
+    pub shuffle: bool,
+    pub repeat: bool,
+    pub muted: bool,
+    pub volume_before_mute: Option<f32>,
+    pub paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
+
+    pub _stream: OutputStream, // Holds the OutputStream to keep it alive
+    pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
+
+    pub music_directory: Option<PathBuf>, // The directory where music is stored.
 }
+
 
 impl GemPlayer {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -53,24 +53,28 @@ impl GemPlayer {
 
         let mut default_self = Self {
             current_view: ui::View::Library,
-            songs: Vec::new(),
-            selected_song: None,
-            queue: Vec::new(),
+            theme: "Default".to_owned(),
             search_text: String::new(),
-            music_directory: None,
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
+
+            songs: Vec::new(),
+            queue: Vec::new(),
+            selected_song: None,
             current_song: None,
-            // queue: Vec::new(),
-            shuffle: false, 
+        
+            shuffle: false,
             repeat: false,
-            _stream,
-            sink,
             muted: false,
             volume_before_mute: None,
             paused_before_scrubbing: None,
-            theme: "Default".to_owned(),
+        
+            _stream,
+            sink,
+        
+            music_directory: None,
         };
+        
 
         // Find the music directory.
         let audio_directory = match dirs::audio_dir() {
@@ -230,4 +234,9 @@ pub fn add_song_to_queue(gem_player: &mut GemPlayer, song: Song) {
 
 pub fn remove_song_from_queue(gem_player: &mut GemPlayer, index: usize) {
     gem_player.queue.remove(index);
+}
+
+pub fn shuffle_queue(gem_player: &mut GemPlayer) {
+    let mut rng = rand::thread_rng();
+    gem_player.queue.shuffle(&mut rng);
 }
