@@ -22,6 +22,7 @@ pub struct GemPlayer {
 
     pub songs: Vec<Song>,
     pub queue: Vec<Song>,
+    pub current_song_index: Option<usize>, // Index of the current song in the queue.
     pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
     pub current_song: Option<Song>,   // The currently playing song.
 
@@ -58,6 +59,7 @@ impl GemPlayer {
 
             songs: Vec::new(),
             queue: Vec::new(),
+            current_song_index: None,
             selected_song: None,
             current_song: None,
 
@@ -114,6 +116,11 @@ pub fn play_next_song_in_queue(gem_player: &mut GemPlayer) {
     } else {
         println!("No songs in queue.");
     }
+}
+
+pub fn play_previous_song_in_queue(gem_player: &mut GemPlayer) {
+    println!("Not implemented yet.");
+    todo!();
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?

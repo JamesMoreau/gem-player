@@ -194,10 +194,10 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
-                // let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_PREVIOUS).clicked();
-                // if clicked {
-                //     println!("Previous song");
-                // }
+                let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_PREVIOUS).clicked();
+                if clicked {
+                    println!("Previous song");
+                }
 
                 let play_pause_icon = if gem_player.is_playing() {
                     egui_material_icons::icons::ICON_PAUSE
@@ -480,6 +480,18 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    if gem_player.queue.is_empty() {
+        Frame::none()
+            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+            .show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(Label::new("Queue is empty").selectable(false));
+                });
+            });
+
+        return;
+    }
+
     let header_labels = ["Title", "Artist", "Album", "Time"];
 
     let available_width = ui.available_width();
@@ -646,4 +658,9 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
         });
     });
+}
+
+fn unselectable_label(ui: &mut Ui, text: &str) {
+    let label = Label::new(text).selectable(false);
+    ui.add(label);
 }
