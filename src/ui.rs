@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_mmss,
-    player::{self, add_song_to_queue, load_and_play_song, GemPlayer},
+    player::{self, add_song_to_queue, load_and_play_song, play_next_song_in_queue, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -32,6 +32,11 @@ impl eframe::App for player::GemPlayer {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
+
+        // Check if the current song has ended and play the next song in the queue.
+        if self.sink.empty() {
+            play_next_song_in_queue(self);
+        }
 
         custom_window_frame(ctx, "", |ui| {
             let app_rect = ui.max_rect();
@@ -189,10 +194,10 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
-                let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_PREVIOUS).clicked();
-                if clicked {
-                    println!("Previous song");
-                }
+                // let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_PREVIOUS).clicked();
+                // if clicked {
+                //     println!("Previous song");
+                // }
 
                 let play_pause_icon = if gem_player.is_playing() {
                     egui_material_icons::icons::ICON_PAUSE
@@ -486,6 +491,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     TableBuilder::new(ui)
         .striped(true)
+        .resizable(true)
         .sense(Sense::click())
         .cell_layout(Layout::left_to_right(Align::Center))
         .column(egui_extras::Column::exact(title_width))
@@ -582,8 +588,13 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.heading("About Gem Player");
                 let version = env!("CARGO_PKG_VERSION");
                 ui.add(Label::new(format!("Version: {version}")).selectable(false));
-                ui.add(Label::new("Gem Player is a modern, lightweight music player.").selectable(false));
-                ui.add(Label::new("For support or inquiries, visit our website.").selectable(false));
+                ui.add(Label::new("Gem Player is a lightweight music player.").selectable(false));
+
+                ui.add(Separator::default().spacing(32.0));
+
+                ui.heading("Author");
+                ui.label("James Moreau");
+                ui.label("https://jamesmoreau.github.io");
             });
         });
 }

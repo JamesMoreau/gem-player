@@ -1,17 +1,15 @@
+use crate::{sort_songs, ui, Playlist, Song, SortBy, SortOrder};
 use glob::glob;
-use rand::seq::SliceRandom;
-use std::{
-    io::BufReader,
-    path::{Path, PathBuf},
-};
-
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
+use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-
-use crate::{sort_songs, ui, Song, SortBy, SortOrder};
+use std::{
+    io::BufReader,
+    path::{Path, PathBuf},
+};
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -25,7 +23,7 @@ pub struct GemPlayer {
     pub songs: Vec<Song>,
     pub queue: Vec<Song>,
     pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    pub current_song: Option<Song>,  // The currently playing song.
+    pub current_song: Option<Song>,   // The currently playing song.
 
     pub shuffle: bool,
     pub repeat: bool,
@@ -37,8 +35,8 @@ pub struct GemPlayer {
     pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
 
     pub music_directory: Option<PathBuf>, // The directory where music is stored.
+    pub playlists: Vec<Playlist>,
 }
-
 
 impl GemPlayer {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -62,19 +60,19 @@ impl GemPlayer {
             queue: Vec::new(),
             selected_song: None,
             current_song: None,
-        
+
             shuffle: false,
             repeat: false,
             muted: false,
             volume_before_mute: None,
             paused_before_scrubbing: None,
-        
+
             _stream,
             sink,
-        
+
             music_directory: None,
+            playlists: Vec::new(),
         };
-        
 
         // Find the music directory.
         let audio_directory = match dirs::audio_dir() {
@@ -107,6 +105,14 @@ impl GemPlayer {
         } else {
             self.sink.pause()
         }
+    }
+}
+
+pub fn play_next_song_in_queue(gem_player: &mut GemPlayer) {
+    if let Some(next_song) = gem_player.queue.pop() {
+        load_and_play_song(gem_player, &next_song);
+    } else {
+        println!("No songs in queue.");
     }
 }
 
@@ -239,4 +245,29 @@ pub fn remove_song_from_queue(gem_player: &mut GemPlayer, index: usize) {
 pub fn shuffle_queue(gem_player: &mut GemPlayer) {
     let mut rng = rand::thread_rng();
     gem_player.queue.shuffle(&mut rng);
+}
+
+pub fn clear_queue(gem_player: &mut GemPlayer) {
+    gem_player.queue.clear();
+}
+
+pub fn move_song_up_in_queue(gem_player: &mut GemPlayer, index: usize) {
+    if index == 0 {
+        return;
+    }
+
+    gem_player.queue.swap(index, index - 1);
+}
+
+pub fn move_song_down_in_queue(gem_player: &mut GemPlayer, index: usize) {
+    if index == gem_player.queue.len() - 1 {
+        return;
+    }
+
+    gem_player.queue.swap(index, index + 1);
+}
+
+pub fn begin_playlist(gem_player: &mut GemPlayer, playlist: &Playlist) {
+    gem_player.queue = playlist.songs.clone();
+    play_next_song_in_queue(gem_player);
 }

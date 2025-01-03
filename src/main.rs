@@ -15,7 +15,7 @@ TODO:
 - file watcher / update on change
 - register play pause commands with apple menu.
 - Music Visualizer ^.
-- Queue
+- Queue. Have operations to move songs up and down in the queue. Have a button to clear the queue. Have a button to shuffle the queue. shows the current song in the queue. shows the position of all songs in the queue.
 
 * Could remove object oriented programming and just have a struct with functions that take a mutable reference to self.
 
@@ -50,7 +50,6 @@ pub enum SortOrder {
     Descending,
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Song {
     pub title: Option<String>,
@@ -84,4 +83,27 @@ pub fn format_duration_to_mmss(duration: std::time::Duration) -> String {
     let seconds = total_seconds % seconds_per_minute;
 
     format!("{}:{:02}", minutes, seconds)
+}
+
+pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
+    let total_seconds = duration.as_secs();
+    let seconds_per_minute = 60;
+    let minutes_per_hour = 60;
+    let hours = total_seconds / (minutes_per_hour * seconds_per_minute);
+    let minutes = (total_seconds / seconds_per_minute) % minutes_per_hour;
+    let seconds = total_seconds % seconds_per_minute;
+
+    format!("{}:{:02}:{:02}", hours, minutes, seconds)
+}
+
+#[derive(Debug, Clone)]
+pub struct Playlist {
+    pub name: String,
+    pub creation_date: std::time::SystemTime,
+    pub songs: Vec<Song>,
+    pub path: Option<PathBuf>,
+}
+
+pub fn get_playlist_duration(playlist: &Playlist) -> Duration {
+    playlist.songs.iter().map(|song| song.duration).sum()
 }
