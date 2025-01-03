@@ -3,7 +3,7 @@ use std::time::Duration;
 use eframe::egui::{
     include_image, pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
     Layout, Margin, PointerButton, Rect, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 
 use egui_extras::TableBuilder;
@@ -331,7 +331,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 job.append(" on ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
                                 job.append(&album, 0.0, data_format.clone());
 
-                                let song_label = Label::new(job).truncate().selectable(false);
+                                let song_label = unselectable_label(job).truncate();
                                 ui.add(song_label);
                             });
 
@@ -341,7 +341,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 let time_label_text =
                                     format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
 
-                                let time_label = Label::new(time_label_text).selectable(false);
+                                let time_label = unselectable_label(time_label_text);
                                 ui.add(time_label);
                             });
                         });
@@ -418,7 +418,7 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if i == 0 {
                         ui.add_space(16.0);
                     }
-                    ui.add(Label::new(RichText::new(*h).strong()).selectable(false));
+                    ui.add(unselectable_label(RichText::new(*h).strong()));
                 });
             }
         })
@@ -430,20 +430,20 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(Label::new(song.title.as_ref().unwrap_or(&"Unknown Title".to_string())).selectable(false));
+                    ui.add(unselectable_label(song.title.as_ref().unwrap_or(&"Unknown Title".to_string())));
                 });
 
                 row.col(|ui| {
-                    ui.add(Label::new(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())).selectable(false));
+                    ui.add(unselectable_label(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())));
                 });
 
                 row.col(|ui| {
-                    ui.add(Label::new(song.album.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
+                    ui.add(unselectable_label(song.album.as_ref().unwrap_or(&"Unknown".to_string())));
                 });
 
                 row.col(|ui| {
                     let duration_string = format_duration_to_mmss(song.duration);
-                    ui.add(Label::new(duration_string).selectable(false));
+                    ui.add(unselectable_label(duration_string));
                 });
 
                 let response = row.response();
@@ -485,7 +485,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(Label::new("Queue is empty").selectable(false));
+                    ui.add(unselectable_label("Queue is empty"));
                 });
             });
 
@@ -516,7 +516,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if i == 0 {
                         ui.add_space(16.0);
                     }
-                    ui.add(Label::new(RichText::new(*h).strong()).selectable(false));
+                    ui.add(unselectable_label(RichText::new(*h).strong()));
                 });
             }
         })
@@ -528,20 +528,20 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(Label::new(song.title.as_ref().unwrap_or(&"Unknown Title".to_string())).selectable(false));
+                    ui.add(unselectable_label(song.title.as_ref().unwrap_or(&"Unknown Title".to_string())));
                 });
 
                 row.col(|ui| {
-                    ui.add(Label::new(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())).selectable(false));
+                    ui.add(unselectable_label(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())));
                 });
 
                 row.col(|ui| {
-                    ui.add(Label::new(song.album.as_ref().unwrap_or(&"Unknown".to_string())).selectable(false));
+                    ui.add(unselectable_label(song.album.as_ref().unwrap_or(&"Unknown".to_string())));
                 });
 
                 row.col(|ui| {
                     let duration_string = format_duration_to_mmss(song.duration);
-                    ui.add(Label::new(duration_string).selectable(false));
+                    ui.add(unselectable_label(duration_string));
                 });
 
                 let response = row.response();
@@ -569,7 +569,8 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .outer_margin(Margin::symmetric(available_width * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
-                ui.add(Label::new("Music Library Path:").selectable(false));
+                ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
+                
                 ui.horizontal(|ui| {
                     let path = gem_player
                         .music_directory
@@ -586,7 +587,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(32.0));
 
-                ui.label("Theme:");
+                ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ComboBox::from_label("Select Theme")
                     .selected_text(&gem_player.theme)
                     .show_ui(ui, |ui| {
@@ -597,16 +598,16 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(32.0));
 
-                ui.heading("About Gem Player");
+                ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
                 let version = env!("CARGO_PKG_VERSION");
-                ui.add(Label::new(format!("Version: {version}")).selectable(false));
-                ui.add(Label::new("Gem Player is a lightweight music player.").selectable(false));
+                ui.add(unselectable_label(format!("Version: {version}")));
+                ui.add(unselectable_label("Gem Player is a lightweight music player."));
 
                 ui.add(Separator::default().spacing(32.0));
 
-                ui.heading("Author");
+                ui.add(unselectable_label(RichText::new("Author").heading()));
                 ui.label("James Moreau");
-                ui.label("https://jamesmoreau.github.io");
+                ui.hyperlink("https://jamesmoreau.github.io");
             });
         });
 }
@@ -660,7 +661,6 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-fn unselectable_label(ui: &mut Ui, text: &str) {
-    let label = Label::new(text).selectable(false);
-    ui.add(label);
+fn unselectable_label(text: impl Into<WidgetText>) -> Label {
+    Label::new(text).selectable(false)
 }
