@@ -88,7 +88,16 @@ impl GemPlayer {
         default_self.music_directory = Some(my_music_directory);
 
         let songs = match &default_self.music_directory {
-            Some(path) => read_music_from_directory(path),
+            Some(path) => {
+                let result = read_music_from_directory(path);
+                match result {
+                    Ok(songs) => songs,
+                    Err(e) => {
+                        println!("{}", e);
+                        Vec::new()
+                    }
+                }
+            },
             None => Vec::new(),
         };
         println!("Found {} songs", &songs.len());
@@ -198,9 +207,9 @@ pub fn get_song_from_file(path: &Path) -> Option<Song> {
     })
 }
 
-pub fn read_music_from_directory(path: &Path) -> Vec<Song> {
+pub fn read_music_from_directory(path: &Path) -> Result<Vec<Song>, String> {
     let mut songs = Vec::new();
-    let mut file_paths: Vec<PathBuf> = Vec::new();
+    let mut file_paths = Vec::new();
 
     let patterns = SUPPORTED_AUDIO_FILE_TYPES
         .iter()
@@ -216,29 +225,24 @@ pub fn read_music_from_directory(path: &Path) -> Vec<Song> {
                 }
             }
             Err(e) => {
-                println!("Error reading pattern {}: {}", pattern, e);
+                return Err(format!("Error reading pattern {}: {}", pattern, e));
             }
         }
     }
 
     if file_paths.is_empty() {
-        println!("No music files found in directory: {:?}", path);
-        return songs;
+        return Err(format!("No music files found in directory: {:?}", path));
     }
 
     for entry in file_paths {
-        let song_option = get_song_from_file(&entry);
-        let song = match song_option {
-            Some(song) => song,
-            None => {
-                println!("Error reading song from file: {:?}", entry);
-                continue;
-            }
-        };
-        songs.push(song);
+        let maybe_song = get_song_from_file(&entry);
+        match maybe_song {
+            Some(song) => songs.push(song),
+            None => eprintln!("Error reading song from file: {:?}", entry),
+        }
     }
 
-    songs
+    Ok(songs)
 }
 
 pub fn add_song_to_queue(gem_player: &mut GemPlayer, song: Song) {

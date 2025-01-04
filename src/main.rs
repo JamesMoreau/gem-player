@@ -11,7 +11,7 @@ TODO:
 - could move filter/sort from the top UI to the bottom UI and have the visualizer at the top.
 - selection needs to be cleared when songs are sorted / filtered.
 - play next song after current song ends
-- should read_music_from_directory return a Result<Vec<Song>, Error> instead of Vec<Song>? Fix this once we allow custom music path. loading icon when songs are being loaded.
+- loading icon when songs are being loaded.
 - file watcher / update on change
 - register play pause commands with apple menu.
 - Music Visualizer ^.
