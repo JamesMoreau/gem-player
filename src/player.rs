@@ -20,7 +20,7 @@ pub struct GemPlayer {
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
 
-    pub songs: Vec<Song>,
+    pub library: Vec<Song>,
     pub queue: Vec<Song>,
     pub current_song_index: Option<usize>, // Index of the current song in the queue.
     pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
@@ -57,7 +57,7 @@ impl GemPlayer {
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
 
-            songs: Vec::new(),
+            library: Vec::new(),
             queue: Vec::new(),
             current_song_index: None,
             selected_song: None,
@@ -101,9 +101,9 @@ impl GemPlayer {
             None => Vec::new(),
         };
         println!("Found {} songs", &songs.len());
-        sort_songs(&mut default_self.songs, default_self.sort_by, default_self.sort_order);
+        sort_songs(&mut default_self.library, default_self.sort_by, default_self.sort_order);
 
-        Self { songs, ..default_self }
+        Self { library: songs, ..default_self }
     }
 }
 
@@ -280,5 +280,10 @@ pub fn move_song_down_in_queue(gem_player: &mut GemPlayer, index: usize) {
 
 pub fn begin_playlist(gem_player: &mut GemPlayer, playlist: &Playlist) {
     gem_player.queue = playlist.songs.clone();
+    play_next_song_in_queue(gem_player);
+}
+
+pub fn begin_library(gem_player: &mut GemPlayer) {
+    gem_player.queue = gem_player.library.clone();
     play_next_song_in_queue(gem_player);
 }

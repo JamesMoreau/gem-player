@@ -383,7 +383,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let filtered_songs: Vec<Song> = gem_player
-        .songs
+        .library
         .iter()
         .filter(|song| {
             let search_lower = gem_player.search_text.to_lowercase();
@@ -642,7 +642,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     if should_sort_songs {
-                        sort_songs(&mut gem_player.songs, gem_player.sort_by, gem_player.sort_order);
+                        sort_songs(&mut gem_player.library, gem_player.sort_by, gem_player.sort_order);
                     }
                 });
 
