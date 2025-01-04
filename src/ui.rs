@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_mmss,
-    player::{self, add_song_to_queue, load_and_play_song, play_next_song_in_queue, GemPlayer},
+    player::{self, add_song_to_queue, is_playing, load_and_play_song, play_next_song_in_queue, play_or_pause, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -199,14 +199,14 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     println!("Previous song");
                 }
 
-                let play_pause_icon = if gem_player.is_playing() {
+                let play_pause_icon = if is_playing(gem_player) {
                     egui_material_icons::icons::ICON_PAUSE
                 } else {
                     egui_material_icons::icons::ICON_PLAY_ARROW
                 };
                 let clicked = ui.button(play_pause_icon).clicked();
                 if clicked {
-                    gem_player.play_or_pause();
+                    play_or_pause(gem_player);
                 }
 
                 let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_NEXT).clicked();

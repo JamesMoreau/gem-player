@@ -96,17 +96,17 @@ impl GemPlayer {
 
         Self { songs, ..default_self }
     }
+}
 
-    pub fn is_playing(&self) -> bool {
-        !self.sink.is_paused()
-    }
+pub fn is_playing(gem_player: &mut GemPlayer) -> bool {
+    !gem_player.sink.is_paused()
+}
 
-    pub fn play_or_pause(&mut self) {
-        if self.sink.is_paused() {
-            self.sink.play()
-        } else {
-            self.sink.pause()
-        }
+pub fn play_or_pause(gem_player: &mut GemPlayer) {
+    if gem_player.sink.is_paused() {
+        gem_player.sink.play()
+    } else {
+        gem_player.sink.pause()
     }
 }
 
