@@ -20,9 +20,9 @@ pub struct GemPlayer {
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
 
-    pub library: Vec<Song>,
+    pub library: Vec<Song>, // All the songs stored in the music directory.
     pub queue: Vec<Song>,
-    pub current_song_index: Option<usize>, // Index of the current song in the queue.
+    pub queue_cursor: Option<usize>, // Index of the current song in the queue.
     pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
     pub current_song: Option<Song>,   // The currently playing song.
 
@@ -35,7 +35,7 @@ pub struct GemPlayer {
     pub _stream: OutputStream, // Holds the OutputStream to keep it alive
     pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
 
-    pub music_directory: Option<PathBuf>, // The directory where music is stored.
+    pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
 }
 
@@ -59,7 +59,7 @@ impl GemPlayer {
 
             library: Vec::new(),
             queue: Vec::new(),
-            current_song_index: None,
+            queue_cursor: None,
             selected_song: None,
             current_song: None,
 
@@ -72,7 +72,7 @@ impl GemPlayer {
             _stream,
             sink,
 
-            music_directory: None,
+            library_directory: None,
             playlists: Vec::new(),
         };
 
@@ -85,9 +85,9 @@ impl GemPlayer {
             }
         };
         let my_music_directory = audio_directory.join("MyMusic");
-        default_self.music_directory = Some(my_music_directory);
+        default_self.library_directory = Some(my_music_directory);
 
-        let songs = match &default_self.music_directory {
+        let songs = match &default_self.library_directory {
             Some(path) => {
                 let result = read_music_from_directory(path);
                 match result {
@@ -120,10 +120,17 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_next_song_in_queue(gem_player: &mut GemPlayer) {
-    if let Some(next_song) = gem_player.queue.pop() {
-        load_and_play_song(gem_player, &next_song);
-    } else {
-        println!("No songs in queue.");
+    match gem_player.queue_cursor {
+        Some(cursor) => {
+            let next_song_index = cursor + 1;
+            gem_player.queue_cursor = Some(next_song_index);
+            let next_song = gem_player.queue[next_song_index].clone();
+            load_and_play_song(gem_player, &next_song);
+        }
+        _ => {
+            println!("No more songs in queue.");
+            gem_player.queue_cursor = None;
+        }
     }
 }
 
@@ -283,7 +290,13 @@ pub fn begin_playlist(gem_player: &mut GemPlayer, playlist: &Playlist) {
     play_next_song_in_queue(gem_player);
 }
 
-pub fn begin_library(gem_player: &mut GemPlayer) {
+pub fn begin_library_from_song(gem_player: &mut GemPlayer, starting_song: usize) {
     gem_player.queue = gem_player.library.clone();
+
+    // Move the starting song to the front of the queue.
+    let song = gem_player.queue.remove(starting_song);
+    gem_player.queue.insert(0, song);
+
     play_next_song_in_queue(gem_player);
 }
+

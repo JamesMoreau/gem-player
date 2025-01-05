@@ -573,7 +573,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 
                 ui.horizontal(|ui| {
                     let path = gem_player
-                        .music_directory
+                        .library_directory
                         .as_ref()
                         .map_or("No directory selected".to_string(), |p| p.to_string_lossy().to_string());
                     ui.label(path);
