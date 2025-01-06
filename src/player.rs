@@ -256,7 +256,13 @@ pub fn add_song_to_queue(gem_player: &mut GemPlayer, song: Song) {
     gem_player.queue.push(song);
 }
 
-pub fn remove_song_from_queue(gem_player: &mut GemPlayer, index: usize) {
+pub fn jump_to_song_in_queue(gem_player: &mut GemPlayer, index: usize) {
+    gem_player.queue_cursor = Some(index);
+    let song = gem_player.queue[index].clone();
+    load_and_play_song(gem_player, &song);
+}
+
+pub fn remove_from_queue(gem_player: &mut GemPlayer, index: usize) {
     gem_player.queue.remove(index);
 }
 

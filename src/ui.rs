@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_mmss,
-    player::{self, add_song_to_queue, is_playing, load_and_play_song, play_next_song_in_queue, play_or_pause, GemPlayer},
+    player::{self, add_song_to_queue, begin_library_from_song, is_playing, play_next_song_in_queue, play_or_pause, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -452,7 +452,7 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    load_and_play_song(gem_player, song);
+                    begin_library_from_song(gem_player, row.index());
                 }
 
                 response.context_menu(|ui| {
@@ -606,7 +606,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(Separator::default().spacing(32.0));
 
                 ui.add(unselectable_label(RichText::new("Author").heading()));
-                ui.label("James Moreau");
+                ui.add(unselectable_label("James Moreau"));
                 ui.hyperlink("https://jamesmoreau.github.io");
             });
         });
