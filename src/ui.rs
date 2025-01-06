@@ -279,8 +279,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let mut position_as_secs = 0.0;
                         let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
-                        let maybe_current_song = get_current_song(gem_player);
-                        if let Some(song) = maybe_current_song {
+                        if let Some(song) = get_current_song(gem_player).cloned() {
                             title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             album = song.album.clone().unwrap_or("Unknown Album".to_string());
@@ -295,12 +294,12 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             .step_by(1.0); // Step by 1 second.
                         let response = ui.add(playback_progress_slider);
 
-                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() && maybe_current_song.is_some() {
+                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
                             gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
                             gem_player.sink.pause(); // Pause playback during scrubbing
                         }
 
-                        if response.drag_stopped() && maybe_current_song.is_some(){
+                        if response.drag_stopped() {
                             let new_position = Duration::from_secs_f32(position_as_secs);
                             println!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
                             if let Err(e) = gem_player.sink.try_seek(new_position) {
