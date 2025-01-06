@@ -16,11 +16,9 @@ TODO:
 - register play pause commands with apple menu.
 - Music Visualizer ^.
 - Queue. Have operations to move songs up and down in the queue. Have a button to clear the queue. Have a button to shuffle the queue. shows the current song in the queue. shows the position of all songs in the queue.
-
 * Could remove object oriented programming and just have a struct with functions that take a mutable reference to self.
-
 * add a debug print to only print in debug mode
-
+* use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
 */
 
 fn main() -> eframe::Result {

@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_mmss,
-    player::{self, add_song_to_queue, begin_library_from_song, is_playing, play_next_song_in_queue, play_or_pause, GemPlayer},
+    player::{self, add_song_to_queue, begin_library_from_song, get_current_song, is_playing, play_next_song_in_queue, play_or_pause, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -219,16 +219,17 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 egui_flex::Flex::vertical().show(ui, |flex| {
                     flex.add_simple(egui_flex::item().grow(1.0), |ui| {
                         let get_button_color = |is_active: bool| {
-                            if is_active { ui.visuals().selection.bg_fill } else { Color32::GRAY }
+                            if is_active {
+                                ui.visuals().selection.bg_fill
+                            } else {
+                                Color32::GRAY
+                            }
                         };
 
-                        let repeat_button = Button::new(
-                            RichText::new(egui_material_icons::icons::ICON_REPEAT)
-                                .color(get_button_color(gem_player.repeat)),
-                        );
+                        let repeat_button =
+                            Button::new(RichText::new(egui_material_icons::icons::ICON_REPEAT).color(get_button_color(gem_player.repeat)));
                         let shuffle_button = Button::new(
-                            RichText::new(egui_material_icons::icons::ICON_SHUFFLE)
-                                .color(get_button_color(gem_player.shuffle)),
+                            RichText::new(egui_material_icons::icons::ICON_SHUFFLE).color(get_button_color(gem_player.shuffle)),
                         );
 
                         let clicked = ui.add(repeat_button).clicked();
@@ -255,20 +256,16 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .fit_to_exact_size(artwork_size)
                     .rounding(rounding);
 
-                let artwork = gem_player
-                    .current_song
-                    .as_ref()
-                    .and_then(|song| song.artwork.as_ref())
-                    .map(|artwork_bytes| {
-                        let artwork_uri = format!(
-                            "bytes://artwork-{}",
-                            gem_player.current_song.as_ref().unwrap().title.as_deref().unwrap_or("default")
-                        );
+                let artwork = get_current_song(gem_player)
+                    .and_then(|song| {
+                        song.artwork.as_ref().map(|artwork_bytes| {
+                            let artwork_uri = format!("bytes://artwork-{}", song.title.as_deref().unwrap_or("default"));
 
-                        Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                            .texture_options(artwork_texture_options)
-                            .fit_to_exact_size(artwork_size)
-                            .rounding(rounding)
+                            Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                                .texture_options(artwork_texture_options)
+                                .fit_to_exact_size(artwork_size)
+                                .rounding(rounding)
+                        })
                     })
                     .unwrap_or(default_artwork);
 
@@ -282,8 +279,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let mut position_as_secs = 0.0;
                         let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
-                        let song_is_some = gem_player.current_song.is_some();
-                        if let Some(song) = &gem_player.current_song {
+                        let maybe_current_song = get_current_song(gem_player);
+                        if let Some(song) = maybe_current_song {
                             title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             album = song.album.clone().unwrap_or("Unknown Album".to_string());
@@ -298,12 +295,12 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             .step_by(1.0); // Step by 1 second.
                         let response = ui.add(playback_progress_slider);
 
-                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() && song_is_some {
+                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() && maybe_current_song.is_some() {
                             gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
                             gem_player.sink.pause(); // Pause playback during scrubbing
                         }
 
-                        if response.drag_stopped() && song_is_some {
+                        if response.drag_stopped() && maybe_current_song.is_some(){
                             let new_position = Duration::from_secs_f32(position_as_secs);
                             println!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
                             if let Err(e) = gem_player.sink.try_seek(new_position) {
@@ -570,7 +567,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .show(ui, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
-                
+
                 ui.horizontal(|ui| {
                     let path = gem_player
                         .library_directory
