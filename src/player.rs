@@ -120,18 +120,21 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_next_song_in_queue(gem_player: &mut GemPlayer) {
-    match gem_player.queue_cursor {
-        Some(cursor) => {
-            let next_song_index = cursor + 1;
+    if let Some(cursor) = gem_player.queue_cursor {
+        let next_song_index = cursor + 1;
+        if next_song_index < gem_player.queue.len() {
             gem_player.queue_cursor = Some(next_song_index);
             let next_song = gem_player.queue[next_song_index].clone();
             load_and_play_song(gem_player, &next_song);
-        }
-        _ => {
+        } else {
             println!("No more songs in queue.");
-            gem_player.queue_cursor = None;
+            gem_player.queue_cursor = None; // Reset or loop, depending on desired behavior.
         }
+
+        return;
     }
+    
+    println!("Queue cursor not set.");
 }
 
 pub fn play_previous_song_in_queue(gem_player: &mut GemPlayer) {
@@ -298,12 +301,9 @@ pub fn begin_playlist(gem_player: &mut GemPlayer, playlist: &Playlist) {
 
 pub fn begin_library_from_song(gem_player: &mut GemPlayer, starting_song: usize) {
     gem_player.queue = gem_player.library.clone();
-
-    // Move the starting song to the front of the queue.
-    let song = gem_player.queue.remove(starting_song);
-    gem_player.queue.insert(0, song);
-
-    play_next_song_in_queue(gem_player);
+    gem_player.queue_cursor = Some(starting_song);
+    let song = gem_player.queue[starting_song].clone();
+    load_and_play_song(gem_player, &song);
 }
 
 pub fn get_current_song(gem_player: &GemPlayer) -> Option<&Song> {
