@@ -211,7 +211,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_NEXT).clicked();
                 if clicked {
-                    println!("Next song");
+                    play_next_song_in_queue(gem_player);
                 }
             });
 
@@ -453,6 +453,7 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 response.context_menu(|ui| {
                     if ui.button("Play").clicked() {
+                        begin_library_from_song(gem_player, row.index());
                         ui.close_menu();
                     }
 
