@@ -89,7 +89,7 @@ impl GemPlayer {
 
         let songs = match &default_self.library_directory {
             Some(path) => {
-                let result = read_music_from_directory(path);
+                let result = read_music_from_a_directory(path);
                 match result {
                     Ok(songs) => songs,
                     Err(e) => {
@@ -217,7 +217,7 @@ pub fn get_song_from_file(path: &Path) -> Option<Song> {
     })
 }
 
-pub fn read_music_from_directory(path: &Path) -> Result<Vec<Song>, String> {
+pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
     let mut songs = Vec::new();
     let mut file_paths = Vec::new();
 
@@ -299,10 +299,10 @@ pub fn begin_playlist(gem_player: &mut GemPlayer, playlist: &Playlist) {
     play_next_song_in_queue(gem_player);
 }
 
-pub fn begin_library_from_song(gem_player: &mut GemPlayer, starting_song: usize) {
+pub fn begin_library_from_song(gem_player: &mut GemPlayer, starting_song_index: usize) {
     gem_player.queue = gem_player.library.clone();
-    gem_player.queue_cursor = Some(starting_song);
-    let song = gem_player.queue[starting_song].clone();
+    gem_player.queue_cursor = Some(starting_song_index);
+    let song = gem_player.queue[starting_song_index].clone();
     load_and_play_song(gem_player, &song);
 }
 
