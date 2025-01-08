@@ -12,7 +12,9 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_mmss,
-    player::{self, add_song_to_queue, begin_library_from_song, get_current_song, is_playing, play_next_song_in_queue, play_or_pause, GemPlayer},
+    player::{
+        self, add_song_to_queue, begin_library_from_song, get_current_song, is_playing, play_next_song_in_queue, play_or_pause, GemPlayer,
+    },
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -613,11 +615,23 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 16.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
+                let get_icon_and_tooltip = |view: &View| match view {
+                    View::Library => egui_material_icons::icons::ICON_LIBRARY_MUSIC,
+                    View::Queue => egui_material_icons::icons::ICON_QUEUE_MUSIC,
+                    View::Playlists => egui_material_icons::icons::ICON_STAR,
+                    View::Settings => egui_material_icons::icons::ICON_SETTINGS,
+                };
+
                 for view in View::iter() {
-                    let response = ui.selectable_label(gem_player.current_view == view, format!("{:?}", view));
+                    let icon = get_icon_and_tooltip(&view);
+                    let response = ui
+                        .selectable_label(gem_player.current_view == view, format!("  {icon}  "))
+                        .on_hover_text(format!("{:?}", view));
                     if response.clicked() {
                         switch_view(gem_player, view);
                     }
+
+                    ui.add_space(4.0);
                 }
             });
 
