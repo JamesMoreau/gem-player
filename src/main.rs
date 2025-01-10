@@ -48,7 +48,7 @@ pub enum SortOrder {
     Descending,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Song {
     pub title: Option<String>,
     pub artist: Option<String>,

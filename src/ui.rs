@@ -13,7 +13,7 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_mmss,
     player::{
-        self, add_song_to_queue, begin_library_from_song, get_current_song, is_playing, play_next_song_in_queue, play_or_pause, GemPlayer,
+        self, add_song_to_queue, get_current_song, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer
     },
     sort_songs, Song, SortBy, SortOrder,
 };
@@ -59,7 +59,7 @@ impl eframe::App for player::GemPlayer {
 
             let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_ui_rect));
             match self.current_view {
-                View::Library => render_songs_ui(&mut content_ui, self),
+                View::Library => render_library_ui(&mut content_ui, self),
                 View::Queue => render_queue_ui(&mut content_ui, self),
                 View::Playlists => {
                     content_ui.label("Playlists section coming soon.");
@@ -379,17 +379,18 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let filtered_songs: Vec<Song> = gem_player
         .library
         .iter()
         .filter(|song| {
-            let search_lower = gem_player.search_text.to_lowercase();
-            let search_fields = [&song.title, &song.artist, &song.album];
-            search_fields
-                .iter()
-                .any(|field| field.as_ref().map_or(false, |text| text.to_lowercase().contains(&search_lower)))
-        })
+                let search_lower = gem_player.search_text.to_lowercase();
+                let search_fields = [&song.title, &song.artist, &song.album];
+                
+                search_fields.iter().any(|field| {
+                    field.as_ref().map_or(false, |text| text.to_lowercase().contains(&search_lower))
+                })
+            })
         .cloned()
         .collect();
 
@@ -450,12 +451,12 @@ pub fn render_songs_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    begin_library_from_song(gem_player, row.index());
+                    play_library_from_song(gem_player, song.clone());
                 }
 
                 response.context_menu(|ui| {
                     if ui.button("Play").clicked() {
-                        begin_library_from_song(gem_player, row.index());
+                        play_library_from_song(gem_player, song.clone());
                         ui.close_menu();
                     }
 
