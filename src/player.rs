@@ -22,10 +22,9 @@ pub struct GemPlayer {
 
     pub library: Vec<Song>, // All the songs stored in the music directory.
     pub queue: Vec<Song>,
-    pub queue_cursor: Option<usize>, // Index of the current song in the queue.
+    pub queue_cursor: Option<usize>,  // Index of the current song in the queue. None if no song is playing.
     pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
     // pub current_song: Option<Song>,   // The currently playing song.
-
     pub shuffle: bool,
     pub repeat: bool,
     pub muted: bool,
@@ -62,7 +61,6 @@ impl GemPlayer {
             queue_cursor: None,
             selected_song: None,
             // current_song: None,
-
             shuffle: false,
             repeat: false,
             muted: false,
@@ -97,13 +95,16 @@ impl GemPlayer {
                         Vec::new()
                     }
                 }
-            },
+            }
             None => Vec::new(),
         };
         println!("Found {} songs", &songs.len());
         sort_songs(&mut default_self.library, default_self.sort_by, default_self.sort_order);
 
-        Self { library: songs, ..default_self }
+        Self {
+            library: songs,
+            ..default_self
+        }
     }
 }
 
@@ -302,11 +303,14 @@ pub fn begin_playlist(gem_player: &mut GemPlayer, playlist: &Playlist) {
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: Song) {
-    let maybe_song = gem_player.library.iter().position(|s| *s == song);
+    let maybe_song_index = gem_player.library.iter().position(|s| *s == song);
 
-    match maybe_song {
+    match maybe_song_index {
         None => {
-            println!("Song not found in library.");
+            println!(
+                "Could not find {} not found in library.",
+                song.title.as_deref().unwrap_or("Unknown")
+            );
         }
 
         Some(index) => {
@@ -321,4 +325,3 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: Song) {
 pub fn get_current_song(gem_player: &GemPlayer) -> Option<&Song> {
     gem_player.queue_cursor.and_then(|cursor| gem_player.queue.get(cursor))
 }
-

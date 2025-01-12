@@ -7,16 +7,12 @@ mod ui;
 
 /*
 TODO:
-- instead of a sepator between ui sections, could just use a different color.
-- could move filter/sort from the top UI to the bottom UI and have the visualizer at the top.
-- selection needs to be cleared when songs are sorted / filtered.
-- play next song after current song ends
-- loading icon when songs are being loaded.
-- file watcher / update on change
-- register play pause commands with apple menu.
-- Music Visualizer ^.
-- Queue. Have operations to move songs up and down in the queue. Have a button to clear the queue. Have a button to shuffle the queue. shows the current song in the queue. shows the position of all songs in the queue.
-* Could remove object oriented programming and just have a struct with functions that take a mutable reference to self.
+* instead of a sepator between ui sections, could just use a different color.
+* selection needs to be cleared when songs are sorted / filtered.
+* file watcher / update on change
+* register play pause commands with apple menu.
+* Music Visualizer ^.
+* Queue. Have operations to move songs up and down in the queue. Have a button to clear the queue. Have a button to shuffle the queue. shows the current song in the queue. shows the position of all songs in the queue.
 * add a debug print to only print in debug mode
 * use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
 */
@@ -102,6 +98,6 @@ pub struct Playlist {
     pub path: Option<PathBuf>,
 }
 
-pub fn get_playlist_duration(playlist: &Playlist) -> Duration {
-    playlist.songs.iter().map(|song| song.duration).sum()
+pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
+    songs.iter().map(|song| song.duration).sum()
 }

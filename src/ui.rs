@@ -11,9 +11,9 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    format_duration_to_mmss,
+    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_song_to_queue, get_current_song, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer
+        self, add_song_to_queue, get_current_song, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer,
     },
     sort_songs, Song, SortBy, SortOrder,
 };
@@ -380,17 +380,31 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    if gem_player.library.is_empty() {
+        Frame::none()
+            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+            .show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(unselectable_label(
+                        "The library is empty. Try adding your music directory in the settings.",
+                    ));
+                });
+            });
+
+        return;
+    }
+
     let filtered_songs: Vec<Song> = gem_player
         .library
         .iter()
         .filter(|song| {
-                let search_lower = gem_player.search_text.to_lowercase();
-                let search_fields = [&song.title, &song.artist, &song.album];
-                
-                search_fields.iter().any(|field| {
-                    field.as_ref().map_or(false, |text| text.to_lowercase().contains(&search_lower))
-                })
-            })
+            let search_lower = gem_player.search_text.to_lowercase();
+            let search_fields = [&song.title, &song.artist, &song.album];
+
+            search_fields
+                .iter()
+                .any(|field| field.as_ref().map_or(false, |text| text.to_lowercase().contains(&search_lower)))
+        })
         .cloned()
         .collect();
 
@@ -485,7 +499,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("Queue is empty"));
+                    ui.add(unselectable_label("The queue is empty."));
                 });
             });
 
@@ -500,6 +514,8 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
+
+    let queue_cursor = gem_player.queue_cursor.unwrap_or(0);
 
     TableBuilder::new(ui)
         .striped(true)
@@ -522,9 +538,10 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .body(|body| {
             body.rows(26.0, gem_player.queue.len(), |mut row| {
-                let song = gem_player.queue[row.index()].clone();
+                let index = queue_cursor + row.index();
+                let song = &gem_player.queue[index];
 
-                row.set_selected(gem_player.selected_song == Some(row.index()));
+                row.set_selected(gem_player.selected_song == Some(index));
 
                 row.col(|ui| {
                     ui.add_space(16.0);
@@ -555,7 +572,10 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     if ui.button("Remove from Queue").clicked() {
-                        gem_player.queue.remove(row.index());
+                        gem_player.queue.remove(index);
+                        if queue_cursor > index {
+                            gem_player.queue_cursor = Some(queue_cursor - 1);
+                        }
                         ui.close_menu();
                     }
                 });
@@ -615,7 +635,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 16.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
-            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
+            flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let get_icon_and_tooltip = |view: &View| match view {
                     View::Library => egui_material_icons::icons::ICON_LIBRARY_MUSIC,
                     View::Queue => egui_material_icons::icons::ICON_QUEUE_MUSIC,
@@ -633,6 +653,21 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     ui.add_space(4.0);
+                }
+            });
+
+            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER), |ui| match gem_player.current_view {
+                View::Library => {
+                    let duration = get_duration_of_songs(&gem_player.library);
+                    let duration_string = format_duration_to_hhmmss(duration);
+                    let text = format!("{} songs - {}", gem_player.library.len(), duration_string);
+                    ui.add(unselectable_label(text));
+                }
+                View::Queue => {
+                }
+                View::Playlists => {
+                }
+                View::Settings => {
                 }
             });
 
