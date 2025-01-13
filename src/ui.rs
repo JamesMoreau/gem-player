@@ -439,19 +439,17 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(26.0, filtered_songs.len(), |mut row| {
                 let song = &filtered_songs[row.index()];
 
-                row.set_selected(gem_player.selected_song == Some(row.index()));
-
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(song.title.as_ref().unwrap_or(&"Unknown Title".to_string())));
+                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())));
+                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.album.as_ref().unwrap_or(&"Unknown".to_string())));
+                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
@@ -461,16 +459,16 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = row.response();
                 if response.clicked() {
-                    gem_player.selected_song = Some(row.index());
+                    play_library_from_song(gem_player, song);
                 }
 
                 if response.double_clicked() {
-                    play_library_from_song(gem_player, song.clone());
+                    play_library_from_song(gem_player, song);
                 }
 
                 response.context_menu(|ui| {
                     if ui.button("Play").clicked() {
-                        play_library_from_song(gem_player, song.clone());
+                        play_library_from_song(gem_player, song);
                         ui.close_menu();
                     }
 
@@ -541,19 +539,17 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let index = queue_cursor + row.index();
                 let song = &gem_player.queue[index];
 
-                row.set_selected(gem_player.selected_song == Some(index));
-
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(song.title.as_ref().unwrap_or(&"Unknown Title".to_string())));
+                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.artist.as_ref().unwrap_or(&"Unknown Artist".to_string())));
+                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.album.as_ref().unwrap_or(&"Unknown".to_string())));
+                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
@@ -562,10 +558,6 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 let response = row.response();
-                if response.clicked() {
-                    gem_player.selected_song = Some(row.index());
-                }
-
                 response.context_menu(|ui| {
                     if ui.button("Play Next").clicked() {
                         ui.close_menu();

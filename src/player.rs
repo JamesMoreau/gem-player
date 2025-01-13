@@ -23,7 +23,7 @@ pub struct GemPlayer {
     pub library: Vec<Song>, // All the songs stored in the music directory.
     pub queue: Vec<Song>,
     pub queue_cursor: Option<usize>,  // Index of the current song in the queue. None if no song is playing.
-    pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
+    // pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
     // pub current_song: Option<Song>,   // The currently playing song.
     pub shuffle: bool,
     pub repeat: bool,
@@ -59,7 +59,7 @@ impl GemPlayer {
             library: Vec::new(),
             queue: Vec::new(),
             queue_cursor: None,
-            selected_song: None,
+            // selected_song: None,
             // current_song: None,
             shuffle: false,
             repeat: false,
@@ -297,13 +297,8 @@ pub fn move_song_down_in_queue(gem_player: &mut GemPlayer, index: usize) {
     gem_player.queue.swap(index, index + 1);
 }
 
-pub fn begin_playlist(gem_player: &mut GemPlayer, playlist: &Playlist) {
-    gem_player.queue = playlist.songs.clone();
-    play_next_song_in_queue(gem_player);
-}
-
-pub fn play_library_from_song(gem_player: &mut GemPlayer, song: Song) {
-    let maybe_song_index = gem_player.library.iter().position(|s| *s == song);
+pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
+    let maybe_song_index = gem_player.library.iter().position(|s| *s == *song);
 
     match maybe_song_index {
         None => {
