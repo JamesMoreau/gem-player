@@ -394,7 +394,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let filtered_songs: Vec<Song> = gem_player
+    let filtered_library: Vec<Song> = gem_player
         .library
         .iter()
         .filter(|song| {
@@ -436,8 +436,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, filtered_songs.len(), |mut row| {
-                let song = &filtered_songs[row.index()];
+            body.rows(26.0, filtered_library.len(), |mut row| {
+                let song = &filtered_library[row.index()];
+
+                let row_is_selected = gem_player.selected_song.as_ref() == Some(song);
+                row.set_selected(row_is_selected);
 
                 row.col(|ui| {
                     ui.add_space(16.0);
@@ -459,7 +462,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = row.response();
                 if response.clicked() {
-                    play_library_from_song(gem_player, song);
+                    gem_player.selected_song = Some(song.clone());
                 }
 
                 if response.double_clicked() {

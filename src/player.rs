@@ -23,8 +23,7 @@ pub struct GemPlayer {
     pub library: Vec<Song>, // All the songs stored in the music directory.
     pub queue: Vec<Song>,
     pub queue_cursor: Option<usize>,  // Index of the current song in the queue. None if no song is playing.
-    // pub selected_song: Option<usize>, // Index of the selected song in the songs vector.
-    // pub current_song: Option<Song>,   // The currently playing song.
+    pub selected_song: Option<Song>, // Currently selected song in the songs vector. TODO: multiple selection.
     pub shuffle: bool,
     pub repeat: bool,
     pub muted: bool,
@@ -59,8 +58,7 @@ impl GemPlayer {
             library: Vec::new(),
             queue: Vec::new(),
             queue_cursor: None,
-            // selected_song: None,
-            // current_song: None,
+            selected_song: None,
             shuffle: false,
             repeat: false,
             muted: false,
