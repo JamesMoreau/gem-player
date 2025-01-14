@@ -12,9 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
-    player::{
-        self, add_song_to_queue, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer,
-    },
+    player::{self, add_song_to_queue, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -258,7 +256,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .fit_to_exact_size(artwork_size)
                     .rounding(rounding);
 
-                let artwork = gem_player.current_song
+                let artwork = gem_player
+                    .current_song
                     .as_ref()
                     .and_then(|song| {
                         song.artwork.as_ref().map(|artwork_bytes| {
@@ -395,7 +394,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let filtered_library: Vec<Song> = gem_player
+    let mut library_copy: Vec<Song> = gem_player
         .library
         .iter()
         .filter(|song| {
@@ -409,8 +408,9 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    let header_labels = ["Title", "Artist", "Album", "Time"];
+    sort_songs(&mut library_copy, gem_player.sort_by, gem_player.sort_order);
 
+    let header_labels = ["Title", "Artist", "Album", "Time"];
     let available_width = ui.available_width();
     let time_width = 80.0;
     let remaining_width = available_width - time_width;
@@ -437,8 +437,8 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, filtered_library.len(), |mut row| {
-                let song = &filtered_library[row.index()];
+            body.rows(26.0, library_copy.len(), |mut row| {
+                let song = &library_copy[row.index()];
 
                 let row_is_selected = gem_player.selected_song.as_ref() == Some(song);
                 row.set_selected(row_is_selected);
@@ -656,40 +656,32 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER), |ui| match gem_player.current_view {
-                View::Library => {
-                    let duration = get_duration_of_songs(&gem_player.library);
-                    let duration_string = format_duration_to_hhmmss(duration);
-                    let text = format!("{} songs - {}", gem_player.library.len(), duration_string);
-                    ui.add(unselectable_label(text));
-                }
-                View::Queue => {
-                }
-                View::Playlists => {
-                }
-                View::Settings => {
-                }
-            });
+            flex.add_simple(
+                egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER),
+                |ui| match gem_player.current_view {
+                    View::Library => {
+                        let duration = get_duration_of_songs(&gem_player.library);
+                        let duration_string = format_duration_to_hhmmss(duration);
+                        let text = format!("{} songs - {}", gem_player.library.len(), duration_string);
+                        ui.add(unselectable_label(text));
+                    }
+                    View::Queue => {}
+                    View::Playlists => {}
+                    View::Settings => {}
+                },
+            );
 
             flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                 let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
                 ui.menu_button(filter_icon, |ui| {
-                    let mut should_sort_songs = false;
-
                     for sort_by in SortBy::iter() {
-                        let response = ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
-                        should_sort_songs |= response.clicked();
+                        ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
                     }
 
                     ui.separator();
 
                     for sort_order in SortOrder::iter() {
-                        let response = ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
-                        should_sort_songs |= response.clicked();
-                    }
-
-                    if should_sort_songs {
-                        sort_songs(&mut gem_player.library, gem_player.sort_by, gem_player.sort_order);
+                        ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
                     }
                 });
 
