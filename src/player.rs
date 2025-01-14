@@ -22,7 +22,7 @@ pub struct GemPlayer {
 
     pub library: Vec<Song>, // All the songs stored in the music directory.
     pub queue: Vec<Song>,
-    pub queue_cursor: Option<usize>,  // Index of the current song in the queue. None if no song is playing.
+    pub current_song: Option<Song>,
     pub selected_song: Option<Song>, // Currently selected song in the songs vector. TODO: multiple selection.
     pub shuffle: bool,
     pub repeat: bool,
@@ -57,7 +57,7 @@ impl GemPlayer {
 
             library: Vec::new(),
             queue: Vec::new(),
-            queue_cursor: None,
+            current_song: None,
             selected_song: None,
             shuffle: false,
             repeat: false,
@@ -119,23 +119,33 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_next_song_in_queue(gem_player: &mut GemPlayer) {
-    match gem_player.queue_cursor {
+    if gem_player.queue.is_empty() {
+        println!("Queue is empty.");
+        gem_player.current_song = None;
+        return;
+    }
+
+    let next_song_index = match gem_player.current_song {
         None => {
-            println!("Queue cursor not set. Starting from the first song.");
-            gem_player.queue_cursor = Some(0);
-            play_next_song_in_queue(gem_player); // Start from the first song
+            println!("Current song not set. Starting from the first song.");
+            0
         }
-        Some(cursor) => {
-            let next_song_index = cursor;
-            if next_song_index < gem_player.queue.len() {
-                let next_song = gem_player.queue[next_song_index].clone();
-                load_and_play_song(gem_player, &next_song); // Load and play the song
-            } else {
-                println!("No more songs in queue.");
-                gem_player.queue_cursor = None; // Reset or handle looping
+        Some(ref current_song) => {
+            // Find the current song's index and move to the next one
+            match gem_player.queue.iter().position(|s| s == current_song) {
+                Some(index) if index + 1 < gem_player.queue.len() => index + 1,
+                _ => {
+                    println!("No more songs in queue.");
+                    gem_player.current_song = None;
+                    return;
+                }
             }
         }
-    }
+    };
+
+    let next_song = gem_player.queue[next_song_index].clone();
+    gem_player.current_song = Some(next_song.clone());
+    load_and_play_song(gem_player, &next_song);
 }
 
 pub fn play_previous_song_in_queue(gem_player: &mut GemPlayer) {
@@ -256,15 +266,19 @@ pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
     Ok(songs)
 }
 
+pub fn get_song_queue_position(gem_player: &GemPlayer, song: &Song) -> Option<usize> {
+    gem_player.queue.iter().position(|s| *s == *song)
+}
+
 pub fn add_song_to_queue(gem_player: &mut GemPlayer, song: Song) {
     gem_player.queue.push(song);
 }
 
-pub fn jump_to_song_in_queue(gem_player: &mut GemPlayer, index: usize) {
-    gem_player.queue_cursor = Some(index);
-    let song = gem_player.queue[index].clone();
-    load_and_play_song(gem_player, &song);
-}
+// pub fn jump_to_song_in_queue(gem_player: &mut GemPlayer, index: usize) {
+//     gem_player.queue_cursor = Some(index);
+//     let song = gem_player.queue[index].clone();
+//     load_and_play_song(gem_player, &song);
+// }
 
 pub fn remove_from_queue(gem_player: &mut GemPlayer, index: usize) {
     gem_player.queue.remove(index);
@@ -296,25 +310,19 @@ pub fn move_song_down_in_queue(gem_player: &mut GemPlayer, index: usize) {
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
-    let maybe_song_index = gem_player.library.iter().position(|s| *s == *song);
-
-    match maybe_song_index {
-        None => {
-            println!(
-                "Could not find {} not found in library.",
-                song.title.as_deref().unwrap_or("Unknown")
-            );
-        }
-
-        Some(index) => {
-            println!("Found song in library at index: {}", index);
-            gem_player.queue = gem_player.library.clone();
-            gem_player.queue_cursor = Some(index);
-            play_next_song_in_queue(gem_player);
-        }
+    if let Some(found_song) = gem_player.library.iter().find(|&s| s == song) {
+        println!(
+            "Found song in library: {}",
+            found_song.title.as_deref().unwrap_or("Unknown")
+        );
+        gem_player.queue = gem_player.library.clone();
+        gem_player.current_song = Some(found_song.clone());
+        play_next_song_in_queue(gem_player);
+    } else {
+        println!(
+            "Could not find {} in library.",
+            song.title.as_deref().unwrap_or("Unknown")
+        );
     }
 }
 
-pub fn get_current_song(gem_player: &GemPlayer) -> Option<&Song> {
-    gem_player.queue_cursor.and_then(|cursor| gem_player.queue.get(cursor))
-}

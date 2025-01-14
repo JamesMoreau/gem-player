@@ -13,7 +13,7 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_song_to_queue, get_current_song, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer,
+        self, add_song_to_queue, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer,
     },
     sort_songs, Song, SortBy, SortOrder,
 };
@@ -258,7 +258,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .fit_to_exact_size(artwork_size)
                     .rounding(rounding);
 
-                let artwork = get_current_song(gem_player)
+                let artwork = gem_player.current_song
+                    .as_ref()
                     .and_then(|song| {
                         song.artwork.as_ref().map(|artwork_bytes| {
                             let artwork_uri = format!("bytes://artwork-{}", song.title.as_deref().unwrap_or("default"));
@@ -281,7 +282,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let mut position_as_secs = 0.0;
                         let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
-                        if let Some(song) = get_current_song(gem_player).cloned() {
+                        if let Some(song) = &gem_player.current_song {
                             title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             album = song.album.clone().unwrap_or("Unknown Album".to_string());
@@ -516,7 +517,11 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
 
-    let queue_cursor = gem_player.queue_cursor.unwrap_or(0);
+    // We only want to show the queue from the current song onwards.
+    let start_index = match &gem_player.current_song {
+        Some(current_song) => gem_player.queue.iter().position(|s| s == current_song).unwrap_or(0),
+        None => 0, // Start from the beginning if no current song is set
+    };
 
     TableBuilder::new(ui)
         .striped(true)
@@ -539,8 +544,8 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .body(|body| {
             body.rows(26.0, gem_player.queue.len(), |mut row| {
-                let index = queue_cursor + row.index();
-                let song = &gem_player.queue[index];
+                let index = start_index + row.index();
+                let song = gem_player.queue[index].clone();
 
                 row.col(|ui| {
                     ui.add_space(16.0);
@@ -567,9 +572,9 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     if ui.button("Remove from Queue").clicked() {
-                        gem_player.queue.remove(index);
-                        if queue_cursor > index {
-                            gem_player.queue_cursor = Some(queue_cursor - 1);
+                        gem_player.queue.remove(index); // Correct index for removal
+                        if gem_player.current_song == Some(song.clone()) {
+                            gem_player.current_song = None; // Reset current song if it's removed
                         }
                         ui.close_menu();
                     }
