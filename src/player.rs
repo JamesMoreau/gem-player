@@ -125,13 +125,12 @@ pub fn play_next_song_in_queue(gem_player: &mut GemPlayer) {
         return;
     }
 
-    let next_song_index = match gem_player.current_song {
+    let next_song_index = match &gem_player.current_song {
         None => {
             println!("Current song not set. Starting from the first song.");
             0
         }
-        Some(ref current_song) => {
-            // Find the current song's index and move to the next one
+        Some(current_song) => {
             match gem_player.queue.iter().position(|s| s == current_song) {
                 Some(index) if index + 1 < gem_player.queue.len() => index + 1,
                 _ => {
