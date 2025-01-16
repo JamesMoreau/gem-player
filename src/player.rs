@@ -310,19 +310,23 @@ pub fn move_song_down_in_queue(gem_player: &mut GemPlayer, index: usize) {
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
-    if let Some(found_song) = gem_player.library.iter().find(|&s| s == song) {
-        println!(
-            "Found song in library: {}",
-            found_song.title.as_deref().unwrap_or("Unknown")
-        );
-        gem_player.queue = gem_player.library.clone();
-        gem_player.current_song = Some(found_song.clone());
-        play_next_song_in_queue(gem_player);
-    } else {
-        println!(
-            "Could not find {} in library.",
-            song.title.as_deref().unwrap_or("Unknown")
-        );
+    let maybe_song = gem_player.library.iter().find(|&s| s == song);
+    match maybe_song {
+        None => {
+            println!(
+                "Could not find {} in library.",
+                song.title.as_deref().unwrap_or("Unknown")
+            );
+        }
+        Some(found_song) => {
+            println!(
+                "Found song in library: {}",
+                found_song.title.as_deref().unwrap_or("Unknown")
+            );
+            gem_player.queue = gem_player.library.clone();
+            gem_player.current_song = Some(found_song.clone());
+            play_next_song_in_queue(gem_player);
+        }
     }
 }
 
