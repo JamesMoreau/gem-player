@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
-    player::{self, add_song_to_queue, is_playing, play_library_from_song, play_next_song_in_queue, play_or_pause, GemPlayer},
+    player::{self, add_song_to_queue, is_playing, play_library_from_song, play_next, play_or_pause, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -35,7 +35,7 @@ impl eframe::App for player::GemPlayer {
 
         // Check if the current song has ended and play the next song in the queue.
         if self.sink.empty() {
-            play_next_song_in_queue(self);
+            play_next(self);
         }
 
         custom_window_frame(ctx, "", |ui| {
@@ -211,7 +211,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_NEXT).clicked();
                 if clicked {
-                    play_next_song_in_queue(gem_player);
+                    play_next(gem_player);
                 }
             });
 
