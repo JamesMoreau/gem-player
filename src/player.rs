@@ -262,12 +262,6 @@ pub fn add_song_to_queue(gem_player: &mut GemPlayer, song: Song) {
     gem_player.queue.push(song);
 }
 
-// pub fn jump_to_song_in_queue(gem_player: &mut GemPlayer, index: usize) {
-//     gem_player.queue_cursor = Some(index);
-//     let song = gem_player.queue[index].clone();
-//     load_and_play_song(gem_player, &song);
-// }
-
 pub fn remove_from_queue(gem_player: &mut GemPlayer, index: usize) {
     gem_player.queue.remove(index);
 }
@@ -303,16 +297,12 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     let maybe_song_index = gem_player.library.iter().position(|s| s == song);
     match maybe_song_index {
         None => {
-            println!("Song not found in the library.")
+            println!("Song not found in the library.");
         }
         Some(index) => {
-            gem_player.queue.push(song.clone());
-    
             gem_player.queue.extend_from_slice(&gem_player.library[index + 1..]);
             gem_player.queue.extend_from_slice(&gem_player.library[..index]);
-    
-            gem_player.current_song = Some(song.clone());
-    
+
             load_and_play_song(gem_player, song);
         }
     }
