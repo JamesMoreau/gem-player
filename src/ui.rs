@@ -12,7 +12,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
-    player::{self, add_song_to_queue, is_playing, play_library_from_song, play_next, play_or_pause, GemPlayer},
+    player::{self, add_next_to_queue, add_to_queue, is_playing, play_library_from_song, play_next, play_or_pause, GemPlayer},
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -147,7 +147,9 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 
             let close_button = |ui: &mut Ui| {
                 let close_response = ui
-                    .add(Button::new(RichText::new("❌").size(button_height)))
+                    .add(Button::new(
+                        RichText::new(egui_material_icons::icons::ICON_CLOSE).size(button_height),
+                    ))
                     .on_hover_text("Close the window");
                 if close_response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Close);
@@ -157,7 +159,11 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
             let maximize_button = |ui: &mut Ui| {
                 let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
                 let tooltip = if is_maximized { "Restore window" } else { "Maximize window" };
-                let maximize_response = ui.add(Button::new(RichText::new("🗗").size(button_height))).on_hover_text(tooltip);
+                let maximize_response = ui
+                    .add(Button::new(
+                        RichText::new(egui_material_icons::icons::ICON_SQUARE).size(button_height),
+                    ))
+                    .on_hover_text(tooltip);
                 if maximize_response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
                 }
@@ -165,7 +171,9 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 
             let minimize_button = |ui: &mut Ui| {
                 let minimize_response = ui
-                    .add(Button::new(RichText::new("🗕").size(button_height)))
+                    .add(Button::new(
+                        RichText::new(egui_material_icons::icons::ICON_MINIMIZE).size(button_height),
+                    ))
                     .on_hover_text("Minimize the window");
                 if minimize_response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
@@ -471,13 +479,13 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 response.context_menu(|ui| {
-                    if ui.button("Play").clicked() {
-                        play_library_from_song(gem_player, song);
+                    if ui.button("Play Next").clicked() {
+                        add_next_to_queue(gem_player, song.clone());
                         ui.close_menu();
                     }
 
                     if ui.button("Add to queue").clicked() {
-                        add_song_to_queue(gem_player, song.clone());
+                        add_to_queue(gem_player, song.clone());
                         ui.close_menu();
                     }
 
@@ -508,30 +516,30 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let header_labels = ["Title", "Artist", "Album", "Time"];
+    let header_labels = ["Title", "Artist", "Album", "Time", ""];
 
     let available_width = ui.available_width();
     let time_width = 80.0;
-    let remaining_width = available_width - time_width;
+    let actions_width = 64.0;
+    let remaining_width = available_width - time_width - actions_width;
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
 
-    // We only want to show the queue from the current song onwards.
     let start_index = match &gem_player.current_song {
         Some(current_song) => gem_player.queue.iter().position(|s| s == current_song).unwrap_or(0),
-        None => 0, // Start from the beginning if no current song is set
+        None => 0,
     };
 
     TableBuilder::new(ui)
         .striped(true)
-        .resizable(true)
         .sense(Sense::click())
         .cell_layout(Layout::left_to_right(Align::Center))
         .column(egui_extras::Column::exact(title_width))
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
         .column(egui_extras::Column::exact(time_width))
+        .column(egui_extras::Column::exact(actions_width))
         .header(16.0, |mut header| {
             for (i, h) in header_labels.iter().enumerate() {
                 header.col(|ui| {
@@ -566,17 +574,13 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 let response = row.response();
-                response.context_menu(|ui| {
-                    if ui.button("Play Next").clicked() {
-                        ui.close_menu();
-                    }
-
-                    if ui.button("Remove from Queue").clicked() {
-                        gem_player.queue.remove(index); // Correct index for removal
-                        if gem_player.current_song == Some(song.clone()) {
-                            gem_player.current_song = None; // Reset current song if it's removed
+                let row_is_hovered = response.hovered();
+                row.col(|ui| {
+                    if row_is_hovered {
+                        let clicked = ui.button(egui_material_icons::icons::ICON_CLOSE).clicked();
+                        if clicked {
+                            gem_player.queue.remove(index);
                         }
-                        ui.close_menu();
                     }
                 });
             });

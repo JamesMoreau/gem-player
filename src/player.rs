@@ -146,6 +146,7 @@ pub fn play_previous_song_in_queue(gem_player: &mut GemPlayer) {
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) {
     gem_player.sink.stop(); // Stop the current song if any.
+    gem_player.current_song = None;
 
     let file_result = std::fs::File::open(&song.file_path);
     let file = match file_result {
@@ -165,6 +166,7 @@ pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) {
         }
     };
 
+    gem_player.current_song = Some(song.clone());
     gem_player.sink.append(source);
     gem_player.sink.play();
 }
@@ -258,8 +260,12 @@ pub fn get_song_queue_position(gem_player: &GemPlayer, song: &Song) -> Option<us
     gem_player.queue.iter().position(|s| *s == *song)
 }
 
-pub fn add_song_to_queue(gem_player: &mut GemPlayer, song: Song) {
+pub fn add_to_queue(gem_player: &mut GemPlayer, song: Song) {
     gem_player.queue.push(song);
+}
+
+pub fn add_next_to_queue(gem_player: &mut GemPlayer, song: Song) {
+    gem_player.queue.insert(0, song);
 }
 
 pub fn remove_from_queue(gem_player: &mut GemPlayer, index: usize) {
