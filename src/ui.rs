@@ -12,7 +12,9 @@ use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
-    player::{self, add_next_to_queue, add_to_queue, is_playing, play_library_from_song, play_next, play_or_pause, GemPlayer},
+    player::{
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, GemPlayer,
+    },
     sort_songs, Song, SortBy, SortOrder,
 };
 
@@ -332,9 +334,9 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                                 let mut job = text::LayoutJob::default();
                                 job.append(&title, 0.0, data_format.clone());
-                                job.append(" by ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
+                                job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
                                 job.append(&artist, 0.0, data_format.clone());
-                                job.append(" on ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
+                                job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
                                 job.append(&album, 0.0, data_format.clone());
 
                                 let song_label = unselectable_label(job).truncate();
@@ -418,7 +420,12 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     sort_songs(&mut library_copy, gem_player.sort_by, gem_player.sort_order);
 
-    let header_labels = ["Title", "Artist", "Album", "Time"];
+    let header_labels = [
+        egui_material_icons::icons::ICON_MUSIC_NOTE,
+        egui_material_icons::icons::ICON_ARTIST,
+        egui_material_icons::icons::ICON_ALBUM,
+        egui_material_icons::icons::ICON_HOURGLASS,
+    ];
     let available_width = ui.available_width();
     let time_width = 80.0;
     let remaining_width = available_width - time_width;
@@ -516,7 +523,13 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let header_labels = ["Title", "Artist", "Album", "Time", ""];
+    let header_labels = [
+        egui_material_icons::icons::ICON_MUSIC_NOTE,
+        egui_material_icons::icons::ICON_ARTIST,
+        egui_material_icons::icons::ICON_ALBUM,
+        egui_material_icons::icons::ICON_HOURGLASS,
+        "",
+    ];
 
     let available_width = ui.available_width();
     let time_width = 80.0;
@@ -574,8 +587,14 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 let response = row.response();
-                let row_is_hovered = response.hovered();
+
+                if response.double_clicked() {
+                    move_song_to_front(gem_player, index);
+                }
+
+                let mut row_is_hovered = response.hovered();
                 row.col(|ui| {
+                    row_is_hovered |= ui.response().hovered();
                     if row_is_hovered {
                         let clicked = ui.button(egui_material_icons::icons::ICON_CLOSE).clicked();
                         if clicked {
@@ -690,7 +709,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 let search_bar = TextEdit::singleline(&mut gem_player.search_text)
-                    .hint_text("Search...")
+                    .hint_text(format!("{} ...", egui_material_icons::icons::ICON_SEARCH))
                     .desired_width(140.0);
                 ui.add(search_bar);
 

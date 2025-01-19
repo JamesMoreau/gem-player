@@ -297,6 +297,15 @@ pub fn move_song_down_in_queue(gem_player: &mut GemPlayer, index: usize) {
     gem_player.queue.swap(index, index + 1);
 }
 
+pub fn move_song_to_front(gem_player: &mut GemPlayer, index: usize) {
+    if index == 0 || index >= gem_player.queue.len() {
+        return;
+    }
+
+    let song = gem_player.queue.remove(index);
+    gem_player.queue.insert(0, song);
+}
+
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     gem_player.queue.clear();
 
