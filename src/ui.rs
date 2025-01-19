@@ -586,22 +586,26 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     ui.add(unselectable_label(duration_string));
                 });
 
-                let response = row.response();
-
-                if response.double_clicked() {
+                let row_response = row.response();
+                if row_response.double_clicked() {
                     move_song_to_front(gem_player, index);
                 }
 
-                let mut row_is_hovered = response.hovered();
+                let row_contains_pointer = row_response.contains_pointer();
+                let mut actions_contains_pointer = false;
                 row.col(|ui| {
-                    row_is_hovered |= ui.response().hovered();
-                    if row_is_hovered {
+                    actions_contains_pointer = ui.response().contains_pointer();
+                    if row_contains_pointer || actions_contains_pointer {
                         let clicked = ui.button(egui_material_icons::icons::ICON_CLOSE).clicked();
                         if clicked {
                             gem_player.queue.remove(index);
                         }
                     }
                 });
+
+                if row_contains_pointer || actions_contains_pointer {
+                    row.set_hovered(true);
+                }
             });
         });
 }
