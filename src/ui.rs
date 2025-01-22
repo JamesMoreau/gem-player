@@ -35,6 +35,8 @@ impl eframe::App for player::GemPlayer {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
 
+        catppuccin_egui::set_theme(ctx, catppuccin_egui::FRAPPE);
+
         // Check if the current song has ended and play the next song in the queue.
         if self.sink.empty() {
             play_next(self);
@@ -433,81 +435,83 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
 
-    TableBuilder::new(ui)
-        .striped(true)
-        .sense(Sense::click())
-        .cell_layout(Layout::left_to_right(Align::Center))
-        .column(egui_extras::Column::exact(title_width))
-        .column(egui_extras::Column::exact(artist_width))
-        .column(egui_extras::Column::exact(album_width))
-        .column(egui_extras::Column::exact(time_width))
-        .header(16.0, |mut header| {
-            for (i, h) in header_labels.iter().enumerate() {
-                header.col(|ui| {
-                    if i == 0 {
+    Frame::none().inner_margin(Margin::symmetric(8.0, 0.0)).show(ui, |ui| {
+        TableBuilder::new(ui)
+            .striped(true)
+            .sense(Sense::click())
+            .cell_layout(Layout::left_to_right(Align::Center))
+            .column(egui_extras::Column::exact(title_width))
+            .column(egui_extras::Column::exact(artist_width))
+            .column(egui_extras::Column::exact(album_width))
+            .column(egui_extras::Column::exact(time_width))
+            .header(16.0, |mut header| {
+                for (i, h) in header_labels.iter().enumerate() {
+                    header.col(|ui| {
+                        if i == 0 {
+                            ui.add_space(16.0);
+                        }
+                        ui.add(unselectable_label(RichText::new(*h).strong()));
+                    });
+                }
+            })
+            .body(|body| {
+                body.rows(26.0, library_copy.len(), |mut row| {
+                    let song = &library_copy[row.index()];
+    
+                    let row_is_selected = gem_player.selected_song.as_ref() == Some(song);
+                    row.set_selected(row_is_selected);
+    
+                    row.col(|ui| {
                         ui.add_space(16.0);
+                        ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
+                    });
+    
+                    row.col(|ui| {
+                        ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
+                    });
+    
+                    row.col(|ui| {
+                        ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
+                    });
+    
+                    row.col(|ui| {
+                        let duration_string = format_duration_to_mmss(song.duration);
+                        ui.add(unselectable_label(duration_string));
+                    });
+    
+                    let response = row.response();
+                    if response.clicked() {
+                        gem_player.selected_song = Some(song.clone());
                     }
-                    ui.add(unselectable_label(RichText::new(*h).strong()));
-                });
-            }
-        })
-        .body(|body| {
-            body.rows(26.0, library_copy.len(), |mut row| {
-                let song = &library_copy[row.index()];
-
-                let row_is_selected = gem_player.selected_song.as_ref() == Some(song);
-                row.set_selected(row_is_selected);
-
-                row.col(|ui| {
-                    ui.add_space(16.0);
-                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
-                });
-
-                row.col(|ui| {
-                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
-                });
-
-                row.col(|ui| {
-                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
-                });
-
-                row.col(|ui| {
-                    let duration_string = format_duration_to_mmss(song.duration);
-                    ui.add(unselectable_label(duration_string));
-                });
-
-                let response = row.response();
-                if response.clicked() {
-                    gem_player.selected_song = Some(song.clone());
-                }
-
-                if response.double_clicked() {
-                    play_library_from_song(gem_player, song);
-                }
-
-                response.context_menu(|ui| {
-                    if ui.button("Play Next").clicked() {
-                        add_next_to_queue(gem_player, song.clone());
-                        ui.close_menu();
+    
+                    if response.double_clicked() {
+                        play_library_from_song(gem_player, song);
                     }
-
-                    if ui.button("Add to queue").clicked() {
-                        add_to_queue(gem_player, song.clone());
-                        ui.close_menu();
-                    }
-
-                    ui.separator();
-
-                    if ui.button("Open file location").clicked() {
-                        ui.close_menu();
-                    }
-
-                    if ui.button("Remove from library").clicked() {
-                        ui.close_menu();
-                    }
+    
+                    response.context_menu(|ui| {
+                        if ui.button("Play Next").clicked() {
+                            add_next_to_queue(gem_player, song.clone());
+                            ui.close_menu();
+                        }
+    
+                        if ui.button("Add to queue").clicked() {
+                            add_to_queue(gem_player, song.clone());
+                            ui.close_menu();
+                        }
+    
+                        ui.separator();
+    
+                        if ui.button("Open file location").clicked() {
+                            ui.close_menu();
+                        }
+    
+                        if ui.button("Remove from library").clicked() {
+                            ui.close_menu();
+                        }
+                    });
                 });
             });
-        });
+    });
 }
 
 pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
