@@ -595,11 +595,11 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect().expand(4.0)); // This makes it so the left border (between cells) is covered.
                     if row_is_hovered || actions_cell_contains_pointer {
                         let response = ui.button(egui_material_icons::icons::ICON_ARROW_UPWARD);
+                        println!("row {} move song to front button response: {:?}", index, response);
                         if response.clicked() {
                             move_song_to_front(gem_player, index);
                         }
                         actions_cell_contains_pointer |= response.hovered();
-                        println!("row {} clear button response: {:?}", index, response);
 
                         let response = ui.button(egui_material_icons::icons::ICON_CLOSE);
                         if response.clicked() {
@@ -608,9 +608,6 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         actions_cell_contains_pointer |= response.hovered();
                     }
                 });
-                if actions_cell_contains_pointer {
-                    row.set_hovered(true);
-                }
             });
         });
 }
