@@ -586,22 +586,23 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     ui.add(unselectable_label(duration_string));
                 });
                 
-                // In order to determine if the actions buttons should be shown, we need to check if the row is hovered.
-                // 
+                // We only display the actions column buttons if the row is hovered. There is a chicken and egg problem here. 
+                // We need to know if the row is hovered before we display the actions column buttons. We solve this by checking 
+                // the row response (the previous cells) or if the actions column buttons contain the pointer.
                 let row_is_hovered = row.response().hovered();
                 let mut actions_contains_pointer = false;
                 row.col(|ui| {
                     actions_contains_pointer = ui.rect_contains_pointer(ui.max_rect()
-                        .expand(4.0)); // This makes it so the left border is covered.
-                    if row_is_hovered /*|| actions_contains_pointer */{
-                        let response = ui.button(egui_material_icons::icons::ICON_CLOSE);
-                        if response.clicked() {
-                            gem_player.queue.remove(index);
-                        }
-
+                        .expand(4.0)); // This makes it so the left border (between cells) is covered.
+                    if row_is_hovered || actions_contains_pointer {
                         let response = ui.button(egui_material_icons::icons::ICON_ARROW_UPWARD);
                         if response.clicked() {
                             move_song_to_front(gem_player, index);
+                        }
+
+                        let response = ui.button(egui_material_icons::icons::ICON_CLOSE);
+                        if response.clicked() {
+                            gem_player.queue.remove(index);
                         }
                     }
                 });
