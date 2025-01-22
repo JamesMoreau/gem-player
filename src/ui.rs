@@ -533,7 +533,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let available_width = ui.available_width();
     let time_width = 80.0;
-    let actions_width = 64.0;
+    let actions_width = 100.0;
     let remaining_width = available_width - time_width - actions_width;
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
