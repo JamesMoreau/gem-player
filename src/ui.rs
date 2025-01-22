@@ -585,31 +585,32 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let duration_string = format_duration_to_mmss(song.duration);
                     ui.add(unselectable_label(duration_string));
                 });
-                
-                // We only display the actions column buttons if the row is hovered. There is a chicken and egg problem here. 
-                // We need to know if the row is hovered before we display the actions column buttons. We solve this by checking 
-                // the row response (the previous cells) or if the actions column buttons contain the pointer.
+
+                // We only display the actions column buttons if the row is hovered. There is a chicken and egg problem here.
+                // We need to know if the row is hovered before we display the actions column buttons. We solve this by checking
+                // both the row response (of the previous cells) and if the actions column cell contains the pointer.
                 let row_is_hovered = row.response().hovered();
-                let mut actions_contains_pointer = false;
+                let mut actions_cell_contains_pointer = false;
                 row.col(|ui| {
-                    actions_contains_pointer = ui.rect_contains_pointer(ui.max_rect()
-                        .expand(4.0)); // This makes it so the left border (between cells) is covered.
-                    if row_is_hovered || actions_contains_pointer {
+                    actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect().expand(4.0)); // This makes it so the left border (between cells) is covered.
+                    if row_is_hovered || actions_cell_contains_pointer {
                         let response = ui.button(egui_material_icons::icons::ICON_ARROW_UPWARD);
                         if response.clicked() {
                             move_song_to_front(gem_player, index);
                         }
+                        actions_cell_contains_pointer |= response.hovered();
+                        println!("row {} clear button response: {:?}", index, response);
 
                         let response = ui.button(egui_material_icons::icons::ICON_CLOSE);
                         if response.clicked() {
                             gem_player.queue.remove(index);
                         }
+                        actions_cell_contains_pointer |= response.hovered();
                     }
                 });
-                if actions_contains_pointer {
+                if actions_cell_contains_pointer {
                     row.set_hovered(true);
                 }
-                println!("row {} is hovered: {}", index, row_is_hovered);
             });
         });
 }
