@@ -585,18 +585,30 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let duration_string = format_duration_to_mmss(song.duration);
                     ui.add(unselectable_label(duration_string));
                 });
-
+                
+                // In order to determine if the actions buttons should be shown, we need to check if the row is hovered.
+                // 
+                let row_is_hovered = row.response().hovered();
+                let mut actions_contains_pointer = false;
                 row.col(|ui| {
-                    let response = ui.button(egui_material_icons::icons::ICON_CLOSE);
-                    if response.clicked() {
-                        gem_player.queue.remove(index);
+                    actions_contains_pointer = ui.rect_contains_pointer(ui.max_rect()
+                        .expand(4.0)); // This makes it so the left border is covered.
+                    if row_is_hovered /*|| actions_contains_pointer */{
+                        let response = ui.button(egui_material_icons::icons::ICON_CLOSE);
+                        if response.clicked() {
+                            gem_player.queue.remove(index);
+                        }
+
+                        let response = ui.button(egui_material_icons::icons::ICON_ARROW_UPWARD);
+                        if response.clicked() {
+                            move_song_to_front(gem_player, index);
+                        }
                     }
                 });
-
-                let response = row.response();
-                if response.double_clicked() {
-                    move_song_to_front(gem_player, index);
+                if actions_contains_pointer {
+                    row.set_hovered(true);
                 }
+                println!("row {} is hovered: {}", index, row_is_hovered);
             });
         });
 }
