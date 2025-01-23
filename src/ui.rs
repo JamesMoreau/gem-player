@@ -35,7 +35,7 @@ impl eframe::App for player::GemPlayer {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
 
-        catppuccin_egui::set_theme(ctx, catppuccin_egui::FRAPPE);
+        // catppuccin_egui::set_theme(ctx, catppuccin_egui::LATTE);
 
         // Check if the current song has ended and play the next song in the queue.
         if self.sink.empty() {
@@ -234,7 +234,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             if is_active {
                                 ui.visuals().selection.bg_fill
                             } else {
-                                Color32::GRAY
+                                ui.visuals().text_color()
                             }
                         };
 

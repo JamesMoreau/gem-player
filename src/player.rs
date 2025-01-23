@@ -256,7 +256,7 @@ pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
     Ok(songs)
 }
 
-pub fn get_song_queue_position(gem_player: &GemPlayer, song: &Song) -> Option<usize> {
+pub fn get_song_position_in_queue(gem_player: &GemPlayer, song: &Song) -> Option<usize> {
     gem_player.queue.iter().position(|s| *s == *song)
 }
 
@@ -275,26 +275,6 @@ pub fn remove_from_queue(gem_player: &mut GemPlayer, index: usize) {
 pub fn shuffle_queue(gem_player: &mut GemPlayer) {
     let mut rng = rand::thread_rng();
     gem_player.queue.shuffle(&mut rng);
-}
-
-pub fn clear_queue(gem_player: &mut GemPlayer) {
-    gem_player.queue.clear();
-}
-
-pub fn move_song_up_in_queue(gem_player: &mut GemPlayer, index: usize) {
-    if index == 0 || index >= gem_player.queue.len() {
-        return;
-    }
-
-    gem_player.queue.swap(index, index - 1);
-}
-
-pub fn move_song_down_in_queue(gem_player: &mut GemPlayer, index: usize) {
-    if index == gem_player.queue.len() - 1 {
-        return;
-    }
-
-    gem_player.queue.swap(index, index + 1);
 }
 
 pub fn move_song_to_front(gem_player: &mut GemPlayer, index: usize) {
