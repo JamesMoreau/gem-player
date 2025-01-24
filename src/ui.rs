@@ -32,6 +32,9 @@ impl eframe::App for player::GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        let window = ctx.input(|i: &eframe::egui::InputState| i.screen_rect());
+        println!("Window: {:?}", window);
+
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
 
@@ -421,21 +424,26 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .collect();
 
     sort_songs(&mut library_copy, gem_player.sort_by, gem_player.sort_order);
+    
+    Frame::none().outer_margin(Margin::symmetric(100.0, 0.0)).fill(Color32::RED).show(ui, |ui| {
+        let header_labels = [
+            egui_material_icons::icons::ICON_MUSIC_NOTE,
+            egui_material_icons::icons::ICON_ARTIST,
+            egui_material_icons::icons::ICON_ALBUM,
+            egui_material_icons::icons::ICON_HOURGLASS,
+        ];
 
-    let header_labels = [
-        egui_material_icons::icons::ICON_MUSIC_NOTE,
-        egui_material_icons::icons::ICON_ARTIST,
-        egui_material_icons::icons::ICON_ALBUM,
-        egui_material_icons::icons::ICON_HOURGLASS,
-    ];
-    let available_width = ui.available_width();
-    let time_width = 80.0;
-    let remaining_width = available_width - time_width;
-    let title_width = remaining_width * (2.0 / 4.0);
-    let artist_width = remaining_width * (1.0 / 4.0);
-    let album_width = remaining_width * (1.0 / 4.0);
+        let available_width = ui.available_width();
+        
+        let time_width = 80.0;
+        let remaining_width = available_width - time_width;
+        let title_width = remaining_width * (2.0 / 4.0);
+        let artist_width = remaining_width * (1.0 / 4.0);
+        let album_width = remaining_width * (1.0 / 4.0);
+        
+        println!("Table available width: {}", available_width);
+        println!("Sum width of columns: {}", title_width + artist_width + album_width + time_width);
 
-    Frame::none().inner_margin(Margin::symmetric(8.0, 0.0)).show(ui, |ui| {
         TableBuilder::new(ui)
             .striped(true)
             .sense(Sense::click())
