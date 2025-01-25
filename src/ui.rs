@@ -204,7 +204,9 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
-                let response = ui.button(icons::ICON_SKIP_PREVIOUS).on_hover_text("Previous");
+                let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
+                let previous_song_exists = gem_player.history.len() > 1;
+                let response = ui.add_enabled(previous_song_exists, previous_button).on_hover_text("Previous");
                 if response.clicked() {
                     play_previous(gem_player);
                 }
@@ -215,12 +217,16 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     icons::ICON_PLAY_ARROW
                 };
                 let tooltip = if is_playing(gem_player) { "Pause" } else { "Play" };
-                let response = ui.button(play_pause_icon).on_hover_text(tooltip);
+                let play_pause_button = Button::new(RichText::new(play_pause_icon));
+                let song_is_playing = gem_player.current_song.is_some();
+                let response = ui.add_enabled(song_is_playing, play_pause_button).on_hover_text(tooltip);
                 if response.clicked() {
                     play_or_pause(gem_player);
                 }
 
-                let response = ui.button(icons::ICON_SKIP_NEXT).on_hover_text("Next");
+                let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
+                let next_song_exists = !gem_player.queue.is_empty();
+                let response = ui.add_enabled(next_song_exists, next_button).on_hover_text("Next");
                 if response.clicked() {
                     play_next(gem_player);
                 }
@@ -302,7 +308,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             .trailing_fill(true)
                             .show_value(false)
                             .step_by(1.0); // Step by 1 second.
-                        let response = ui.add(playback_progress_slider);
+                        let song_is_playing = gem_player.current_song.is_some();
+                        let response = ui.add_enabled(song_is_playing, playback_progress_slider);
 
                         if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
                             gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
@@ -597,12 +604,14 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect().expand(4.0)); // This makes it so the left border (between cells) is covered.
                     let should_show_action_buttons = row_is_hovered || actions_cell_contains_pointer;
 
+                    ui.add_space(8.0);
+
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
                         move_song_to_front(gem_player, index);
                     }
 
-                    ui.add_space(4.0);
+                    ui.add_space(8.0);
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
@@ -697,7 +706,8 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.queue);
                         ui.add(unselectable_label(songs_count_and_duration));
 
-                        let response = ui.button("Clear Queue").on_hover_text("Clear the queue");
+                        let clear_button = Button::new(icons::ICON_CLEAR_ALL);
+                        let response = ui.add_enabled(!gem_player.queue.is_empty(), clear_button).on_hover_text("Clear the queue");
                         if response.clicked() {
                             gem_player.queue.clear();
                         }
