@@ -34,8 +34,7 @@ impl eframe::App for player::GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        let window = ctx.input(|i: &eframe::egui::InputState| i.screen_rect());
-        println!("Window: {:?}", window);
+        // let window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
 
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
@@ -423,7 +422,6 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
     let available_width = ui.available_width();
-    println!("Table available width: {}", available_width);
     let time_width = 64.0;
     let remaining_width = available_width - time_width;
     let title_width = remaining_width * 0.5;
@@ -454,9 +452,6 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            let widths = body.widths();
-            println!("body widths: {:?}", widths);
-
             body.rows(26.0, library_copy.len(), |mut row| {
                 let song = &library_copy[row.index()];
 
@@ -538,7 +533,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let available_width = ui.available_width();
     let time_width = 80.0;
-    let actions_width = 100.0;
+    let actions_width = 80.0;
     let remaining_width = available_width - time_width - actions_width;
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
@@ -606,6 +601,8 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if response.clicked() {
                         move_song_to_front(gem_player, index);
                     }
+
+                    ui.add_space(4.0);
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
@@ -693,48 +690,64 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER),
                 |ui| match gem_player.current_view {
                     View::Library => {
-                        let duration = get_duration_of_songs(&gem_player.library);
-                        let duration_string = format_duration_to_hhmmss(duration);
-                        let text = format!("{} songs - {}", gem_player.library.len(), duration_string);
-                        ui.add(unselectable_label(text));
+                        let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.library);
+                        ui.add(unselectable_label(songs_count_and_duration));
                     }
-                    View::Queue => {}
+                    View::Queue => {
+                        let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.queue);
+                        ui.add(unselectable_label(songs_count_and_duration));
+
+                        let response = ui.button("Clear Queue").on_hover_text("Clear the queue");
+                        if response.clicked() {
+                            gem_player.queue.clear();
+                        }
+                    }
                     View::Playlists => {}
                     View::Settings => {}
                 },
             );
 
             flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
-                let filter_icon = icons::ICON_FILTER_LIST;
-                ui.menu_button(filter_icon, |ui| {
-                    for sort_by in SortBy::iter() {
-                        ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
-                    }
-
-                    ui.separator();
-
-                    for sort_order in SortOrder::iter() {
-                        ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
-                    }
-                })
-                .response
-                .on_hover_text("Sort by and order");
-
-                let search_bar = TextEdit::singleline(&mut gem_player.search_text)
-                    .hint_text(format!("{} ...", icons::ICON_SEARCH))
-                    .desired_width(140.0);
-                ui.add(search_bar);
-
-                let clear_button_is_visible = !gem_player.search_text.is_empty();
-                let response = ui
-                    .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
-                    .on_hover_text("Clear search");
-                if response.clicked() {
-                    gem_player.search_text.clear();
-                }
+                search_and_filter_ui(ui, gem_player);
             });
         });
     });
+}
+
+fn get_count_and_duration_string_from_songs(songs: &[Song]) -> String {
+    let duration = get_duration_of_songs(songs);
+    let duration_string = format_duration_to_hhmmss(duration);
+    format!("{} songs / {}", songs.len(), duration_string)
+}
+
+fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let filter_icon = icons::ICON_FILTER_LIST;
+    ui.menu_button(filter_icon, |ui| {
+        for sort_by in SortBy::iter() {
+            ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
+        }
+
+        ui.separator();
+
+        for sort_order in SortOrder::iter() {
+            ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
+        }
+    })
+    .response
+    .on_hover_text("Sort by and order");
+
+    let search_bar = TextEdit::singleline(&mut gem_player.search_text)
+        .hint_text(format!("{} ...", icons::ICON_SEARCH))
+        .desired_width(140.0);
+    ui.add(search_bar);
+
+    let clear_button_is_visible = !gem_player.search_text.is_empty();
+    let response = ui
+        .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
+        .on_hover_text("Clear search");
+    if response.clicked() {
+        gem_player.search_text.clear();
+    }
 }
 
 fn unselectable_label(text: impl Into<WidgetText>) -> Label {

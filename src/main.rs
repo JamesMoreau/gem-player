@@ -8,16 +8,17 @@ mod ui;
 /*
 TODO:
 * instead of a sepator between ui sections, could just use a different color.
-* selection needs to be cleared when songs are sorted / filtered.
+* actually do something with shuffle and repeat.
 * file watcher / update on change
 * register play pause commands with apple menu.
 * Music Visualizer ^.
-* Queue. Have operations to move songs up and down in the queue. Have a button to clear the queue. Have a button to shuffle the queue. shows the current song in the queue. shows the position of all songs in the queue.
 * add a debug print to only print in debug mode
 * use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track)
 * Rename "Unknown X" to something else like ??? or N/A.
-* Add missing tooltips.
+* grey out previous and next buttons when there is no previous or next song. 
+* also grey out most controls when there is no song playing.
+* playlists / m3u.
 */
 
 fn main() -> eframe::Result {
