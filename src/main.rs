@@ -17,6 +17,7 @@ TODO:
 * use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track)
 * Rename "Unknown X" to something else like ??? or N/A.
+* Add missing tooltips.
 */
 
 fn main() -> eframe::Result {

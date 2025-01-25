@@ -424,102 +424,105 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .collect();
 
     sort_songs(&mut library_copy, gem_player.sort_by, gem_player.sort_order);
-    
-    Frame::none().outer_margin(Margin::symmetric(100.0, 0.0)).fill(Color32::RED).show(ui, |ui| {
-        let header_labels = [
-            egui_material_icons::icons::ICON_MUSIC_NOTE,
-            egui_material_icons::icons::ICON_ARTIST,
-            egui_material_icons::icons::ICON_ALBUM,
-            egui_material_icons::icons::ICON_HOURGLASS,
-        ];
 
-        let available_width = ui.available_width();
-        
-        let time_width = 80.0;
-        let remaining_width = available_width - time_width;
-        let title_width = remaining_width * (2.0 / 4.0);
-        let artist_width = remaining_width * (1.0 / 4.0);
-        let album_width = remaining_width * (1.0 / 4.0);
-        
-        println!("Table available width: {}", available_width);
-        println!("Sum width of columns: {}", title_width + artist_width + album_width + time_width);
+    let header_labels = [
+        egui_material_icons::icons::ICON_MUSIC_NOTE,
+        egui_material_icons::icons::ICON_ARTIST,
+        egui_material_icons::icons::ICON_ALBUM,
+        egui_material_icons::icons::ICON_HOURGLASS,
+    ];
 
-        TableBuilder::new(ui)
-            .striped(true)
-            .sense(Sense::click())
-            .cell_layout(Layout::left_to_right(Align::Center))
-            .column(egui_extras::Column::exact(title_width))
-            .column(egui_extras::Column::exact(artist_width))
-            .column(egui_extras::Column::exact(album_width))
-            .column(egui_extras::Column::exact(time_width))
-            .header(16.0, |mut header| {
-                for (i, h) in header_labels.iter().enumerate() {
-                    header.col(|ui| {
-                        if i == 0 {
-                            ui.add_space(16.0);
-                        }
-                        ui.add(unselectable_label(RichText::new(*h).strong()));
-                    });
-                }
-            })
-            .body(|body| {
-                body.rows(26.0, library_copy.len(), |mut row| {
-                    let song = &library_copy[row.index()];
-    
-                    let row_is_selected = gem_player.selected_song.as_ref() == Some(song);
-                    row.set_selected(row_is_selected);
-    
-                    row.col(|ui| {
+    let available_width = ui.available_width();
+    println!("Table available width: {}", available_width);
+    let time_width = 64.0;
+    let remaining_width = available_width - time_width;
+    let title_width = remaining_width * 0.5;
+    let artist_width = remaining_width * 0.25;
+    let album_width = remaining_width * 0.25;
+
+    // Since we are setting the widths of the table columns manually by dividing up the available width,
+    // if we leave the default item spacing, the width taken up by the table will be greater than the available width,
+    // casuing the right side of the table to be cut off by the window.
+    ui.spacing_mut().item_spacing.x = 0.0;
+
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(Sense::click())
+        .cell_layout(Layout::left_to_right(Align::Center))
+        .column(egui_extras::Column::exact(title_width))
+        .column(egui_extras::Column::exact(artist_width))
+        .column(egui_extras::Column::exact(album_width))
+        .column(egui_extras::Column::exact(time_width))
+        .header(16.0, |mut header| {
+            for (i, h) in header_labels.iter().enumerate() {
+                header.col(|ui| {
+                    if i == 0 {
                         ui.add_space(16.0);
-                        ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
-                    });
-    
-                    row.col(|ui| {
-                        ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
-                    });
-    
-                    row.col(|ui| {
-                        ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
-                    });
-    
-                    row.col(|ui| {
-                        let duration_string = format_duration_to_mmss(song.duration);
-                        ui.add(unselectable_label(duration_string));
-                    });
-    
-                    let response = row.response();
-                    if response.clicked() {
-                        gem_player.selected_song = Some(song.clone());
                     }
-    
-                    if response.double_clicked() {
-                        play_library_from_song(gem_player, song);
+                    ui.add(unselectable_label(RichText::new(*h).strong()));
+                });
+            }
+        })
+        .body(|body| {
+            let widths = body.widths();
+            println!("body widths: {:?}", widths);
+
+            body.rows(26.0, library_copy.len(), |mut row| {
+                let song = &library_copy[row.index()];
+
+                let row_is_selected = gem_player.selected_song.as_ref() == Some(song);
+                row.set_selected(row_is_selected);
+
+                row.col(|ui| {
+                    ui.add_space(16.0);
+                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")).truncate());
+                });
+
+                row.col(|ui| {
+                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")).truncate());
+                });
+
+                row.col(|ui| {
+                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
+                });
+
+                row.col(|ui| {
+                    let duration_string = format_duration_to_mmss(song.duration);
+                    ui.add(unselectable_label(duration_string));
+                });
+
+                let response = row.response();
+                if response.clicked() {
+                    gem_player.selected_song = Some(song.clone());
+                }
+
+                if response.double_clicked() {
+                    play_library_from_song(gem_player, song);
+                }
+
+                response.context_menu(|ui| {
+                    if ui.button("Play Next").clicked() {
+                        add_next_to_queue(gem_player, song.clone());
+                        ui.close_menu();
                     }
-    
-                    response.context_menu(|ui| {
-                        if ui.button("Play Next").clicked() {
-                            add_next_to_queue(gem_player, song.clone());
-                            ui.close_menu();
-                        }
-    
-                        if ui.button("Add to queue").clicked() {
-                            add_to_queue(gem_player, song.clone());
-                            ui.close_menu();
-                        }
-    
-                        ui.separator();
-    
-                        if ui.button("Open file location").clicked() {
-                            ui.close_menu();
-                        }
-    
-                        if ui.button("Remove from library").clicked() {
-                            ui.close_menu();
-                        }
-                    });
+
+                    if ui.button("Add to queue").clicked() {
+                        add_to_queue(gem_player, song.clone());
+                        ui.close_menu();
+                    }
+
+                    ui.separator();
+
+                    if ui.button("Open file location").clicked() {
+                        ui.close_menu();
+                    }
+
+                    if ui.button("Remove from library").clicked() {
+                        ui.close_menu();
+                    }
                 });
             });
-    });
+        });
 }
 
 pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
@@ -550,6 +553,8 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
+
+    ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
 
     let start_index = match &gem_player.current_song {
         Some(current_song) => gem_player.queue.iter().position(|s| s == current_song).unwrap_or(0),

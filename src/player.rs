@@ -124,7 +124,7 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 
 pub fn play_next(gem_player: &mut GemPlayer) {
     if gem_player.queue.is_empty() {
-        println!("Queue is empty. Cannot play next song.");
+        // println!("Queue is empty. Cannot play next song.");
         return;
     }
 
