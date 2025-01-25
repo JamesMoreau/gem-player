@@ -707,7 +707,9 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         ui.add(unselectable_label(songs_count_and_duration));
 
                         let clear_button = Button::new(icons::ICON_CLEAR_ALL);
-                        let response = ui.add_enabled(!gem_player.queue.is_empty(), clear_button).on_hover_text("Clear the queue");
+                        let response = ui
+                            .add_enabled(!gem_player.queue.is_empty(), clear_button)
+                            .on_hover_text("Clear the queue");
                         if response.clicked() {
                             gem_player.queue.clear();
                         }
@@ -749,7 +751,7 @@ fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let search_bar = TextEdit::singleline(&mut gem_player.search_text)
         .hint_text(format!("{} ...", icons::ICON_SEARCH))
         .desired_width(140.0);
-    ui.add(search_bar);
+    ui.add(search_bar).on_hover_text("Search");
 
     let clear_button_is_visible = !gem_player.search_text.is_empty();
     let response = ui
