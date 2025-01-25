@@ -1,4 +1,4 @@
-use crate::{sort_songs, ui, Playlist, Song, SortBy, SortOrder};
+use crate::{sort_songs, ui, Playlist, Song, SortBy, SortOrder, Theme};
 use glob::glob;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
@@ -15,7 +15,7 @@ pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", 
 
 pub struct GemPlayer {
     pub current_view: ui::View,
-    pub theme: String,
+    pub theme: Theme,
     pub search_text: String,
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
@@ -52,7 +52,7 @@ impl GemPlayer {
 
         let mut default_self = Self {
             current_view: ui::View::Library,
-            theme: "Default".to_owned(),
+            theme: Theme::System,
             search_text: String::new(),
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,

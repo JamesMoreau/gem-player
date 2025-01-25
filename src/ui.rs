@@ -17,7 +17,7 @@ use crate::{
         self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause,
         play_previous, GemPlayer,
     },
-    sort_songs, Song, SortBy, SortOrder,
+    sort_songs, Song, SortBy, SortOrder, Theme,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -39,7 +39,11 @@ impl eframe::App for player::GemPlayer {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
 
-        // catppuccin_egui::set_theme(ctx, catppuccin_egui::LATTE);
+        match self.theme {
+            Theme::System => {}, // We don't need to do anything here since egui will automatically switch when the system theme changes.
+            Theme::Dark => ctx.set_visuals(Visuals::dark()),
+            Theme::Light => ctx.set_visuals(Visuals::light()),
+        }
 
         // Check if the current song has ended and play the next song in the queue.
         if self.sink.empty() {
@@ -648,11 +652,11 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ComboBox::from_label("Select Theme")
-                    .selected_text(&gem_player.theme)
+                    .selected_text(format!("{:?}", gem_player.theme))
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut gem_player.theme, "Light".to_string(), "Light");
-                        ui.selectable_value(&mut gem_player.theme, "Dark".to_string(), "Dark");
-                        ui.selectable_value(&mut gem_player.theme, "System".to_string(), "System");
+                        for theme in Theme::iter() {
+                            ui.selectable_value(&mut gem_player.theme, theme, format!("{:?}", theme));
+                        }
                     });
 
                 ui.add(Separator::default().spacing(32.0));
@@ -705,6 +709,8 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     View::Queue => {
                         let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.queue);
                         ui.add(unselectable_label(songs_count_and_duration));
+
+                        ui.add_space(8.0);
 
                         let clear_button = Button::new(icons::ICON_CLEAR_ALL);
                         let response = ui

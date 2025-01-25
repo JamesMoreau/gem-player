@@ -16,8 +16,6 @@ TODO:
 * use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track)
 * Rename "Unknown X" to something else like ??? or N/A.
-* grey out previous and next buttons when there is no previous or next song. 
-* also grey out most controls when there is no song playing.
 * playlists / m3u.
 */
 
@@ -32,6 +30,13 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(player::GemPlayer::new(cc)))))
+}
+
+#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Theme {
+    System,
+    Dark,
+    Light,
 }
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
