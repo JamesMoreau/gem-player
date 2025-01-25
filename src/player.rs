@@ -138,7 +138,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     load_and_play_song(gem_player, &next_song);
 }
 
-pub fn play_previous_song_in_queue(gem_player: &mut GemPlayer) {
+pub fn play_previous(gem_player: &mut GemPlayer) {
     println!("Not implemented yet.");
     todo!();
 }

@@ -7,13 +7,15 @@ use eframe::egui::{
 };
 
 use egui_extras::TableBuilder;
+use egui_material_icons::icons;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, GemPlayer,
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause,
+        play_previous, GemPlayer,
     },
     sort_songs, Song, SortBy, SortOrder,
 };
@@ -154,9 +156,7 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 
             let close_button = |ui: &mut Ui| {
                 let close_response = ui
-                    .add(Button::new(
-                        RichText::new(egui_material_icons::icons::ICON_CLOSE).size(button_height),
-                    ))
+                    .add(Button::new(RichText::new(icons::ICON_CLOSE).size(button_height)))
                     .on_hover_text("Close the window");
                 if close_response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Close);
@@ -167,9 +167,7 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
                 let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
                 let tooltip = if is_maximized { "Restore window" } else { "Maximize window" };
                 let maximize_response = ui
-                    .add(Button::new(
-                        RichText::new(egui_material_icons::icons::ICON_SQUARE).size(button_height),
-                    ))
+                    .add(Button::new(RichText::new(icons::ICON_SQUARE).size(button_height)))
                     .on_hover_text(tooltip);
                 if maximize_response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
@@ -178,9 +176,7 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 
             let minimize_button = |ui: &mut Ui| {
                 let minimize_response = ui
-                    .add(Button::new(
-                        RichText::new(egui_material_icons::icons::ICON_MINIMIZE).size(button_height),
-                    ))
+                    .add(Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_height)))
                     .on_hover_text("Minimize the window");
                 if minimize_response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
@@ -209,23 +205,24 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
-                let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_PREVIOUS).clicked();
-                if clicked {
-                    println!("Previous song");
+                let response = ui.button(icons::ICON_SKIP_PREVIOUS).on_hover_text("Previous");
+                if response.clicked() {
+                    play_previous(gem_player);
                 }
 
                 let play_pause_icon = if is_playing(gem_player) {
-                    egui_material_icons::icons::ICON_PAUSE
+                    icons::ICON_PAUSE
                 } else {
-                    egui_material_icons::icons::ICON_PLAY_ARROW
+                    icons::ICON_PLAY_ARROW
                 };
-                let clicked = ui.button(play_pause_icon).clicked();
-                if clicked {
+                let tooltip = if is_playing(gem_player) { "Pause" } else { "Play" };
+                let response = ui.button(play_pause_icon).on_hover_text(tooltip);
+                if response.clicked() {
                     play_or_pause(gem_player);
                 }
 
-                let clicked = ui.button(egui_material_icons::icons::ICON_SKIP_NEXT).clicked();
-                if clicked {
+                let response = ui.button(icons::ICON_SKIP_NEXT).on_hover_text("Next");
+                if response.clicked() {
                     play_next(gem_player);
                 }
             });
@@ -241,19 +238,16 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             }
                         };
 
-                        let repeat_button =
-                            Button::new(RichText::new(egui_material_icons::icons::ICON_REPEAT).color(get_button_color(gem_player.repeat)));
-                        let shuffle_button = Button::new(
-                            RichText::new(egui_material_icons::icons::ICON_SHUFFLE).color(get_button_color(gem_player.shuffle)),
-                        );
+                        let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(get_button_color(gem_player.repeat)));
+                        let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(get_button_color(gem_player.shuffle)));
 
-                        let clicked = ui.add(repeat_button).clicked();
+                        let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
                         if clicked {
                             gem_player.repeat = !gem_player.repeat;
                             println!("Repeat: {}", if gem_player.repeat { "On" } else { "Off" });
                         }
 
-                        let clicked = ui.add(shuffle_button).clicked();
+                        let clicked = ui.add(shuffle_button).on_hover_text("Shuffle").clicked();
                         if clicked {
                             gem_player.shuffle = !gem_player.shuffle;
                             println!("Shuffle: {}", if gem_player.shuffle { "On" } else { "Off" });
@@ -366,12 +360,13 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let mut volume = gem_player.sink.volume();
 
                 let volume_icon = match volume {
-                    v if v == 0.0 => egui_material_icons::icons::ICON_VOLUME_OFF,
-                    v if v <= 0.5 => egui_material_icons::icons::ICON_VOLUME_DOWN,
-                    _ => egui_material_icons::icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
+                    v if v == 0.0 => icons::ICON_VOLUME_OFF,
+                    v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
+                    _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
                 };
-                let clicked = ui.button(volume_icon).clicked();
-                if clicked {
+                let tooltip = if gem_player.muted { "Unmute" } else { "Mute" };
+                let response = ui.button(volume_icon).on_hover_text(tooltip);
+                if response.clicked() {
                     gem_player.muted = !gem_player.muted;
                     if gem_player.muted {
                         gem_player.volume_before_mute = Some(volume);
@@ -425,12 +420,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     sort_songs(&mut library_copy, gem_player.sort_by, gem_player.sort_order);
 
-    let header_labels = [
-        egui_material_icons::icons::ICON_MUSIC_NOTE,
-        egui_material_icons::icons::ICON_ARTIST,
-        egui_material_icons::icons::ICON_ALBUM,
-        egui_material_icons::icons::ICON_HOURGLASS,
-    ];
+    let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
     let available_width = ui.available_width();
     println!("Table available width: {}", available_width);
@@ -539,10 +529,10 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     let header_labels = [
-        egui_material_icons::icons::ICON_MUSIC_NOTE,
-        egui_material_icons::icons::ICON_ARTIST,
-        egui_material_icons::icons::ICON_ALBUM,
-        egui_material_icons::icons::ICON_HOURGLASS,
+        icons::ICON_MUSIC_NOTE,
+        icons::ICON_ARTIST,
+        icons::ICON_ALBUM,
+        icons::ICON_HOURGLASS,
         "",
     ];
 
@@ -612,15 +602,12 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect().expand(4.0)); // This makes it so the left border (between cells) is covered.
                     let should_show_action_buttons = row_is_hovered || actions_cell_contains_pointer;
 
-                    let response = ui.add_visible(
-                        should_show_action_buttons,
-                        Button::new(egui_material_icons::icons::ICON_ARROW_UPWARD),
-                    );
+                    let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
                         move_song_to_front(gem_player, index);
                     }
 
-                    let response = ui.add_visible(should_show_action_buttons, Button::new(egui_material_icons::icons::ICON_CLOSE));
+                    let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
                         gem_player.queue.remove(index);
                     }
@@ -683,10 +670,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let get_icon_and_tooltip = |view: &View| match view {
-                    View::Library => egui_material_icons::icons::ICON_LIBRARY_MUSIC,
-                    View::Queue => egui_material_icons::icons::ICON_QUEUE_MUSIC,
-                    View::Playlists => egui_material_icons::icons::ICON_STAR,
-                    View::Settings => egui_material_icons::icons::ICON_SETTINGS,
+                    View::Library => icons::ICON_LIBRARY_MUSIC,
+                    View::Queue => icons::ICON_QUEUE_MUSIC,
+                    View::Playlists => icons::ICON_STAR,
+                    View::Settings => icons::ICON_SETTINGS,
                 };
 
                 for view in View::iter() {
@@ -718,7 +705,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             );
 
             flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
-                let filter_icon = egui_material_icons::icons::ICON_FILTER_LIST;
+                let filter_icon = icons::ICON_FILTER_LIST;
                 ui.menu_button(filter_icon, |ui| {
                     for sort_by in SortBy::iter() {
                         ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
@@ -729,15 +716,19 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     for sort_order in SortOrder::iter() {
                         ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
                     }
-                });
+                })
+                .response
+                .on_hover_text("Sort by and order");
 
                 let search_bar = TextEdit::singleline(&mut gem_player.search_text)
-                    .hint_text(format!("{} ...", egui_material_icons::icons::ICON_SEARCH))
+                    .hint_text(format!("{} ...", icons::ICON_SEARCH))
                     .desired_width(140.0);
                 ui.add(search_bar);
 
                 let clear_button_is_visible = !gem_player.search_text.is_empty();
-                let response = ui.add_visible(clear_button_is_visible, Button::new(egui_material_icons::icons::ICON_CLEAR));
+                let response = ui
+                    .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
+                    .on_hover_text("Clear search");
                 if response.clicked() {
                     gem_player.search_text.clear();
                 }
