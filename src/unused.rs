@@ -1,3 +1,11 @@
+// ui.painter().line_segment(
+//     [
+//         control_ui_rect.left_bottom() + vec2(1.0, 0.0),
+//         control_ui_rect.right_bottom(),
+//     ],
+//     ui.visuals().widgets.noninteractive.bg_stroke,
+// );
+
 // ceate_async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::Result<Event>>)> {
 	//     let (mut tx, rx) = channel(1);
 	//     let watcher = RecommendedWatcher::new(
