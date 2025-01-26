@@ -40,7 +40,7 @@ impl eframe::App for player::GemPlayer {
         ctx.request_repaint_after_secs(1.0);
 
         match self.theme {
-            Theme::System => {}, // We don't need to do anything here since egui will automatically switch when the system theme changes.
+            Theme::System => {} // We don't need to do anything here since egui will automatically switch when the system theme changes.
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
         }
@@ -54,20 +54,20 @@ impl eframe::App for player::GemPlayer {
             let app_rect = ui.max_rect();
 
             let control_ui_height = 60.0;
-            let control_ui_rect = Rect::from_min_max(app_rect.min, pos2(app_rect.max.x, app_rect.min.y + control_ui_height));
-
             let navigation_ui_height = 40.0;
-            let navigation_ui_rect = Rect::from_min_max(pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height), app_rect.max);
 
+            let control_ui_rect = Rect::from_min_max(app_rect.min, pos2(app_rect.max.x, app_rect.min.y + control_ui_height));
+            let navigation_ui_rect = Rect::from_min_max(pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height), app_rect.max);
             let content_ui_rect = Rect::from_min_max(
                 pos2(app_rect.min.x, control_ui_rect.max.y),
                 pos2(app_rect.max.x, navigation_ui_rect.min.y),
             );
 
             let mut control_ui = ui.new_child(UiBuilder::new().max_rect(control_ui_rect));
-            render_control_ui(&mut control_ui, self);
-
             let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_ui_rect));
+            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_ui_rect));
+
+            render_control_ui(&mut control_ui, self);
             match self.current_view {
                 View::Library => render_library_ui(&mut content_ui, self),
                 View::Queue => render_queue_ui(&mut content_ui, self),
@@ -76,8 +76,6 @@ impl eframe::App for player::GemPlayer {
                 }
                 View::Settings => render_settings_ui(&mut content_ui, self),
             }
-
-            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_ui_rect));
             render_navigation_ui(&mut navigation_ui, self);
         });
     }
@@ -107,8 +105,7 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
             let mut rect = app_rect;
             rect.min.y = title_bar_rect.max.y;
             rect
-        }
-        .shrink(4.0);
+        };
         let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
         add_contents(&mut content_ui);
     });
