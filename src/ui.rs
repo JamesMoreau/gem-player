@@ -63,21 +63,22 @@ impl eframe::App for player::GemPlayer {
                 pos2(app_rect.max.x, navigation_ui_rect.min.y),
             );
 
-            let mut control_ui = ui.new_child(UiBuilder::new().max_rect(control_ui_rect));
-            render_control_ui(&mut control_ui, self);
+            ui.scope_builder(UiBuilder::new().max_rect(control_ui_rect), |ui| {
+                render_control_ui(ui, self);
+            });
 
-            let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_ui_rect));
-            match self.current_view {
-                View::Library => render_library_ui(&mut content_ui, self),
-                View::Queue => render_queue_ui(&mut content_ui, self),
+            ui.scope_builder(UiBuilder::new().max_rect(content_ui_rect), |ui| match self.current_view {
+                View::Library => render_library_ui(ui, self),
+                View::Queue => render_queue_ui(ui, self),
                 View::Playlists => {
-                    content_ui.label("Playlists section coming soon.");
+                    ui.label("Playlists section coming soon.");
                 }
-                View::Settings => render_settings_ui(&mut content_ui, self),
-            }
+                View::Settings => render_settings_ui(ui, self),
+            });
 
-            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_ui_rect));
-            render_navigation_ui(&mut navigation_ui, self);
+            ui.scope_builder(UiBuilder::new().max_rect(navigation_ui_rect), |ui| {
+                render_navigation_ui(ui, self);
+            });
         });
     }
 }
