@@ -67,6 +67,8 @@ impl eframe::App for player::GemPlayer {
                 render_control_ui(ui, self);
             });
 
+            ui.add(Separator::default().spacing(0.0).shrink(1.0));
+
             ui.scope_builder(UiBuilder::new().max_rect(content_ui_rect), |ui| match self.current_view {
                 View::Library => render_library_ui(ui, self),
                 View::Queue => render_queue_ui(ui, self),
@@ -75,6 +77,8 @@ impl eframe::App for player::GemPlayer {
                 }
                 View::Settings => render_settings_ui(ui, self),
             });
+
+            ui.add(Separator::default().spacing(0.0).shrink(1.0));
 
             ui.scope_builder(UiBuilder::new().max_rect(navigation_ui_rect), |ui| {
                 render_navigation_ui(ui, self);
@@ -626,9 +630,8 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let available_width = ui.available_width();
     Frame::none()
-        .outer_margin(Margin::symmetric(available_width * (1.0 / 4.0), 32.0))
+        .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
