@@ -64,10 +64,9 @@ impl eframe::App for player::GemPlayer {
             );
 
             let mut control_ui = ui.new_child(UiBuilder::new().max_rect(control_ui_rect));
-            let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_ui_rect));
-            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_ui_rect));
-
             render_control_ui(&mut control_ui, self);
+
+            let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_ui_rect));
             match self.current_view {
                 View::Library => render_library_ui(&mut content_ui, self),
                 View::Queue => render_queue_ui(&mut content_ui, self),
@@ -76,6 +75,8 @@ impl eframe::App for player::GemPlayer {
                 }
                 View::Settings => render_settings_ui(&mut content_ui, self),
             }
+
+            let mut navigation_ui = ui.new_child(UiBuilder::new().max_rect(navigation_ui_rect));
             render_navigation_ui(&mut navigation_ui, self);
         });
     }
