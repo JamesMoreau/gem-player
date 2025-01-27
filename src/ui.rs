@@ -34,7 +34,8 @@ impl eframe::App for player::GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        // let window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
+        let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
+        // println!("Window rect: {:?}", window_rect);
 
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
@@ -53,7 +54,7 @@ impl eframe::App for player::GemPlayer {
         custom_window_frame(ctx, "", |ui| {
             let app_rect = ui.max_rect();
 
-            let control_ui_height = 60.0;
+            let control_ui_height = 64.0;
             let navigation_ui_height = 40.0;
 
             let control_ui_rect = Rect::from_min_max(app_rect.min, pos2(app_rect.max.x, app_rect.min.y + control_ui_height));
@@ -65,9 +66,15 @@ impl eframe::App for player::GemPlayer {
 
             ui.scope_builder(UiBuilder::new().max_rect(control_ui_rect), |ui| {
                 render_control_ui(ui, self);
-            });
 
-            ui.add(Separator::default().spacing(0.0).shrink(1.0));
+                ui.painter().line_segment(
+                    [
+                        ui.min_rect().left_bottom(),
+                        ui.min_rect().right_bottom(),
+                    ],
+                    ui.visuals().widgets.noninteractive.bg_stroke,
+                );
+            });
 
             ui.scope_builder(UiBuilder::new().max_rect(content_ui_rect), |ui| match self.current_view {
                 View::Library => render_library_ui(ui, self),
@@ -78,10 +85,17 @@ impl eframe::App for player::GemPlayer {
                 View::Settings => render_settings_ui(ui, self),
             });
 
-            ui.add(Separator::default().spacing(0.0).shrink(1.0));
-
             ui.scope_builder(UiBuilder::new().max_rect(navigation_ui_rect), |ui| {
                 render_navigation_ui(ui, self);
+
+                // The dividing line must be painted after the navigation UI is rendered.
+                ui.painter().line_segment( 
+                    [
+                        ui.min_rect().left_top() + vec2(1.0, 0.0),
+                        ui.min_rect().right_top(),
+                    ],
+                    ui.visuals().widgets.noninteractive.bg_stroke,
+                );
             });
         });
     }
@@ -148,7 +162,7 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
-    ui.allocate_new_ui(
+    ui.scope_builder(
         UiBuilder::new().max_rect(title_bar_rect).layout(if cfg!(target_os = "macos") {
             Layout::left_to_right(Align::Center)
         } else {
