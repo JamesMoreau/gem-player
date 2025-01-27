@@ -1,12 +1,12 @@
 use std::time::Duration;
 
 use eframe::egui::{
-    include_image, pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
-    Layout, Margin, PointerButton, Rect, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
+    include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
+    Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
     TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 
-use egui_extras::{Size, Strip, StripBuilder, TableBuilder};
+use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;

@@ -19,6 +19,7 @@ lofty = "0.20.1"
 m3u = "1.0.0"
 notify = "6.1.1"
 rand = "0.8.5"
+rfd = "0.15.2"
 rodio = {version = "0.19.0", features = ["symphonia-all"]}
 strum = "0.26.3"
 strum_macros = "0.26.4"
