@@ -35,7 +35,7 @@ impl eframe::App for player::GemPlayer {
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
-        // println!("Window rect: {:?}", window_rect);
+                                                                                      // println!("Window rect: {:?}", window_rect);
 
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
@@ -64,17 +64,9 @@ impl eframe::App for player::GemPlayer {
                 pos2(app_rect.max.x, navigation_ui_rect.min.y),
             );
 
-            ui.scope_builder(UiBuilder::new().max_rect(control_ui_rect), |ui| {
-                render_control_ui(ui, self);
+            ui.scope_builder(UiBuilder::new().max_rect(control_ui_rect), |ui| render_control_ui(ui, self));
 
-                ui.painter().line_segment(
-                    [
-                        ui.min_rect().left_bottom(),
-                        ui.min_rect().right_bottom(),
-                    ],
-                    ui.visuals().widgets.noninteractive.bg_stroke,
-                );
-            });
+            ui.add(Separator::default().spacing(0.0).shrink(1.0));
 
             ui.scope_builder(UiBuilder::new().max_rect(content_ui_rect), |ui| match self.current_view {
                 View::Library => render_library_ui(ui, self),
@@ -85,18 +77,9 @@ impl eframe::App for player::GemPlayer {
                 View::Settings => render_settings_ui(ui, self),
             });
 
-            ui.scope_builder(UiBuilder::new().max_rect(navigation_ui_rect), |ui| {
-                render_navigation_ui(ui, self);
+            ui.add(Separator::default().spacing(0.0).shrink(1.0));
 
-                // The dividing line must be painted after the navigation UI is rendered.
-                ui.painter().line_segment( 
-                    [
-                        ui.min_rect().left_top() + vec2(1.0, 0.0),
-                        ui.min_rect().right_top(),
-                    ],
-                    ui.visuals().widgets.noninteractive.bg_stroke,
-                );
-            });
+            ui.scope_builder(UiBuilder::new().max_rect(navigation_ui_rect), |ui| render_navigation_ui(ui, self));
         });
     }
 }
