@@ -127,7 +127,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
         if let Some(current_song) = &gem_player.current_song {
             load_and_play_song(gem_player, &current_song.clone());
         }
-        
+
         return;
     }
 
@@ -144,7 +144,6 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     gem_player.current_song = Some(next_song.clone());
     load_and_play_song(gem_player, &next_song);
 }
-
 
 pub fn play_previous(gem_player: &mut GemPlayer) {
     println!("Not implemented yet.");
