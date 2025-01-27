@@ -7,7 +7,6 @@ mod ui;
 
 /*
 TODO:
-* instead of a sepator between ui sections, could just use a different color.
 * actually do something with shuffle and repeat.
 * file watcher / update on change
 * register play pause commands with apple menu.
