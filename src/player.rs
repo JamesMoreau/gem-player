@@ -123,20 +123,28 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_next(gem_player: &mut GemPlayer) {
-    if gem_player.queue.is_empty() {
-        // println!("Queue is empty. Cannot play next song.");
+    if gem_player.repeat {
+        if let Some(current_song) = &gem_player.current_song {
+            load_and_play_song(gem_player, &current_song.clone());
+        }
+        
         return;
     }
+
+    let next_song = if gem_player.queue.is_empty() {
+        return;
+    } else {
+        gem_player.queue.remove(0)
+    };
 
     if let Some(current_song) = gem_player.current_song.take() {
         gem_player.history.push(current_song);
     }
 
-    let next_song = gem_player.queue.remove(0); // We checked that the queue was not empty above.
     gem_player.current_song = Some(next_song.clone());
-
     load_and_play_song(gem_player, &next_song);
 }
+
 
 pub fn play_previous(gem_player: &mut GemPlayer) {
     println!("Not implemented yet.");
