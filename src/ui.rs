@@ -6,7 +6,7 @@ use eframe::egui::{
     TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 
-use egui_extras::TableBuilder;
+use egui_extras::{Size, Strip, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -57,29 +57,22 @@ impl eframe::App for player::GemPlayer {
             let control_ui_height = 64.0;
             let navigation_ui_height = 40.0;
 
-            let control_ui_rect = Rect::from_min_max(app_rect.min, pos2(app_rect.max.x, app_rect.min.y + control_ui_height));
-            let navigation_ui_rect = Rect::from_min_max(pos2(app_rect.min.x, app_rect.max.y - navigation_ui_height), app_rect.max);
-            let content_ui_rect = Rect::from_min_max(
-                pos2(app_rect.min.x, control_ui_rect.max.y),
-                pos2(app_rect.max.x, navigation_ui_rect.min.y),
-            );
-
-            ui.scope_builder(UiBuilder::new().max_rect(control_ui_rect), |ui| render_control_ui(ui, self));
-
-            ui.add(Separator::default().spacing(0.0).shrink(1.0));
-
-            ui.scope_builder(UiBuilder::new().max_rect(content_ui_rect), |ui| match self.current_view {
-                View::Library => render_library_ui(ui, self),
-                View::Queue => render_queue_ui(ui, self),
-                View::Playlists => {
-                    ui.label("Playlists section coming soon.");
-                }
-                View::Settings => render_settings_ui(ui, self),
-            });
-
-            ui.add(Separator::default().spacing(0.0).shrink(1.0));
-
-            ui.scope_builder(UiBuilder::new().max_rect(navigation_ui_rect), |ui| render_navigation_ui(ui, self));
+            StripBuilder::new(ui)
+                .size(Size::exact(control_ui_height))
+                .size(Size::remainder())
+                .size(Size::exact(navigation_ui_height))
+                .vertical(|mut strip| {
+                    strip.cell(|ui| render_control_ui(ui, self));
+                    strip.cell(|ui| match self.current_view {
+                        View::Library => render_library_ui(ui, self),
+                        View::Queue => render_queue_ui(ui, self),
+                        View::Playlists => {
+                            ui.label("Playlists section coming soon.");
+                        }
+                        View::Settings => render_settings_ui(ui, self),
+                    });
+                    strip.cell(|ui| render_navigation_ui(ui, self));
+                });
         });
     }
 }
@@ -675,60 +668,63 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none().inner_margin(Margin::symmetric(16.0, 16.0)).show(ui, |ui| {
-        egui_flex::Flex::horizontal().show(ui, |flex| {
-            flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
-                let get_icon_and_tooltip = |view: &View| match view {
-                    View::Library => icons::ICON_LIBRARY_MUSIC,
-                    View::Queue => icons::ICON_QUEUE_MUSIC,
-                    View::Playlists => icons::ICON_STAR,
-                    View::Settings => icons::ICON_SETTINGS,
-                };
+    Frame::none()
+        .fill(Color32::BLUE)
+        .inner_margin(Margin::symmetric(16.0, 0.0))
+        .show(ui, |ui| {
+            egui_flex::Flex::horizontal().show(ui, |flex| {
+                flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
+                    let get_icon_and_tooltip = |view: &View| match view {
+                        View::Library => icons::ICON_LIBRARY_MUSIC,
+                        View::Queue => icons::ICON_QUEUE_MUSIC,
+                        View::Playlists => icons::ICON_STAR,
+                        View::Settings => icons::ICON_SETTINGS,
+                    };
 
-                for view in View::iter() {
-                    let icon = get_icon_and_tooltip(&view);
-                    let response = ui
-                        .selectable_label(gem_player.current_view == view, format!("  {icon}  "))
-                        .on_hover_text(format!("{:?}", view));
-                    if response.clicked() {
-                        switch_view(gem_player, view);
-                    }
-
-                    ui.add_space(4.0);
-                }
-            });
-
-            flex.add_simple(
-                egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER),
-                |ui| match gem_player.current_view {
-                    View::Library => {
-                        let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.library);
-                        ui.add(unselectable_label(songs_count_and_duration));
-                    }
-                    View::Queue => {
-                        let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.queue);
-                        ui.add(unselectable_label(songs_count_and_duration));
-
-                        ui.add_space(8.0);
-
-                        let clear_button = Button::new(icons::ICON_CLEAR_ALL);
+                    for view in View::iter() {
+                        let icon = get_icon_and_tooltip(&view);
                         let response = ui
-                            .add_enabled(!gem_player.queue.is_empty(), clear_button)
-                            .on_hover_text("Clear the queue");
+                            .selectable_label(gem_player.current_view == view, format!("  {icon}  "))
+                            .on_hover_text(format!("{:?}", view));
                         if response.clicked() {
-                            gem_player.queue.clear();
+                            switch_view(gem_player, view);
                         }
-                    }
-                    View::Playlists => {}
-                    View::Settings => {}
-                },
-            );
 
-            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
-                search_and_filter_ui(ui, gem_player);
+                        ui.add_space(4.0);
+                    }
+                });
+
+                flex.add_simple(
+                    egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER),
+                    |ui| match gem_player.current_view {
+                        View::Library => {
+                            let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.library);
+                            ui.add(unselectable_label(songs_count_and_duration));
+                        }
+                        View::Queue => {
+                            let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.queue);
+                            ui.add(unselectable_label(songs_count_and_duration));
+
+                            ui.add_space(8.0);
+
+                            let clear_button = Button::new(icons::ICON_CLEAR_ALL);
+                            let response = ui
+                                .add_enabled(!gem_player.queue.is_empty(), clear_button)
+                                .on_hover_text("Clear the queue");
+                            if response.clicked() {
+                                gem_player.queue.clear();
+                            }
+                        }
+                        View::Playlists => {}
+                        View::Settings => {}
+                    },
+                );
+
+                flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+                    search_and_filter_ui(ui, gem_player);
+                });
             });
         });
-    });
 }
 
 fn get_count_and_duration_string_from_songs(songs: &[Song]) -> String {
