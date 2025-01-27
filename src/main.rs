@@ -16,6 +16,7 @@ TODO:
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track)
 * Rename "Unknown X" to something else like ??? or N/A.
 * playlists / m3u.
+* system theme not switching automatically.
 */
 
 fn main() -> eframe::Result {

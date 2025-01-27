@@ -1,13 +1,14 @@
 use std::time::Duration;
 
 use eframe::egui::{
-    include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
-    Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
+    include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout,
+    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
+    TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
+use rfd::FileDialog;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -507,6 +508,20 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     ui.separator();
 
                     if ui.button("Open file location").clicked() {
+                        let maybe_folder = song.file_path.as_path().parent();
+                        match maybe_folder {
+                            Some(folder) => {
+                                let result = open::that_detached(folder);
+                                match result {
+                                    Ok(_) => println!("Opening file location: {:?}", folder),
+                                    Err(e) => println!("Error opening file location: {:?}", e),
+                                }
+                            }
+                            None => {
+                                println!("No file location to open");
+                            }
+                        }
+
                         ui.close_menu();
                     }
 
@@ -637,10 +652,18 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .map_or("No directory selected".to_string(), |p| p.to_string_lossy().to_string());
                     ui.label(path);
 
-                    let clicked = ui.button("Browse").clicked();
-                    if clicked {
-                        // Add folder picker logic here
-                        println!("Browse button clicked");
+                    let response = ui.button(icons::ICON_FOLDER_OPEN);
+                    if response.clicked() {
+                        let maybe_folder = FileDialog::new().set_directory("/").pick_folder();
+                        match maybe_folder {
+                            Some(folder) => {
+                                println!("Selected folder: {:?}", folder);
+                                gem_player.library_directory = Some(folder);
+                            }
+                            None => {
+                                println!("No folder selected");
+                            }
+                        }
                     }
                 });
 
@@ -650,8 +673,14 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ComboBox::from_label("Select Theme")
                     .selected_text(format!("{:?}", gem_player.theme))
                     .show_ui(ui, |ui| {
+                        let theme_name = |theme: Theme| match theme {
+                            Theme::System => "System",
+                            Theme::Dark => icons::ICON_NIGHTS_STAY,
+                            Theme::Light => icons::ICON_SUNNY,
+                        };
+
                         for theme in Theme::iter() {
-                            ui.selectable_value(&mut gem_player.theme, theme, format!("{:?}", theme));
+                            ui.selectable_value(&mut gem_player.theme, theme, theme_name(theme));
                         }
                     });
 
