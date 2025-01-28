@@ -15,8 +15,7 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause,
-        play_previous, GemPlayer,
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, shuffle_queue, GemPlayer
     },
     sort_songs, Song, SortBy, SortOrder, Theme,
 };
@@ -235,33 +234,6 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             flex.add_simple(egui_flex::item().grow(1.0), |ui| {
-                egui_flex::Flex::vertical().show(ui, |flex| {
-                    flex.add_simple(egui_flex::item().grow(1.0), |ui| {
-                        let get_button_color = |is_active: bool| {
-                            if is_active {
-                                ui.visuals().selection.bg_fill
-                            } else {
-                                ui.visuals().text_color()
-                            }
-                        };
-
-                        let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(get_button_color(gem_player.repeat)));
-                        let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(get_button_color(gem_player.shuffle)));
-
-                        let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
-                        if clicked {
-                            gem_player.repeat = !gem_player.repeat;
-                            println!("Repeat: {}", if gem_player.repeat { "On" } else { "Off" });
-                        }
-
-                        let clicked = ui.add(shuffle_button).on_hover_text("Shuffle").clicked();
-                        if clicked {
-                            gem_player.shuffle = !gem_player.shuffle;
-                            println!("Shuffle: {}", if gem_player.shuffle { "On" } else { "Off" });
-                        }
-                    });
-                });
-
                 ui.add_space(8.0);
 
                 let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
@@ -738,14 +710,6 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         ui.add(unselectable_label(songs_count_and_duration));
 
                         ui.add_space(8.0);
-
-                        let clear_button = Button::new(icons::ICON_CLEAR_ALL);
-                        let response = ui
-                            .add_enabled(!gem_player.queue.is_empty(), clear_button)
-                            .on_hover_text("Clear the queue");
-                        if response.clicked() {
-                            gem_player.queue.clear();
-                        }
                     }
                     View::Playlists => {}
                     View::Settings => {}
@@ -753,7 +717,36 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             );
 
             flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
-                search_and_filter_ui(ui, gem_player);
+                match gem_player.current_view {
+                    View::Library => search_and_filter_ui(ui, gem_player),
+                    View::Queue => {
+                        let queue_is_not_empty = !gem_player.queue.is_empty();
+                        let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
+                        let response = ui.add_enabled(queue_is_not_empty, shuffle_button).on_hover_text("Shuffle");
+                        if response.clicked() {
+                            shuffle_queue(gem_player);
+                        }
+
+                        let repeat_button_color = if gem_player.repeat { ui.visuals().selection.bg_fill } else { ui.visuals().text_color() };
+                        let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
+                        let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
+                        if clicked {
+                            gem_player.repeat = !gem_player.repeat;
+                        }
+
+                        ui.add_space(16.0);
+
+                        let clear_button = Button::new(icons::ICON_CLEAR_ALL);
+                        let response = ui
+                            .add_enabled(queue_is_not_empty, clear_button)
+                            .on_hover_text("Clear");
+                        if response.clicked() {
+                            gem_player.queue.clear();
+                        }
+                    }
+                    View::Playlists => {}
+                    View::Settings => {}
+                }
             });
         });
     });
