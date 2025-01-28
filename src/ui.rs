@@ -203,7 +203,7 @@ pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
 }
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+    Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
@@ -564,11 +564,6 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
 
-    let start_index = match &gem_player.current_song {
-        Some(current_song) => gem_player.queue.iter().position(|s| s == current_song).unwrap_or(0),
-        None => 0,
-    };
-
     TableBuilder::new(ui)
         .striped(true)
         .sense(Sense::click())
@@ -590,7 +585,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .body(|body| {
             body.rows(26.0, gem_player.queue.len(), |mut row| {
-                let index = start_index + row.index();
+                let index = row.index();
                 let song = gem_player.queue[index].clone();
 
                 row.col(|ui| {
