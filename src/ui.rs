@@ -547,6 +547,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     let header_labels = [
+        "",
         icons::ICON_MUSIC_NOTE,
         icons::ICON_ARTIST,
         icons::ICON_ALBUM,
@@ -555,9 +556,10 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ];
 
     let available_width = ui.available_width();
+    let position_width = 64.0;
     let time_width = 80.0;
     let actions_width = 80.0;
-    let remaining_width = available_width - time_width - actions_width;
+    let remaining_width = available_width - position_width - time_width - actions_width;
     let title_width = remaining_width * (2.0 / 4.0);
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
@@ -568,6 +570,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .striped(true)
         .sense(Sense::click())
         .cell_layout(Layout::left_to_right(Align::Center))
+        .column(egui_extras::Column::exact(position_width))
         .column(egui_extras::Column::exact(title_width))
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
@@ -590,6 +593,10 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(16.0);
+                    ui.add(unselectable_label(format!("{}", index + 1)));
+                });
+
+                row.col(|ui| {
                     ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
                 });
 
