@@ -137,7 +137,8 @@ pub fn play_next(gem_player: &mut GemPlayer) {
         gem_player.queue.remove(0)
     };
 
-    if let Some(current_song) = gem_player.current_song.take() {
+    let maybe_current_song = gem_player.current_song.take();
+    if let Some(current_song) = maybe_current_song {
         gem_player.history.push(current_song);
     }
 
@@ -152,8 +153,13 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
         gem_player.history.pop().unwrap()
     };
 
-    add_next_to_queue(gem_player, previous_song);
-    play_next(gem_player);
+    let maybe_current_song = gem_player.current_song.take();
+    if let Some(current_song) = maybe_current_song {
+        gem_player.queue.insert(0, current_song);
+    }
+
+    gem_player.current_song = Some(previous_song.clone());
+    load_and_play_song(gem_player, &previous_song);
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
