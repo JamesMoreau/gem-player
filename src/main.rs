@@ -7,7 +7,6 @@ mod ui;
 
 /*
 TODO:
-* actually do something with shuffle and repeat.
 * file watcher / update on change
 * register play pause commands with apple menu.
 * Music Visualizer ^.

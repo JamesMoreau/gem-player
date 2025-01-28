@@ -26,7 +26,6 @@ pub struct GemPlayer {
     pub current_song: Option<Song>,
 
     pub selected_song: Option<Song>, // Currently selected song in the songs vector. TODO: multiple selection.
-    pub shuffle: bool,
     pub repeat: bool,
     pub muted: bool,
     pub volume_before_mute: Option<f32>,
@@ -63,7 +62,6 @@ impl GemPlayer {
             current_song: None,
 
             selected_song: None,
-            shuffle: false,
             repeat: false,
             muted: false,
             volume_before_mute: None,
