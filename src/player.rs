@@ -146,8 +146,14 @@ pub fn play_next(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_previous(gem_player: &mut GemPlayer) {
-    println!("Not implemented yet.");
-    todo!();
+    let previous_song = if gem_player.history.is_empty() {
+        return;
+    } else {
+        gem_player.history.pop().unwrap()
+    };
+
+    add_next_to_queue(gem_player, previous_song);
+    play_next(gem_player);
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?

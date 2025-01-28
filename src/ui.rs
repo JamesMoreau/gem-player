@@ -206,10 +206,22 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         egui_flex::Flex::horizontal().show(ui, |flex| {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                let previous_song_exists = gem_player.history.len() > 1;
-                let response = ui.add_enabled(previous_song_exists, previous_button).on_hover_text("Previous");
+                let previous_song_is_enabled = !gem_player.history.is_empty() || gem_player.current_song.is_some();
+                let response = ui.add_enabled(previous_song_is_enabled, previous_button).on_hover_text("Previous");
                 if response.clicked() {
-                    play_previous(gem_player);
+                    // If we are near the beginning of the song, we go to the previously played song.
+                    // Otherwise, we seek to the beginning.
+                    let playback_position_as_secs = gem_player.sink.get_pos().as_secs_f32();
+                    let previous_song_vs_rewind_threshold_seconds = 10.0;
+                    
+                    if playback_position_as_secs < previous_song_vs_rewind_threshold_seconds {
+                        play_previous(gem_player);
+                    } else {
+                        let result = gem_player.sink.try_seek(Duration::from_secs(0));
+                        if let Err(e) = result {
+                            println!("Error rewinding song: {:?}", e);
+                        }
+                    }
                 }
 
                 let play_pause_icon = if is_playing(gem_player) {
