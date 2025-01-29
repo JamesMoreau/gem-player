@@ -123,7 +123,10 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 pub fn play_next(gem_player: &mut GemPlayer) {
     if gem_player.repeat {
         if let Some(current_song) = &gem_player.current_song {
-            load_and_play_song(gem_player, &current_song.clone());
+            let result = load_and_play_song(gem_player, &current_song.clone());
+            if let Err(e) = result {
+                println!("{}", e);
+            }
         }
 
         return;
@@ -141,7 +144,10 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     }
 
     gem_player.current_song = Some(next_song.clone());
-    load_and_play_song(gem_player, &next_song);
+    let result = load_and_play_song(gem_player, &next_song);
+    if let Err(e) = result {
+        println!("{}", e);
+    }
 }
 
 pub fn play_previous(gem_player: &mut GemPlayer) {
@@ -157,11 +163,14 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
     }
 
     gem_player.current_song = Some(previous_song.clone());
-    load_and_play_song(gem_player, &previous_song);
+    let result = load_and_play_song(gem_player, &previous_song);
+    if let Err(e) = result {
+        println!("{}", e);
+    }
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) {
+pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(), String> {
     gem_player.sink.stop(); // Stop the current song if any.
     gem_player.current_song = None;
 
@@ -169,8 +178,7 @@ pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) {
     let file = match file_result {
         Ok(file) => file,
         Err(e) => {
-            println!("Error opening file: {:?}", e);
-            return;
+            return Err(format!("Error opening file: {:?}", e));
         }
     };
 
@@ -178,14 +186,15 @@ pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) {
     let source = match source_result {
         Ok(source) => source,
         Err(e) => {
-            println!("Error decoding file: {}, Error: {:?}", song.file_path.to_string_lossy(), e);
-            return;
+            return Err(format!("Error decoding file: {:?}", e));
         }
     };
 
     gem_player.current_song = Some(song.clone());
     gem_player.sink.append(source);
     gem_player.sink.play();
+
+    Ok(())
 }
 
 pub fn get_song_from_file(path: &Path) -> Option<Song> {
@@ -315,7 +324,10 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             gem_player.queue.extend_from_slice(&gem_player.library[index + 1..]);
             gem_player.queue.extend_from_slice(&gem_player.library[..index]);
 
-            load_and_play_song(gem_player, song);
+            let result = load_and_play_song(gem_player, song);
+            if let Err(e) = result {
+                println!("{}", e);
+            }
         }
     }
 }
