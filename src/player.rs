@@ -4,11 +4,12 @@ use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
+use notify::{recommended_watcher, Event, RecursiveMode, Watcher};
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     io::BufReader,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, sync::mpsc,
 };
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -83,7 +84,7 @@ impl GemPlayer {
             }
         };
         let my_music_directory = audio_directory.join("MyMusic");
-        default_self.library_directory = Some(my_music_directory);
+        default_self.library_directory = Some(my_music_directory.clone());
 
         let songs = match &default_self.library_directory {
             Some(path) => {
@@ -99,7 +100,11 @@ impl GemPlayer {
             None => Vec::new(),
         };
         println!("Found {} songs", &songs.len());
-        sort_songs(&mut default_self.library, default_self.sort_by, default_self.sort_order);
+
+        let result = watch_music_folder(&my_music_directory);
+        if let Err(e) = result {
+            println!("{}", e);
+        }
 
         Self {
             library: songs,
@@ -331,3 +336,20 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
         }
     }
 }
+
+fn watch_music_folder(path: &Path) -> notify::Result<()> {
+    let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
+    let mut watcher = recommended_watcher(tx)?;
+    
+    watcher.watch(path, RecursiveMode::Recursive)?;
+    for res in rx {
+        match res {
+            Ok(event) => println!("event: {:?}", event),
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    }
+
+    Ok(())
+}
+
+fn start_file_watcher
