@@ -101,7 +101,7 @@ impl GemPlayer {
         };
         println!("Found {} songs", &songs.len());
 
-        watch_music_folder(my_music_directory.to_string_lossy().to_string());
+        watch_music_folder(my_music_directory.to_path_buf());
 
         Self {
             library: songs,
@@ -334,9 +334,8 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-fn watch_music_folder(music_folder: String) {
+fn watch_music_folder(music_folder: PathBuf) {
     thread::spawn(move || {
-        let path = Path::new(&music_folder);
         let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
         let mut watcher = match recommended_watcher(tx) {
@@ -347,16 +346,30 @@ fn watch_music_folder(music_folder: String) {
             }
         };
 
-        if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+        if let Err(e) = watcher.watch(&music_folder, RecursiveMode::Recursive) {
             eprintln!("Failed to watch folder: {:?}", e);
             return;
         }
 
-        println!("Watching folder: {:?}", path);
+        println!("Watching music folder: {:?}", music_folder);
 
         for res in rx {
             match res {
-                Ok(event) => println!("File event detected: {:?}", event),
+                Ok(event) => {
+                    println!("File event detected: {:?}", event);
+                    
+                    let is_event_we_care_about = event.kind.is_create() || event.kind.is_remove() || event.kind.is_modify();
+                    if is_event_we_care_about {
+                        // let mut player = gem_player.lock().unwrap();
+                        match read_music_from_a_directory(&music_folder) {
+                            Ok(new_songs) => {
+                                // player.library = new_songs;
+                                println!("Library updated successfully!");
+                            }
+                            Err(e) => eprintln!("Failed to update library: {}", e),
+                        }
+                    }
+                },
                 Err(e) => eprintln!("Watch error: {:?}", e),
             }
         }
