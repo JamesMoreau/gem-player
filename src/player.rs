@@ -9,7 +9,7 @@ use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     io::BufReader,
-    path::{Path, PathBuf}, sync::mpsc,
+    path::{Path, PathBuf}, sync::mpsc, thread,
 };
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -101,10 +101,7 @@ impl GemPlayer {
         };
         println!("Found {} songs", &songs.len());
 
-        let result = watch_music_folder(&my_music_directory);
-        if let Err(e) = result {
-            println!("{}", e);
-        }
+        watch_music_folder(my_music_directory.to_string_lossy().to_string());
 
         Self {
             library: songs,
@@ -337,19 +334,31 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-fn watch_music_folder(path: &Path) -> notify::Result<()> {
-    let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
-    let mut watcher = recommended_watcher(tx)?;
-    
-    watcher.watch(path, RecursiveMode::Recursive)?;
-    for res in rx {
-        match res {
-            Ok(event) => println!("event: {:?}", event),
-            Err(e) => println!("watch error: {:?}", e),
+fn watch_music_folder(music_folder: String) {
+    thread::spawn(move || {
+        let path = Path::new(&music_folder);
+        let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
+
+        let mut watcher = match recommended_watcher(tx) {
+            Ok(w) => w,
+            Err(e) => {
+                eprintln!("Failed to create file watcher: {:?}", e);
+                return;
+            }
+        };
+
+        if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+            eprintln!("Failed to watch folder: {:?}", e);
+            return;
         }
-    }
 
-    Ok(())
+        println!("Watching folder: {:?}", path);
+
+        for res in rx {
+            match res {
+                Ok(event) => println!("File event detected: {:?}", event),
+                Err(e) => eprintln!("Watch error: {:?}", e),
+            }
+        }
+    });
 }
-
-fn start_file_watcher
