@@ -362,11 +362,11 @@ fn watch_music_folder(music_folder: PathBuf) {
                     if is_event_we_care_about {
                         // let mut player = gem_player.lock().unwrap();
                         match read_music_from_a_directory(&music_folder) {
-                            Ok(new_songs) => {
+                            Ok(_new_songs) => {
                                 // player.library = new_songs;
-                                println!("Library updated successfully!");
+                                println!("The music library was updated successfully.");
                             }
-                            Err(e) => eprintln!("Failed to update library: {}", e),
+                            Err(e) => eprintln!("Failed to update the music library: {}", e),
                         }
                     }
                 },
