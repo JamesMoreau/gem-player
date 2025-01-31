@@ -110,7 +110,7 @@ impl GemPlayer {
         };
         println!("Found {} songs", &library.len());
 
-        let result = create_watcher(
+        let result = start_library_watcher(
             default_self.library_directory.clone().unwrap(),
             Arc::clone(&default_self.library_dirty_flag),
         );
@@ -351,22 +351,19 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-fn create_watcher(music_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> notify::Result<RecommendedWatcher> {
+fn start_library_watcher(music_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<RecommendedWatcher, String> {
     let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
     let mut watcher = match recommended_watcher(tx) {
         Ok(w) => w,
         Err(e) => {
-            eprintln!("Failed to create file watcher: {:?}", e);
-            return Err(e);
+            return Err(format!("Failed to create watcher: {:?}", e));
         }
     };
 
     if let Err(e) = watcher.watch(&music_folder, RecursiveMode::Recursive) {
-        eprintln!("Failed to watch folder: {:?}", e);
-        return Err(e);
+        return Err(format!("Failed to watch folder: {:?}", e));
     }
-    println!("Watching music folder: {:?}", music_folder);
 
     thread::spawn(move || {
         for res in rx {
