@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::atomic::Ordering, time::Duration};
 
 use eframe::egui::{
     include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout,
@@ -15,7 +15,7 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, remove_from_queue, shuffle_queue, GemPlayer
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer
     },
     sort_songs, Song, SortBy, SortOrder, Theme,
 };
@@ -44,6 +44,22 @@ impl eframe::App for player::GemPlayer {
             Theme::System => {} // We don't need to do anything here since egui will automatically switch when the system theme changes.
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
+        }
+
+        if self.library_dirty_flag.load(Ordering::SeqCst) {
+            if let Some(ref library_directory) = self.library_directory {
+                let result = read_music_from_a_directory(library_directory);
+                match result {
+                    Ok(songs) => {
+                        self.library = songs;
+                        println!("The library has been reloaded.");
+                    }
+                    Err(e) => {
+                        println!("Error while reloading the music library: {}", e);
+                    }
+                }
+            }
+            self.library_dirty_flag.store(false, Ordering::SeqCst);
         }
 
         // Check if the current song has ended and play the next song in the queue.

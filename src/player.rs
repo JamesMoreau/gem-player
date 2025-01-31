@@ -9,7 +9,7 @@ use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     io::BufReader,
-    path::{Path, PathBuf}, sync::mpsc, thread,
+    path::{Path, PathBuf}, sync::{atomic::{AtomicBool, Ordering}, mpsc, Arc}, thread,
 };
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -22,6 +22,7 @@ pub struct GemPlayer {
     pub sort_order: SortOrder,
 
     pub library: Vec<Song>, // All the songs stored in the music directory.
+    pub library_dirty_flag: Arc<AtomicBool>, // A flag to indicate that the library has changed and needs to be reloaded.
     pub queue: Vec<Song>,
     pub history: Vec<Song>,
     pub current_song: Option<Song>,
@@ -58,6 +59,7 @@ impl GemPlayer {
             sort_order: SortOrder::Ascending,
 
             library: Vec::new(),
+            library_dirty_flag: Arc::new(AtomicBool::new(false)),
             queue: Vec::new(),
             history: Vec::new(),
             current_song: None,
@@ -101,7 +103,7 @@ impl GemPlayer {
         };
         println!("Found {} songs", &songs.len());
 
-        watch_music_folder(my_music_directory.to_path_buf());
+        watch_music_folder(my_music_directory.to_path_buf(), default_self.library_dirty_flag.clone());
 
         Self {
             library: songs,
@@ -334,7 +336,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-fn watch_music_folder(music_folder: PathBuf) {
+fn watch_music_folder(music_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) {
     thread::spawn(move || {
         let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
@@ -357,17 +359,9 @@ fn watch_music_folder(music_folder: PathBuf) {
             match res {
                 Ok(event) => {
                     println!("File event detected: {:?}", event);
-                    
-                    let is_event_we_care_about = event.kind.is_create() || event.kind.is_remove() || event.kind.is_modify();
-                    if is_event_we_care_about {
-                        // let mut player = gem_player.lock().unwrap();
-                        match read_music_from_a_directory(&music_folder) {
-                            Ok(_new_songs) => {
-                                // player.library = new_songs;
-                                println!("The music library was updated successfully.");
-                            }
-                            Err(e) => eprintln!("Failed to update the music library: {}", e),
-                        }
+                    let is_relevant_event = event.kind.is_create() || event.kind.is_remove() || event.kind.is_modify();
+                    if is_relevant_event {
+                        library_is_dirty_flag.store(true, Ordering::SeqCst);
                     }
                 },
                 Err(e) => eprintln!("Watch error: {:?}", e),
