@@ -15,7 +15,7 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, update_watched_directory, GemPlayer
     },
     sort_songs, Song, SortBy, SortOrder, Theme,
 };
@@ -657,12 +657,16 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     let response = ui.button(icons::ICON_FOLDER_OPEN);
                     if response.clicked() {
+                        let old_directory = gem_player.library_directory.clone();
                         let maybe_folder = FileDialog::new().set_directory("/").pick_folder();
                         match maybe_folder {
-                            Some(folder) => {
+                            Some(folder) => { // TODO: clean this up.
                                 println!("Selected folder: {:?}", folder);
-                                gem_player.library_directory = Some(folder);
-                                gem_player.library_dirty_flag.store(true, Ordering::SeqCst);
+                                gem_player.library_directory = Some(folder.clone());
+                                if let Some(watcher) = &mut gem_player.watcher {
+                                    update_watched_directory(watcher, old_directory.as_deref().unwrap_or_else(|| std::path::Path::new("")), &folder.clone());
+                                    gem_player.library_dirty_flag.store(true, Ordering::SeqCst);
+                                }
                             }
                             None => {
                                 println!("No folder selected");

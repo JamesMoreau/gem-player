@@ -386,7 +386,7 @@ fn create_watcher(music_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>)
     Ok(watcher)
 }
 
-fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) {
+pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) {
     if let Err(e) = watcher.unwatch(old_path) {
         eprintln!("Failed to unwatch old folder: {:?}", e);
     }
