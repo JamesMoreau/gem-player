@@ -1,4 +1,4 @@
-use crate::{sort_songs, ui, Playlist, Song, SortBy, SortOrder, Theme};
+use crate::{ui, Playlist, Song, SortBy, SortOrder, Theme};
 use glob::glob;
 use lofty::{
     file::{AudioFile, TaggedFileExt},

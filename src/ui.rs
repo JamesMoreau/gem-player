@@ -15,7 +15,7 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, shuffle_queue, GemPlayer
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, remove_from_queue, shuffle_queue, GemPlayer
     },
     sort_songs, Song, SortBy, SortOrder, Theme,
 };
@@ -618,7 +618,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
-                        gem_player.queue.remove(index);
+                        remove_from_queue(gem_player, index);
                     }
                 });
             });
