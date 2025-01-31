@@ -92,8 +92,8 @@ impl GemPlayer {
                 return default_self;
             }
         };
-        let my_music_directory = audio_directory.join("MyMusic");
-        default_self.library_directory = Some(my_music_directory.clone());
+        let my_library_directory = audio_directory.join("MyMusic");
+        default_self.library_directory = Some(my_library_directory.clone());
 
         let library = match &default_self.library_directory {
             Some(path) => {
@@ -351,7 +351,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-fn start_library_watcher(music_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<RecommendedWatcher, String> {
+fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<RecommendedWatcher, String> {
     let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
     let mut watcher = match recommended_watcher(tx) {
@@ -361,7 +361,7 @@ fn start_library_watcher(music_folder: PathBuf, library_is_dirty_flag: Arc<Atomi
         }
     };
 
-    if let Err(e) = watcher.watch(&music_folder, RecursiveMode::Recursive) {
+    if let Err(e) = watcher.watch(&library_folder, RecursiveMode::Recursive) {
         return Err(format!("Failed to watch folder: {:?}", e));
     }
 
@@ -383,7 +383,7 @@ fn start_library_watcher(music_folder: PathBuf, library_is_dirty_flag: Arc<Atomi
     Ok(watcher)
 }
 
-pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) {
+pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) { // Could just start up a new watcher instead of updating the old one.
     if let Err(e) = watcher.unwatch(old_path) {
         eprintln!("Failed to unwatch old folder: {:?}", e);
     }
@@ -392,5 +392,5 @@ pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Pat
         eprintln!("Failed to watch new folder: {:?}", e);
     }
 
-    println!("Updated music folder to {:?}", new_path);
+    println!("Updated library folder to {:?}", new_path);
 }
