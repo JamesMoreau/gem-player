@@ -662,6 +662,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Some(folder) => {
                                 println!("Selected folder: {:?}", folder);
                                 gem_player.library_directory = Some(folder);
+                                gem_player.library_dirty_flag.store(true, Ordering::SeqCst);
                             }
                             None => {
                                 println!("No folder selected");
