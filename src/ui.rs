@@ -1,4 +1,4 @@
-use std::{sync::atomic::Ordering, time::Duration};
+use std::time::Duration;
 
 use eframe::egui::{
     include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout,
@@ -16,8 +16,7 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
         self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause,
-        play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, start_library_watcher, stop_library_watcher,
-        update_watched_directory, GemPlayer,
+        play_previous, remove_from_queue, shuffle_queue, GemPlayer,
     },
     sort_songs, Song, SortBy, SortOrder, Theme,
 };
@@ -46,22 +45,6 @@ impl eframe::App for player::GemPlayer {
             Theme::System => {} // We don't need to do anything here since egui will automatically switch when the system theme changes.
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
-        }
-
-        if self.library_dirty_flag.load(Ordering::SeqCst) {
-            if let Some(ref library_directory) = self.library_directory {
-                let result = read_music_from_a_directory(library_directory);
-                match result {
-                    Ok(songs) => {
-                        self.library = songs;
-                        println!("The library has been reloaded.");
-                    }
-                    Err(e) => {
-                        println!("Error while reloading the music library: {}", e);
-                    }
-                }
-            }
-            self.library_dirty_flag.store(false, Ordering::SeqCst);
         }
 
         // Check if the current song has ended and play the next song in the queue.
@@ -663,31 +646,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         match maybe_directory {
                             Some(directory) => {
                                 println!("Selected folder: {:?}", directory);
-                                let old_folder = gem_player.library_directory.clone();
-
-                                if let (Some(watcher), Some(old_folder_path)) =
-                                    (gem_player.watcher.as_mut(), old_folder.as_ref())
-                                {
-                                    update_watched_directory(watcher, old_folder_path, &directory);
-                                }
-
-                                gem_player.library_dirty_flag.store(true, Ordering::SeqCst);
-
-                                // Update the watched directory.
-                                // if let (Some(ref mut watcher), Some(handle)) = (&mut gem_player.watcher, gem_player.watcher_thread_handle.take()) {
-                                //     stop_library_watcher(watcher, handle);
-                                // }
-
-                                // let result = start_library_watcher(folder.clone(), gem_player.library_dirty_flag.clone());
-                                // match result {
-                                //     Ok((watcher, handle)) => {
-                                //         gem_player.watcher = Some(watcher);
-                                //         gem_player.watcher_thread_handle = Some(handle);
-                                //     }
-                                //     Err(e) => {
-                                //         println!("Error starting library watcher: {:?}", e);
-                                //     }
-                                // }
+                                let _old_folder = gem_player.library_directory.clone();
                             }
                             None => {
                                 println!("No folder selected");

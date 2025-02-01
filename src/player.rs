@@ -4,17 +4,11 @@ use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
-use notify::{recommended_watcher, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     io::BufReader,
     path::{Path, PathBuf},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        mpsc, Arc,
-    },
-    thread,
 };
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -31,10 +25,6 @@ pub struct GemPlayer {
     pub history: Vec<Song>,
     pub current_song: Option<Song>,
 
-    pub watcher: Option<RecommendedWatcher>, // Watches the music library directory for changes.
-    pub watcher_thread_handle: Option<thread::JoinHandle<()>>, 
-    pub library_dirty_flag: Arc<AtomicBool>, // Indicates that the library needs to be reloaded.
-
     pub selected_song: Option<Song>, // Currently selected song in the songs vector. TODO: multiple selection.
     pub repeat: bool,
     pub muted: bool,
@@ -45,7 +35,7 @@ pub struct GemPlayer {
     pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
 
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
-    pub playlists: Vec<Playlist>,
+    pub _playlists: Vec<Playlist>,
 }
 
 impl GemPlayer {
@@ -71,10 +61,6 @@ impl GemPlayer {
             history: Vec::new(),
             current_song: None,
             
-            watcher: None,
-            watcher_thread_handle: None,
-            library_dirty_flag: Arc::new(AtomicBool::new(false)),
-
             selected_song: None,
             repeat: false,
             muted: false,
@@ -85,7 +71,7 @@ impl GemPlayer {
             sink,
 
             library_directory: None,
-            playlists: Vec::new(),
+            _playlists: Vec::new(),
         };
 
         // Find the music directory.
@@ -114,22 +100,8 @@ impl GemPlayer {
         };
         println!("Found {} songs", &library.len());
 
-        let result = start_library_watcher(
-            default_self.library_directory.clone().unwrap(),
-            Arc::clone(&default_self.library_dirty_flag),
-        );
-        let (watcher, watcher_thread_handle) = match result {
-            Ok(tuple) => {
-                let (watcher, handle) = tuple;
-                (Some(watcher), Some(handle))
-            },
-            Err(_) => (None, None),
-        };
-
         Self {
             library,
-            watcher,
-            watcher_thread_handle,
             ..default_self
         }
     }
@@ -309,7 +281,7 @@ pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
     Ok(songs)
 }
 
-pub fn get_song_position_in_queue(gem_player: &GemPlayer, song: &Song) -> Option<usize> {
+pub fn _get_song_position_in_queue(gem_player: &GemPlayer, song: &Song) -> Option<usize> {
     gem_player.queue.iter().position(|s| *s == *song)
 }
 
@@ -357,53 +329,4 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             }
         }
     }
-}
-
-pub fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<(RecommendedWatcher, thread::JoinHandle<()>), String> {
-    let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
-
-    let mut watcher = match recommended_watcher(tx) {
-        Ok(w) => w,
-        Err(e) => {
-            return Err(format!("Failed to create watcher: {:?}", e));
-        }
-    };
-
-    if let Err(e) = watcher.watch(&library_folder, RecursiveMode::Recursive) {
-        return Err(format!("Failed to watch folder: {:?}", e));
-    }
-
-    let handle: thread::JoinHandle<()> = thread::spawn(move || {
-        for res in rx {
-            match res {
-                Ok(event) => {
-                    println!("File event detected: {:?}", event);
-                    let is_relevant_event = event.kind.is_create() || event.kind.is_remove() || event.kind.is_modify();
-                    if is_relevant_event {
-                        library_is_dirty_flag.store(true, Ordering::SeqCst);
-                    }
-                }
-                Err(e) => eprintln!("Watch error: {:?}", e),
-            }
-        }
-    });
-
-    Ok((watcher, handle))
-}
-
-pub fn stop_library_watcher(watcher: &mut RecommendedWatcher, handle: thread::JoinHandle<()>) {
-    let _ = watcher; // Drop the watcher to stop watching.
-    handle.join().unwrap();
-}
-
-pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) { // Could just start up a new watcher instead of updating the old one.
-    if let Err(e) =  watcher.unwatch(old_path) {
-        eprintln!("Failed to unwatch old folder: {:?}", e);
-    }
-
-    if let Err(e) = watcher.watch(new_path, RecursiveMode::Recursive) {
-        eprintln!("Failed to watch new folder: {:?}", e);
-    }
-
-    println!("Updated library folder to {:?}", new_path);
 }
