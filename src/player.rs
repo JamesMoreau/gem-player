@@ -26,12 +26,14 @@ pub struct GemPlayer {
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
 
-    pub library: Vec<Song>,                  // All the songs stored in the music directory.
-    pub library_dirty_flag: Arc<AtomicBool>, // A flag to indicate that the library has changed and needs to be reloaded.
-    pub watcher: Option<RecommendedWatcher>, // The watcher to watch the music directory for changes.
+    pub library: Vec<Song>, // All the songs stored in the music directory.
     pub queue: Vec<Song>,
     pub history: Vec<Song>,
     pub current_song: Option<Song>,
+
+    pub watcher: Option<RecommendedWatcher>, // Watches the music library directory for changes.
+    pub watcher_thread_handle: Option<thread::JoinHandle<()>>, 
+    pub library_dirty_flag: Arc<AtomicBool>, // Indicates that the library needs to be reloaded.
 
     pub selected_song: Option<Song>, // Currently selected song in the songs vector. TODO: multiple selection.
     pub repeat: bool,
@@ -65,11 +67,13 @@ impl GemPlayer {
             sort_order: SortOrder::Ascending,
 
             library: Vec::new(),
-            library_dirty_flag: Arc::new(AtomicBool::new(false)),
-            watcher: None,
             queue: Vec::new(),
             history: Vec::new(),
             current_song: None,
+            
+            watcher: None,
+            watcher_thread_handle: None,
+            library_dirty_flag: Arc::new(AtomicBool::new(false)),
 
             selected_song: None,
             repeat: false,
@@ -114,14 +118,18 @@ impl GemPlayer {
             default_self.library_directory.clone().unwrap(),
             Arc::clone(&default_self.library_dirty_flag),
         );
-        let watcher = match result {
-            Ok(watcher) => Some(watcher),
-            Err(_) => None,
+        let (watcher, watcher_thread_handle) = match result {
+            Ok(tuple) => {
+                let (watcher, handle) = tuple;
+                (Some(watcher), Some(handle))
+            },
+            Err(_) => (None, None),
         };
 
         Self {
             library,
             watcher,
+            watcher_thread_handle,
             ..default_self
         }
     }
@@ -351,7 +359,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<RecommendedWatcher, String> {
+pub fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<(RecommendedWatcher, thread::JoinHandle<()>), String> {
     let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
 
     let mut watcher = match recommended_watcher(tx) {
@@ -365,7 +373,7 @@ fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<Ato
         return Err(format!("Failed to watch folder: {:?}", e));
     }
 
-    thread::spawn(move || {
+    let handle: thread::JoinHandle<()> = thread::spawn(move || {
         for res in rx {
             match res {
                 Ok(event) => {
@@ -380,11 +388,16 @@ fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<Ato
         }
     });
 
-    Ok(watcher)
+    Ok((watcher, handle))
+}
+
+pub fn stop_library_watcher(watcher: &mut RecommendedWatcher, handle: thread::JoinHandle<()>) {
+    let _ = watcher; // Drop the watcher to stop watching.
+    handle.join().unwrap();
 }
 
 pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) { // Could just start up a new watcher instead of updating the old one.
-    if let Err(e) = watcher.unwatch(old_path) {
+    if let Err(e) =  watcher.unwatch(old_path) {
         eprintln!("Failed to unwatch old folder: {:?}", e);
     }
 

@@ -15,7 +15,9 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, update_watched_directory, GemPlayer
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause,
+        play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, start_library_watcher, stop_library_watcher,
+        update_watched_directory, GemPlayer,
     },
     sort_songs, Song, SortBy, SortOrder, Theme,
 };
@@ -223,14 +225,14 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
                 let is_previous_enabled = gem_player.current_song.is_some() || !gem_player.history.is_empty();
-                
+
                 let response = ui.add_enabled(is_previous_enabled, previous_button).on_hover_text("Previous");
                 if response.clicked() {
                     // If we are near the beginning of the song, we go to the previously played song.
                     // Otherwise, we seek to the beginning.
                     let playback_position = gem_player.sink.get_pos().as_secs_f32();
                     let rewind_threshold = 10.0; // If playback is within first 10 seconds, go to previous song.
-                    
+
                     if playback_position < rewind_threshold && !gem_player.history.is_empty() {
                         play_previous(gem_player);
                     } else {
@@ -657,16 +659,35 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     let response = ui.button(icons::ICON_FOLDER_OPEN);
                     if response.clicked() {
-                        let old_directory = gem_player.library_directory.clone();
-                        let maybe_folder = FileDialog::new().set_directory("/").pick_folder();
-                        match maybe_folder {
-                            Some(folder) => { // TODO: clean this up.
-                                println!("Selected folder: {:?}", folder);
-                                gem_player.library_directory = Some(folder.clone());
-                                if let Some(watcher) = &mut gem_player.watcher {
-                                    update_watched_directory(watcher, old_directory.as_deref().unwrap_or_else(|| std::path::Path::new("")), &folder.clone());
-                                    gem_player.library_dirty_flag.store(true, Ordering::SeqCst);
+                        let maybe_directory = FileDialog::new().set_directory("/").pick_folder();
+                        match maybe_directory {
+                            Some(directory) => {
+                                println!("Selected folder: {:?}", directory);
+                                let old_folder = gem_player.library_directory.clone();
+
+                                if let (Some(watcher), Some(old_folder_path)) =
+                                    (gem_player.watcher.as_mut(), old_folder.as_ref())
+                                {
+                                    update_watched_directory(watcher, old_folder_path, &directory);
                                 }
+
+                                gem_player.library_dirty_flag.store(true, Ordering::SeqCst);
+
+                                // Update the watched directory.
+                                // if let (Some(ref mut watcher), Some(handle)) = (&mut gem_player.watcher, gem_player.watcher_thread_handle.take()) {
+                                //     stop_library_watcher(watcher, handle);
+                                // }
+
+                                // let result = start_library_watcher(folder.clone(), gem_player.library_dirty_flag.clone());
+                                // match result {
+                                //     Ok((watcher, handle)) => {
+                                //         gem_player.watcher = Some(watcher);
+                                //         gem_player.watcher_thread_handle = Some(handle);
+                                //     }
+                                //     Err(e) => {
+                                //         println!("Error starting library watcher: {:?}", e);
+                                //     }
+                                // }
                             }
                             None => {
                                 println!("No folder selected");
@@ -761,7 +782,11 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             shuffle_queue(gem_player);
                         }
 
-                        let repeat_button_color = if gem_player.repeat { ui.visuals().selection.bg_fill } else { ui.visuals().text_color() };
+                        let repeat_button_color = if gem_player.repeat {
+                            ui.visuals().selection.bg_fill
+                        } else {
+                            ui.visuals().text_color()
+                        };
                         let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
                         let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
                         if clicked {
@@ -771,9 +796,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         ui.add_space(16.0);
 
                         let clear_button = Button::new(icons::ICON_CLEAR_ALL);
-                        let response = ui
-                            .add_enabled(queue_is_not_empty, clear_button)
-                            .on_hover_text("Clear");
+                        let response = ui.add_enabled(queue_is_not_empty, clear_button).on_hover_text("Clear");
                         if response.clicked() {
                             gem_player.queue.clear();
                         }
