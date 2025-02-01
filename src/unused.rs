@@ -6,37 +6,49 @@
 //     ui.visuals().widgets.noninteractive.bg_stroke,
 // );
 
-// ceate_async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::Result<Event>>)> {
-	//     let (mut tx, rx) = channel(1);
-	//     let watcher = RecommendedWatcher::new(
-	//         move |res| {
-	//             block_on(async {
-	//                 tx.send(res).await.unwrap();
-	//             })
-	//         },
-	//         Config::default(),
-	//     )?;
-	//     Ok((watcher, rx))
-	// }
-	
-	// async fn start_watching(path: PathBuf) -> notify::Result<()> {
-	//     let (mut watcher, mut rx) = create_async_watcher()?;
-	
-	//     watcher.watch(&path, RecursiveMode::Recursive)?;
-	
-	//     while let Some(res) = rx.next().await {
-	//         match res {
-	//             Ok(event) => {
-	//                 println!("File changed: {:?}", event);
-	//                 // Logic to update your song list when changes occur
-	//             }
-	//             Err(e) => println!("Watch error: {:?}", e),
-	//         }
-	//     }
-	
-	//     Ok(())
-	// }
-	
+// pub fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<RecommendedWatcher, String> {
+//     let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
+
+//     let mut watcher = match recommended_watcher(tx) {
+//         Ok(w) => w,
+//         Err(e) => {
+//             return Err(format!("Failed to create watcher: {:?}", e));
+//         }
+//     };
+
+//     if let Err(e) = watcher.watch(&library_folder, RecursiveMode::Recursive) {
+//         return Err(format!("Failed to watch folder: {:?}", e));
+//     }
+
+//     thread::spawn(move || {
+//         for res in rx {
+//             match res {
+//                 Ok(event) => {
+//                     println!("File event detected: {:?}", event);
+//                     let is_relevant_event = event.kind.is_create() || event.kind.is_remove() || event.kind.is_modify();
+//                     if is_relevant_event {
+//                         library_is_dirty_flag.store(true, Ordering::SeqCst);
+//                     }
+//                 }
+//                 Err(e) => eprintln!("Watch error: {:?}", e),
+//             }
+//         }
+//     });
+
+//     Ok(watcher)
+// }
+
+// pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) { // Could just start up a new watcher instead of updating the old one.
+//     if let Err(e) = watcher.unwatch(old_path) {
+//         eprintln!("Failed to unwatch old folder: {:?}", e);
+//     }
+
+//     if let Err(e) = watcher.watch(new_path, RecursiveMode::Recursive) {
+//         eprintln!("Failed to watch new folder: {:?}", e);
+//     }
+
+//     println!("Updated library folder to {:?}", new_path);
+// }
 	// row.col(|ui| {
 	//     let has_artwork = song.artwork.is_some();
 	//     if has_artwork {
@@ -105,19 +117,3 @@
 		.unwrap()
 		.push("my_font".to_owned());
 	cc.egui_ctx.set_fonts(fonts);*/
-
-
-	// fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-    //     // Necessary to keep ui up to date with the current state of the sink / player.
-    //     ctx.request_repaint_after_secs(1.0);
-
-    //     // println!("{}", ctx.input(|i: &egui::InputState| i.screen_rect())); // Prints the dimension of the window.
-
-    //     custom_window_frame(ctx, "", |ui| {
-    //         render_control_ui(ui, self);
-
-    //         ui.separator();
-
-    //         render_songs_ui(ui, self);
-    //     });
-    // }
