@@ -25,4 +25,4 @@ rfd = "0.15.2"
 rodio = { version = "0.19.0", features = ["symphonia-all"] }
 strum = "0.26.3"
 strum_macros = "0.26.4"
-paris = { version = "1.5.15", features = ["macros", "no_logger"] }
+colored = "3.0.0"

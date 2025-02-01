@@ -1,10 +1,9 @@
-use crate::{ui, Playlist, Song, SortBy, SortOrder, Theme};
+use crate::{print_error, print_info, ui, Playlist, Song, SortBy, SortOrder, Theme};
 use glob::glob;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
-use paris::{error, info};
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
@@ -58,14 +57,14 @@ impl GemPlayer {
                 match result {
                     Ok(songs) => songs,
                     Err(e) => {
-                        error!("{}", e);
+                        print_error(e);
                         Vec::new()
                     }
                 }
             }
             None => Vec::new(),
         };
-        info!("Found {} songs", &library.len());
+        print_info(format!("Found {} songs", library.len()));
 
         Self {
             current_view: ui::View::Library,
@@ -111,7 +110,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
         if let Some(current_song) = &gem_player.current_song {
             let result = load_and_play_song(gem_player, &current_song.clone());
             if let Err(e) = result {
-                error!("{}", e);
+                print_error(e.to_string());
             }
         }
 
@@ -132,7 +131,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     gem_player.current_song = Some(next_song.clone());
     let result = load_and_play_song(gem_player, &next_song);
     if let Err(e) = result {
-        error!("{}", e);
+        print_error(e.to_string());
     }
 }
 
@@ -151,7 +150,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
     gem_player.current_song = Some(previous_song.clone());
     let result = load_and_play_song(gem_player, &previous_song);
     if let Err(e) = result {
-        error!("{}", e);
+        print_error(e.to_string());
     }
 }
 
@@ -262,7 +261,7 @@ pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
         let result = get_song_from_file(&entry);
         match result {
             Ok(song) => songs.push(song),
-            Err(e) => error!("{}", e),
+            Err(e) => print_error(e.to_string()),
         }
     }
 
@@ -305,7 +304,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     let maybe_song_index = gem_player.library.iter().position(|s| s == song);
     match maybe_song_index {
         None => {
-            error!("Song not found in the library.");
+            print_error("Song not found in the library.");
         }
         Some(index) => {
             gem_player.queue.extend_from_slice(&gem_player.library[index + 1..]);
@@ -313,7 +312,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
 
             let result = load_and_play_song(gem_player, song);
             if let Err(e) = result {
-                error!("{}", e);
+                print_error(e.to_string());
             }
         }
     }

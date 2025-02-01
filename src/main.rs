@@ -1,6 +1,7 @@
 use eframe::egui::{Vec2, ViewportBuilder};
 use std::{path::PathBuf, time::Duration};
 use strum_macros::EnumIter;
+use colored::Colorize;
 
 mod player;
 mod ui;
@@ -109,4 +110,19 @@ pub struct Playlist {
 
 pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
     songs.iter().map(|song| song.duration).sum()
+}
+
+#[cfg(debug_assertions)]
+pub fn print_info<T: std::fmt::Display>(info: T) {
+    println!("ℹ {}", info);
+}
+
+#[cfg(debug_assertions)]
+pub fn print_success<T: std::fmt::Display>(success: T) {
+    println!("✔ {}", success.to_string().green());
+}
+
+#[cfg(debug_assertions)]
+pub fn print_error<T: std::fmt::Display>(error: T) {
+    println!("✖ {}", error.to_string().red());
 }
