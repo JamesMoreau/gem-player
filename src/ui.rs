@@ -15,8 +15,7 @@ use strum_macros::EnumIter;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause,
-        play_previous, remove_from_queue, shuffle_queue, GemPlayer,
+        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer
     },
     sort_songs, Song, SortBy, SortOrder, Theme,
 };
@@ -732,7 +731,31 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                 match gem_player.current_view {
-                    View::Library => search_and_filter_ui(ui, gem_player),
+                    View::Library => {
+                        let refresh_button = Button::new(icons::ICON_REFRESH);
+                        let response = ui.add(refresh_button).on_hover_text("Refresh library");
+                        if response.clicked() {
+                            let library = match &gem_player.library_directory {
+                                Some(path) => {
+                                    let result = read_music_from_a_directory(path);
+                                    match result {
+                                        Ok(songs) => songs,
+                                        Err(e) => {
+                                            println!("{}", e);
+                                            Vec::new()
+                                        }
+                                    }
+                                }
+                                None => Vec::new(),
+                            };
+                    
+                            gem_player.library = library;
+                        }
+
+                        ui.add_space(16.0);
+
+                        search_and_filter_ui(ui, gem_player)
+                    },
                     View::Queue => {
                         let queue_is_not_empty = !gem_player.queue.is_empty();
                         let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
