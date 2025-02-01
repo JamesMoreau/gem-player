@@ -20,7 +20,7 @@ pub struct GemPlayer {
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
 
-    pub library: Vec<Song>, // All the songs stored in the music directory.
+    pub library: Vec<Song>, // All the songs stored in the user's music directory.
     pub queue: Vec<Song>,
     pub history: Vec<Song>,
     pub current_song: Option<Song>,
