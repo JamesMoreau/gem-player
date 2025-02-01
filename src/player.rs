@@ -1,4 +1,5 @@
 use crate::{print_error, print_info, ui, Playlist, Song, SortBy, SortOrder, Theme};
+use egui_notify::Toasts;
 use glob::glob;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
@@ -19,6 +20,7 @@ pub struct GemPlayer {
     pub search_text: String,
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
+    pub toasts: Toasts,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
     pub queue: Vec<Song>,
@@ -72,6 +74,7 @@ impl GemPlayer {
             search_text: String::new(),
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
+            toasts: Toasts::default(),
 
             library,
             queue: Vec::new(),
@@ -108,9 +111,11 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 pub fn play_next(gem_player: &mut GemPlayer) {
     if gem_player.repeat {
         if let Some(current_song) = &gem_player.current_song {
-            let result = load_and_play_song(gem_player, &current_song.clone());
+            let song = current_song.clone();
+            let result = load_and_play_song(gem_player, &song);
             if let Err(e) = result {
                 print_error(e.to_string());
+                gem_player.toasts.error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
             }
         }
 
@@ -132,6 +137,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     let result = load_and_play_song(gem_player, &next_song);
     if let Err(e) = result {
         print_error(e.to_string());
+        gem_player.toasts.error(format!("Error playing {}", next_song.title.as_deref().unwrap_or("Unknown")));
     }
 }
 
@@ -151,6 +157,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
     let result = load_and_play_song(gem_player, &previous_song);
     if let Err(e) = result {
         print_error(e.to_string());
+        gem_player.toasts.error(format!("Error playing {}", previous_song.title.as_deref().unwrap_or("Unknown")));
     }
 }
 
@@ -313,6 +320,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             let result = load_and_play_song(gem_player, song);
             if let Err(e) = result {
                 print_error(e.to_string());
+                gem_player.toasts.error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
             }
         }
     }

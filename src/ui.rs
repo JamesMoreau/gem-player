@@ -740,6 +740,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         Ok(songs) => songs,
                                         Err(e) => {
                                             print_error(e.to_string());
+                                            gem_player.toasts.error(format!("Error refreshing library: {}", e));
                                             Vec::new()
                                         }
                                     }
