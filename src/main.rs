@@ -7,8 +7,6 @@ mod ui;
 
 /*
 TODO:
-* file watcher / update on change
-* order the GemPlayer struct constructor arguments.
 * register play pause commands with apple menu.
 * Music Visualizer ^.
 * add a debug print to only print in debug mode

@@ -49,43 +49,9 @@ impl GemPlayer {
         sink.pause();
         sink.set_volume(0.6);
 
-        let mut default_self = Self {
-            current_view: ui::View::Library,
-            theme: Theme::System,
-            search_text: String::new(),
-            sort_by: SortBy::Title,
-            sort_order: SortOrder::Ascending,
-
-            library: Vec::new(),
-            queue: Vec::new(),
-            history: Vec::new(),
-            current_song: None,
-            
-            selected_song: None,
-            repeat: false,
-            muted: false,
-            volume_before_mute: None,
-            paused_before_scrubbing: None,
-
-            _stream,
-            sink,
-
-            library_directory: None,
-            _playlists: Vec::new(),
-        };
-
-        // Find the music directory.
-        let audio_directory = match dirs::audio_dir() {
-            Some(dir) => dir,
-            None => {
-                println!("No music directory found.");
-                return default_self;
-            }
-        };
-        let my_library_directory = audio_directory.join("MyMusic");
-        default_self.library_directory = Some(my_library_directory.clone());
-
-        let library = match &default_self.library_directory {
+        let library_directory = dirs::audio_dir().map(|dir| dir.join("MyMusic"));
+ 
+        let library = match &library_directory {
             Some(path) => {
                 let result = read_music_from_a_directory(path);
                 match result {
@@ -101,8 +67,28 @@ impl GemPlayer {
         println!("Found {} songs", &library.len());
 
         Self {
+            current_view: ui::View::Library,
+            theme: Theme::System,
+            search_text: String::new(),
+            sort_by: SortBy::Title,
+            sort_order: SortOrder::Ascending,
+
             library,
-            ..default_self
+            queue: Vec::new(),
+            history: Vec::new(),
+            current_song: None,
+            
+            selected_song: None,
+            repeat: false,
+            muted: false,
+            volume_before_mute: None,
+            paused_before_scrubbing: None,
+
+            _stream,
+            sink,
+
+            library_directory,
+            _playlists: Vec::new(),
         }
     }
 }
