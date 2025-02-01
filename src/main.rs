@@ -7,6 +7,8 @@ mod ui;
 
 /*
 TODO:
+* forget paris and just have a simple error, warn, info for debug.
+* add toast notifications.
 * register play pause commands with apple menu.
 * Music Visualizer ^.
 * add a debug print to only print in debug mode

@@ -8,6 +8,7 @@ use eframe::egui::{
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
+use paris::{error, info};
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -35,7 +36,7 @@ impl eframe::App for player::GemPlayer {
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
-                                                                                      // println!("Window rect: {:?}", window_rect);
+                                                                                      // info!("Window rect: {:?}", window_rect);
 
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
@@ -197,7 +198,7 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 }
 
 pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
-    println!("Switching to view: {:?}", view);
+    info!("Switching to view: {:?}", view);
     gem_player.current_view = view;
 }
 
@@ -220,7 +221,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     } else {
                         let result = gem_player.sink.try_seek(Duration::ZERO);
                         if let Err(e) = result {
-                            println!("Error rewinding song: {:?}", e);
+                            error!("Error rewinding song: {:?}", e);
                         }
                     }
                 }
@@ -305,9 +306,9 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                         if response.drag_stopped() {
                             let new_position = Duration::from_secs_f32(position_as_secs);
-                            println!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
+                            info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
                             if let Err(e) = gem_player.sink.try_seek(new_position) {
-                                println!("Error seeking to new position: {:?}", e);
+                                error!("Error seeking to new position: {:?}", e);
                             }
 
                             // Resume playback if the player was not paused before scrubbing
@@ -498,12 +499,12 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Some(folder) => {
                                 let result = open::that_detached(folder);
                                 match result {
-                                    Ok(_) => println!("Opening file location: {:?}", folder),
-                                    Err(e) => println!("Error opening file location: {:?}", e),
+                                    Ok(_) => info!("Opening file location: {:?}", folder),
+                                    Err(e) => error!("Error opening file location: {:?}", e),
                                 }
                             }
                             None => {
-                                println!("No file location to open");
+                                info!("No file location to open");
                             }
                         }
 
@@ -644,11 +645,11 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let maybe_directory = FileDialog::new().set_directory("/").pick_folder();
                         match maybe_directory {
                             Some(directory) => {
-                                println!("Selected folder: {:?}", directory);
+                                info!("Selected folder: {:?}", directory);
                                 let _old_folder = gem_player.library_directory.clone();
                             }
                             None => {
-                                println!("No folder selected");
+                                info!("No folder selected");
                             }
                         }
                     }
@@ -741,7 +742,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     match result {
                                         Ok(songs) => songs,
                                         Err(e) => {
-                                            println!("{}", e);
+                                            error!("{}", e);
                                             Vec::new()
                                         }
                                     }
