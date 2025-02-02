@@ -1,4 +1,5 @@
 use crate::{print_error, print_info, ui, Playlist, Song, SortBy, SortOrder, Theme};
+use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use glob::glob;
 use lofty::{
@@ -115,7 +116,9 @@ pub fn play_next(gem_player: &mut GemPlayer) {
             let result = load_and_play_song(gem_player, &song);
             if let Err(e) = result {
                 print_error(e.to_string());
-                gem_player.toasts.error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
+                gem_player
+                    .toasts
+                    .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
             }
         }
 
@@ -137,7 +140,9 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     let result = load_and_play_song(gem_player, &next_song);
     if let Err(e) = result {
         print_error(e.to_string());
-        gem_player.toasts.error(format!("Error playing {}", next_song.title.as_deref().unwrap_or("Unknown")));
+        gem_player
+            .toasts
+            .error(format!("Error playing {}", next_song.title.as_deref().unwrap_or("Unknown")));
     }
 }
 
@@ -157,7 +162,9 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
     let result = load_and_play_song(gem_player, &previous_song);
     if let Err(e) = result {
         print_error(e.to_string());
-        gem_player.toasts.error(format!("Error playing {}", previous_song.title.as_deref().unwrap_or("Unknown")));
+        gem_player
+            .toasts
+            .error(format!("Error playing {}", previous_song.title.as_deref().unwrap_or("Unknown")));
     }
 }
 
@@ -305,6 +312,27 @@ pub fn move_song_to_front(gem_player: &mut GemPlayer, index: usize) {
     gem_player.queue.insert(0, song);
 }
 
+pub fn mute_or_unmute(gem_player: &mut GemPlayer) {
+    let mut volume = gem_player.sink.volume();
+    
+    gem_player.muted = !gem_player.muted;
+    
+    if gem_player.muted {
+        gem_player.volume_before_mute = Some(volume);
+        volume = 0.0;
+    } else if let Some(v) = gem_player.volume_before_mute {
+        volume = v;
+    }
+
+    gem_player.sink.set_volume(volume);
+}
+
+pub fn adjust_volume_by_percentage(gem_player: &mut GemPlayer, percentage: f32) {
+    let current_volume = gem_player.sink.volume();
+    let new_volume = (current_volume * (1.0 + percentage)).clamp(0.0, 1.0);
+    gem_player.sink.set_volume(new_volume);
+}
+
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     gem_player.queue.clear();
 
@@ -320,8 +348,35 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             let result = load_and_play_song(gem_player, song);
             if let Err(e) = result {
                 print_error(e.to_string());
-                gem_player.toasts.error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
+                gem_player
+                    .toasts
+                    .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
             }
         }
     }
+}
+
+pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
+    ctx.input(|i| {
+        for event in &i.events {
+            if let Event::Key {
+                key,
+                pressed: true,
+                physical_key: _,
+                repeat: _,
+                modifiers: _,
+            } = event
+            {
+                match key {
+                    Key::Space => play_or_pause(gem_player),
+                    Key::ArrowRight => play_next(gem_player),
+                    Key::ArrowLeft => play_previous(gem_player),
+                    Key::ArrowUp => adjust_volume_by_percentage(gem_player, 0.1),
+                    Key::ArrowDown => adjust_volume_by_percentage(gem_player, -0.1),
+                    Key::M => mute_or_unmute(gem_player),
+                    _ => {}
+                }
+            }
+        }
+    });
 }

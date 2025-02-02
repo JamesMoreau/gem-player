@@ -9,6 +9,7 @@ mod ui;
 /*
 TODO:
 * register play paause commands with apple menu.
+* keybinds
 * Music Visualizer ^.
 * maybe make volume slider hover.
 * use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.

@@ -13,9 +13,9 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    print_error, print_info, format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
-        self, add_next_to_queue, add_to_queue, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer
-    }, sort_songs, Song, SortBy, SortOrder, Theme
+    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
+        self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer
+    }, print_error, print_info, sort_songs, Song, SortBy, SortOrder, Theme
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -48,6 +48,8 @@ impl eframe::App for player::GemPlayer {
         if self.sink.empty() {
             play_next(self);
         }
+
+        handle_input(ctx, self);
 
         custom_window_frame(ctx, "", |ui| {
             let control_ui_height = 64.0;
