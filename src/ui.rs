@@ -7,6 +7,7 @@ use eframe::egui::{
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
+use egui_flex::Flex;
 use egui_material_icons::icons;
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
@@ -275,8 +276,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(artwork);
 
-                egui_flex::Flex::vertical().show(ui, |flex| {
-                    flex.add_ui(egui_flex::item().grow(1.0), |ui| {
+                egui_flex::Flex::vertical().h_full().justify(egui_flex::FlexJustify::Center).show(ui, |flex| {
+                    flex.add_ui(egui_flex::item(), |ui| {
                         let mut title = "None".to_string();
                         let mut artist = "None".to_string();
                         let mut album = "None".to_string();
@@ -319,7 +320,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.paused_before_scrubbing = None;
                         }
 
-                        egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
+                        Flex::horizontal().wrap(false).show(ui, |flex| {
                             flex.add_ui(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
                                 let default_text_style = TextStyle::Body.resolve(ui.style());
                                 let default_color = ui.visuals().text_color();
