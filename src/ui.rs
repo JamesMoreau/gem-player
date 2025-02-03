@@ -204,8 +204,8 @@ pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
-        egui_flex::Flex::horizontal().show(ui, |flex| {
-            flex.add_ui(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
+        egui_flex::Flex::horizontal().w_full().justify(egui_flex::FlexJustify::SpaceBetween).show(ui, |flex| {
+            flex.add_ui(egui_flex::item(), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
                 let is_previous_enabled = gem_player.current_song.is_some() || !gem_player.history.is_empty();
 
@@ -247,7 +247,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            flex.add_ui(egui_flex::item().grow(1.0), |ui| {
+            flex.add_ui(egui_flex::item(), |ui| {
                 ui.add_space(8.0);
 
                 let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
@@ -350,7 +350,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
             });
 
-            flex.add_ui(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+            flex.add_ui(egui_flex::item(), |ui| {
                 let mut volume = gem_player.sink.volume();
 
                 let volume_icon = match volume {
