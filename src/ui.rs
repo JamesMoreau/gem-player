@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use eframe::egui::{
-    include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
-    TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
+    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image,
+    Label, Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -13,9 +13,12 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
-        self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer
-    }, print_error, print_info, sort_songs, Song, SortBy, SortOrder, Theme
+    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
+    player::{
+        self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer,
+    },
+    print_error, print_info, sort_songs, Song, SortBy, SortOrder, Theme,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -32,8 +35,8 @@ impl eframe::App for player::GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
-                                                                                      // info!("Window rect: {:?}", window_rect);
+        // let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
+        // info!("Window rect: {:?}", window_rect);
 
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
@@ -67,9 +70,7 @@ impl eframe::App for player::GemPlayer {
                     strip.cell(|ui| match self.current_view {
                         View::Library => render_library_ui(ui, self),
                         View::Queue => render_queue_ui(ui, self),
-                        View::Playlists => {
-                            ui.label("Playlists section coming soon.");
-                        }
+                        View::Playlists => render_playlists_ui(ui, self),
                         View::Settings => render_settings_ui(ui, self),
                     });
                     strip.cell(|ui| {
@@ -331,7 +332,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
                                 job.append(&album, 0.0, data_format.clone());
 
-                                let song_label = unselectable_label(job).truncate();
+                                let song_label = Label::new(job).selectable(false).truncate();
                                 ui.add(song_label);
                             });
 
@@ -625,6 +626,103 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
+pub fn render_playlists_ui(ui: &mut Ui, _gem_player: &mut GemPlayer) {
+    let size = ui.available_size();
+    let playlists_width = size.x * (1.0 / 4.0);
+    let playlists = [
+        "Playlist 1",
+        "Playlist 2 fdsafjsdkfhkajsdfhkajsdhfkajsdhfkjahsdfkjdfjksadfahsdkfj",
+        "Playlist 3",
+    ];
+
+    StripBuilder::new(ui)
+        .size(Size::exact(playlists_width))
+        .size(Size::remainder())
+        .horizontal(|mut strip| {
+            strip.cell(|ui| {
+                TableBuilder::new(ui)
+                    .striped(true)
+                    .sense(Sense::click())
+                    .cell_layout(Layout::left_to_right(Align::Center))
+                    .column(egui_extras::Column::exact(playlists_width))
+                    .header(38.0, |mut header| {
+                        header.col(|ui| {
+                            containers::Sides::new().height(ui.available_height()).show(
+                                ui,
+                                |ui| {
+                                    ui.add_space(8.0);
+                                    ui.add(unselectable_label(RichText::new("Playlists").heading().strong()));
+                                },
+                                |ui| {
+                                    ui.add_space(8.0);
+
+                                    let add_button = Button::new(icons::ICON_ADD);
+                                    let response = ui.add(add_button).on_hover_text("Add playlist");
+                                    if response.clicked() {
+                                        print_info("Adding playlist");
+                                    }
+                                },
+                            );
+                        });
+                    })
+                    .body(|body| {
+                        body.rows(30.0, playlists.len(), |mut row| {
+                            let playlist = playlists[row.index()];
+
+                            row.col(|ui| {
+                                let should_show_buttons = ui.rect_contains_pointer(ui.max_rect());
+                                containers::Sides::new().height(ui.available_height()).show(
+                                    ui,
+                                    |ui| {
+                                        ui.add_space(8.0);
+                                        ui.add(unselectable_label(playlist));
+                                    },
+                                    |ui| {
+                                        ui.add_space(8.0);
+
+                                        if should_show_buttons {
+                                            let delete_button = Button::new(icons::ICON_DELETE);
+                                            let response = ui.add(delete_button).on_hover_text("Delete playlist");
+                                            if response.clicked() {
+                                                print_info("Deleting playlist");
+                                            }
+
+                                            let edit_name_button = Button::new(icons::ICON_EDIT);
+                                            let response = ui.add(edit_name_button).on_hover_text("Edit name");
+                                            if response.clicked() {
+                                                print_info("Editing playlist name");
+                                            }
+                                        }
+                                    },
+                                );
+                            });
+
+                            let response = row.response();
+                            if response.clicked() {
+                                print_info(format!("Selected playlist: {}", playlist));
+                            }
+
+                            response.context_menu(|ui| {
+                                if ui.button("Rename").clicked() {
+                                    print_info("Renaming playlist");
+                                    ui.close_menu();
+                                }
+
+                                if ui.button("Delete").clicked() {
+                                    print_info("Deleting playlist");
+                                    ui.close_menu();
+                                }
+                            });
+                        });
+                    });
+            });
+
+            strip.cell(|ui| {
+                ui.add(unselectable_label("Playlist content"));
+            });
+        });
+}
+
 pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none()
         .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
@@ -749,14 +847,14 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 }
                                 None => Vec::new(),
                             };
-                    
+
                             gem_player.library = library;
                         }
 
                         ui.add_space(16.0);
 
                         search_and_filter_ui(ui, gem_player)
-                    },
+                    }
                     View::Queue => {
                         let queue_is_not_empty = !gem_player.queue.is_empty();
                         let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
@@ -828,6 +926,6 @@ fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-fn unselectable_label(text: impl Into<WidgetText>) -> Label {
-    Label::new(text).selectable(false)
+fn unselectable_label(text: impl Into<RichText>) -> Label {
+    Label::new(text.into()).selectable(false)
 }

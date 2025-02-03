@@ -8,6 +8,7 @@ mod ui;
 
 /*
 TODO:
+* add .on_disabled_hover_text("") to disabled widgets.
 * playlists / m3u.
 * Music Visualizer ^.
 * maybe make volume slider hover.
