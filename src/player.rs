@@ -21,6 +21,7 @@ pub struct GemPlayer {
     pub search_text: String,
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
+    pub edit_playlist_modal_open: bool,
     pub toasts: Toasts,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
@@ -75,6 +76,7 @@ impl GemPlayer {
             search_text: String::new(),
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
+            edit_playlist_modal_open: false,
             toasts: Toasts::default(),
 
             library,

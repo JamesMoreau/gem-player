@@ -626,7 +626,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_playlists_ui(ui: &mut Ui, _gem_player: &mut GemPlayer) {
+pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
     let playlists = [
@@ -681,16 +681,11 @@ pub fn render_playlists_ui(ui: &mut Ui, _gem_player: &mut GemPlayer) {
                                         ui.add_space(8.0);
 
                                         if should_show_buttons {
-                                            let delete_button = Button::new(icons::ICON_DELETE);
-                                            let response = ui.add(delete_button).on_hover_text("Delete playlist");
-                                            if response.clicked() {
-                                                print_info("Deleting playlist");
-                                            }
-
                                             let edit_name_button = Button::new(icons::ICON_EDIT);
-                                            let response = ui.add(edit_name_button).on_hover_text("Edit name");
+                                            let response = ui.add(edit_name_button).on_hover_text("Edit");
                                             if response.clicked() {
-                                                print_info("Editing playlist name");
+                                                print_info("Editing playlist");
+                                                gem_player.edit_playlist_modal_open = true;
                                             }
                                         }
                                     },
