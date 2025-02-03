@@ -205,7 +205,7 @@ pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
-            flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
+            flex.add_ui(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
                 let is_previous_enabled = gem_player.current_song.is_some() || !gem_player.history.is_empty();
 
@@ -247,7 +247,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            flex.add_simple(egui_flex::item().grow(1.0), |ui| {
+            flex.add_ui(egui_flex::item().grow(1.0), |ui| {
                 ui.add_space(8.0);
 
                 let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
@@ -276,7 +276,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(artwork);
 
                 egui_flex::Flex::vertical().show(ui, |flex| {
-                    flex.add_simple(egui_flex::item().grow(1.0), |ui| {
+                    flex.add_ui(egui_flex::item().grow(1.0), |ui| {
                         let mut title = "None".to_string();
                         let mut artist = "None".to_string();
                         let mut album = "None".to_string();
@@ -320,7 +320,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         }
 
                         egui_flex::Flex::horizontal().wrap(false).show(ui, |flex| {
-                            flex.add_simple(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
+                            flex.add_ui(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
                                 let default_text_style = TextStyle::Body.resolve(ui.style());
                                 let default_color = ui.visuals().text_color();
                                 let data_format = TextFormat::simple(default_text_style.clone(), Color32::WHITE);
@@ -336,7 +336,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 ui.add(song_label);
                             });
 
-                            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+                            flex.add_ui(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                                 let position = Duration::from_secs_f32(position_as_secs);
                                 let song_duration = Duration::from_secs_f32(song_duration_as_secs);
                                 let time_label_text =
@@ -350,7 +350,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
             });
 
-            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+            flex.add_ui(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                 let mut volume = gem_player.sink.volume();
 
                 let volume_icon = match volume {
@@ -783,7 +783,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
         egui_flex::Flex::horizontal().show(ui, |flex| {
-            flex.add_simple(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
+            flex.add_ui(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
                 let get_icon_and_tooltip = |view: &View| match view {
                     View::Library => icons::ICON_LIBRARY_MUSIC,
                     View::Queue => icons::ICON_QUEUE_MUSIC,
@@ -804,7 +804,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            flex.add_simple(
+            flex.add_ui(
                 egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER),
                 |ui| match gem_player.current_view {
                     View::Library => {
@@ -822,7 +822,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 },
             );
 
-            flex.add_simple(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+            flex.add_ui(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
                 match gem_player.current_view {
                     View::Library => {
                         let refresh_button = Button::new(icons::ICON_REFRESH);
