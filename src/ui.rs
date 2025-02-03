@@ -7,7 +7,7 @@ use eframe::egui::{
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
-use egui_flex::Flex;
+use egui_flex::{item, Flex, FlexJustify};
 use egui_material_icons::icons;
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
@@ -204,183 +204,188 @@ pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
 }
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
-        egui_flex::Flex::horizontal().w_full().justify(egui_flex::FlexJustify::SpaceBetween).show(ui, |flex| {
-            flex.add_ui(egui_flex::item(), |ui| {
-                let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                let is_previous_enabled = gem_player.current_song.is_some() || !gem_player.history.is_empty();
+    ui.spacing_mut().item_spacing.y = 0.0;
 
-                let response = ui.add_enabled(is_previous_enabled, previous_button).on_hover_text("Previous");
-                if response.clicked() {
-                    // If we are near the beginning of the song, we go to the previously played song.
-                    // Otherwise, we seek to the beginning.
-                    let playback_position = gem_player.sink.get_pos().as_secs_f32();
-                    let rewind_threshold = 10.0; // If playback is within first 10 seconds, go to previous song.
+    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+        Flex::horizontal()
+            .w_full()
+            .justify(FlexJustify::SpaceBetween)
+            .show(ui, |flex| {
+                flex.add_ui(item(), |ui| {
+                    let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
+                    let is_previous_enabled = gem_player.current_song.is_some() || !gem_player.history.is_empty();
 
-                    if playback_position < rewind_threshold && !gem_player.history.is_empty() {
-                        play_previous(gem_player);
-                    } else {
-                        let result = gem_player.sink.try_seek(Duration::ZERO);
-                        if let Err(e) = result {
-                            print_error(format!("Error rewinding song: {:?}", e));
+                    let response = ui.add_enabled(is_previous_enabled, previous_button).on_hover_text("Previous");
+                    if response.clicked() {
+                        // If we are near the beginning of the song, we go to the previously played song.
+                        // Otherwise, we seek to the beginning.
+                        let playback_position = gem_player.sink.get_pos().as_secs_f32();
+                        let rewind_threshold = 10.0; // If playback is within first 10 seconds, go to previous song.
+
+                        if playback_position < rewind_threshold && !gem_player.history.is_empty() {
+                            play_previous(gem_player);
+                        } else {
+                            let result = gem_player.sink.try_seek(Duration::ZERO);
+                            if let Err(e) = result {
+                                print_error(format!("Error rewinding song: {:?}", e));
+                            }
                         }
                     }
-                }
 
-                let play_pause_icon = if is_playing(gem_player) {
-                    icons::ICON_PAUSE
-                } else {
-                    icons::ICON_PLAY_ARROW
-                };
-                let tooltip = if is_playing(gem_player) { "Pause" } else { "Play" };
-                let play_pause_button = Button::new(RichText::new(play_pause_icon));
-                let song_is_playing = gem_player.current_song.is_some();
-                let response = ui.add_enabled(song_is_playing, play_pause_button).on_hover_text(tooltip);
-                if response.clicked() {
-                    play_or_pause(gem_player);
-                }
+                    let play_pause_icon = if is_playing(gem_player) {
+                        icons::ICON_PAUSE
+                    } else {
+                        icons::ICON_PLAY_ARROW
+                    };
+                    let tooltip = if is_playing(gem_player) { "Pause" } else { "Play" };
+                    let play_pause_button = Button::new(RichText::new(play_pause_icon));
+                    let song_is_playing = gem_player.current_song.is_some();
+                    let response = ui.add_enabled(song_is_playing, play_pause_button).on_hover_text(tooltip);
+                    if response.clicked() {
+                        play_or_pause(gem_player);
+                    }
 
-                let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
-                let next_song_exists = !gem_player.queue.is_empty();
-                let response = ui.add_enabled(next_song_exists, next_button).on_hover_text("Next");
-                if response.clicked() {
-                    play_next(gem_player);
-                }
-            });
+                    let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
+                    let next_song_exists = !gem_player.queue.is_empty();
+                    let response = ui.add_enabled(next_song_exists, next_button).on_hover_text("Next");
+                    if response.clicked() {
+                        play_next(gem_player);
+                    }
+                });
 
-            flex.add_ui(egui_flex::item(), |ui| {
-                ui.add_space(8.0);
+                flex.add_ui(item(), |ui| {
+                    ui.add_space(8.0);
 
-                let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-                let artwork_size = Vec2::splat(52.0);
-                let rounding = 4.0;
-                let default_artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
-                    .texture_options(artwork_texture_options)
-                    .fit_to_exact_size(artwork_size)
-                    .rounding(rounding);
+                    let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
+                    let artwork_size = Vec2::splat(64.0);
+                    let default_artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
+                        .texture_options(artwork_texture_options)
+                        .fit_to_exact_size(artwork_size);
 
-                let artwork = gem_player
-                    .current_song
-                    .as_ref()
-                    .and_then(|song| {
-                        song.artwork.as_ref().map(|artwork_bytes| {
-                            let artwork_uri = format!("bytes://artwork-{}", song.title.as_deref().unwrap_or("default"));
+                    let artwork = gem_player
+                        .current_song
+                        .as_ref()
+                        .and_then(|song| {
+                            song.artwork.as_ref().map(|artwork_bytes| {
+                                let artwork_uri = format!("bytes://artwork-{}", song.title.as_deref().unwrap_or("default"));
 
-                            Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                                .texture_options(artwork_texture_options)
-                                .fit_to_exact_size(artwork_size)
-                                .rounding(rounding)
+                                Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                                    .texture_options(artwork_texture_options)
+                                    .fit_to_exact_size(artwork_size)
+                            })
                         })
-                    })
-                    .unwrap_or(default_artwork);
+                        .unwrap_or(default_artwork);
 
-                ui.add(artwork);
+                    ui.add(artwork);
 
-                egui_flex::Flex::vertical().h_full().justify(egui_flex::FlexJustify::Center).show(ui, |flex| {
-                    flex.add_ui(egui_flex::item(), |ui| {
-                        let mut title = "None".to_string();
-                        let mut artist = "None".to_string();
-                        let mut album = "None".to_string();
-                        let mut position_as_secs = 0.0;
-                        let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
+                    Flex::vertical()
+                        .h_full()
+                        .justify(FlexJustify::Center)
+                        .show(ui, |flex| {
+                            flex.add_ui(item(), |ui| {
+                                let mut title = "None".to_string();
+                                let mut artist = "None".to_string();
+                                let mut album = "None".to_string();
+                                let mut position_as_secs = 0.0;
+                                let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
-                        if let Some(song) = &gem_player.current_song {
-                            title = song.title.clone().unwrap_or("Unknown Title".to_string());
-                            artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
-                            album = song.album.clone().unwrap_or("Unknown Album".to_string());
-                            position_as_secs = gem_player.sink.get_pos().as_secs_f32();
-                            song_duration_as_secs = song.duration.as_secs_f32();
-                        }
+                                if let Some(song) = &gem_player.current_song {
+                                    title = song.title.clone().unwrap_or("Unknown Title".to_string());
+                                    artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
+                                    album = song.album.clone().unwrap_or("Unknown Album".to_string());
+                                    position_as_secs = gem_player.sink.get_pos().as_secs_f32();
+                                    song_duration_as_secs = song.duration.as_secs_f32();
+                                }
 
-                        ui.style_mut().spacing.slider_width = 500.0;
-                        let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=song_duration_as_secs)
-                            .trailing_fill(true)
-                            .show_value(false)
-                            .step_by(1.0); // Step by 1 second.
-                        let song_is_playing = gem_player.current_song.is_some();
-                        let response = ui.add_enabled(song_is_playing, playback_progress_slider);
+                                ui.style_mut().spacing.slider_width = 500.0;
+                                let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=song_duration_as_secs)
+                                    .trailing_fill(true)
+                                    .show_value(false)
+                                    .step_by(1.0); // Step by 1 second.
+                                let song_is_playing = gem_player.current_song.is_some();
+                                let response = ui.add_enabled(song_is_playing, playback_progress_slider);
 
-                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
-                            gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
-                            gem_player.sink.pause(); // Pause playback during scrubbing
-                        }
+                                if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
+                                    gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
+                                    gem_player.sink.pause(); // Pause playback during scrubbing
+                                }
 
-                        if response.drag_stopped() {
-                            let new_position = Duration::from_secs_f32(position_as_secs);
-                            print_info(format!("Seeking to {} of {}", format_duration_to_mmss(new_position), title));
-                            if let Err(e) = gem_player.sink.try_seek(new_position) {
-                                print_error(format!("Error seeking to new position: {:?}", e));
-                            }
+                                if response.drag_stopped() {
+                                    let new_position = Duration::from_secs_f32(position_as_secs);
+                                    print_info(format!("Seeking to {} of {}", format_duration_to_mmss(new_position), title));
+                                    if let Err(e) = gem_player.sink.try_seek(new_position) {
+                                        print_error(format!("Error seeking to new position: {:?}", e));
+                                    }
 
-                            // Resume playback if the player was not paused before scrubbing
-                            if gem_player.paused_before_scrubbing == Some(false) {
-                                gem_player.sink.play();
-                            }
+                                    // Resume playback if the player was not paused before scrubbing
+                                    if gem_player.paused_before_scrubbing == Some(false) {
+                                        gem_player.sink.play();
+                                    }
 
-                            gem_player.paused_before_scrubbing = None;
-                        }
+                                    gem_player.paused_before_scrubbing = None;
+                                }
 
-                        Flex::horizontal().wrap(false).show(ui, |flex| {
-                            flex.add_ui(egui_flex::item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
-                                let default_text_style = TextStyle::Body.resolve(ui.style());
-                                let default_color = ui.visuals().text_color();
-                                let data_format = TextFormat::simple(default_text_style.clone(), Color32::WHITE);
+                                Flex::horizontal().wrap(false).show(ui, |flex| {
+                                    flex.add_ui(item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
+                                        let default_text_style = TextStyle::Body.resolve(ui.style());
+                                        let default_color = ui.visuals().text_color();
+                                        let data_format = TextFormat::simple(default_text_style.clone(), Color32::WHITE);
 
-                                let mut job = text::LayoutJob::default();
-                                job.append(&title, 0.0, data_format.clone());
-                                job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
-                                job.append(&artist, 0.0, data_format.clone());
-                                job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
-                                job.append(&album, 0.0, data_format.clone());
+                                        let mut job = text::LayoutJob::default();
+                                        job.append(&title, 0.0, data_format.clone());
+                                        job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
+                                        job.append(&artist, 0.0, data_format.clone());
+                                        job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
+                                        job.append(&album, 0.0, data_format.clone());
 
-                                let song_label = Label::new(job).selectable(false).truncate();
-                                ui.add(song_label);
-                            });
+                                        let song_label = Label::new(job).selectable(false).truncate();
+                                        ui.add(song_label);
+                                    });
 
-                            flex.add_ui(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
-                                let position = Duration::from_secs_f32(position_as_secs);
-                                let song_duration = Duration::from_secs_f32(song_duration_as_secs);
-                                let time_label_text =
-                                    format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
+                                    flex.add_ui(item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+                                        let position = Duration::from_secs_f32(position_as_secs);
+                                        let song_duration = Duration::from_secs_f32(song_duration_as_secs);
+                                        let time_label_text =
+                                            format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
 
-                                let time_label = unselectable_label(time_label_text);
-                                ui.add(time_label);
+                                        let time_label = unselectable_label(time_label_text);
+                                        ui.add(time_label);
+                                    });
+                                });
                             });
                         });
-                    });
+                });
+
+                flex.add_ui(item(), |ui| {
+                    let mut volume = gem_player.sink.volume();
+
+                    let volume_icon = match volume {
+                        v if v == 0.0 => icons::ICON_VOLUME_OFF,
+                        v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
+                        _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
+                    };
+                    let tooltip = if gem_player.muted { "Unmute" } else { "Mute" };
+                    let response = ui.button(volume_icon).on_hover_text(tooltip);
+                    if response.clicked() {
+                        gem_player.muted = !gem_player.muted;
+                        if gem_player.muted {
+                            gem_player.volume_before_mute = Some(volume);
+                            volume = 0.0;
+                        } else if let Some(v) = gem_player.volume_before_mute {
+                            volume = v;
+                        }
+                    }
+
+                    let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+                    let changed = ui.add(volume_slider).changed();
+                    if changed {
+                        gem_player.muted = false;
+                        gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                    }
+
+                    gem_player.sink.set_volume(volume);
                 });
             });
-
-            flex.add_ui(egui_flex::item(), |ui| {
-                let mut volume = gem_player.sink.volume();
-
-                let volume_icon = match volume {
-                    v if v == 0.0 => icons::ICON_VOLUME_OFF,
-                    v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
-                    _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
-                };
-                let tooltip = if gem_player.muted { "Unmute" } else { "Mute" };
-                let response = ui.button(volume_icon).on_hover_text(tooltip);
-                if response.clicked() {
-                    gem_player.muted = !gem_player.muted;
-                    if gem_player.muted {
-                        gem_player.volume_before_mute = Some(volume);
-                        volume = 0.0;
-                    } else if let Some(v) = gem_player.volume_before_mute {
-                        volume = v;
-                    }
-                }
-
-                let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-                let changed = ui.add(volume_slider).changed();
-                if changed {
-                    gem_player.muted = false;
-                    gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-                }
-
-                gem_player.sink.set_volume(volume);
-            });
-        });
     });
 }
 
@@ -783,11 +788,11 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
-        egui_flex::Flex::horizontal()
+        Flex::horizontal()
             .w_full()
-            .justify(egui_flex::FlexJustify::SpaceBetween)
+            .justify(FlexJustify::SpaceBetween)
             .show(ui, |flex| {
-                flex.add_ui(egui_flex::item(), |ui| {
+                flex.add_ui(item(), |ui| {
                     let get_icon_and_tooltip = |view: &View| match view {
                         View::Library => icons::ICON_LIBRARY_MUSIC,
                         View::Queue => icons::ICON_QUEUE_MUSIC,
@@ -808,7 +813,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 });
 
-                flex.add_ui(egui_flex::item(), |ui| match gem_player.current_view {
+                flex.add_ui(item(), |ui| match gem_player.current_view {
                     View::Library => {
                         let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.library);
                         ui.add(unselectable_label(songs_count_and_duration));
@@ -823,7 +828,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     View::Settings => {}
                 });
 
-                flex.add_ui(egui_flex::item(), |ui| match gem_player.current_view {
+                flex.add_ui(item(), |ui| match gem_player.current_view {
                     View::Library => {
                         let refresh_button = Button::new(icons::ICON_REFRESH);
                         let response = ui.add(refresh_button).on_hover_text("Refresh library");

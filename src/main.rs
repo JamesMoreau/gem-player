@@ -13,7 +13,7 @@ TODO:
 * Music Visualizer ^.
 * maybe make volume slider hover.
 * use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
-* edit track metadata view (but not listed in the navigation. only available by right clicking on a track)
+* edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * Rename "Unknown X" to something else like ??? or N/A.
 * system theme not switching automatically.
 */
