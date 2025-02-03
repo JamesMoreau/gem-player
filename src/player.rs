@@ -301,7 +301,7 @@ pub fn remove_from_queue(gem_player: &mut GemPlayer, index: usize) {
 }
 
 pub fn shuffle_queue(gem_player: &mut GemPlayer) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     gem_player.queue.shuffle(&mut rng);
 }
 
