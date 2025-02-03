@@ -782,31 +782,32 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
-        egui_flex::Flex::horizontal().show(ui, |flex| {
-            flex.add_ui(egui_flex::item().align_self_content(Align2::LEFT_CENTER), |ui| {
-                let get_icon_and_tooltip = |view: &View| match view {
-                    View::Library => icons::ICON_LIBRARY_MUSIC,
-                    View::Queue => icons::ICON_QUEUE_MUSIC,
-                    View::Playlists => icons::ICON_STAR,
-                    View::Settings => icons::ICON_SETTINGS,
-                };
+        egui_flex::Flex::horizontal()
+            .w_full()
+            .justify(egui_flex::FlexJustify::SpaceBetween)
+            .show(ui, |flex| {
+                flex.add_ui(egui_flex::item(), |ui| {
+                    let get_icon_and_tooltip = |view: &View| match view {
+                        View::Library => icons::ICON_LIBRARY_MUSIC,
+                        View::Queue => icons::ICON_QUEUE_MUSIC,
+                        View::Playlists => icons::ICON_STAR,
+                        View::Settings => icons::ICON_SETTINGS,
+                    };
 
-                for view in View::iter() {
-                    let icon = get_icon_and_tooltip(&view);
-                    let response = ui
-                        .selectable_label(gem_player.current_view == view, format!("  {icon}  "))
-                        .on_hover_text(format!("{:?}", view));
-                    if response.clicked() {
-                        switch_view(gem_player, view);
+                    for view in View::iter() {
+                        let icon = get_icon_and_tooltip(&view);
+                        let response = ui
+                            .selectable_label(gem_player.current_view == view, format!("  {icon}  "))
+                            .on_hover_text(format!("{:?}", view));
+                        if response.clicked() {
+                            switch_view(gem_player, view);
+                        }
+
+                        ui.add_space(4.0);
                     }
+                });
 
-                    ui.add_space(4.0);
-                }
-            });
-
-            flex.add_ui(
-                egui_flex::item().grow(1.0).align_self_content(Align2::CENTER_CENTER),
-                |ui| match gem_player.current_view {
+                flex.add_ui(egui_flex::item(), |ui| match gem_player.current_view {
                     View::Library => {
                         let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.library);
                         ui.add(unselectable_label(songs_count_and_duration));
@@ -819,11 +820,9 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                     View::Playlists => {}
                     View::Settings => {}
-                },
-            );
+                });
 
-            flex.add_ui(egui_flex::item().align_self_content(Align2::RIGHT_CENTER), |ui| {
-                match gem_player.current_view {
+                flex.add_ui(egui_flex::item(), |ui| match gem_player.current_view {
                     View::Library => {
                         let refresh_button = Button::new(icons::ICON_REFRESH);
                         let response = ui.add(refresh_button).on_hover_text("Refresh library");
@@ -879,9 +878,8 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                     View::Playlists => {}
                     View::Settings => {}
-                }
+                });
             });
-        });
     });
 }
 
