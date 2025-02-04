@@ -1,7 +1,8 @@
 use std::time::Duration;
 
+use chrono::Utc;
 use eframe::egui::{
-    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout, Margin, Modal, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Sides, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -12,12 +13,10 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
-    player::{
+    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
         play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer,
-    },
-    print_error, print_info, sort_songs, Song, SortBy, SortOrder, Theme,
+    }, print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -634,44 +633,6 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
-    let playlists = [
-        "Playlist 1",
-        "Playlist 2 fdsafjsdkfhkajsdfhkajsdhfkajsdhfkjahsdfkjdfjksadfahsdkfj",
-        "Playlist 3",
-    ];
-
-    if gem_player.edit_playlist_modal_open && gem_player.edit_playlist_modal_buffer.is_some() {
-        let playlist = gem_player.edit_playlist_modal_buffer.as_mut().unwrap();
-
-        let modal = Modal::new(Id::new("Modal A")).show(ui.ctx(), |ui| {
-            ui.set_width(250.0);
-
-            ui.heading("Edit Playlist");
-
-            ui.label("Name:");
-            ui.text_edit_singleline(&mut playlist.name);
-
-            ui.separator();
-
-            Sides::new().show(
-                ui,
-                |ui| {
-                    if ui.button("Cancel").clicked() {
-                    }
-                },
-                |ui| {
-                    if ui.button("Save").clicked() {
-                    }
-                    
-                },
-            );
-        });
-        
-        if modal.should_close() {
-            gem_player.edit_playlist_modal_buffer = None;
-            gem_player.edit_playlist_modal_open = false;
-        }
-    }
 
     StripBuilder::new(ui)
         .size(Size::exact(playlists_width))
@@ -698,14 +659,23 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
                                         print_info("Adding playlist");
+
+                                        let new_playlist = Playlist {
+                                            name: "New Playlist".to_string(),
+                                            creation_date_time: Utc::now(),
+                                            songs: Vec::new(),
+                                            path: None,
+                                        };
+
+                                        gem_player.playlists.push(new_playlist);
                                     }
                                 },
                             );
                         });
                     })
                     .body(|body| {
-                        body.rows(30.0, playlists.len(), |mut row| {
-                            let playlist = playlists[row.index()];
+                        body.rows(30.0, gem_player.playlists.len(), |mut row| {
+                            let playlist = &gem_player.playlists[row.index()];
 
                             row.col(|ui| {
                                 let should_show_buttons = ui.rect_contains_pointer(ui.max_rect());
@@ -713,7 +683,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     ui,
                                     |ui| {
                                         ui.add_space(8.0);
-                                        ui.add(unselectable_label(playlist));
+                                        ui.add(unselectable_label(&playlist.name));
                                     },
                                     |ui| {
                                         ui.add_space(8.0);
@@ -722,8 +692,8 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                             let edit_name_button = Button::new(icons::ICON_EDIT);
                                             let response = ui.add(edit_name_button).on_hover_text("Edit");
                                             if response.clicked() {
+                                                gem_player.edit_playlist_name_buffer = Some(playlist.name.clone());
                                                 print_info("Editing playlist");
-                                                gem_player.edit_playlist_modal_open = true;
                                             }
                                         }
                                     },
@@ -732,7 +702,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             let response = row.response();
                             if response.clicked() {
-                                print_info(format!("Selected playlist: {}", playlist));
+                                print_info(format!("Selected playlist: {}", playlist.name));
                             }
 
                             response.context_menu(|ui| {

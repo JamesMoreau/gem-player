@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use eframe::egui::{Vec2, ViewportBuilder};
 use std::{path::PathBuf, time::Duration};
 use strum_macros::EnumIter;
@@ -101,7 +102,7 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
 #[derive(Debug, Clone)]
 pub struct Playlist {
     pub name: String,
-    pub creation_date: std::time::SystemTime,
+    pub creation_date_time: DateTime<Utc>,
     pub songs: Vec<Song>,
     pub path: Option<PathBuf>,
 }

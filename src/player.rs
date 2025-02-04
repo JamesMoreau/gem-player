@@ -21,8 +21,7 @@ pub struct GemPlayer {
     pub search_text: String,
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
-    pub edit_playlist_modal_open: bool,
-    pub edit_playlist_modal_buffer: Option<Playlist>,
+    pub edit_playlist_name_buffer: Option<String>,
     pub toasts: Toasts,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
@@ -40,7 +39,7 @@ pub struct GemPlayer {
     pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
 
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
-    pub _playlists: Vec<Playlist>,
+    pub playlists: Vec<Playlist>,
 }
 
 impl GemPlayer {
@@ -77,8 +76,7 @@ impl GemPlayer {
             search_text: String::new(),
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
-            edit_playlist_modal_open: false,
-            edit_playlist_modal_buffer: None,
+            edit_playlist_name_buffer: None,
             toasts: Toasts::default(),
 
             library,
@@ -96,7 +94,7 @@ impl GemPlayer {
             sink,
 
             library_directory,
-            _playlists: Vec::new(),
+            playlists: Vec::new(),
         }
     }
 }
