@@ -680,15 +680,22 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     })
                     .body(|body| {
                         body.rows(30.0, gem_player.playlists.len(), |mut row| {
-                            let playlist = &gem_player.playlists[row.index()];
+                            let playlist = &mut gem_player.playlists[row.index()];
 
                             let this_playlists_name_is_being_edited = gem_player.edit_playlist_id == Some(playlist.id);
 
                             row.col(|ui| {
                                 ui.add_space(8.0);
+
                                 if this_playlists_name_is_being_edited {
                                     let text_edit = TextEdit::singleline(&mut gem_player.edit_playlist_name_buffer).desired_width(100.0);
-                                    let _response = ui.add(text_edit);
+                                    let response = ui.add(text_edit);
+
+                                    if response.lost_focus() {
+                                        print_info(format!("Renamed playlist to: {}", gem_player.edit_playlist_name_buffer));
+                                        // playlist.name = gem_player.edit_playlist_name_buffer;
+                                        gem_player.edit_playlist_id = None; // Exit edit mode
+                                    }
                                 } else {
                                     ui.add(unselectable_label(&playlist.name));
                                 }
@@ -698,8 +705,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 let should_show_buttons = ui.rect_contains_pointer(ui.max_rect());
                                 if should_show_buttons {
                                     let edit_name_button = Button::new(icons::ICON_EDIT);
-                                    let response = ui.add(edit_name_button).on_hover_text("Edit");
-                                    if response.clicked() {
+                                    if ui.add(edit_name_button).on_hover_text("Edit").clicked() {
                                         print_info("Editing playlist");
                                         gem_player.edit_playlist_id = Some(playlist.id);
                                         gem_player.edit_playlist_name_buffer = playlist.name.clone();
@@ -707,22 +713,24 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 }
                             });
 
-                            let response = row.response();
-                            if response.clicked() {
-                                print_info(format!("Selected playlist: {}", playlist.name));
+                            if !this_playlists_name_is_being_edited {
+                                let response = row.response();
+                                if response.clicked() {
+                                    print_info(format!("Selected playlist: {}", playlist.name));
+                                }
+
+                                response.context_menu(|ui| {
+                                    if ui.button("Rename").clicked() {
+                                        print_info("Renaming playlist");
+                                        ui.close_menu();
+                                    }
+
+                                    if ui.button("Delete").clicked() {
+                                        print_info("Deleting playlist");
+                                        ui.close_menu();
+                                    }
+                                });
                             }
-
-                            response.context_menu(|ui| {
-                                if ui.button("Rename").clicked() {
-                                    print_info("Renaming playlist");
-                                    ui.close_menu();
-                                }
-
-                                if ui.button("Delete").clicked() {
-                                    print_info("Deleting playlist");
-                                    ui.close_menu();
-                                }
-                            });
                         });
                     });
             });
