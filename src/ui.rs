@@ -254,8 +254,6 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 flex.add_ui(item(), |ui| {
-                    ui.add_space(8.0);
-
                     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                     let artwork_size = Vec2::splat(64.0);
                     let default_artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
