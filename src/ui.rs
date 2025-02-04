@@ -212,7 +212,10 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
                 let is_previous_enabled = gem_player.current_song.is_some() || !gem_player.history.is_empty();
 
-                let response = ui.add_enabled(is_previous_enabled, previous_button).on_hover_text("Previous");
+                let response = ui
+                    .add_enabled(is_previous_enabled, previous_button)
+                    .on_hover_text("Previous")
+                    .on_disabled_hover_text("No previous song");
                 if response.clicked() {
                     // If we are near the beginning of the song, we go to the previously played song.
                     // Otherwise, we seek to the beginning.
@@ -237,14 +240,20 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let tooltip = if is_playing(gem_player) { "Pause" } else { "Play" };
                 let play_pause_button = Button::new(RichText::new(play_pause_icon));
                 let song_is_playing = gem_player.current_song.is_some();
-                let response = ui.add_enabled(song_is_playing, play_pause_button).on_hover_text(tooltip);
+                let response = ui
+                    .add_enabled(song_is_playing, play_pause_button)
+                    .on_hover_text(tooltip)
+                    .on_disabled_hover_text("No current song");
                 if response.clicked() {
                     play_or_pause(gem_player);
                 }
 
                 let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
                 let next_song_exists = !gem_player.queue.is_empty();
-                let response = ui.add_enabled(next_song_exists, next_button).on_hover_text("Next");
+                let response = ui
+                    .add_enabled(next_song_exists, next_button)
+                    .on_hover_text("Next")
+                    .on_disabled_hover_text("No next song");
                 if response.clicked() {
                     play_next(gem_player);
                 }
@@ -847,7 +856,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Queue => {
                     let queue_is_not_empty = !gem_player.queue.is_empty();
                     let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
-                    let response = ui.add_enabled(queue_is_not_empty, shuffle_button).on_hover_text("Shuffle");
+                    let response = ui
+                        .add_enabled(queue_is_not_empty, shuffle_button)
+                        .on_hover_text("Shuffle")
+                        .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
                         shuffle_queue(gem_player);
                     }
@@ -866,7 +878,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     ui.add_space(16.0);
 
                     let clear_button = Button::new(icons::ICON_CLEAR_ALL);
-                    let response = ui.add_enabled(queue_is_not_empty, clear_button).on_hover_text("Clear");
+                    let response = ui
+                        .add_enabled(queue_is_not_empty, clear_button)
+                        .on_hover_text("Clear")
+                        .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
                         gem_player.queue.clear();
                     }
