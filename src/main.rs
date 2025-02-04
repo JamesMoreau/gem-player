@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use eframe::egui::{Vec2, ViewportBuilder};
+use uuid::Uuid;
 use std::{path::PathBuf, time::Duration};
 use strum_macros::EnumIter;
 use colored::Colorize;
@@ -101,6 +102,7 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
 
 #[derive(Debug, Clone)]
 pub struct Playlist {
+    pub id: Uuid,
     pub name: String,
     pub creation_date_time: DateTime<Utc>,
     pub songs: Vec<Song>,

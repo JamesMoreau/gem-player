@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use chrono::Utc;
 use eframe::egui::{
-    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image,
+    Label, Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -13,10 +15,12 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
+    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
+    player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
         play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer,
-    }, print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme
+    },
+    print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -661,6 +665,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         print_info("Adding playlist");
 
                                         let new_playlist = Playlist {
+                                            id: uuid::Uuid::new_v4(),
                                             name: "New Playlist".to_string(),
                                             creation_date_time: Utc::now(),
                                             songs: Vec::new(),
@@ -677,27 +682,29 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         body.rows(30.0, gem_player.playlists.len(), |mut row| {
                             let playlist = &gem_player.playlists[row.index()];
 
-                            row.col(|ui| {
-                                let should_show_buttons = ui.rect_contains_pointer(ui.max_rect());
-                                containers::Sides::new().height(ui.available_height()).show(
-                                    ui,
-                                    |ui| {
-                                        ui.add_space(8.0);
-                                        ui.add(unselectable_label(&playlist.name));
-                                    },
-                                    |ui| {
-                                        ui.add_space(8.0);
+                            let this_playlists_name_is_being_edited = gem_player.edit_playlist_id == Some(playlist.id);
 
-                                        if should_show_buttons {
-                                            let edit_name_button = Button::new(icons::ICON_EDIT);
-                                            let response = ui.add(edit_name_button).on_hover_text("Edit");
-                                            if response.clicked() {
-                                                gem_player.edit_playlist_name_buffer = Some(playlist.name.clone());
-                                                print_info("Editing playlist");
-                                            }
-                                        }
-                                    },
-                                );
+                            row.col(|ui| {
+                                ui.add_space(8.0);
+                                if this_playlists_name_is_being_edited {
+                                    let text_edit = TextEdit::singleline(&mut gem_player.edit_playlist_name_buffer).desired_width(100.0);
+                                    let _response = ui.add(text_edit);
+                                } else {
+                                    ui.add(unselectable_label(&playlist.name));
+                                }
+
+                                ui.add_space(8.0);
+
+                                let should_show_buttons = ui.rect_contains_pointer(ui.max_rect());
+                                if should_show_buttons {
+                                    let edit_name_button = Button::new(icons::ICON_EDIT);
+                                    let response = ui.add(edit_name_button).on_hover_text("Edit");
+                                    if response.clicked() {
+                                        print_info("Editing playlist");
+                                        gem_player.edit_playlist_id = Some(playlist.id);
+                                        gem_player.edit_playlist_name_buffer = playlist.name.clone();
+                                    }
+                                }
                             });
 
                             let response = row.response();

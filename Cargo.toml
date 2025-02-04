@@ -27,3 +27,4 @@ strum_macros = "0.26.4"
 colored = "3.0.0"
 egui-notify = "0.18.0"
 chrono = "0.4.39"
+uuid = { version = "1.12.1", features = ["fast-rng", "v4"]}
