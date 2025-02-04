@@ -1,9 +1,7 @@
 use std::time::Duration;
 
 use eframe::egui::{
-    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image,
-    Label, Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout, Margin, Modal, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Sides, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -641,6 +639,39 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         "Playlist 2 fdsafjsdkfhkajsdfhkajsdhfkajsdhfkjahsdfkjdfjksadfahsdkfj",
         "Playlist 3",
     ];
+
+    if gem_player.edit_playlist_modal_open && gem_player.edit_playlist_modal_buffer.is_some() {
+        let playlist = gem_player.edit_playlist_modal_buffer.as_mut().unwrap();
+
+        let modal = Modal::new(Id::new("Modal A")).show(ui.ctx(), |ui| {
+            ui.set_width(250.0);
+
+            ui.heading("Edit Playlist");
+
+            ui.label("Name:");
+            ui.text_edit_singleline(&mut playlist.name);
+
+            ui.separator();
+
+            Sides::new().show(
+                ui,
+                |ui| {
+                    if ui.button("Cancel").clicked() {
+                    }
+                },
+                |ui| {
+                    if ui.button("Save").clicked() {
+                    }
+                    
+                },
+            );
+        });
+        
+        if modal.should_close() {
+            gem_player.edit_playlist_modal_buffer = None;
+            gem_player.edit_playlist_modal_open = false;
+        }
+    }
 
     StripBuilder::new(ui)
         .size(Size::exact(playlists_width))
