@@ -317,8 +317,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.paused_before_scrubbing = None;
                         }
 
-                        Flex::horizontal().wrap(false).show(ui, |flex| {
-                            flex.add_ui(item().grow(1.0).align_self_content(Align2::LEFT_CENTER), |ui| {
+                        Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
+                            flex.add_ui(item().shrink(), |ui| {
                                 let default_text_style = TextStyle::Body.resolve(ui.style());
                                 let default_color = ui.visuals().text_color();
                                 let data_format = TextFormat::simple(default_text_style.clone(), Color32::WHITE);
@@ -334,7 +334,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 ui.add(song_label);
                             });
 
-                            flex.add_ui(item().align_self_content(Align2::RIGHT_CENTER), |ui| {
+                            flex.add_ui(item(), |ui| {
                                 let position = Duration::from_secs_f32(position_as_secs);
                                 let song_duration = Duration::from_secs_f32(song_duration_as_secs);
                                 let time_label_text =
