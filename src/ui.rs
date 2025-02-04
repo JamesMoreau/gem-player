@@ -603,7 +603,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let row_is_hovered = row.response().hovered();
                 let mut actions_cell_contains_pointer = false;
                 row.col(|ui| {
-                    actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect().expand(4.0)); // This makes it so the left border (between cells) is covered.
+                    actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
                     let should_show_action_buttons = row_is_hovered || actions_cell_contains_pointer;
 
                     ui.add_space(8.0);
