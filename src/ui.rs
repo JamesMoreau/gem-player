@@ -666,9 +666,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         if confirm_clicked {
             print_info("Confirmed deletion of playlist");
             gem_player.confirm_delete_playlist_modal_is_open = false;
-        }
-
-        if cancel_clicked {
+        } else if cancel_clicked {
             print_info("Cancelled deletion of playlist");
             gem_player.confirm_delete_playlist_modal_is_open = false;
         }
