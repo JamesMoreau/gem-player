@@ -10,6 +10,7 @@ mod ui;
 
 /*
 TODO:
+* add an id to song struct.
 * scrollbar in playlist browser is getting in the way!
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out how to make large icon buttons!
