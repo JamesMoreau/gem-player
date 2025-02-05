@@ -635,6 +635,49 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    if gem_player.confirm_delete_playlist_modal_is_open {
+        let mut cancel_clicked = false;
+        let mut confirm_clicked = false;
+
+        let modal = containers::Modal::new(Id::new("Delete Playlist Modal")).show(ui.ctx(), |ui| {
+            ui.set_width(250.0);
+
+            ui.heading("Are you sure you want to delete this playlist?");
+
+            ui.separator();
+
+            containers::Sides::new().show(
+                ui,
+                |ui| {
+                    let response = ui.button("Cancel");
+                    if response.clicked() {
+                        cancel_clicked = true;
+                    }
+                },
+                |ui| {
+                    let response = ui.button("Confirm");
+                    if response.clicked() {
+                        confirm_clicked = true;
+                    }
+                },
+            );
+        });
+
+        if confirm_clicked {
+            print_info("Confirmed deletion of playlist");
+            gem_player.confirm_delete_playlist_modal_is_open = false;
+        }
+
+        if cancel_clicked {
+            print_info("Cancelled deletion of playlist");
+            gem_player.confirm_delete_playlist_modal_is_open = false;
+        }
+
+        if modal.should_close() {
+            gem_player.confirm_delete_playlist_modal_is_open = false;
+        }
+    }
+
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
 
@@ -704,7 +747,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         let delete_button = Button::new(icons::ICON_DELETE);
                                         let response = ui.add(delete_button).on_hover_text("Delete");
                                         if response.clicked() {
-                                            print_info("Deleting playlist");
+                                            gem_player.confirm_delete_playlist_modal_is_open = true;
                                         }
 
                                         let edit_name_button = Button::new(icons::ICON_EDIT);
