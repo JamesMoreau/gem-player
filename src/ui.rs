@@ -698,24 +698,22 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 } else {
                                     ui.add(unselectable_label(&playlist.name));
 
-                                    let delete_button = Button::new(icons::ICON_DELETE);
-                                    let response = ui.add(delete_button).on_hover_text("Delete");
-                                    if response.clicked() {
-                                        print_info("Deleting playlist");
-                                    }
-                                    
-                                    let edit_name_button = Button::new(icons::ICON_EDIT);
-                                    if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
-                                        print_info("Editing playlist");
-                                        gem_player.edit_playlist_id = Some(playlist.id);
-                                        gem_player.edit_playlist_name_buffer = playlist.name.clone();
-                                    }
-                                }
+                                    let should_show_buttons =
+                                        ui.rect_contains_pointer(ui.max_rect()) || this_playlists_name_is_being_edited;
+                                    if should_show_buttons {
+                                        let delete_button = Button::new(icons::ICON_DELETE);
+                                        let response = ui.add(delete_button).on_hover_text("Delete");
+                                        if response.clicked() {
+                                            print_info("Deleting playlist");
+                                        }
 
-                                ui.add_space(8.0);
-
-                                let should_show_buttons = ui.rect_contains_pointer(ui.max_rect()) || this_playlists_name_is_being_edited;
-                                if should_show_buttons {
+                                        let edit_name_button = Button::new(icons::ICON_EDIT);
+                                        if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
+                                            print_info("Editing playlist");
+                                            gem_player.edit_playlist_id = Some(playlist.id);
+                                            gem_player.edit_playlist_name_buffer = playlist.name.clone();
+                                        }
+                                    }
                                 }
                             });
 
