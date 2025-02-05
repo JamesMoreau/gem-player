@@ -10,7 +10,7 @@ mod ui;
 
 /*
 TODO:
-* add .on_disabled_hover_text("") to disabled widgets.
+* scrollbar in playlist browser is getting in the way!
 * playlists / m3u.
 * Music Visualizer ^.
 * maybe make volume slider hover.
