@@ -641,26 +641,28 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
         let modal = containers::Modal::new(Id::new("Delete Playlist Modal")).show(ui.ctx(), |ui| {
             ui.set_width(200.0);
-
-            ui.heading("Are you sure you want to delete this playlist?");
-
-            ui.separator();
-
-            containers::Sides::new().show(
-                ui,
-                |ui| {
-                    let response = ui.button("Cancel");
-                    if response.clicked() {
-                        cancel_clicked = true;
-                    }
-                },
-                |ui| {
-                    let response = ui.button("Confirm");
-                    if response.clicked() {
-                        confirm_clicked = true;
-                    }
-                },
-            );
+            Frame::none().outer_margin(Margin::same(4.0)).show(ui, |ui| {
+                let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
+                ui.add(label);
+                
+                ui.separator();
+    
+                containers::Sides::new().show(
+                    ui,
+                    |ui| {
+                        let response = ui.button(icons::ICON_CANCEL);
+                        if response.clicked() {
+                            cancel_clicked = true;
+                        }
+                    },
+                    |ui| {
+                        let response = ui.button(icons::ICON_CHECK);
+                        if response.clicked() {
+                            confirm_clicked = true;
+                        }
+                    },
+                );
+            });
         });
 
         if confirm_clicked {
@@ -689,7 +691,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .sense(Sense::click())
                     .cell_layout(Layout::left_to_right(Align::Center))
                     .column(egui_extras::Column::exact(playlists_width))
-                    .header(38.0, |mut header| {
+                    .header(36.0, |mut header| {
                         header.col(|ui| {
                             containers::Sides::new().height(ui.available_height()).show(
                                 ui,
@@ -720,13 +722,13 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         });
                     })
                     .body(|body| {
-                        body.rows(30.0, gem_player.playlists.len(), |mut row| {
+                        body.rows(36.0, gem_player.playlists.len(), |mut row| {
                             let playlist = &mut gem_player.playlists[row.index()];
 
                             let this_playlists_name_is_being_edited = gem_player.edit_playlist_id == Some(playlist.id);
 
                             row.col(|ui| {
-                                let row_rect = ui.max_rect();
+                                let cell_rect = ui.max_rect();
 
                                 if this_playlists_name_is_being_edited {
                                     containers::Sides::new().height(ui.available_height()).show(
@@ -752,7 +754,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                             ui.add(unselectable_label(&playlist.name));
                                         },
                                         |ui| {
-                                            if !ui.rect_contains_pointer(row_rect) {
+                                            if !ui.rect_contains_pointer(cell_rect) {
                                                 return;
                                             }
 
