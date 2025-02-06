@@ -8,11 +8,11 @@ use lofty::{
 };
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-use uuid::Uuid;
 use std::{
     io::BufReader,
     path::{Path, PathBuf},
 };
+use uuid::Uuid;
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -323,9 +323,9 @@ pub fn move_song_to_front(gem_player: &mut GemPlayer, index: usize) {
 
 pub fn mute_or_unmute(gem_player: &mut GemPlayer) {
     let mut volume = gem_player.sink.volume();
-    
+
     gem_player.muted = !gem_player.muted;
-    
+
     if gem_player.muted {
         gem_player.volume_before_mute = Some(volume);
         volume = 0.0;
@@ -388,4 +388,8 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
             }
         }
     });
+}
+
+fn _load_playlist_from_m3u(_path: &Path) -> Result<Playlist, String> {
+    todo!()
 }
