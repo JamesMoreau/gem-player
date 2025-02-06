@@ -25,6 +25,7 @@ pub struct GemPlayer {
     pub edit_playlist_name_id: Option<Uuid>,
     pub edit_playlist_name_buffer: String,
     pub confirm_delete_playlist_modal_is_open: bool,
+    pub selected_playlist: Option<Playlist>,
     pub toasts: Toasts,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
@@ -81,6 +82,7 @@ impl GemPlayer {
             sort_order: SortOrder::Ascending,
             edit_playlist_name_id: None,
             edit_playlist_name_buffer: String::new(),
+            selected_playlist: None,
             confirm_delete_playlist_modal_is_open: false,
             toasts: Toasts::default(),
 

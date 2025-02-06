@@ -1,3 +1,52 @@
+// row.col(|ui| {
+// 	let cell_rect = ui.max_rect();
+
+// 	if this_playlists_name_is_being_edited {
+// 		containers::Sides::new().height(cell_rect.height()).show(
+// 			ui,
+// 			|ui| {
+// 				ui.add_space(8.0);
+// 				let text_edit =
+// 					TextEdit::singleline(&mut gem_player.edit_playlist_name_buffer).desired_width(100.0);
+// 				let response = ui.add(text_edit);
+
+// 				if response.lost_focus() {
+// 					print_info(format!("Renamed playlist to: {}", gem_player.edit_playlist_name_buffer));
+// 					gem_player.edit_playlist_name_id = None;
+// 				}
+// 			},
+// 			|_ui| {},
+// 		);
+// 	} else {
+// 		containers::Sides::new().height(cell_rect.height()).show(
+// 			ui,
+// 			|ui| {
+// 				ui.add_space(8.0);
+// 				ui.add(unselectable_label(&playlist.name));
+// 			},
+// 			|ui| {
+// 				if !ui.rect_contains_pointer(cell_rect) {
+// 					return;
+// 				}
+
+// 				ui.add_space(16.0); // Add space to the right of the buttons to avoid the scrollbar.
+
+// 				let delete_button = Button::new(icons::ICON_DELETE);
+// 				let response = ui.add(delete_button).on_hover_text("Delete");
+// 				if response.clicked() {
+// 					gem_player.confirm_delete_playlist_modal_is_open = true;
+// 				}
+
+// 				let edit_name_button = Button::new(icons::ICON_EDIT);
+// 				if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
+// 					gem_player.edit_playlist_name_id = Some(playlist.id);
+// 					gem_player.edit_playlist_name_buffer = playlist.name.clone();
+// 				}
+// 			},
+// 		);
+// 	}
+// });
+
 // ui.painter().line_segment(
 //     [
 //         control_ui_rect.left_bottom() + vec2(1.0, 0.0),
