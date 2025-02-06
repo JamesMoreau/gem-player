@@ -766,11 +766,21 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .vertical(|mut strip| {
             strip.cell(|ui| {
                 let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                let this_playlist_name_is_being_edited = gem_player.edit_playlist_name_id == Some(playlist.id);
                 containers::Sides::new().height(ui.available_height()).show(
                     ui,
                     |ui| {
                         ui.add_space(16.0);
-                        ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
+
+                        if this_playlist_name_is_being_edited {
+                            let response = ui.add(TextEdit::singleline(&mut gem_player.edit_playlist_name_buffer));
+                            if response.lost_focus() {
+                                print_info(format!("Renaming playlist to: {}", gem_player.edit_playlist_name_buffer));
+                                gem_player.edit_playlist_name_id = None;
+                            }
+                        } else {
+                            ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
+                        }
                     },
                     |ui| {
                         if !strip_contains_pointer {
@@ -787,8 +797,6 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                         let edit_name_button = Button::new(icons::ICON_EDIT);
                         if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
-                            gem_player.edit_playlist_name_id = Some(playlist.id);
-                            gem_player.edit_playlist_name_buffer = playlist.name.clone();
                         }
                     },
                 );
