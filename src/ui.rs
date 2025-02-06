@@ -751,7 +751,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // 2. Playlist selected but empty
     // 3. Playlist selected and has songs
 
-    if gem_player.selected_playlist.is_none() {
+    let Some(playlist) = &gem_player.selected_playlist else {
         StripBuilder::new(ui)
             .size(Size::exact(128.0))
             .size(Size::remainder())
@@ -770,110 +770,108 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
         return;
-    }
+    };
 
-    if let Some(playlist) = gem_player.selected_playlist.as_ref() {
-        if playlist.songs.is_empty() {
-            StripBuilder::new(ui)
-                .size(Size::exact(64.0))
-                .size(Size::remainder())
-                .vertical(|mut strip| {
-                    strip.cell(|ui| {
-                        let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                        containers::Sides::new().height(ui.available_height()).show(
-                            ui,
-                            |ui| {
-                                ui.add_space(16.0);
-                                ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
-                            },
-                            |ui| {
-                                if !strip_contains_pointer {
-                                    return;
-                                }
+    if playlist.songs.is_empty() {
+        StripBuilder::new(ui)
+            .size(Size::exact(64.0))
+            .size(Size::remainder())
+            .vertical(|mut strip| {
+                strip.cell(|ui| {
+                    let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                    containers::Sides::new().height(ui.available_height()).show(
+                        ui,
+                        |ui| {
+                            ui.add_space(16.0);
+                            ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
+                        },
+                        |ui| {
+                            if !strip_contains_pointer {
+                                return;
+                            }
 
-                                ui.add_space(16.0); // Add space to the right of the buttons to avoid the scrollbar.
+                            ui.add_space(16.0); // Add space to the right of the buttons to avoid the scrollbar.
 
-                                let delete_button = Button::new(icons::ICON_DELETE);
-                                let response = ui.add(delete_button).on_hover_text("Delete");
-                                if response.clicked() {
-                                    gem_player.confirm_delete_playlist_modal_is_open = true;
-                                }
+                            let delete_button = Button::new(icons::ICON_DELETE);
+                            let response = ui.add(delete_button).on_hover_text("Delete");
+                            if response.clicked() {
+                                gem_player.confirm_delete_playlist_modal_is_open = true;
+                            }
 
-                                let edit_name_button = Button::new(icons::ICON_EDIT);
-                                if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
-                                    gem_player.edit_playlist_name_id = Some(playlist.id);
-                                    gem_player.edit_playlist_name_buffer = playlist.name.clone();
-                                }
-                            },
-                        );
+                            let edit_name_button = Button::new(icons::ICON_EDIT);
+                            if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
+                                gem_player.edit_playlist_name_id = Some(playlist.id);
+                                gem_player.edit_playlist_name_buffer = playlist.name.clone();
+                            }
+                        },
+                    );
 
-                        ui.add(Separator::default().spacing(0.0));
+                    ui.add(Separator::default().spacing(0.0));
 
-                        Frame::none()
-                            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-                            .show(ui, |ui| {
-                                ui.vertical_centered(|ui| {
-                                    ui.add(unselectable_label("The playlist is empty."));
-                                });
+                    Frame::none()
+                        .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+                        .show(ui, |ui| {
+                            ui.vertical_centered(|ui| {
+                                ui.add(unselectable_label("The playlist is empty."));
                             });
-                    });
-                });
-
-            return;
-        }
-
-        TableBuilder::new(ui)
-            .striped(true)
-            .sense(Sense::click())
-            .cell_layout(Layout::left_to_right(Align::Center))
-            .header(16.0, |mut header| {
-                header.col(|ui| {
-                    ui.add_space(16.0);
-                });
-            })
-            .body(|body| {
-                body.rows(26.0, gem_player.queue.len(), |mut row| {
-                    let index = row.index();
-                    let song = gem_player.queue[index].clone();
-
-                    row.col(|ui| {
-                        ui.add_space(16.0);
-                        ui.add(unselectable_label(format!("{}", index + 1)));
-                    });
-
-                    row.col(|ui| {
-                        ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
-                    });
-
-                    row.col(|ui| {
-                        ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
-                    });
-
-                    row.col(|ui| {
-                        ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
-                    });
-
-                    row.col(|ui| {
-                        let duration_string = format_duration_to_mmss(song.duration);
-                        ui.add(unselectable_label(duration_string));
-                    });
-
-                    let row_is_hovered = row.response().hovered();
-                    let mut actions_cell_contains_pointer = false;
-                    row.col(|ui| {
-                        actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                        let should_show_action_button = row_is_hovered || actions_cell_contains_pointer;
-
-                        ui.add_space(8.0);
-
-                        let response = ui.add_visible(should_show_action_button, Button::new(icons::ICON_MORE));
-                        if response.clicked() {
-                            move_song_to_front(gem_player, index);
-                        }
-                    });
+                        });
                 });
             });
+
+        return;
     }
+
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(Sense::click())
+        .cell_layout(Layout::left_to_right(Align::Center))
+        .header(16.0, |mut header| {
+            header.col(|ui| {
+                ui.add_space(16.0);
+            });
+        })
+        .body(|body| {
+            body.rows(26.0, gem_player.queue.len(), |mut row| {
+                let index = row.index();
+                let song = gem_player.queue[index].clone();
+
+                row.col(|ui| {
+                    ui.add_space(16.0);
+                    ui.add(unselectable_label(format!("{}", index + 1)));
+                });
+
+                row.col(|ui| {
+                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
+                });
+
+                row.col(|ui| {
+                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
+                });
+
+                row.col(|ui| {
+                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
+                });
+
+                row.col(|ui| {
+                    let duration_string = format_duration_to_mmss(song.duration);
+                    ui.add(unselectable_label(duration_string));
+                });
+
+                let row_is_hovered = row.response().hovered();
+                let mut actions_cell_contains_pointer = false;
+                row.col(|ui| {
+                    actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                    let should_show_action_button = row_is_hovered || actions_cell_contains_pointer;
+
+                    ui.add_space(8.0);
+
+                    let response = ui.add_visible(should_show_action_button, Button::new(icons::ICON_MORE));
+                    if response.clicked() {
+                        move_song_to_front(gem_player, index);
+                    }
+                });
+            });
+        });
 }
 
 pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
