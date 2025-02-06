@@ -650,13 +650,13 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 containers::Sides::new().show(
                     ui,
                     |ui| {
-                        let response = ui.button(icons::ICON_CLOSE) ;
+                        let response = ui.button(format!("\t{}\t", icons::ICON_CLOSE));
                         if response.clicked() {
                             cancel_clicked = true;
                         }
                     },
                     |ui| {
-                        let response = ui.button(icons::ICON_CHECK);
+                        let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
                         if response.clicked() {
                             confirm_clicked = true;
                         }
