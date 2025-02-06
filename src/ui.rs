@@ -774,11 +774,48 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     if let Some(playlist) = gem_player.selected_playlist.as_ref() {
         if playlist.songs.is_empty() {
-            Frame::none()
-                .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-                .show(ui, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.add(unselectable_label("The playlist is empty."));
+            StripBuilder::new(ui)
+                .size(Size::exact(64.0))
+                .size(Size::remainder())
+                .vertical(|mut strip| {
+                    strip.cell(|ui| {
+                        let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                        containers::Sides::new().height(ui.available_height()).show(
+                            ui,
+                            |ui| {
+                                ui.add_space(16.0);
+                                ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
+                            },
+                            |ui| {
+                                if !strip_contains_pointer {
+                                    return;
+                                }
+
+                                ui.add_space(16.0); // Add space to the right of the buttons to avoid the scrollbar.
+
+                                let delete_button = Button::new(icons::ICON_DELETE);
+                                let response = ui.add(delete_button).on_hover_text("Delete");
+                                if response.clicked() {
+                                    gem_player.confirm_delete_playlist_modal_is_open = true;
+                                }
+
+                                let edit_name_button = Button::new(icons::ICON_EDIT);
+                                if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
+                                    gem_player.edit_playlist_name_id = Some(playlist.id);
+                                    gem_player.edit_playlist_name_buffer = playlist.name.clone();
+                                }
+                            },
+                        );
+
+                        ui.add(Separator::default().spacing(0.0));
+
+                        Frame::none()
+                            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+                            .show(ui, |ui| {
+                                ui.vertical_centered(|ui| {
+                                    ui.add(unselectable_label("The playlist is empty."));
+                                });
+                            });
                     });
                 });
 
