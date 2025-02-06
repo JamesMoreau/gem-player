@@ -747,20 +747,13 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let Some(playlist) = &gem_player.selected_playlist else {
-        StripBuilder::new(ui)
-            .size(Size::exact(128.0))
-            .size(Size::remainder())
-            .vertical(|mut strip| {
-                strip.cell(|ui| {
-                    ui.add(unselectable_label(RichText::new("").heading()));
+        ui.add(unselectable_label(RichText::new("").heading()));
 
-                    Frame::none()
-                        .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-                        .show(ui, |ui| {
-                            ui.vertical_centered(|ui| {
-                                ui.add(unselectable_label("No playlist selected"));
-                            });
-                        });
+        Frame::none()
+            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+            .show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(unselectable_label("No playlist selected"));
                 });
             });
 
