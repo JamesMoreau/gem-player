@@ -765,22 +765,39 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .size(Size::remainder())
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
                 let this_playlist_name_is_being_edited = gem_player.edit_playlist_name_id == Some(playlist.id);
-                containers::Sides::new().height(ui.available_height()).show(
-                    ui,
-                    |ui| {
-                        ui.add_space(16.0);
-
-                        if this_playlist_name_is_being_edited {
+                if this_playlist_name_is_being_edited {
+                    containers::Sides::new().height(ui.available_height()).show(
+                        ui,
+                        |ui| {
                             let response = ui.add(TextEdit::singleline(&mut gem_player.edit_playlist_name_buffer));
                             if response.lost_focus() {
                                 print_info(format!("Renaming playlist to: {}", gem_player.edit_playlist_name_buffer));
                                 gem_player.edit_playlist_name_id = None;
                             }
-                        } else {
-                            ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
-                        }
+                        },
+                        |ui| {
+                            let cancel_button = Button::new(icons::ICON_CANCEL);
+                            let response = ui.add(cancel_button).on_hover_text("Cancel");
+                            if response.clicked() {
+                            }
+
+                            let confirm_button = Button::new(icons::ICON_CHECK);
+                            let response = ui.add(confirm_button).on_hover_text("Confirm");
+                            if response.clicked() {
+                            }
+                        },
+                    );
+
+                    return;
+                }
+                
+                let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                containers::Sides::new().height(ui.available_height()).show(
+                    ui,
+                    |ui| {
+                        ui.add_space(16.0);
+                        ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
                     },
                     |ui| {
                         if !strip_contains_pointer {
