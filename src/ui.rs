@@ -650,7 +650,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 containers::Sides::new().show(
                     ui,
                     |ui| {
-                        let response = ui.button(icons::ICON_CANCEL);
+                        let response = ui.button(icons::ICON_CLOSE) ;
                         if response.clicked() {
                             cancel_clicked = true;
                         }
@@ -767,9 +767,12 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
             strip.cell(|ui| {
                 let this_playlist_name_is_being_edited = gem_player.edit_playlist_name_id == Some(playlist.id);
                 if this_playlist_name_is_being_edited {
+                    let mut discard_clicked = false;
+                    let mut save_clicked = false;
                     containers::Sides::new().height(ui.available_height()).show(
                         ui,
                         |ui| {
+                            ui.add_space(16.0);
                             let response = ui.add(TextEdit::singleline(&mut gem_player.edit_playlist_name_buffer));
                             if response.lost_focus() {
                                 print_info(format!("Renaming playlist to: {}", gem_player.edit_playlist_name_buffer));
@@ -778,13 +781,15 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             let cancel_button = Button::new(icons::ICON_CANCEL);
-                            let response = ui.add(cancel_button).on_hover_text("Cancel");
+                            let response = ui.add(cancel_button).on_hover_text("Discard");
                             if response.clicked() {
+                                discard_clicked = true;
                             }
 
-                            let confirm_button = Button::new(icons::ICON_CHECK);
-                            let response = ui.add(confirm_button).on_hover_text("Confirm");
+                            let confirm_button = Button::new(icons::ICON_SAVE);
+                            let response = ui.add(confirm_button).on_hover_text("Save");
                             if response.clicked() {
+                                save_clicked = true;
                             }
                         },
                     );
@@ -814,6 +819,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                         let edit_name_button = Button::new(icons::ICON_EDIT);
                         if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
+                            gem_player.edit_playlist_name_id = Some(playlist.id);
                         }
                     },
                 );
