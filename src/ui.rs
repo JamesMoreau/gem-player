@@ -811,12 +811,14 @@ pub fn render_playlist_content(
                             let delete_button = Button::new(icons::ICON_DELETE);
                             let response = ui.add(delete_button).on_hover_text("Delete");
                             if response.clicked() {
-                                // gem_player.confirm_delete_playlist_modal_is_open = true;
+                                // Open modal to confirm deletion
+                                todo!();
                             }
 
                             let edit_name_button = Button::new(icons::ICON_EDIT);
                             if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
-                                // gem_player.edit_playlist_name_id = Some(playlist.id);
+                                print_info(format!("Editing playlist name: {}", playlist.name));
+                                *maybe_edit_playlist_name_info = Some((playlist.id, playlist.name.clone()));
                             }
                         },
                     );
@@ -832,7 +834,8 @@ pub fn render_playlist_content(
                         ui.add_space(16.0);
                         let response = ui.add(TextEdit::singleline(name_buffer));
                         if response.lost_focus() {
-                            print_info(format!("Renaming playlist to: {}", name_buffer));
+                            // Cancel editing
+                            // *maybe_edit_playlist_name_info = None;
                         }
                     },
                     |ui| {
