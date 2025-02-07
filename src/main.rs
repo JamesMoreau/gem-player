@@ -10,6 +10,7 @@ mod ui;
 
 /*
 TODO:
+* add substructs to gemPlayer and refactor procdure parameters to use them.
 * add an id to song struct.
 * scrollbar in playlist browser is getting in the way!
 * deleted m3u file should be moved to trash (and not permanently deleted).
