@@ -76,7 +76,7 @@ impl eframe::App for player::GemPlayer {
                         View::Playlists => render_playlists_ui(
                             ui,
                             &mut self.playlists,
-                            &mut self.selected_playlist,
+                            &mut self.selected_playlist_index,
                             &mut self.edit_playlist_name_info,
                             &mut self.confirm_delete_playlist_modal_is_open,
                         ),
@@ -644,7 +644,7 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 pub fn render_playlists_ui(
     ui: &mut Ui,
     playlists: &mut Vec<Playlist>,
-    selected_playlist: &mut Option<Playlist>,
+    selected_playlist_index: &mut Option<usize>,
     edit_playlist_name_info: &mut Option<(Uuid, String)>,
     confirm_delete_playlist_modal_is_open: &mut bool,
 ) {
@@ -694,6 +694,9 @@ pub fn render_playlists_ui(
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
 
+    let maybe_selected_playlist = selected_playlist_index
+    .and_then(|idx| playlists.get_mut(idx));
+
     StripBuilder::new(ui)
         .size(Size::exact(playlists_width))
         .size(Size::remainder())
@@ -722,7 +725,7 @@ pub fn render_playlists_ui(
 
                                         let new_playlist = Playlist {
                                             id: uuid::Uuid::new_v4(),
-                                            name: "New Playlist".to_string(),
+                                            name: format!("Playlist {}", playlists.len() + 1),
                                             creation_date_time: Utc::now(),
                                             songs: Vec::new(),
                                             path: None,
@@ -735,7 +738,6 @@ pub fn render_playlists_ui(
                         });
                     })
                     .body(|body| {
-                        let mut new_selected_playlist = None;
                         body.rows(36.0, playlists.len(), |mut row| {
                             let playlist = &mut playlists[row.index()];
 
@@ -747,22 +749,20 @@ pub fn render_playlists_ui(
                             let response = row.response();
                             if response.clicked() {
                                 print_info(format!("Selected playlist: {}", playlist.name));
-                                new_selected_playlist = Some(playlist.clone());
+                                *selected_playlist_index = Some(row.index());
                             }
                         });
-                        if let Some(playlist) = new_selected_playlist {
-                            *selected_playlist = Some(playlist);
-                        }
                     });
             });
 
             strip.cell(|ui| {
-                render_playlist_content(
-                    ui,
-                    selected_playlist.as_mut(),
-                    edit_playlist_name_info,
-                    confirm_delete_playlist_modal_is_open,
-                );
+            //     let selected_playlist = selected_playlist_index.and_then(|index| playlists.get_mut(index));
+            //     render_playlist_content(
+            //         ui,
+            //         selected_playlist,
+            //         edit_playlist_name_info,
+            //         confirm_delete_playlist_modal_is_open,
+            //     );
             });
         });
 }
@@ -786,13 +786,6 @@ pub fn render_playlist_content(
 
         return;
     };
-
-    // // Ensure edit mode is only active for the selected playlist
-    // if let Some((id, _)) = maybe_edit_playlist_name_info {
-    //     if *id != playlist.id {
-    //         *maybe_edit_playlist_name_info = None;
-    //     }
-    // }
 
     StripBuilder::new(ui)
         .size(Size::exact(64.0))
