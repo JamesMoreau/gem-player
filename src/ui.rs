@@ -694,9 +694,6 @@ pub fn render_playlists_ui(
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
 
-    let maybe_selected_playlist = selected_playlist_index
-    .and_then(|idx| playlists.get_mut(idx));
-
     StripBuilder::new(ui)
         .size(Size::exact(playlists_width))
         .size(Size::remainder())
@@ -756,13 +753,13 @@ pub fn render_playlists_ui(
             });
 
             strip.cell(|ui| {
-            //     let selected_playlist = selected_playlist_index.and_then(|index| playlists.get_mut(index));
-            //     render_playlist_content(
-            //         ui,
-            //         selected_playlist,
-            //         edit_playlist_name_info,
-            //         confirm_delete_playlist_modal_is_open,
-            //     );
+                let maybe_selected_playlist = selected_playlist_index.and_then(|index| playlists.get_mut(index));
+                render_playlist_content(
+                    ui,
+                    maybe_selected_playlist,
+                    edit_playlist_name_info,
+                    confirm_delete_playlist_modal_is_open,
+                );
             });
         });
 }
