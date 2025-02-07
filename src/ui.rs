@@ -757,7 +757,12 @@ pub fn render_playlists_ui(
             });
 
             strip.cell(|ui| {
-                render_playlist_content(ui, selected_playlist.as_mut(), edit_playlist_name_info, confirm_delete_playlist_modal_is_open);
+                render_playlist_content(
+                    ui,
+                    selected_playlist.as_mut(),
+                    edit_playlist_name_info,
+                    confirm_delete_playlist_modal_is_open,
+                );
             });
         });
 }
@@ -782,19 +787,19 @@ pub fn render_playlist_content(
         return;
     };
 
-    // Ensure edit mode is only active for the selected playlist
-    if let Some((id, _)) = maybe_edit_playlist_name_info {
-        if *id != playlist.id {
-            *maybe_edit_playlist_name_info = None;
-        }
-    }
+    // // Ensure edit mode is only active for the selected playlist
+    // if let Some((id, _)) = maybe_edit_playlist_name_info {
+    //     if *id != playlist.id {
+    //         *maybe_edit_playlist_name_info = None;
+    //     }
+    // }
 
     StripBuilder::new(ui)
         .size(Size::exact(64.0))
         .size(Size::remainder())
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                if let Some((playlist_id, name_buffer)) = maybe_edit_playlist_name_info {
+                if let Some((_, name_buffer)) = maybe_edit_playlist_name_info {
                     // In edit mode
                     let mut discard_clicked = false;
                     let mut save_clicked = false;
@@ -804,7 +809,7 @@ pub fn render_playlist_content(
                         |ui| {
                             ui.add_space(16.0);
                             let name_edit = TextEdit::singleline(name_buffer);
-                            let response = ui.add(name_edit);
+                            ui.add(name_edit);
                         },
                         |ui| {
                             ui.add_space(16.0);
