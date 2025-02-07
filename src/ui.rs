@@ -767,7 +767,7 @@ pub fn render_playlist_content(
     maybe_playlist: Option<&mut Playlist>,
     maybe_edit_playlist_name_info: &mut Option<(Uuid, String)>,
 ) {
-    let Some(playlist) = &maybe_playlist else {
+    let Some(playlist) = maybe_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
 
         Frame::none()
@@ -793,7 +793,48 @@ pub fn render_playlist_content(
         .size(Size::remainder())
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                let Some((playlist_id, name_buffer)) = maybe_edit_playlist_name_info else {
+                if let Some((playlist_id, name_buffer)) = maybe_edit_playlist_name_info {
+                    // In edit mode
+                    let mut discard_clicked = false;
+                    let mut save_clicked = false;
+                    let mut lost_focus: bool = false;
+                    let mut new_name = name_buffer.clone();
+                    containers::Sides::new().height(ui.available_height()).show(
+                        ui,
+                        |ui| {
+                            ui.add_space(16.0);
+                            let name_edit =TextEdit::singleline(&mut new_name);
+                            let response = ui.add(name_edit);
+                            if response.lost_focus() {
+                                lost_focus = true;
+                            }
+                        },
+                        |ui| {
+                            ui.add_space(16.0);
+
+                            let cancel_button = Button::new(icons::ICON_CANCEL);
+                            let response = ui.add(cancel_button).on_hover_text("Discard");
+                            if response.clicked() {
+                                discard_clicked = true;
+                            }
+
+                            let confirm_button = Button::new(icons::ICON_SAVE);
+                            let response = ui.add(confirm_button).on_hover_text("Save");
+                            if response.clicked() {
+                                save_clicked = true;
+                            }
+                        },
+                    );
+                    if discard_clicked {
+                        *maybe_edit_playlist_name_info = None;
+                    } else if save_clicked {
+                        playlist.name = new_name.clone();
+                        *maybe_edit_playlist_name_info = None;
+                    } else if lost_focus {
+                        *maybe_edit_playlist_name_info = None;
+                    }
+                } else {
+                    // Not in edit mode
                     let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
                     containers::Sides::new().height(ui.available_height()).show(
                         ui,
@@ -806,7 +847,7 @@ pub fn render_playlist_content(
                                 return;
                             }
 
-                            ui.add_space(16.0); // Add space to the right of the buttons to avoid the scrollbar.
+                            ui.add_space(16.0);
 
                             let delete_button = Button::new(icons::ICON_DELETE);
                             let response = ui.add(delete_button).on_hover_text("Delete");
@@ -822,44 +863,6 @@ pub fn render_playlist_content(
                             }
                         },
                     );
-
-                    return;
-                };
-
-                let mut discard_clicked = false;
-                let mut save_clicked = false;
-                let mut lost_focus: bool = false;
-                let mut new_name = name_buffer.clone();
-                containers::Sides::new().height(ui.available_height()).show(
-                    ui,
-                    |ui| {
-                        ui.add_space(16.0);
-                        let response = ui.add(TextEdit::singleline(&mut new_name));
-                        if response.lost_focus() {
-                            lost_focus = true;
-                        }
-                    },
-                    |ui| {
-                        let cancel_button = Button::new(icons::ICON_CANCEL);
-                        let response = ui.add(cancel_button).on_hover_text("Discard");
-                        if response.clicked() {
-                            discard_clicked = true;
-                        }
-
-                        let confirm_button = Button::new(icons::ICON_SAVE);
-                        let response = ui.add(confirm_button).on_hover_text("Save");
-                        if response.clicked() {
-                            save_clicked = true;
-                        }
-                    },
-                );
-                if discard_clicked {
-                    *maybe_edit_playlist_name_info = None;
-                } else if save_clicked {
-                    // playlist.name = new_name;
-                    *maybe_edit_playlist_name_info = None;
-                } else if lost_focus {
-                    *maybe_edit_playlist_name_info = None;
                 }
 
                 ui.add(Separator::default().spacing(0.0));
