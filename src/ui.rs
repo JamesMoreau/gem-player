@@ -798,7 +798,6 @@ pub fn render_playlist_content(
                     // In edit mode
                     let mut discard_clicked = false;
                     let mut save_clicked = false;
-                    let mut lost_focus: bool = false;
                     // let mut new_name = name_buffer.clone();
                     containers::Sides::new().height(ui.available_height()).show(
                         ui,
@@ -806,9 +805,6 @@ pub fn render_playlist_content(
                             ui.add_space(16.0);
                             let name_edit = TextEdit::singleline(name_buffer);
                             let response = ui.add(name_edit);
-                            if response.lost_focus() {
-                                lost_focus = true;
-                            }
                         },
                         |ui| {
                             ui.add_space(16.0);
@@ -830,8 +826,6 @@ pub fn render_playlist_content(
                         *maybe_edit_playlist_name_info = None;
                     } else if save_clicked {
                         playlist.name = name_buffer.clone();
-                        *maybe_edit_playlist_name_info = None;
-                    } else if lost_focus {
                         *maybe_edit_playlist_name_info = None;
                     }
                 } else {
