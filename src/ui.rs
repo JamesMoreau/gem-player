@@ -757,7 +757,7 @@ pub fn render_playlists_ui(
             });
 
             strip.cell(|ui| {
-                render_playlist_content(ui, selected_playlist.as_mut(), edit_playlist_name_info);
+                render_playlist_content(ui, selected_playlist.as_mut(), edit_playlist_name_info, confirm_delete_playlist_modal_is_open);
             });
         });
 }
@@ -766,6 +766,7 @@ pub fn render_playlist_content(
     ui: &mut Ui,
     maybe_playlist: Option<&mut Playlist>,
     maybe_edit_playlist_name_info: &mut Option<(Uuid, String)>,
+    confirm_delete_playlist_modal_is_open: &mut bool,
 ) {
     let Some(playlist) = maybe_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
@@ -798,12 +799,12 @@ pub fn render_playlist_content(
                     let mut discard_clicked = false;
                     let mut save_clicked = false;
                     let mut lost_focus: bool = false;
-                    let mut new_name = name_buffer.clone();
+                    // let mut new_name = name_buffer.clone();
                     containers::Sides::new().height(ui.available_height()).show(
                         ui,
                         |ui| {
                             ui.add_space(16.0);
-                            let name_edit =TextEdit::singleline(&mut new_name);
+                            let name_edit = TextEdit::singleline(name_buffer);
                             let response = ui.add(name_edit);
                             if response.lost_focus() {
                                 lost_focus = true;
@@ -828,7 +829,7 @@ pub fn render_playlist_content(
                     if discard_clicked {
                         *maybe_edit_playlist_name_info = None;
                     } else if save_clicked {
-                        playlist.name = new_name.clone();
+                        playlist.name = name_buffer.clone();
                         *maybe_edit_playlist_name_info = None;
                     } else if lost_focus {
                         *maybe_edit_playlist_name_info = None;
@@ -852,12 +853,13 @@ pub fn render_playlist_content(
                             let delete_button = Button::new(icons::ICON_DELETE);
                             let response = ui.add(delete_button).on_hover_text("Delete");
                             if response.clicked() {
-                                // Open modal to confirm deletion
-                                todo!();
+                                print_info(format!("Opening delete playlist modal: {}", playlist.name));
+                                *confirm_delete_playlist_modal_is_open = true;
                             }
 
                             let edit_name_button = Button::new(icons::ICON_EDIT);
-                            if ui.add(edit_name_button).on_hover_text("Edit name").clicked() {
+                            let response = ui.add(edit_name_button).on_hover_text("Edit name");
+                            if response.clicked() {
                                 print_info(format!("Editing playlist name: {}", playlist.name));
                                 *maybe_edit_playlist_name_info = Some((playlist.id, playlist.name.clone()));
                             }
