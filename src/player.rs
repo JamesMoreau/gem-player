@@ -307,8 +307,8 @@ pub fn add_next_to_queue(gem_player: &mut GemPlayer, song: Song) {
     gem_player.queue.insert(0, song);
 }
 
-pub fn remove_from_queue(gem_player: &mut GemPlayer, index: usize) {
-    gem_player.queue.remove(index);
+pub fn remove_from_queue(queue: &mut Vec<Song>, index: usize) {
+    queue.remove(index);
 }
 
 pub fn shuffle_queue(gem_player: &mut GemPlayer) {
@@ -316,13 +316,13 @@ pub fn shuffle_queue(gem_player: &mut GemPlayer) {
     gem_player.queue.shuffle(&mut rng);
 }
 
-pub fn move_song_to_front(gem_player: &mut GemPlayer, index: usize) {
-    if index == 0 || index >= gem_player.queue.len() {
+pub fn move_song_to_front(queue: &mut Vec<Song>, index: usize) {
+    if index == 0 || index >= queue.len() {
         return;
     }
 
-    let song = gem_player.queue.remove(index);
-    gem_player.queue.insert(0, song);
+    let song = queue.remove(index);
+    queue.insert(0, song);
 }
 
 pub fn mute_or_unmute(gem_player: &mut GemPlayer) {

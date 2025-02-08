@@ -72,12 +72,8 @@ impl eframe::App for player::GemPlayer {
                     });
                     strip.cell(|ui| match self.current_view {
                         View::Library => render_library_ui(ui, self),
-                        View::Queue => render_queue_ui(ui, self),
-                        View::Playlists => render_playlists_ui(
-                            ui,
-                            &mut self.playlists,
-                            &mut self.playlists_ui_state
-                        ),
+                        View::Queue => render_queue_ui(ui, &mut self.queue),
+                        View::Playlists => render_playlists_ui(ui, &mut self.playlists, &mut self.playlists_ui_state),
                         View::Settings => render_settings_ui(ui, self),
                     });
                     strip.cell(|ui| {
@@ -532,8 +528,8 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    if gem_player.queue.is_empty() {
+pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
+    if queue.is_empty() {
         Frame::none()
             .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
@@ -586,9 +582,9 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, gem_player.queue.len(), |mut row| {
+            body.rows(26.0, queue.len(), |mut row| {
                 let index = row.index();
-                let song = gem_player.queue[index].clone();
+                let song = queue[index].clone();
 
                 row.col(|ui| {
                     ui.add_space(16.0);
@@ -625,25 +621,21 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        move_song_to_front(gem_player, index);
+                        move_song_to_front(queue, index);
                     }
 
                     ui.add_space(8.0);
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
-                        remove_from_queue(gem_player, index);
+                        remove_from_queue(queue, index);
                     }
                 });
             });
         });
 }
 
-pub fn render_playlists_ui(
-    ui: &mut Ui,
-    playlists: &mut Vec<Playlist>,
-    playlist_ui_state: &mut PlaylistsUIState,
-) {
+pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlist_ui_state: &mut PlaylistsUIState) {
     if playlist_ui_state.confirm_delete_playlist_modal_is_open {
         let mut cancel_clicked = false;
         let mut confirm_clicked = false;
