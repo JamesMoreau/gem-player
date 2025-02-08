@@ -793,7 +793,6 @@ pub fn render_playlist_content(
                     // In edit mode
                     let mut discard_clicked = false;
                     let mut save_clicked = false;
-                    // let mut new_name = name_buffer.clone();
                     containers::Sides::new().height(ui.available_height()).show(
                         ui,
                         |ui| {
