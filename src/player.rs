@@ -35,9 +35,8 @@ pub struct GemPlayer {
     pub muted: bool,
     pub volume_before_mute: Option<f32>,
     pub paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
-
     pub _stream: OutputStream, // Holds the OutputStream to keep it alive
-    pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
+    pub sink: Sink, // Controls playback (play, pause, stop, etc.)
 
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
@@ -295,25 +294,25 @@ pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
     Ok(songs)
 }
 
-pub fn _get_song_position_in_queue(gem_player: &GemPlayer, song: &Song) -> Option<usize> {
-    gem_player.queue.iter().position(|s| *s == *song)
+pub fn _get_song_position_in_queue(queue: Vec<Song>, song: &Song) -> Option<usize> {
+    queue.iter().position(|s| *s == *song)
 }
 
-pub fn add_to_queue(gem_player: &mut GemPlayer, song: Song) {
-    gem_player.queue.push(song);
+pub fn add_to_queue(queue: &mut Vec<Song>, song: Song) {
+    queue.push(song);
 }
 
-pub fn add_next_to_queue(gem_player: &mut GemPlayer, song: Song) {
-    gem_player.queue.insert(0, song);
+pub fn add_next_to_queue(queue: &mut Vec<Song>, song: Song) {
+    queue.insert(0, song);
 }
 
 pub fn remove_from_queue(queue: &mut Vec<Song>, index: usize) {
     queue.remove(index);
 }
 
-pub fn shuffle_queue(gem_player: &mut GemPlayer) {
+pub fn shuffle_queue(queue: &mut Vec<Song>) {
     let mut rng = rand::rng();
-    gem_player.queue.shuffle(&mut rng);
+    queue.shuffle(&mut rng);
 }
 
 pub fn move_song_to_front(queue: &mut Vec<Song>, index: usize) {

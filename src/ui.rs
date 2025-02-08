@@ -491,12 +491,12 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 response.context_menu(|ui| {
                     if ui.button("Play Next").clicked() {
-                        add_next_to_queue(gem_player, song.clone());
+                        add_next_to_queue(&mut gem_player.queue, song.clone());
                         ui.close_menu();
                     }
 
                     if ui.button("Add to queue").clicked() {
-                        add_to_queue(gem_player, song.clone());
+                        add_to_queue(&mut gem_player.queue, song.clone());
                         ui.close_menu();
                     }
 
@@ -635,8 +635,8 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
         });
 }
 
-pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlist_ui_state: &mut PlaylistsUIState) {
-    if playlist_ui_state.confirm_delete_playlist_modal_is_open {
+pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists_ui_state: &mut PlaylistsUIState) {
+    if playlists_ui_state.confirm_delete_playlist_modal_is_open {
         let mut cancel_clicked = false;
         let mut confirm_clicked = false;
 
@@ -667,14 +667,14 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlist_
         });
 
         if confirm_clicked {
-            if let Some(index) = playlist_ui_state.selected_playlist_index {
+            if let Some(index) = playlists_ui_state.selected_playlist_index {
                 print_info(format!("Confirmed deletion of playlist: {}", playlists[index].name));
                 playlists.remove(index);
-                playlist_ui_state.selected_playlist_index = None;
+                playlists_ui_state.selected_playlist_index = None;
             }
-            playlist_ui_state.confirm_delete_playlist_modal_is_open = false;
+            playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
         } else if cancel_clicked || modal.should_close() {
-            playlist_ui_state.confirm_delete_playlist_modal_is_open = false;
+            playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
         }
     }
 
@@ -733,19 +733,19 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlist_
                             let response = row.response();
                             if response.clicked() {
                                 print_info(format!("Selected playlist: {}", playlist.name));
-                                playlist_ui_state.selected_playlist_index = Some(row.index());
+                                playlists_ui_state.selected_playlist_index = Some(row.index());
                             }
                         });
                     });
             });
 
             strip.cell(|ui| {
-                let maybe_selected_playlist = playlist_ui_state.selected_playlist_index.and_then(|index| playlists.get_mut(index));
+                let maybe_selected_playlist = playlists_ui_state.selected_playlist_index.and_then(|index| playlists.get_mut(index));
                 render_playlist_content(
                     ui,
                     maybe_selected_playlist,
-                    &mut playlist_ui_state.edit_playlist_name_info,
-                    &mut playlist_ui_state.confirm_delete_playlist_modal_is_open,
+                    &mut playlists_ui_state.edit_playlist_name_info,
+                    &mut playlists_ui_state.confirm_delete_playlist_modal_is_open,
                 );
             });
         });
@@ -1069,7 +1069,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Shuffle")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        shuffle_queue(gem_player);
+                        shuffle_queue(&mut gem_player.queue);
                     }
 
                     let repeat_button_color = if gem_player.repeat {
