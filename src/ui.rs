@@ -679,8 +679,8 @@ pub fn render_playlists_ui(
         });
 
         if confirm_clicked {
-            print_info("Confirmed deletion of playlist");
             if let Some(index) = maybe_selected_playlist_index {
+                print_info(format!("Confirmed deletion of playlist: {}", playlists[*index].name));
                 playlists.remove(*index);
                 *maybe_selected_playlist_index = None;
             }
@@ -1136,7 +1136,7 @@ fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     .on_hover_text("Sort by and order");
 
     let search_bar = TextEdit::singleline(&mut gem_player.search_text)
-        .hint_text(format!("{} ...", icons::ICON_SEARCH))
+        .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
         .desired_width(140.0);
     ui.add(search_bar).on_hover_text("Search");
 
