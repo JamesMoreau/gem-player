@@ -680,13 +680,12 @@ pub fn render_playlists_ui(
 
         if confirm_clicked {
             print_info("Confirmed deletion of playlist");
+            if let Some(index) = maybe_selected_playlist_index {
+                playlists.remove(*index);
+                *maybe_selected_playlist_index = None;
+            }
             *confirm_delete_playlist_modal_is_open = false;
-        } else if cancel_clicked {
-            print_info("Cancelled deletion of playlist");
-            *confirm_delete_playlist_modal_is_open = false;
-        }
-
-        if modal.should_close() {
+        } else if cancel_clicked || modal.should_close() {
             *confirm_delete_playlist_modal_is_open = false;
         }
     }
