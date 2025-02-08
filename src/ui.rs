@@ -644,8 +644,8 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 pub fn render_playlists_ui(
     ui: &mut Ui,
     playlists: &mut Vec<Playlist>,
-    selected_playlist_index: &mut Option<usize>,
-    edit_playlist_name_info: &mut Option<(Uuid, String)>,
+    maybe_selected_playlist_index: &mut Option<usize>,
+    maybe_edit_playlist_name_info: &mut Option<(Uuid, String)>,
     confirm_delete_playlist_modal_is_open: &mut bool,
 ) {
     if *confirm_delete_playlist_modal_is_open {
@@ -746,18 +746,18 @@ pub fn render_playlists_ui(
                             let response = row.response();
                             if response.clicked() {
                                 print_info(format!("Selected playlist: {}", playlist.name));
-                                *selected_playlist_index = Some(row.index());
+                                *maybe_selected_playlist_index = Some(row.index());
                             }
                         });
                     });
             });
 
             strip.cell(|ui| {
-                let maybe_selected_playlist = selected_playlist_index.and_then(|index| playlists.get_mut(index));
+                let maybe_selected_playlist = maybe_selected_playlist_index.and_then(|index| playlists.get_mut(index));
                 render_playlist_content(
                     ui,
                     maybe_selected_playlist,
-                    edit_playlist_name_info,
+                    maybe_edit_playlist_name_info,
                     confirm_delete_playlist_modal_is_open,
                 );
             });
