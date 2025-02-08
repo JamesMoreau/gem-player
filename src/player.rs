@@ -22,9 +22,7 @@ pub struct GemPlayer {
     pub search_text: String,
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
-    pub edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
-    pub confirm_delete_playlist_modal_is_open: bool,
-    pub selected_playlist_index: Option<usize>,
+    pub playlists_ui_state: PlaylistsUIState,
     pub toasts: Toasts,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
@@ -43,6 +41,12 @@ pub struct GemPlayer {
 
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
+}
+
+pub struct PlaylistsUIState {
+    pub selected_playlist_index: Option<usize>,
+    pub edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
+    pub confirm_delete_playlist_modal_is_open: bool,
 }
 
 impl GemPlayer {
@@ -79,9 +83,11 @@ impl GemPlayer {
             search_text: String::new(),
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
-            edit_playlist_name_info: None,
-            selected_playlist_index: None,
-            confirm_delete_playlist_modal_is_open: false,
+            playlists_ui_state: PlaylistsUIState {
+                selected_playlist_index: None,
+                edit_playlist_name_info: None,
+                confirm_delete_playlist_modal_is_open: false,
+            },
             toasts: Toasts::default(),
 
             library,

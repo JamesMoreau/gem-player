@@ -19,7 +19,7 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, PlaylistsUIState,
     },
     print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -76,9 +76,7 @@ impl eframe::App for player::GemPlayer {
                         View::Playlists => render_playlists_ui(
                             ui,
                             &mut self.playlists,
-                            &mut self.selected_playlist_index,
-                            &mut self.edit_playlist_name_info,
-                            &mut self.confirm_delete_playlist_modal_is_open,
+                            &mut self.playlists_ui_state
                         ),
                         View::Settings => render_settings_ui(ui, self),
                     });
@@ -644,11 +642,9 @@ pub fn render_queue_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 pub fn render_playlists_ui(
     ui: &mut Ui,
     playlists: &mut Vec<Playlist>,
-    maybe_selected_playlist_index: &mut Option<usize>,
-    maybe_edit_playlist_name_info: &mut Option<(Uuid, String)>,
-    confirm_delete_playlist_modal_is_open: &mut bool,
+    playlist_ui_state: &mut PlaylistsUIState,
 ) {
-    if *confirm_delete_playlist_modal_is_open {
+    if playlist_ui_state.confirm_delete_playlist_modal_is_open {
         let mut cancel_clicked = false;
         let mut confirm_clicked = false;
 
@@ -679,14 +675,14 @@ pub fn render_playlists_ui(
         });
 
         if confirm_clicked {
-            if let Some(index) = maybe_selected_playlist_index {
-                print_info(format!("Confirmed deletion of playlist: {}", playlists[*index].name));
-                playlists.remove(*index);
-                *maybe_selected_playlist_index = None;
+            if let Some(index) = playlist_ui_state.selected_playlist_index {
+                print_info(format!("Confirmed deletion of playlist: {}", playlists[index].name));
+                playlists.remove(index);
+                playlist_ui_state.selected_playlist_index = None;
             }
-            *confirm_delete_playlist_modal_is_open = false;
+            playlist_ui_state.confirm_delete_playlist_modal_is_open = false;
         } else if cancel_clicked || modal.should_close() {
-            *confirm_delete_playlist_modal_is_open = false;
+            playlist_ui_state.confirm_delete_playlist_modal_is_open = false;
         }
     }
 
@@ -745,19 +741,19 @@ pub fn render_playlists_ui(
                             let response = row.response();
                             if response.clicked() {
                                 print_info(format!("Selected playlist: {}", playlist.name));
-                                *maybe_selected_playlist_index = Some(row.index());
+                                playlist_ui_state.selected_playlist_index = Some(row.index());
                             }
                         });
                     });
             });
 
             strip.cell(|ui| {
-                let maybe_selected_playlist = maybe_selected_playlist_index.and_then(|index| playlists.get_mut(index));
+                let maybe_selected_playlist = playlist_ui_state.selected_playlist_index.and_then(|index| playlists.get_mut(index));
                 render_playlist_content(
                     ui,
                     maybe_selected_playlist,
-                    maybe_edit_playlist_name_info,
-                    confirm_delete_playlist_modal_is_open,
+                    &mut playlist_ui_state.edit_playlist_name_info,
+                    &mut playlist_ui_state.confirm_delete_playlist_modal_is_open,
                 );
             });
         });
