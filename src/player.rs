@@ -17,20 +17,13 @@ use uuid::Uuid;
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
 pub struct GemPlayer {
-    pub current_view: ui::View,
-    pub theme: Theme,
-    pub search_text: String,
-    pub sort_by: SortBy,
-    pub sort_order: SortOrder,
-    pub playlists_ui_state: PlaylistsUIState,
-    pub toasts: Toasts,
+    pub ui_state: UIState,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
     pub queue: Vec<Song>,
     pub history: Vec<Song>,
     pub current_song: Option<Song>,
 
-    pub selected_song: Option<Song>, // Currently selected song in the library.
     pub repeat: bool,
     pub muted: bool,
     pub volume_before_mute: Option<f32>,
@@ -40,6 +33,17 @@ pub struct GemPlayer {
 
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
+}
+
+pub struct UIState {
+    pub current_view: ui::View,
+    pub theme: Theme,
+    pub selected_library_song: Option<Song>, // Currently selected song in the library.
+    pub search_text: String,
+    pub sort_by: SortBy,
+    pub sort_order: SortOrder,
+    pub playlists_ui_state: PlaylistsUIState,
+    pub toasts: Toasts,
 }
 
 pub struct PlaylistsUIState {
@@ -77,24 +81,26 @@ impl GemPlayer {
         print_info(format!("Found {} songs", library.len()));
 
         Self {
-            current_view: ui::View::Library,
-            theme: Theme::System,
-            search_text: String::new(),
-            sort_by: SortBy::Title,
-            sort_order: SortOrder::Ascending,
-            playlists_ui_state: PlaylistsUIState {
-                selected_playlist_index: None,
-                edit_playlist_name_info: None,
-                confirm_delete_playlist_modal_is_open: false,
+            ui_state: UIState {
+                current_view: ui::View::Library,
+                theme: Theme::System,
+                search_text: String::new(),
+                selected_library_song: None,
+                sort_by: SortBy::Title,
+                sort_order: SortOrder::Ascending,
+                playlists_ui_state: PlaylistsUIState {
+                    selected_playlist_index: None,
+                    edit_playlist_name_info: None,
+                    confirm_delete_playlist_modal_is_open: false,
+                },
+                toasts: Toasts::default(),
             },
-            toasts: Toasts::default(),
 
             library,
             queue: Vec::new(),
             history: Vec::new(),
             current_song: None,
 
-            selected_song: None,
             repeat: false,
             muted: false,
             volume_before_mute: None,
@@ -129,6 +135,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
             if let Err(e) = result {
                 print_error(e.to_string());
                 gem_player
+                    .ui_state
                     .toasts
                     .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
             }
@@ -153,6 +160,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     if let Err(e) = result {
         print_error(e.to_string());
         gem_player
+            .ui_state
             .toasts
             .error(format!("Error playing {}", next_song.title.as_deref().unwrap_or("Unknown")));
     }
@@ -175,6 +183,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
     if let Err(e) = result {
         print_error(e.to_string());
         gem_player
+            .ui_state
             .toasts
             .error(format!("Error playing {}", previous_song.title.as_deref().unwrap_or("Unknown")));
     }
@@ -361,6 +370,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             if let Err(e) = result {
                 print_error(e.to_string());
                 gem_player
+                    .ui_state
                     .toasts
                     .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
             }

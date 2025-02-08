@@ -10,6 +10,8 @@ mod ui;
 
 /*
 TODO:
+* space between playback bar and song info.
+* highlight selecteed playlist in playlist browser.
 * add substructs to gemPlayer and refactor procdure parameters to use them.
 * add an id to song struct.
 * scrollbar in playlist browser is getting in the way!

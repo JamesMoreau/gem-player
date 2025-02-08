@@ -44,7 +44,7 @@ impl eframe::App for player::GemPlayer {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
 
-        match self.theme {
+        match self.ui_state.theme {
             Theme::System => {} // We don't need to do anything here since egui will automatically switch when the system theme changes.
             Theme::Dark => ctx.set_visuals(Visuals::dark()),
             Theme::Light => ctx.set_visuals(Visuals::light()),
@@ -70,10 +70,10 @@ impl eframe::App for player::GemPlayer {
                         render_control_ui(ui, self);
                         ui.add(Separator::default().spacing(0.0).shrink(1.0));
                     });
-                    strip.cell(|ui| match self.current_view {
+                    strip.cell(|ui| match self.ui_state.current_view {
                         View::Library => render_library_ui(ui, self),
                         View::Queue => render_queue_ui(ui, &mut self.queue),
-                        View::Playlists => render_playlists_ui(ui, &mut self.playlists, &mut self.playlists_ui_state),
+                        View::Playlists => render_playlists_ui(ui, &mut self.playlists, &mut self.ui_state.playlists_ui_state),
                         View::Settings => render_settings_ui(ui, self),
                     });
                     strip.cell(|ui| {
@@ -202,7 +202,7 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 
 pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
     print_info(format!("Switching to view: {:?}", view));
-    gem_player.current_view = view;
+    gem_player.ui_state.current_view = view;
 }
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
@@ -411,7 +411,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .library
         .iter()
         .filter(|song| {
-            let search_lower = gem_player.search_text.to_lowercase();
+            let search_lower = gem_player.ui_state.search_text.to_lowercase();
             let search_fields = [&song.title, &song.artist, &song.album];
 
             search_fields
@@ -421,7 +421,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    sort_songs(&mut library_copy, gem_player.sort_by, gem_player.sort_order);
+    sort_songs(&mut library_copy, gem_player.ui_state.sort_by, gem_player.ui_state.sort_order);
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
@@ -459,7 +459,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(26.0, library_copy.len(), |mut row| {
                 let song = &library_copy[row.index()];
 
-                let row_is_selected = gem_player.selected_song.as_ref() == Some(song);
+                let row_is_selected = gem_player.ui_state.selected_library_song.as_ref() == Some(song);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -482,7 +482,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = row.response();
                 if response.clicked() {
-                    gem_player.selected_song = Some(song.clone());
+                    gem_player.ui_state.selected_library_song = Some(song.clone());
                 }
 
                 if response.double_clicked() {
@@ -966,7 +966,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ComboBox::from_label("Select Theme")
-                    .selected_text(format!("{:?}", gem_player.theme))
+                    .selected_text(format!("{:?}", gem_player.ui_state.theme))
                     .show_ui(ui, |ui| {
                         let theme_name = |theme: Theme| match theme {
                             Theme::System => "System",
@@ -975,7 +975,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         };
 
                         for theme in Theme::iter() {
-                            ui.selectable_value(&mut gem_player.theme, theme, theme_name(theme));
+                            ui.selectable_value(&mut gem_player.ui_state.theme, theme, theme_name(theme));
                         }
                     });
 
@@ -1009,7 +1009,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 for view in View::iter() {
                     let icon = get_icon_and_tooltip(&view);
                     let response = ui
-                        .selectable_label(gem_player.current_view == view, format!("  {icon}  "))
+                        .selectable_label(gem_player.ui_state.current_view == view, format!("  {icon}  "))
                         .on_hover_text(format!("{:?}", view));
                     if response.clicked() {
                         switch_view(gem_player, view);
@@ -1019,7 +1019,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            flex.add_ui(item(), |ui| match gem_player.current_view {
+            flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
                     let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.library);
                     ui.add(unselectable_label(songs_count_and_duration));
@@ -1034,7 +1034,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Settings => {}
             });
 
-            flex.add_ui(item(), |ui| match gem_player.current_view {
+            flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
                     let refresh_button = Button::new(icons::ICON_REFRESH);
                     let response = ui.add(refresh_button).on_hover_text("Refresh library");
@@ -1046,7 +1046,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     Ok(songs) => songs,
                                     Err(e) => {
                                         print_error(e.to_string());
-                                        gem_player.toasts.error(format!("Error refreshing library: {}", e));
+                                        gem_player.ui_state.toasts.error(format!("Error refreshing library: {}", e));
                                         Vec::new()
                                     }
                                 }
@@ -1111,29 +1111,29 @@ fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let filter_icon = icons::ICON_FILTER_LIST;
     ui.menu_button(filter_icon, |ui| {
         for sort_by in SortBy::iter() {
-            ui.radio_value(&mut gem_player.sort_by, sort_by, format!("{:?}", sort_by));
+            ui.radio_value(&mut gem_player.ui_state.sort_by, sort_by, format!("{:?}", sort_by));
         }
 
         ui.separator();
 
         for sort_order in SortOrder::iter() {
-            ui.radio_value(&mut gem_player.sort_order, sort_order, format!("{:?}", sort_order));
+            ui.radio_value(&mut gem_player.ui_state.sort_order, sort_order, format!("{:?}", sort_order));
         }
     })
     .response
     .on_hover_text("Sort by and order");
 
-    let search_bar = TextEdit::singleline(&mut gem_player.search_text)
+    let search_bar = TextEdit::singleline(&mut gem_player.ui_state.search_text)
         .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
         .desired_width(140.0);
     ui.add(search_bar).on_hover_text("Search");
 
-    let clear_button_is_visible = !gem_player.search_text.is_empty();
+    let clear_button_is_visible = !gem_player.ui_state.search_text.is_empty();
     let response = ui
         .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
         .on_hover_text("Clear search");
     if response.clicked() {
-        gem_player.search_text.clear();
+        gem_player.ui_state.search_text.clear();
     }
 }
 
