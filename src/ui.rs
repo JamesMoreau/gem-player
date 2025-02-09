@@ -41,13 +41,13 @@ pub struct UIState {
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
     pub playlists_ui_state: PlaylistsUIState,
-    pub edit_song_metadata_ui_state: EditSongMetadaUIState,
+    pub _edit_song_metadata_ui_state: EditSongMetadaUIState,
     pub toasts: Toasts,
 }
 
 pub struct EditSongMetadaUIState {
-    pub buffer_song: Option<Song>,
-    pub edit_song_metadata_modal_is_open: bool,
+    pub _buffer_song: Option<Song>,
+    pub _edit_song_metadata_modal_is_open: bool,
 }
 
 pub struct PlaylistsUIState {

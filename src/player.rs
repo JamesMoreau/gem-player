@@ -86,9 +86,9 @@ impl GemPlayer {
                     edit_playlist_name_info: None,
                     confirm_delete_playlist_modal_is_open: false,
                 },
-                edit_song_metadata_ui_state: EditSongMetadaUIState {
-                    buffer_song: None,
-                    edit_song_metadata_modal_is_open: false,
+                _edit_song_metadata_ui_state: EditSongMetadaUIState {
+                    _buffer_song: None,
+                    _edit_song_metadata_modal_is_open: false,
                 },
                 toasts: Toasts::default(),
             },
@@ -393,7 +393,7 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn add_songs_to_playlist(playlist: &mut Playlist, songs: Vec<Song>) {
+pub fn _add_songs_to_playlist(playlist: &mut Playlist, songs: Vec<Song>) {
     playlist.songs.extend(songs);
 }
 
