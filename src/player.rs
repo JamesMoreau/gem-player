@@ -169,7 +169,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String>{
     }
 
     gem_player.player.current_song = Some(previous_song.clone());
-    
+
     load_and_play_song(&mut gem_player.player, &previous_song)
 }
 
@@ -382,7 +382,13 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
                             gem_player.ui_state.toasts.error("Error playing the next song");
                         }
                     }
-                    Key::ArrowLeft => play_previous(gem_player),
+                    Key::ArrowLeft => {
+                        let result = play_previous(gem_player);
+                        if let Err(e) = result {
+                            print_error(e);
+                            gem_player.ui_state.toasts.error("Error playing the previous song");
+                        }
+                    },
                     Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
                     Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
                     Key::M => mute_or_unmute(&mut gem_player.player),
