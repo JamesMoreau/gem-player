@@ -11,6 +11,7 @@ use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
+use fully_pub::fully_pub;
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -33,27 +34,30 @@ pub enum View {
     Settings,
 }
 
+#[fully_pub]
 pub struct UIState {
-    pub current_view: View,
-    pub theme: Theme,
-    pub selected_library_song: Option<Song>, // Currently selected song in the library.
-    pub search_text: String,
-    pub sort_by: SortBy,
-    pub sort_order: SortOrder,
-    pub playlists_ui_state: PlaylistsUIState,
-    pub _edit_song_metadata_ui_state: EditSongMetadaUIState,
-    pub toasts: Toasts,
+    current_view: View,
+    theme: Theme,
+    selected_library_song: Option<Song>, // Currently selected song in the library.
+    search_text: String,
+    sort_by: SortBy,
+    sort_order: SortOrder,
+    playlists_ui_state: PlaylistsUIState,
+    _edit_song_metadata_ui_state: EditSongMetadaUIState,
+    toasts: Toasts,
 }
 
+#[fully_pub]
 pub struct EditSongMetadaUIState {
-    pub _buffer_song: Option<Song>,
-    pub _edit_song_metadata_modal_is_open: bool,
+    _buffer_song: Option<Song>,
+    _edit_song_metadata_modal_is_open: bool,
 }
 
+#[fully_pub]
 pub struct PlaylistsUIState {
-    pub selected_playlist_index: Option<usize>,
-    pub edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
-    pub confirm_delete_playlist_modal_is_open: bool,
+    selected_playlist_index: Option<usize>,
+    edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
+    confirm_delete_playlist_modal_is_open: bool,
 }
 
 impl eframe::App for player::GemPlayer {

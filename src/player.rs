@@ -5,6 +5,7 @@ use crate::{
 };
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
+use fully_pub::fully_pub;
 use glob::glob;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
@@ -22,29 +23,31 @@ use uuid::Uuid;
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
+#[fully_pub]
 pub struct GemPlayer {
-    pub ui_state: UIState,
+    ui_state: UIState,
 
-    pub library: Vec<Song>,                 // All the songs stored in the user's music directory.
-    pub library_directory: Option<PathBuf>, // The directory where music is stored.
-    pub playlists: Vec<Playlist>,
+    library: Vec<Song>,                 // All the songs stored in the user's music directory.
+    library_directory: Option<PathBuf>, // The directory where music is stored.
+    playlists: Vec<Playlist>,
 
-    pub player: Player,
+    player: Player,
 }
 
+#[fully_pub]
 pub struct Player {
-    pub current_song: Option<Song>,
+    current_song: Option<Song>,
 
-    pub queue: Vec<Song>,
-    pub history: Vec<Song>,
+    queue: Vec<Song>,
+    history: Vec<Song>,
 
-    pub repeat: bool,
-    pub muted: bool,
-    pub volume_before_mute: Option<f32>,
-    pub paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
+    repeat: bool,
+    muted: bool,
+    volume_before_mute: Option<f32>,
+    paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
-    pub _stream: OutputStream, // Holds the OutputStream to keep it alive
-    pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
+    _stream: OutputStream, // Holds the OutputStream to keep it alive
+    sink: Sink,            // Controls playback (play, pause, stop, etc.)
 }
 
 impl GemPlayer {

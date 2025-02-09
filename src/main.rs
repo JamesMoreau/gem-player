@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use eframe::egui::{Vec2, ViewportBuilder};
+use fully_pub::fully_pub;
 use uuid::Uuid;
 use std::{path::PathBuf, time::Duration};
 use strum_macros::EnumIter;
@@ -10,7 +11,6 @@ mod ui;
 
 /*
 TODO:
-* full_pub
 * ... button on songs in library to open context menu.
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out why selecting a playlist causes teh ui to shift down.
@@ -58,15 +58,16 @@ pub enum SortOrder {
     Descending,
 }
 
+#[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Song {
-    pub id: Uuid,
-    pub title: Option<String>,
-    pub artist: Option<String>,
-    pub album: Option<String>,
-    pub duration: Duration,
-    pub artwork: Option<Vec<u8>>,
-    pub file_path: PathBuf,
+    id: Uuid,
+    title: Option<String>,
+    artist: Option<String>,
+    album: Option<String>,
+    duration: Duration,
+    artwork: Option<Vec<u8>>,
+    file_path: PathBuf,
 }
 
 pub fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
@@ -105,13 +106,14 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
     format!("{}:{:02}:{:02}", hours, minutes, seconds)
 }
 
+#[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Playlist {
-    pub id: Uuid,
-    pub name: String,
-    pub creation_date_time: DateTime<Utc>,
-    pub songs: Vec<Song>,
-    pub path: Option<PathBuf>,
+    id: Uuid,
+    name: String,
+    creation_date_time: DateTime<Utc>,
+    songs: Vec<Song>,
+    path: Option<PathBuf>,
 }
 
 pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
