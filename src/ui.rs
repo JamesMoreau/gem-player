@@ -492,7 +492,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(26.0, library_copy.len(), |mut row| {
                 let song = &library_copy[row.index()];
 
-                let row_is_selected = gem_player.ui_state.selected_library_song.as_ref() == Some(song);
+                let row_is_selected = gem_player
+                    .ui_state
+                    .selected_library_song
+                    .as_ref()
+                    .map_or(false, |selected_song| selected_song.id == song.id);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -779,20 +783,12 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
                 let maybe_playlist = playlists_ui_state
                     .selected_playlist_index
                     .and_then(|index| playlists.get_mut(index));
-                render_playlist_content(
-                    ui,
-                    playlists_ui_state,
-                    maybe_playlist,
-                );
+                render_playlist_content(ui, playlists_ui_state, maybe_playlist);
             });
         });
 }
 
-pub fn render_playlist_content(
-    ui: &mut Ui,
-    playlist_ui_state: &mut PlaylistsUIState,
-    maybe_playlist: Option<&mut Playlist>,
-) {
+pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIState, maybe_playlist: Option<&mut Playlist>) {
     let Some(playlist) = maybe_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
 

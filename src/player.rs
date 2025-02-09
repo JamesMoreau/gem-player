@@ -8,6 +8,7 @@ use lofty::{
 };
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
+use uuid::Uuid;
 use std::{
     io::BufReader,
     path::{Path, PathBuf},
@@ -204,6 +205,8 @@ pub fn get_song_from_file(path: &Path) -> Result<Song, String> {
         },
     };
 
+    let id = Uuid::new_v4();
+
     let title = tag
         .get_string(&ItemKey::TrackTitle)
         .map(|t| t.to_owned())
@@ -222,6 +225,7 @@ pub fn get_song_from_file(path: &Path) -> Result<Song, String> {
     let file_path = path.to_path_buf();
 
     Ok(Song {
+        id,
         title,
         artist,
         album,
@@ -270,7 +274,7 @@ pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
 }
 
 pub fn _get_song_position_in_queue(queue: Vec<Song>, song: &Song) -> Option<usize> {
-    queue.iter().position(|s| *s == *song)
+    queue.iter().position(|s| s.id == song.id)
 }
 
 pub fn add_to_queue(queue: &mut Vec<Song>, song: Song) {
@@ -323,7 +327,7 @@ pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     gem_player.player.queue.clear();
 
-    let maybe_song_index = gem_player.library.iter().position(|s| s == song);
+    let maybe_song_index = gem_player.library.iter().position(|s| s.id == song.id);
     match maybe_song_index {
         None => {
             print_error("Song not found in the library.");

@@ -10,7 +10,6 @@ mod ui;
 
 /*
 TODO:
-* add an id to song struct.
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out how to make large icon buttons!
 * keyboard shortcuts ui (in settings).
@@ -57,8 +56,9 @@ pub enum SortOrder {
     Descending,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Song {
+    pub id: Uuid,
     pub title: Option<String>,
     pub artist: Option<String>,
     pub album: Option<String>,
