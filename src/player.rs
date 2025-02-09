@@ -136,43 +136,27 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
-pub fn play_next(gem_player: &mut GemPlayer) {
+pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
     if gem_player.player.repeat {
         if let Some(current_song) = &gem_player.player.current_song {
             let song = current_song.clone();
             let result = load_and_play_song(&mut gem_player.player, &song);
-            if let Err(e) = result {
-                print_error(e.to_string());
-                gem_player
-                    .ui_state
-                    .toasts
-                    .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
-            }
+            return result;
         }
-
-        return;
+        return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
     }
 
-    let next_song = if gem_player.player.queue.is_empty() {
-        return;
-    } else {
-        gem_player.player.queue.remove(0)
-    };
+    if gem_player.player.queue.is_empty() {
+        return Ok(());
+    }
+    let next_song = gem_player.player.queue.remove(0);
 
-    let maybe_current_song = gem_player.player.current_song.take();
-    if let Some(current_song) = maybe_current_song {
+    if let Some(current_song) = gem_player.player.current_song.take() {
         gem_player.player.history.push(current_song);
     }
 
     gem_player.player.current_song = Some(next_song.clone());
-    let result = load_and_play_song(&mut gem_player.player, &next_song);
-    if let Err(e) = result {
-        print_error(e.to_string());
-        gem_player
-            .ui_state
-            .toasts
-            .error(format!("Error playing {}", next_song.title.as_deref().unwrap_or("Unknown")));
-    }
+    load_and_play_song(&mut gem_player.player, &next_song)
 }
 
 pub fn play_previous(gem_player: &mut GemPlayer) {
@@ -400,7 +384,13 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
             {
                 match key {
                     Key::Space => play_or_pause(&mut gem_player.player),
-                    Key::ArrowRight => play_next(gem_player),
+                    Key::ArrowRight => {
+                        let result = play_next(gem_player);
+                        if let Err(e) = result {
+                            print_error(e);
+                            gem_player.ui_state.toasts.error("Error playing the next song");
+                        }
+                    }
                     Key::ArrowLeft => play_previous(gem_player),
                     Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
                     Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
