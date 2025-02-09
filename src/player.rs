@@ -20,11 +20,10 @@ pub struct GemPlayer {
     pub ui_state: UIState,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
+    pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
     
     pub player: Player,
-    
-    pub library_directory: Option<PathBuf>, // The directory where music is stored.
 }
 
 pub struct Player {
@@ -108,6 +107,7 @@ impl GemPlayer {
             },
 
             library,
+            library_directory,
             playlists: Vec::new(),
 
             player: Player {
@@ -123,8 +123,6 @@ impl GemPlayer {
 
                 playback_engine: PlaybackEngine { _stream, sink },
             },
-
-            library_directory,
         }
     }
 }
