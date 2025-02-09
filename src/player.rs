@@ -19,10 +19,10 @@ pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", 
 pub struct GemPlayer {
     pub ui_state: UIState,
 
-    pub library: Vec<Song>, // All the songs stored in the user's music directory.
+    pub library: Vec<Song>,                 // All the songs stored in the user's music directory.
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
-    
+
     pub player: Player,
 }
 
@@ -37,7 +37,8 @@ pub struct Player {
     pub volume_before_mute: Option<f32>,
     pub paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
-    pub playback_engine: PlaybackEngine,
+    pub _stream: OutputStream, // Holds the OutputStream to keep it alive
+    pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
 }
 
 pub struct UIState {
@@ -55,11 +56,6 @@ pub struct PlaylistsUIState {
     pub selected_playlist_index: Option<usize>,
     pub edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
     pub confirm_delete_playlist_modal_is_open: bool,
-}
-
-pub struct PlaybackEngine {
-    pub _stream: OutputStream, // Holds the OutputStream to keep it alive
-    pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
 }
 
 impl GemPlayer {
@@ -112,7 +108,7 @@ impl GemPlayer {
 
             player: Player {
                 current_song: None,
-                
+
                 queue: Vec::new(),
                 history: Vec::new(),
 
@@ -121,21 +117,22 @@ impl GemPlayer {
                 volume_before_mute: None,
                 paused_before_scrubbing: None,
 
-                playback_engine: PlaybackEngine { _stream, sink },
+                _stream,
+                sink,
             },
         }
     }
 }
 
-pub fn is_playing(playback_engine: &mut PlaybackEngine) -> bool {
-    !playback_engine.sink.is_paused()
+pub fn is_playing(player: &mut Player) -> bool {
+    !player.sink.is_paused()
 }
 
-pub fn play_or_pause(playback_engine: &mut PlaybackEngine) {
-    if playback_engine.sink.is_paused() {
-        playback_engine.sink.play()
+pub fn play_or_pause(player: &mut Player) {
+    if player.sink.is_paused() {
+        player.sink.play()
     } else {
-        playback_engine.sink.pause()
+        player.sink.pause()
     }
 }
 
@@ -203,7 +200,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(), String> {
-    gem_player.player.playback_engine.sink.stop(); // Stop the current song if any.
+    gem_player.player.sink.stop(); // Stop the current song if any.
     gem_player.player.current_song = None;
 
     let file_result = std::fs::File::open(&song.file_path);
@@ -223,8 +220,8 @@ pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(),
     };
 
     gem_player.player.current_song = Some(song.clone());
-    gem_player.player.playback_engine.sink.append(source);
-    gem_player.player.playback_engine.sink.play();
+    gem_player.player.sink.append(source);
+    gem_player.player.sink.play();
 
     Ok(())
 }
@@ -346,7 +343,7 @@ pub fn move_song_to_front(queue: &mut Vec<Song>, index: usize) {
 }
 
 pub fn mute_or_unmute(gem_player: &mut GemPlayer) {
-    let mut volume = gem_player.player.playback_engine.sink.volume();
+    let mut volume = gem_player.player.sink.volume();
 
     gem_player.player.muted = !gem_player.player.muted;
 
@@ -357,13 +354,13 @@ pub fn mute_or_unmute(gem_player: &mut GemPlayer) {
         volume = v;
     }
 
-    gem_player.player.playback_engine.sink.set_volume(volume);
+    gem_player.player.sink.set_volume(volume);
 }
 
 pub fn adjust_volume_by_percentage(gem_player: &mut GemPlayer, percentage: f32) {
-    let current_volume = gem_player.player.playback_engine.sink.volume();
+    let current_volume = gem_player.player.sink.volume();
     let new_volume = (current_volume + percentage).clamp(0.0, 1.0);
-    gem_player.player.playback_engine.sink.set_volume(new_volume);
+    gem_player.player.sink.set_volume(new_volume);
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
@@ -402,7 +399,7 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
             } = event
             {
                 match key {
-                    Key::Space => play_or_pause(&mut gem_player.player.playback_engine),
+                    Key::Space => play_or_pause(&mut gem_player.player),
                     Key::ArrowRight => play_next(gem_player),
                     Key::ArrowLeft => play_previous(gem_player),
                     Key::ArrowUp => adjust_volume_by_percentage(gem_player, 0.1),
