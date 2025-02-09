@@ -1,4 +1,4 @@
-use crate::{print_error, print_info, ui, Playlist, Song, SortBy, SortOrder, Theme};
+use crate::{print_error, print_info, ui::{self, PlaylistsUIState, UIState}, Playlist, Song, SortBy, SortOrder, Theme};
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use glob::glob;
@@ -12,7 +12,6 @@ use std::{
     io::BufReader,
     path::{Path, PathBuf},
 };
-use uuid::Uuid;
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -39,23 +38,6 @@ pub struct Player {
 
     pub _stream: OutputStream, // Holds the OutputStream to keep it alive
     pub sink: Sink,            // Controls playback (play, pause, stop, etc.)
-}
-
-pub struct UIState {
-    pub current_view: ui::View,
-    pub theme: Theme,
-    pub selected_library_song: Option<Song>, // Currently selected song in the library.
-    pub search_text: String,
-    pub sort_by: SortBy,
-    pub sort_order: SortOrder,
-    pub playlists_ui_state: PlaylistsUIState,
-    pub toasts: Toasts,
-}
-
-pub struct PlaylistsUIState {
-    pub selected_playlist_index: Option<usize>,
-    pub edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
-    pub confirm_delete_playlist_modal_is_open: bool,
 }
 
 impl GemPlayer {

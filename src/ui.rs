@@ -10,15 +10,17 @@ use eframe::egui::{
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
 use egui_material_icons::icons;
+use egui_notify::Toasts;
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use uuid::Uuid;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, PlaylistsUIState, UIState,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer,
     },
     print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -29,6 +31,23 @@ pub enum View {
     Queue,
     Playlists,
     Settings,
+}
+
+pub struct UIState {
+    pub current_view: View,
+    pub theme: Theme,
+    pub selected_library_song: Option<Song>, // Currently selected song in the library.
+    pub search_text: String,
+    pub sort_by: SortBy,
+    pub sort_order: SortOrder,
+    pub playlists_ui_state: PlaylistsUIState,
+    pub toasts: Toasts,
+}
+
+pub struct PlaylistsUIState {
+    pub selected_playlist_index: Option<usize>,
+    pub edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
+    pub confirm_delete_playlist_modal_is_open: bool,
 }
 
 impl eframe::App for player::GemPlayer {
