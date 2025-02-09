@@ -51,7 +51,7 @@ impl eframe::App for player::GemPlayer {
         }
 
         // Check if the current song has ended and play the next song in the queue.
-        if self.playback_engine.sink.empty() {
+        if self.player.playback_engine.sink.empty() {
             play_next(self);
         }
 
@@ -72,7 +72,7 @@ impl eframe::App for player::GemPlayer {
                     });
                     strip.cell(|ui| match self.ui_state.current_view {
                         View::Library => render_library_ui(ui, self),
-                        View::Queue => render_queue_ui(ui, &mut self.playback_state.queue),
+                        View::Queue => render_queue_ui(ui, &mut self.player.queue),
                         View::Playlists => render_playlists_ui(ui, &mut self.playlists, &mut self.ui_state.playlists_ui_state),
                         View::Settings => render_settings_ui(ui, self),
                     });
@@ -212,7 +212,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         Flex::horizontal().w_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
             flex.add_ui(item(), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                let is_previous_enabled = gem_player.playback_state.current_song.is_some() || !gem_player.playback_state.history.is_empty();
+                let is_previous_enabled = gem_player.player.current_song.is_some() || !gem_player.player.history.is_empty();
 
                 let response = ui
                     .add_enabled(is_previous_enabled, previous_button)
@@ -221,37 +221,37 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.clicked() {
                     // If we are near the beginning of the song, we go to the previously played song.
                     // Otherwise, we seek to the beginning.
-                    let playback_position = gem_player.playback_engine.sink.get_pos().as_secs_f32();
+                    let playback_position = gem_player.player.playback_engine.sink.get_pos().as_secs_f32();
                     let rewind_threshold = 5.0; // If playback is within first 5 seconds, go to previous song.
 
-                    if playback_position < rewind_threshold && !gem_player.playback_state.history.is_empty() {
+                    if playback_position < rewind_threshold && !gem_player.player.history.is_empty() {
                         play_previous(gem_player);
                     } else {
-                        let result = gem_player.playback_engine.sink.try_seek(Duration::ZERO);
+                        let result = gem_player.player.playback_engine.sink.try_seek(Duration::ZERO);
                         if let Err(e) = result {
                             print_error(format!("Error rewinding song: {:?}", e));
                         }
                     }
                 }
 
-                let play_pause_icon = if is_playing(gem_player) {
+                let play_pause_icon = if is_playing(&mut gem_player.player.playback_engine) {
                     icons::ICON_PAUSE
                 } else {
                     icons::ICON_PLAY_ARROW
                 };
-                let tooltip = if is_playing(gem_player) { "Pause" } else { "Play" };
+                let tooltip = if is_playing(&mut gem_player.player.playback_engine) { "Pause" } else { "Play" };
                 let play_pause_button = Button::new(RichText::new(play_pause_icon));
-                let song_is_playing = gem_player.playback_state.current_song.is_some();
+                let song_is_playing = gem_player.player.current_song.is_some();
                 let response = ui
                     .add_enabled(song_is_playing, play_pause_button)
                     .on_hover_text(tooltip)
                     .on_disabled_hover_text("No current song");
                 if response.clicked() {
-                    play_or_pause(gem_player);
+                    play_or_pause(&mut gem_player.player.playback_engine);
                 }
 
                 let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
-                let next_song_exists = !gem_player.playback_state.queue.is_empty();
+                let next_song_exists = !gem_player.player.queue.is_empty();
                 let response = ui
                     .add_enabled(next_song_exists, next_button)
                     .on_hover_text("Next")
@@ -269,7 +269,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .fit_to_exact_size(artwork_size);
 
                 let artwork = gem_player
-                    .playback_state
+                    .player
                     .current_song
                     .as_ref()
                     .and_then(|song| {
@@ -293,11 +293,11 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let mut position_as_secs = 0.0;
                         let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
-                        if let Some(song) = &gem_player.playback_state.current_song {
+                        if let Some(song) = &gem_player.player.current_song {
                             title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             album = song.album.clone().unwrap_or("Unknown Album".to_string());
-                            position_as_secs = gem_player.playback_engine.sink.get_pos().as_secs_f32();
+                            position_as_secs = gem_player.player.playback_engine.sink.get_pos().as_secs_f32();
                             song_duration_as_secs = song.duration.as_secs_f32();
                         }
 
@@ -306,27 +306,27 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             .trailing_fill(true)
                             .show_value(false)
                             .step_by(1.0); // Step by 1 second.
-                        let song_is_playing = gem_player.playback_state.current_song.is_some();
+                        let song_is_playing = gem_player.player.current_song.is_some();
                         let response = ui.add_enabled(song_is_playing, playback_progress_slider);
 
-                        if response.dragged() && gem_player.playback_state.paused_before_scrubbing.is_none() {
-                            gem_player.playback_state.paused_before_scrubbing = Some(gem_player.playback_engine.sink.is_paused());
-                            gem_player.playback_engine.sink.pause(); // Pause playback during scrubbing
+                        if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
+                            gem_player.player.paused_before_scrubbing = Some(gem_player.player.playback_engine.sink.is_paused());
+                            gem_player.player.playback_engine.sink.pause(); // Pause playback during scrubbing
                         }
 
                         if response.drag_stopped() {
                             let new_position = Duration::from_secs_f32(position_as_secs);
                             print_info(format!("Seeking to {} of {}", format_duration_to_mmss(new_position), title));
-                            if let Err(e) = gem_player.playback_engine.sink.try_seek(new_position) {
+                            if let Err(e) = gem_player.player.playback_engine.sink.try_seek(new_position) {
                                 print_error(format!("Error seeking to new position: {:?}", e));
                             }
 
                             // Resume playback if the player was not paused before scrubbing
-                            if gem_player.playback_state.paused_before_scrubbing == Some(false) {
-                                gem_player.playback_engine.sink.play();
+                            if gem_player.player.paused_before_scrubbing == Some(false) {
+                                gem_player.player.playback_engine.sink.play();
                             }
 
-                            gem_player.playback_state.paused_before_scrubbing = None;
+                            gem_player.player.paused_before_scrubbing = None;
                         }
 
                         Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
@@ -361,21 +361,21 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             flex.add_ui(item(), |ui| {
-                let mut volume = gem_player.playback_engine.sink.volume();
+                let mut volume = gem_player.player.playback_engine.sink.volume();
 
                 let volume_icon = match volume {
                     v if v == 0.0 => icons::ICON_VOLUME_OFF,
                     v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
                     _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
                 };
-                let tooltip = if gem_player.playback_state.muted { "Unmute" } else { "Mute" };
+                let tooltip = if gem_player.player.muted { "Unmute" } else { "Mute" };
                 let response = ui.button(volume_icon).on_hover_text(tooltip);
                 if response.clicked() {
-                    gem_player.playback_state.muted = !gem_player.playback_state.muted;
-                    if gem_player.playback_state.muted {
-                        gem_player.playback_state.volume_before_mute = Some(volume);
+                    gem_player.player.muted = !gem_player.player.muted;
+                    if gem_player.player.muted {
+                        gem_player.player.volume_before_mute = Some(volume);
                         volume = 0.0;
-                    } else if let Some(v) = gem_player.playback_state.volume_before_mute {
+                    } else if let Some(v) = gem_player.player.volume_before_mute {
                         volume = v;
                     }
                 }
@@ -383,11 +383,11 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
                 let changed = ui.add(volume_slider).changed();
                 if changed {
-                    gem_player.playback_state.muted = false;
-                    gem_player.playback_state.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                    gem_player.player.muted = false;
+                    gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
                 }
 
-                gem_player.playback_engine.sink.set_volume(volume);
+                gem_player.player.playback_engine.sink.set_volume(volume);
             });
         });
     });
@@ -492,12 +492,12 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 response.context_menu(|ui| {
                     if ui.button("Play Next").clicked() {
-                        add_next_to_queue(&mut gem_player.playback_state.queue, song.clone());
+                        add_next_to_queue(&mut gem_player.player.queue, song.clone());
                         ui.close_menu();
                     }
 
                     if ui.button("Add to queue").clicked() {
-                        add_to_queue(&mut gem_player.playback_state.queue, song.clone());
+                        add_to_queue(&mut gem_player.player.queue, song.clone());
                         ui.close_menu();
                     }
 
@@ -1028,7 +1028,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     ui.add(unselectable_label(songs_count_and_duration));
                 }
                 View::Queue => {
-                    let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.playback_state.queue);
+                    let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.player.queue);
                     ui.add(unselectable_label(songs_count_and_duration));
 
                     ui.add_space(8.0);
@@ -1065,17 +1065,17 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     search_and_filter_ui(ui, gem_player)
                 }
                 View::Queue => {
-                    let queue_is_not_empty = !gem_player.playback_state.queue.is_empty();
+                    let queue_is_not_empty = !gem_player.player.queue.is_empty();
                     let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
                     let response = ui
                         .add_enabled(queue_is_not_empty, shuffle_button)
                         .on_hover_text("Shuffle")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        shuffle_queue(&mut gem_player.playback_state.queue);
+                        shuffle_queue(&mut gem_player.player.queue);
                     }
 
-                    let repeat_button_color = if gem_player.playback_state.repeat {
+                    let repeat_button_color = if gem_player.player.repeat {
                         ui.visuals().selection.bg_fill
                     } else {
                         ui.visuals().text_color()
@@ -1083,7 +1083,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
                     let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
                     if clicked {
-                        gem_player.playback_state.repeat = !gem_player.playback_state.repeat;
+                        gem_player.player.repeat = !gem_player.player.repeat;
                     }
 
                     ui.add_space(16.0);
@@ -1094,7 +1094,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Clear")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        gem_player.playback_state.queue.clear();
+                        gem_player.player.queue.clear();
                     }
                 }
                 View::Playlists => {}

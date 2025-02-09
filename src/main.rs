@@ -17,6 +17,7 @@ TODO:
 * scrollbar in playlist browser is getting in the way!
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out how to make large icon buttons!
+* keyboard shortcuts ui (in settings).
 * playlists / m3u.
 * Music Visualizer ^.
 * maybe make volume slider hover.

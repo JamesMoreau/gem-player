@@ -22,13 +22,12 @@ pub struct GemPlayer {
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
     pub playlists: Vec<Playlist>,
     
-    pub playback_state: PlaybackState,
-    pub playback_engine: PlaybackEngine,
+    pub player: Player,
     
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
 }
 
-pub struct PlaybackState {
+pub struct Player {
     pub current_song: Option<Song>,
 
     pub queue: Vec<Song>,
@@ -38,6 +37,8 @@ pub struct PlaybackState {
     pub muted: bool,
     pub volume_before_mute: Option<f32>,
     pub paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
+
+    pub playback_engine: PlaybackEngine,
 }
 
 pub struct UIState {
@@ -109,7 +110,7 @@ impl GemPlayer {
             library,
             playlists: Vec::new(),
 
-            playback_state: PlaybackState {
+            player: Player {
                 current_song: None,
                 
                 queue: Vec::new(),
@@ -119,29 +120,30 @@ impl GemPlayer {
                 muted: false,
                 volume_before_mute: None,
                 paused_before_scrubbing: None,
+
+                playback_engine: PlaybackEngine { _stream, sink },
             },
-            playback_engine: PlaybackEngine { _stream, sink },
 
             library_directory,
         }
     }
 }
 
-pub fn is_playing(gem_player: &mut GemPlayer) -> bool {
-    !gem_player.playback_engine.sink.is_paused()
+pub fn is_playing(playback_engine: &mut PlaybackEngine) -> bool {
+    !playback_engine.sink.is_paused()
 }
 
-pub fn play_or_pause(gem_player: &mut GemPlayer) {
-    if gem_player.playback_engine.sink.is_paused() {
-        gem_player.playback_engine.sink.play()
+pub fn play_or_pause(playback_engine: &mut PlaybackEngine) {
+    if playback_engine.sink.is_paused() {
+        playback_engine.sink.play()
     } else {
-        gem_player.playback_engine.sink.pause()
+        playback_engine.sink.pause()
     }
 }
 
 pub fn play_next(gem_player: &mut GemPlayer) {
-    if gem_player.playback_state.repeat {
-        if let Some(current_song) = &gem_player.playback_state.current_song {
+    if gem_player.player.repeat {
+        if let Some(current_song) = &gem_player.player.current_song {
             let song = current_song.clone();
             let result = load_and_play_song(gem_player, &song);
             if let Err(e) = result {
@@ -156,18 +158,18 @@ pub fn play_next(gem_player: &mut GemPlayer) {
         return;
     }
 
-    let next_song = if gem_player.playback_state.queue.is_empty() {
+    let next_song = if gem_player.player.queue.is_empty() {
         return;
     } else {
-        gem_player.playback_state.queue.remove(0)
+        gem_player.player.queue.remove(0)
     };
 
-    let maybe_current_song = gem_player.playback_state.current_song.take();
+    let maybe_current_song = gem_player.player.current_song.take();
     if let Some(current_song) = maybe_current_song {
-        gem_player.playback_state.history.push(current_song);
+        gem_player.player.history.push(current_song);
     }
 
-    gem_player.playback_state.current_song = Some(next_song.clone());
+    gem_player.player.current_song = Some(next_song.clone());
     let result = load_and_play_song(gem_player, &next_song);
     if let Err(e) = result {
         print_error(e.to_string());
@@ -179,18 +181,18 @@ pub fn play_next(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_previous(gem_player: &mut GemPlayer) {
-    let previous_song = if gem_player.playback_state.history.is_empty() {
+    let previous_song = if gem_player.player.history.is_empty() {
         return;
     } else {
-        gem_player.playback_state.history.pop().unwrap()
+        gem_player.player.history.pop().unwrap()
     };
 
-    let maybe_current_song = gem_player.playback_state.current_song.take();
+    let maybe_current_song = gem_player.player.current_song.take();
     if let Some(current_song) = maybe_current_song {
-        gem_player.playback_state.queue.insert(0, current_song);
+        gem_player.player.queue.insert(0, current_song);
     }
 
-    gem_player.playback_state.current_song = Some(previous_song.clone());
+    gem_player.player.current_song = Some(previous_song.clone());
     let result = load_and_play_song(gem_player, &previous_song);
     if let Err(e) = result {
         print_error(e.to_string());
@@ -203,8 +205,8 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(), String> {
-    gem_player.playback_engine.sink.stop(); // Stop the current song if any.
-    gem_player.playback_state.current_song = None;
+    gem_player.player.playback_engine.sink.stop(); // Stop the current song if any.
+    gem_player.player.current_song = None;
 
     let file_result = std::fs::File::open(&song.file_path);
     let file = match file_result {
@@ -222,9 +224,9 @@ pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(),
         }
     };
 
-    gem_player.playback_state.current_song = Some(song.clone());
-    gem_player.playback_engine.sink.append(source);
-    gem_player.playback_engine.sink.play();
+    gem_player.player.current_song = Some(song.clone());
+    gem_player.player.playback_engine.sink.append(source);
+    gem_player.player.playback_engine.sink.play();
 
     Ok(())
 }
@@ -346,28 +348,28 @@ pub fn move_song_to_front(queue: &mut Vec<Song>, index: usize) {
 }
 
 pub fn mute_or_unmute(gem_player: &mut GemPlayer) {
-    let mut volume = gem_player.playback_engine.sink.volume();
+    let mut volume = gem_player.player.playback_engine.sink.volume();
 
-    gem_player.playback_state.muted = !gem_player.playback_state.muted;
+    gem_player.player.muted = !gem_player.player.muted;
 
-    if gem_player.playback_state.muted {
-        gem_player.playback_state.volume_before_mute = Some(volume);
+    if gem_player.player.muted {
+        gem_player.player.volume_before_mute = Some(volume);
         volume = 0.0;
-    } else if let Some(v) = gem_player.playback_state.volume_before_mute {
+    } else if let Some(v) = gem_player.player.volume_before_mute {
         volume = v;
     }
 
-    gem_player.playback_engine.sink.set_volume(volume);
+    gem_player.player.playback_engine.sink.set_volume(volume);
 }
 
 pub fn adjust_volume_by_percentage(gem_player: &mut GemPlayer, percentage: f32) {
-    let current_volume = gem_player.playback_engine.sink.volume();
+    let current_volume = gem_player.player.playback_engine.sink.volume();
     let new_volume = (current_volume + percentage).clamp(0.0, 1.0);
-    gem_player.playback_engine.sink.set_volume(new_volume);
+    gem_player.player.playback_engine.sink.set_volume(new_volume);
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
-    gem_player.playback_state.queue.clear();
+    gem_player.player.queue.clear();
 
     let maybe_song_index = gem_player.library.iter().position(|s| s == song);
     match maybe_song_index {
@@ -375,8 +377,8 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             print_error("Song not found in the library.");
         }
         Some(index) => {
-            gem_player.playback_state.queue.extend_from_slice(&gem_player.library[index + 1..]);
-            gem_player.playback_state.queue.extend_from_slice(&gem_player.library[..index]);
+            gem_player.player.queue.extend_from_slice(&gem_player.library[index + 1..]);
+            gem_player.player.queue.extend_from_slice(&gem_player.library[..index]);
 
             let result = load_and_play_song(gem_player, song);
             if let Err(e) = result {
@@ -402,7 +404,7 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
             } = event
             {
                 match key {
-                    Key::Space => play_or_pause(gem_player),
+                    Key::Space => play_or_pause(&mut gem_player.player.playback_engine),
                     Key::ArrowRight => play_next(gem_player),
                     Key::ArrowLeft => play_previous(gem_player),
                     Key::ArrowUp => adjust_volume_by_percentage(gem_player, 0.1),
