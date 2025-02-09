@@ -83,6 +83,8 @@ impl eframe::App for player::GemPlayer {
             let control_ui_height = 64.0;
             let navigation_ui_height = 32.0;
 
+            // ui.style_mut().debug.debug_on_hover = true;
+
             StripBuilder::new(ui)
                 .size(Size::exact(control_ui_height))
                 .size(Size::remainder())
