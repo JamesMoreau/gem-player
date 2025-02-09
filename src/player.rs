@@ -1,4 +1,8 @@
-use crate::{print_error, print_info, ui::{self, PlaylistsUIState, UIState}, Playlist, Song, SortBy, SortOrder, Theme};
+use crate::{
+    print_error, print_info,
+    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
+    Playlist, Song, SortBy, SortOrder, Theme,
+};
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use glob::glob;
@@ -8,11 +12,11 @@ use lofty::{
 };
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-use uuid::Uuid;
 use std::{
     io::BufReader,
     path::{Path, PathBuf},
 };
+use uuid::Uuid;
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -82,6 +86,10 @@ impl GemPlayer {
                     edit_playlist_name_info: None,
                     confirm_delete_playlist_modal_is_open: false,
                 },
+                edit_song_metadata_ui_state: EditSongMetadaUIState {
+                    buffer_song: None,
+                    edit_song_metadata_modal_is_open: false,
+                },
                 toasts: Toasts::default(),
             },
 
@@ -142,7 +150,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     load_and_play_song(player, &next_song)
 }
 
-pub fn play_previous(player: &mut Player) -> Result<(), String>{
+pub fn play_previous(player: &mut Player) -> Result<(), String> {
     let Some(previous_song) = player.history.pop() else {
         return Ok(());
     };
@@ -374,7 +382,7 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
                             print_error(e);
                             gem_player.ui_state.toasts.error("Error playing the previous song");
                         }
-                    },
+                    }
                     Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
                     Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
                     Key::M => mute_or_unmute(&mut gem_player.player),
@@ -383,6 +391,10 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
             }
         }
     });
+}
+
+pub fn add_songs_to_playlist(playlist: &mut Playlist, songs: Vec<Song>) {
+    playlist.songs.extend(songs);
 }
 
 fn _load_playlist_from_m3u(_path: &Path) -> Result<Playlist, String> {

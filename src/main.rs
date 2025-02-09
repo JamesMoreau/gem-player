@@ -11,7 +11,6 @@ mod ui;
 /*
 TODO:
 * deleted m3u file should be moved to trash (and not permanently deleted).
-* figure out how to make large icon buttons!
 * figure out why selecting a playlist causes teh ui to shift down.
 * keyboard shortcuts ui (in settings).
 * playlists / m3u.
@@ -19,7 +18,6 @@ TODO:
 * maybe make volume slider hover.
 * use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
-* Rename "Unknown X" to something else like ??? or N/A.
 * system theme not switching automatically.
 * could use egui_inbox for library updating with watcher.
 */
