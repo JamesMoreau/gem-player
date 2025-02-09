@@ -19,7 +19,7 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, PlaylistsUIState,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, PlaylistsUIState, UIState,
     },
     print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -200,9 +200,9 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
     );
 }
 
-pub fn switch_view(gem_player: &mut GemPlayer, view: View) {
+pub fn switch_view(ui_state: &mut UIState, view: View) {
     print_info(format!("Switching to view: {:?}", view));
-    gem_player.ui_state.current_view = view;
+    ui_state.current_view = view;
 }
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
@@ -1015,7 +1015,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .selectable_label(gem_player.ui_state.current_view == view, format!("  {icon}  "))
                         .on_hover_text(format!("{:?}", view));
                     if response.clicked() {
-                        switch_view(gem_player, view);
+                        switch_view(&mut gem_player.ui_state, view);
                     }
 
                     ui.add_space(4.0);
