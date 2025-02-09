@@ -13,7 +13,6 @@ use egui_material_icons::icons;
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use uuid::Uuid;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
@@ -758,24 +757,22 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
             });
 
             strip.cell(|ui| {
-                let maybe_selected_playlist = playlists_ui_state
+                let maybe_playlist = playlists_ui_state
                     .selected_playlist_index
                     .and_then(|index| playlists.get_mut(index));
                 render_playlist_content(
                     ui,
-                    maybe_selected_playlist,
-                    &mut playlists_ui_state.edit_playlist_name_info,
-                    &mut playlists_ui_state.confirm_delete_playlist_modal_is_open,
+                    playlists_ui_state,
+                    maybe_playlist,
                 );
             });
         });
 }
 
-pub fn render_playlist_content( //TODO cleanup parameters.
+pub fn render_playlist_content(
     ui: &mut Ui,
+    playlist_ui_state: &mut PlaylistsUIState,
     maybe_playlist: Option<&mut Playlist>,
-    maybe_edit_playlist_name_info: &mut Option<(Uuid, String)>,
-    confirm_delete_playlist_modal_is_open: &mut bool,
 ) {
     let Some(playlist) = maybe_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
@@ -796,7 +793,7 @@ pub fn render_playlist_content( //TODO cleanup parameters.
         .size(Size::remainder())
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                if let Some((_, name_buffer)) = maybe_edit_playlist_name_info {
+                if let Some((_, name_buffer)) = &mut playlist_ui_state.edit_playlist_name_info {
                     // In edit mode
                     let mut discard_clicked = false;
                     let mut save_clicked = false;
@@ -824,10 +821,10 @@ pub fn render_playlist_content( //TODO cleanup parameters.
                         },
                     );
                     if discard_clicked {
-                        *maybe_edit_playlist_name_info = None;
+                        playlist_ui_state.edit_playlist_name_info = None;
                     } else if save_clicked {
                         playlist.name = name_buffer.clone();
-                        *maybe_edit_playlist_name_info = None;
+                        playlist_ui_state.edit_playlist_name_info = None;
                     }
                 } else {
                     // Not in edit mode
@@ -849,14 +846,14 @@ pub fn render_playlist_content( //TODO cleanup parameters.
                             let response = ui.add(delete_button).on_hover_text("Delete");
                             if response.clicked() {
                                 print_info(format!("Opening delete playlist modal: {}", playlist.name));
-                                *confirm_delete_playlist_modal_is_open = true;
+                                playlist_ui_state.confirm_delete_playlist_modal_is_open = true;
                             }
 
                             let edit_name_button = Button::new(icons::ICON_EDIT);
                             let response = ui.add(edit_name_button).on_hover_text("Edit name");
                             if response.clicked() {
                                 print_info(format!("Editing playlist name: {}", playlist.name));
-                                *maybe_edit_playlist_name_info = Some((playlist.id, playlist.name.clone()));
+                                playlist_ui_state.edit_playlist_name_info = Some((playlist.id, playlist.name.clone()));
                             }
                         },
                     );
