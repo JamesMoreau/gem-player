@@ -20,7 +20,7 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEYMAP,
     },
     print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -1031,6 +1031,22 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(unselectable_label(RichText::new("Author").heading()));
                 ui.add(unselectable_label("James Moreau"));
                 ui.hyperlink("https://jamesmoreau.github.io");
+
+                ui.add(Separator::default().spacing(32.0));
+
+                ui.add(unselectable_label(RichText::new("Key Commands").heading()));
+                for (key, binding) in KEYMAP.iter() {
+                    containers::Sides::new().show(
+                        ui,
+                        |ui| {
+                            ui.add(unselectable_label(format!("{:?}", key)));
+                        },
+                        |ui| {
+                            ui.add_space(16.0);
+                            ui.label(binding.name.to_string());
+                        },
+                    );
+                }
             });
         });
 }

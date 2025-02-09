@@ -6,6 +6,7 @@ use crate::{
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use glob::glob;
+use lazy_static::lazy_static;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
@@ -13,6 +14,7 @@ use lofty::{
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
+    collections::HashMap,
     io::BufReader,
     path::{Path, PathBuf},
 };
@@ -356,6 +358,70 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
+pub struct KeyBinding {
+    pub name: &'static str,
+    pub action: fn(&mut GemPlayer),
+}
+
+lazy_static! {
+    pub static ref KEYMAP: HashMap<Key, KeyBinding> = [
+        (
+            Key::Space,
+            KeyBinding {
+                name: "Play/Pause",
+                action: |gp| play_or_pause(&mut gp.player),
+            },
+        ),
+        (
+            Key::ArrowRight,
+            KeyBinding {
+                name: "Next",
+                action: |gp| {
+                    if let Err(e) = play_next(&mut gp.player) {
+                        print_error(e);
+                        gp.ui_state.toasts.error("Error playing the next song");
+                    }
+                },
+            },
+        ),
+        (
+            Key::ArrowLeft,
+            KeyBinding {
+                name: "Previous",
+                action: |gp| {
+                    if let Err(e) = play_previous(&mut gp.player) {
+                        print_error(e);
+                        gp.ui_state.toasts.error("Error playing the previous song");
+                    }
+                },
+            },
+        ),
+        (
+            Key::ArrowUp,
+            KeyBinding {
+                name: "Volume Up",
+                action: |gp| adjust_volume_by_percentage(&mut gp.player, 0.1),
+            },
+        ),
+        (
+            Key::ArrowDown,
+            KeyBinding {
+                name: "Volume Down",
+                action: |gp| adjust_volume_by_percentage(&mut gp.player, -0.1),
+            },
+        ),
+        (
+            Key::M,
+            KeyBinding {
+                name: "Mute/Unmute",
+                action: |gp| mute_or_unmute(&mut gp.player),
+            },
+        ),
+    ]
+    .into_iter()
+    .collect();
+}
+
 pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
     ctx.input(|i| {
         for event in &i.events {
@@ -367,27 +433,13 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
                 modifiers: _,
             } = event
             {
-                match key {
-                    Key::Space => play_or_pause(&mut gem_player.player),
-                    Key::ArrowRight => {
-                        let result = play_next(&mut gem_player.player);
-                        if let Err(e) = result {
-                            print_error(e);
-                            gem_player.ui_state.toasts.error("Error playing the next song");
-                        }
-                    }
-                    Key::ArrowLeft => {
-                        let result = play_previous(&mut gem_player.player);
-                        if let Err(e) = result {
-                            print_error(e);
-                            gem_player.ui_state.toasts.error("Error playing the previous song");
-                        }
-                    }
-                    Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
-                    Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
-                    Key::M => mute_or_unmute(&mut gem_player.player),
-                    _ => {}
-                }
+                let Some(binding) = KEYMAP.get(key) else {
+                    continue;
+                };
+
+                print_info(format!("Key pressed: {}", binding.name));
+
+                (binding.action)(gem_player); // Call the action associated with the key binding.
             }
         }
     });
