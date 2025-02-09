@@ -342,25 +342,25 @@ pub fn move_song_to_front(queue: &mut Vec<Song>, index: usize) {
     queue.insert(0, song);
 }
 
-pub fn mute_or_unmute(gem_player: &mut GemPlayer) {
-    let mut volume = gem_player.player.sink.volume();
+pub fn mute_or_unmute(player: &mut Player) {
+    let mut volume = player.sink.volume();
 
-    gem_player.player.muted = !gem_player.player.muted;
+    player.muted = !player.muted;
 
-    if gem_player.player.muted {
-        gem_player.player.volume_before_mute = Some(volume);
+    if player.muted {
+        player.volume_before_mute = Some(volume);
         volume = 0.0;
-    } else if let Some(v) = gem_player.player.volume_before_mute {
+    } else if let Some(v) = player.volume_before_mute {
         volume = v;
     }
 
-    gem_player.player.sink.set_volume(volume);
+    player.sink.set_volume(volume);
 }
 
-pub fn adjust_volume_by_percentage(gem_player: &mut GemPlayer, percentage: f32) {
-    let current_volume = gem_player.player.sink.volume();
+pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
+    let current_volume = player.sink.volume();
     let new_volume = (current_volume + percentage).clamp(0.0, 1.0);
-    gem_player.player.sink.set_volume(new_volume);
+    player.sink.set_volume(new_volume);
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
@@ -402,9 +402,9 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
                     Key::Space => play_or_pause(&mut gem_player.player),
                     Key::ArrowRight => play_next(gem_player),
                     Key::ArrowLeft => play_previous(gem_player),
-                    Key::ArrowUp => adjust_volume_by_percentage(gem_player, 0.1),
-                    Key::ArrowDown => adjust_volume_by_percentage(gem_player, -0.1),
-                    Key::M => mute_or_unmute(gem_player),
+                    Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
+                    Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
+                    Key::M => mute_or_unmute(&mut gem_player.player),
                     _ => {}
                 }
             }
