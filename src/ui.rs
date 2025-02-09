@@ -51,7 +51,7 @@ impl eframe::App for player::GemPlayer {
         }
 
         // Check if the current song has ended and play the next song in the queue.
-        if self.sink.empty() {
+        if self.playback_engine.sink.empty() {
             play_next(self);
         }
 
@@ -221,13 +221,13 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.clicked() {
                     // If we are near the beginning of the song, we go to the previously played song.
                     // Otherwise, we seek to the beginning.
-                    let playback_position = gem_player.sink.get_pos().as_secs_f32();
-                    let rewind_threshold = 10.0; // If playback is within first 10 seconds, go to previous song.
+                    let playback_position = gem_player.playback_engine.sink.get_pos().as_secs_f32();
+                    let rewind_threshold = 5.0; // If playback is within first 5 seconds, go to previous song.
 
                     if playback_position < rewind_threshold && !gem_player.history.is_empty() {
                         play_previous(gem_player);
                     } else {
-                        let result = gem_player.sink.try_seek(Duration::ZERO);
+                        let result = gem_player.playback_engine.sink.try_seek(Duration::ZERO);
                         if let Err(e) = result {
                             print_error(format!("Error rewinding song: {:?}", e));
                         }
@@ -296,7 +296,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             title = song.title.clone().unwrap_or("Unknown Title".to_string());
                             artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                             album = song.album.clone().unwrap_or("Unknown Album".to_string());
-                            position_as_secs = gem_player.sink.get_pos().as_secs_f32();
+                            position_as_secs = gem_player.playback_engine.sink.get_pos().as_secs_f32();
                             song_duration_as_secs = song.duration.as_secs_f32();
                         }
 
@@ -309,20 +309,20 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let response = ui.add_enabled(song_is_playing, playback_progress_slider);
 
                         if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
-                            gem_player.paused_before_scrubbing = Some(gem_player.sink.is_paused());
-                            gem_player.sink.pause(); // Pause playback during scrubbing
+                            gem_player.paused_before_scrubbing = Some(gem_player.playback_engine.sink.is_paused());
+                            gem_player.playback_engine.sink.pause(); // Pause playback during scrubbing
                         }
 
                         if response.drag_stopped() {
                             let new_position = Duration::from_secs_f32(position_as_secs);
                             print_info(format!("Seeking to {} of {}", format_duration_to_mmss(new_position), title));
-                            if let Err(e) = gem_player.sink.try_seek(new_position) {
+                            if let Err(e) = gem_player.playback_engine.sink.try_seek(new_position) {
                                 print_error(format!("Error seeking to new position: {:?}", e));
                             }
 
                             // Resume playback if the player was not paused before scrubbing
                             if gem_player.paused_before_scrubbing == Some(false) {
-                                gem_player.sink.play();
+                                gem_player.playback_engine.sink.play();
                             }
 
                             gem_player.paused_before_scrubbing = None;
@@ -360,7 +360,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             flex.add_ui(item(), |ui| {
-                let mut volume = gem_player.sink.volume();
+                let mut volume = gem_player.playback_engine.sink.volume();
 
                 let volume_icon = match volume {
                     v if v == 0.0 => icons::ICON_VOLUME_OFF,
@@ -386,7 +386,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
                 }
 
-                gem_player.sink.set_volume(volume);
+                gem_player.playback_engine.sink.set_volume(volume);
             });
         });
     });
