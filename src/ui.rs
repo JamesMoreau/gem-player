@@ -52,7 +52,7 @@ impl eframe::App for player::GemPlayer {
 
         // Check if the current song has ended and play the next song in the queue.
         if self.player.sink.empty() {
-            let result = play_next(self);
+            let result = play_next(&mut self.player);
             if let Err(e) = result {
                 print_error(e);
                 self.ui_state.toasts.error("Error playing the next song");
@@ -265,7 +265,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .on_hover_text("Next")
                     .on_disabled_hover_text("No next song");
                 if response.clicked() {
-                    let result = play_next(gem_player);
+                    let result = play_next(&mut gem_player.player);
                     if let Err(e) = result {
                         print_error(e);
                         gem_player.ui_state.toasts.error("Error playing the next song");
