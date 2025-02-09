@@ -740,6 +740,9 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
                         body.rows(36.0, playlists.len(), |mut row| {
                             let playlist = &mut playlists[row.index()];
 
+                            let playlist_is_selected = playlists_ui_state.selected_playlist_index == Some(row.index());
+                            row.set_selected(playlist_is_selected);
+
                             row.col(|ui| {
                                 ui.add_space(8.0);
                                 ui.add(unselectable_label(&playlist.name));
