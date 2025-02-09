@@ -20,18 +20,20 @@ pub struct GemPlayer {
     pub ui_state: UIState,
 
     pub library: Vec<Song>, // All the songs stored in the user's music directory.
-    pub queue: Vec<Song>,
-    pub history: Vec<Song>,
-    pub current_song: Option<Song>,
     pub playlists: Vec<Playlist>,
-
+    
     pub playback_state: PlaybackState,
     pub playback_engine: PlaybackEngine,
-
+    
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
 }
 
 pub struct PlaybackState {
+    pub current_song: Option<Song>,
+
+    pub queue: Vec<Song>,
+    pub history: Vec<Song>,
+
     pub repeat: bool,
     pub muted: bool,
     pub volume_before_mute: Option<f32>,
@@ -105,11 +107,14 @@ impl GemPlayer {
             },
 
             library,
-            queue: Vec::new(),
-            history: Vec::new(),
-            current_song: None,
+            playlists: Vec::new(),
 
             playback_state: PlaybackState {
+                current_song: None,
+                
+                queue: Vec::new(),
+                history: Vec::new(),
+
                 repeat: false,
                 muted: false,
                 volume_before_mute: None,
@@ -118,7 +123,6 @@ impl GemPlayer {
             playback_engine: PlaybackEngine { _stream, sink },
 
             library_directory,
-            playlists: Vec::new(),
         }
     }
 }
@@ -137,7 +141,7 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 
 pub fn play_next(gem_player: &mut GemPlayer) {
     if gem_player.playback_state.repeat {
-        if let Some(current_song) = &gem_player.current_song {
+        if let Some(current_song) = &gem_player.playback_state.current_song {
             let song = current_song.clone();
             let result = load_and_play_song(gem_player, &song);
             if let Err(e) = result {
@@ -152,18 +156,18 @@ pub fn play_next(gem_player: &mut GemPlayer) {
         return;
     }
 
-    let next_song = if gem_player.queue.is_empty() {
+    let next_song = if gem_player.playback_state.queue.is_empty() {
         return;
     } else {
-        gem_player.queue.remove(0)
+        gem_player.playback_state.queue.remove(0)
     };
 
-    let maybe_current_song = gem_player.current_song.take();
+    let maybe_current_song = gem_player.playback_state.current_song.take();
     if let Some(current_song) = maybe_current_song {
-        gem_player.history.push(current_song);
+        gem_player.playback_state.history.push(current_song);
     }
 
-    gem_player.current_song = Some(next_song.clone());
+    gem_player.playback_state.current_song = Some(next_song.clone());
     let result = load_and_play_song(gem_player, &next_song);
     if let Err(e) = result {
         print_error(e.to_string());
@@ -175,18 +179,18 @@ pub fn play_next(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_previous(gem_player: &mut GemPlayer) {
-    let previous_song = if gem_player.history.is_empty() {
+    let previous_song = if gem_player.playback_state.history.is_empty() {
         return;
     } else {
-        gem_player.history.pop().unwrap()
+        gem_player.playback_state.history.pop().unwrap()
     };
 
-    let maybe_current_song = gem_player.current_song.take();
+    let maybe_current_song = gem_player.playback_state.current_song.take();
     if let Some(current_song) = maybe_current_song {
-        gem_player.queue.insert(0, current_song);
+        gem_player.playback_state.queue.insert(0, current_song);
     }
 
-    gem_player.current_song = Some(previous_song.clone());
+    gem_player.playback_state.current_song = Some(previous_song.clone());
     let result = load_and_play_song(gem_player, &previous_song);
     if let Err(e) = result {
         print_error(e.to_string());
@@ -200,7 +204,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(), String> {
     gem_player.playback_engine.sink.stop(); // Stop the current song if any.
-    gem_player.current_song = None;
+    gem_player.playback_state.current_song = None;
 
     let file_result = std::fs::File::open(&song.file_path);
     let file = match file_result {
@@ -218,7 +222,7 @@ pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(),
         }
     };
 
-    gem_player.current_song = Some(song.clone());
+    gem_player.playback_state.current_song = Some(song.clone());
     gem_player.playback_engine.sink.append(source);
     gem_player.playback_engine.sink.play();
 
@@ -363,7 +367,7 @@ pub fn adjust_volume_by_percentage(gem_player: &mut GemPlayer, percentage: f32) 
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
-    gem_player.queue.clear();
+    gem_player.playback_state.queue.clear();
 
     let maybe_song_index = gem_player.library.iter().position(|s| s == song);
     match maybe_song_index {
@@ -371,8 +375,8 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             print_error("Song not found in the library.");
         }
         Some(index) => {
-            gem_player.queue.extend_from_slice(&gem_player.library[index + 1..]);
-            gem_player.queue.extend_from_slice(&gem_player.library[..index]);
+            gem_player.playback_state.queue.extend_from_slice(&gem_player.library[index + 1..]);
+            gem_player.playback_state.queue.extend_from_slice(&gem_player.library[..index]);
 
             let result = load_and_play_song(gem_player, song);
             if let Err(e) = result {
