@@ -341,6 +341,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.player.paused_before_scrubbing = None;
                         }
 
+                        ui.add_space(8.0);
+
                         Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
                             flex.add_ui(item().shrink(), |ui| {
                                 let default_text_style = TextStyle::Body.resolve(ui.style());
