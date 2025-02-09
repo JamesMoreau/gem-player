@@ -6,6 +6,7 @@ use crate::{
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use glob::glob;
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
@@ -14,7 +15,6 @@ use lofty::{
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
-    collections::HashMap,
     io::BufReader,
     path::{Path, PathBuf},
 };
@@ -364,15 +364,18 @@ pub struct KeyBinding {
 }
 
 lazy_static! {
-    pub static ref KEYMAP: HashMap<Key, KeyBinding> = [
-        (
+    pub static ref KEYMAP: IndexMap<Key, KeyBinding> = {
+        let mut map = IndexMap::new();
+
+        // Insert key bindings in the desired order.
+        map.insert(
             Key::Space,
             KeyBinding {
                 name: "Play/Pause",
                 action: |gp| play_or_pause(&mut gp.player),
             },
-        ),
-        (
+        );
+        map.insert(
             Key::ArrowRight,
             KeyBinding {
                 name: "Next",
@@ -383,8 +386,8 @@ lazy_static! {
                     }
                 },
             },
-        ),
-        (
+        );
+        map.insert(
             Key::ArrowLeft,
             KeyBinding {
                 name: "Previous",
@@ -395,31 +398,30 @@ lazy_static! {
                     }
                 },
             },
-        ),
-        (
+        );
+        map.insert(
             Key::ArrowUp,
             KeyBinding {
                 name: "Volume Up",
                 action: |gp| adjust_volume_by_percentage(&mut gp.player, 0.1),
             },
-        ),
-        (
+        );
+        map.insert(
             Key::ArrowDown,
             KeyBinding {
                 name: "Volume Down",
                 action: |gp| adjust_volume_by_percentage(&mut gp.player, -0.1),
             },
-        ),
-        (
+        );
+        map.insert(
             Key::M,
             KeyBinding {
                 name: "Mute/Unmute",
                 action: |gp| mute_or_unmute(&mut gp.player),
             },
-        ),
-    ]
-    .into_iter()
-    .collect();
+        );
+        map
+    };
 }
 
 pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {

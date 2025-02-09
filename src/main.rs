@@ -10,6 +10,7 @@ mod ui;
 
 /*
 TODO:
+* full_pub
 * ... button on songs in library to open context menu.
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out why selecting a playlist causes teh ui to shift down.

@@ -30,3 +30,4 @@ chrono = "0.4.39"
 uuid = { version = "1.12.1", features = ["fast-rng", "v4"]}
 lazy_static = "1.5.0"
 fully_pub = "0.1.4"
+indexmap = "2.7.1"
