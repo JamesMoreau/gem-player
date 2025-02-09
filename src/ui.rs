@@ -229,7 +229,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let rewind_threshold = 5.0; // If playback is within first 5 seconds, go to previous song.
 
                     if playback_position < rewind_threshold && !gem_player.player.history.is_empty() {
-                        let result = play_previous(gem_player);
+                        let result = play_previous(&mut gem_player.player);
                         if let Err(e) = result {
                             print_error(e);
                             gem_player.ui_state.toasts.error("Error playing the previous song");

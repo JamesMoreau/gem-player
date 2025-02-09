@@ -159,18 +159,18 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     load_and_play_song(player, &next_song)
 }
 
-pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String>{
-    let Some(previous_song) = gem_player.player.history.pop() else {
+pub fn play_previous(player: &mut Player) -> Result<(), String>{
+    let Some(previous_song) = player.history.pop() else {
         return Ok(());
     };
 
-    if let Some(maybe_current_song) = gem_player.player.current_song.take() {
-        gem_player.player.queue.insert(0, maybe_current_song);
+    if let Some(maybe_current_song) = player.current_song.take() {
+        player.queue.insert(0, maybe_current_song);
     }
 
-    gem_player.player.current_song = Some(previous_song.clone());
+    player.current_song = Some(previous_song.clone());
 
-    load_and_play_song(&mut gem_player.player, &previous_song)
+    load_and_play_song(player, &previous_song)
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
@@ -383,7 +383,7 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
                         }
                     }
                     Key::ArrowLeft => {
-                        let result = play_previous(gem_player);
+                        let result = play_previous(&mut gem_player.player);
                         if let Err(e) = result {
                             print_error(e);
                             gem_player.ui_state.toasts.error("Error playing the previous song");
