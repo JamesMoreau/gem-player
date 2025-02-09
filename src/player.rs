@@ -23,18 +23,20 @@ pub struct GemPlayer {
     pub queue: Vec<Song>,
     pub history: Vec<Song>,
     pub current_song: Option<Song>,
+    pub playlists: Vec<Playlist>,
 
+    pub playback_state: PlaybackState,
+    pub playback_engine: PlaybackEngine,
+
+    pub library_directory: Option<PathBuf>, // The directory where music is stored.
+}
+
+pub struct PlaybackState {
     pub repeat: bool,
     pub muted: bool,
     pub volume_before_mute: Option<f32>,
     pub paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
-
-    pub playback_engine: PlaybackEngine,
-
-    pub library_directory: Option<PathBuf>, // The directory where music is stored.
-    pub playlists: Vec<Playlist>,
 }
-
 
 pub struct UIState {
     pub current_view: ui::View,
@@ -107,15 +109,13 @@ impl GemPlayer {
             history: Vec::new(),
             current_song: None,
 
-            repeat: false,
-            muted: false,
-            volume_before_mute: None,
-            paused_before_scrubbing: None,
-
-            playback_engine: PlaybackEngine { 
-                _stream, 
-                sink 
+            playback_state: PlaybackState {
+                repeat: false,
+                muted: false,
+                volume_before_mute: None,
+                paused_before_scrubbing: None,
             },
+            playback_engine: PlaybackEngine { _stream, sink },
 
             library_directory,
             playlists: Vec::new(),
@@ -136,7 +136,7 @@ pub fn play_or_pause(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_next(gem_player: &mut GemPlayer) {
-    if gem_player.repeat {
+    if gem_player.playback_state.repeat {
         if let Some(current_song) = &gem_player.current_song {
             let song = current_song.clone();
             let result = load_and_play_song(gem_player, &song);
@@ -344,12 +344,12 @@ pub fn move_song_to_front(queue: &mut Vec<Song>, index: usize) {
 pub fn mute_or_unmute(gem_player: &mut GemPlayer) {
     let mut volume = gem_player.playback_engine.sink.volume();
 
-    gem_player.muted = !gem_player.muted;
+    gem_player.playback_state.muted = !gem_player.playback_state.muted;
 
-    if gem_player.muted {
-        gem_player.volume_before_mute = Some(volume);
+    if gem_player.playback_state.muted {
+        gem_player.playback_state.volume_before_mute = Some(volume);
         volume = 0.0;
-    } else if let Some(v) = gem_player.volume_before_mute {
+    } else if let Some(v) = gem_player.playback_state.volume_before_mute {
         volume = v;
     }
 

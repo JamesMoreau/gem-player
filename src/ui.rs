@@ -308,8 +308,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let song_is_playing = gem_player.current_song.is_some();
                         let response = ui.add_enabled(song_is_playing, playback_progress_slider);
 
-                        if response.dragged() && gem_player.paused_before_scrubbing.is_none() {
-                            gem_player.paused_before_scrubbing = Some(gem_player.playback_engine.sink.is_paused());
+                        if response.dragged() && gem_player.playback_state.paused_before_scrubbing.is_none() {
+                            gem_player.playback_state.paused_before_scrubbing = Some(gem_player.playback_engine.sink.is_paused());
                             gem_player.playback_engine.sink.pause(); // Pause playback during scrubbing
                         }
 
@@ -321,11 +321,11 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             }
 
                             // Resume playback if the player was not paused before scrubbing
-                            if gem_player.paused_before_scrubbing == Some(false) {
+                            if gem_player.playback_state.paused_before_scrubbing == Some(false) {
                                 gem_player.playback_engine.sink.play();
                             }
 
-                            gem_player.paused_before_scrubbing = None;
+                            gem_player.playback_state.paused_before_scrubbing = None;
                         }
 
                         Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
@@ -367,14 +367,14 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
                     _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
                 };
-                let tooltip = if gem_player.muted { "Unmute" } else { "Mute" };
+                let tooltip = if gem_player.playback_state.muted { "Unmute" } else { "Mute" };
                 let response = ui.button(volume_icon).on_hover_text(tooltip);
                 if response.clicked() {
-                    gem_player.muted = !gem_player.muted;
-                    if gem_player.muted {
-                        gem_player.volume_before_mute = Some(volume);
+                    gem_player.playback_state.muted = !gem_player.playback_state.muted;
+                    if gem_player.playback_state.muted {
+                        gem_player.playback_state.volume_before_mute = Some(volume);
                         volume = 0.0;
-                    } else if let Some(v) = gem_player.volume_before_mute {
+                    } else if let Some(v) = gem_player.playback_state.volume_before_mute {
                         volume = v;
                     }
                 }
@@ -382,8 +382,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
                 let changed = ui.add(volume_slider).changed();
                 if changed {
-                    gem_player.muted = false;
-                    gem_player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                    gem_player.playback_state.muted = false;
+                    gem_player.playback_state.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
                 }
 
                 gem_player.playback_engine.sink.set_volume(volume);
@@ -740,7 +740,9 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
             });
 
             strip.cell(|ui| {
-                let maybe_selected_playlist = playlists_ui_state.selected_playlist_index.and_then(|index| playlists.get_mut(index));
+                let maybe_selected_playlist = playlists_ui_state
+                    .selected_playlist_index
+                    .and_then(|index| playlists.get_mut(index));
                 render_playlist_content(
                     ui,
                     maybe_selected_playlist,
@@ -1072,7 +1074,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         shuffle_queue(&mut gem_player.queue);
                     }
 
-                    let repeat_button_color = if gem_player.repeat {
+                    let repeat_button_color = if gem_player.playback_state.repeat {
                         ui.visuals().selection.bg_fill
                     } else {
                         ui.visuals().text_color()
@@ -1080,7 +1082,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
                     let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
                     if clicked {
-                        gem_player.repeat = !gem_player.repeat;
+                        gem_player.playback_state.repeat = !gem_player.playback_state.repeat;
                     }
 
                     ui.add_space(16.0);
