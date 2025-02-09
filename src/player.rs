@@ -140,7 +140,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     if gem_player.player.repeat {
         if let Some(current_song) = &gem_player.player.current_song {
             let song = current_song.clone();
-            let result = load_and_play_song(gem_player, &song);
+            let result = load_and_play_song(&mut gem_player.player, &song);
             if let Err(e) = result {
                 print_error(e.to_string());
                 gem_player
@@ -165,7 +165,7 @@ pub fn play_next(gem_player: &mut GemPlayer) {
     }
 
     gem_player.player.current_song = Some(next_song.clone());
-    let result = load_and_play_song(gem_player, &next_song);
+    let result = load_and_play_song(&mut gem_player.player, &next_song);
     if let Err(e) = result {
         print_error(e.to_string());
         gem_player
@@ -188,7 +188,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
     }
 
     gem_player.player.current_song = Some(previous_song.clone());
-    let result = load_and_play_song(gem_player, &previous_song);
+    let result = load_and_play_song(&mut gem_player.player, &previous_song);
     if let Err(e) = result {
         print_error(e.to_string());
         gem_player
@@ -199,9 +199,9 @@ pub fn play_previous(gem_player: &mut GemPlayer) {
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(), String> {
-    gem_player.player.sink.stop(); // Stop the current song if any.
-    gem_player.player.current_song = None;
+pub fn load_and_play_song(player: &mut Player, song: &Song) -> Result<(), String> {
+    player.sink.stop(); // Stop the current song if any.
+    player.current_song = None;
 
     let file_result = std::fs::File::open(&song.file_path);
     let file = match file_result {
@@ -219,9 +219,9 @@ pub fn load_and_play_song(gem_player: &mut GemPlayer, song: &Song) -> Result<(),
         }
     };
 
-    gem_player.player.current_song = Some(song.clone());
-    gem_player.player.sink.append(source);
-    gem_player.player.sink.play();
+    player.current_song = Some(song.clone());
+    player.sink.append(source);
+    player.sink.play();
 
     Ok(())
 }
@@ -375,7 +375,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
             gem_player.player.queue.extend_from_slice(&gem_player.library[index + 1..]);
             gem_player.player.queue.extend_from_slice(&gem_player.library[..index]);
 
-            let result = load_and_play_song(gem_player, song);
+            let result = load_and_play_song(&mut gem_player.player, song);
             if let Err(e) = result {
                 print_error(e.to_string());
                 gem_player
