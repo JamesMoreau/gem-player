@@ -11,8 +11,6 @@ mod ui;
 
 /*
 TODO:
-* ... button on songs in library to open context menu.
-* multiple song selection.
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out why selecting a playlist causes teh ui to shift down.
 * playlists / m3u.
@@ -22,6 +20,7 @@ TODO:
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
 * could use egui_inbox for library updating with watcher.
+* should expensive operations such as opening a file use an async system? research this!
 */
 
 fn main() -> eframe::Result {

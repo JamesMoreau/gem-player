@@ -568,14 +568,19 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &mut Song) {
-    // TODO: make this take in multiple songs.
     ui.set_max_width(200.0);
 
-    ui.menu_button("Add to playlist", |ui| {
-        //TODO, make this scrollable
-        for playlist in gem_player.playlists.iter() {
-            let _ = ui.button(&playlist.name);
-        }
+    let add_to_playlists_enabled = !gem_player.playlists.is_empty();
+    ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
+        ui.menu_button("Add to playlist", |ui| {
+            ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
+                for playlist in gem_player.playlists.iter() {
+                    if ui.button(&playlist.name).clicked() {
+                        ui.close_menu(); // Optionally close the menu when clicked
+                    }
+                }
+            });
+        });
     });
 
     if ui.button("Play Next").clicked() {
@@ -605,10 +610,6 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &mut 
             }
         }
 
-        ui.close_menu();
-    }
-
-    if ui.button("Remove from library").clicked() {
         ui.close_menu();
     }
 }
