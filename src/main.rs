@@ -14,7 +14,6 @@ TODO:
 * ... button on songs in library to open context menu.
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out why selecting a playlist causes teh ui to shift down.
-* keyboard shortcuts ui (in settings).
 * playlists / m3u.
 * Music Visualizer ^.
 * maybe make volume slider hover.
