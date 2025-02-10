@@ -316,7 +316,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .as_ref()
                     .and_then(|song| {
                         song.artwork.as_ref().map(|artwork_bytes| {
-                            let artwork_uri = format!("bytes://artwork-{}", song.title.as_deref().unwrap_or("default"));
+                            let artwork_uri = format!("bytes://artwork-{}", song.id);
 
                             Image::from_bytes(artwork_uri, artwork_bytes.clone())
                                 .texture_options(artwork_texture_options)

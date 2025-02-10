@@ -11,12 +11,10 @@ mod ui;
 
 /*
 TODO:
-* deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out why selecting a playlist causes teh ui to shift down.
-* playlists / m3u.
-* Music Visualizer ^.
+* playlists / m3u. deleted m3u file should be moved to trash (and not permanently deleted).
+* Music Visualizer.
 * maybe make volume slider hover.
-* use a better url for Image::from_bytes(artwork_uri, artwork_bytes.clone()) that guarantees uniqueness.
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
 * could use egui_inbox for library updating with watcher.
