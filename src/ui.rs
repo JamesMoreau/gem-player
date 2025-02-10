@@ -21,7 +21,7 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEYMAP,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, Player, KEYMAP,
     },
     print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -472,7 +472,8 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let available_width = ui.available_width();
     let time_width = 64.0;
-    let remaining_width = available_width - time_width;
+    let more_width = 48.0;
+    let remaining_width = available_width - time_width - more_width;
     let title_width = remaining_width * 0.5;
     let artist_width = remaining_width * 0.25;
     let album_width = remaining_width * 0.25;
@@ -490,6 +491,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
         .column(egui_extras::Column::exact(time_width))
+        .column(egui_extras::Column::exact(more_width))
         .header(16.0, |mut header| {
             for (i, h) in header_labels.iter().enumerate() {
                 header.col(|ui| {
@@ -502,7 +504,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .body(|body| {
             body.rows(26.0, library_copy.len(), |mut row| {
-                let song = &library_copy[row.index()];
+                let song = &mut library_copy[row.index()];
 
                 let row_is_selected = gem_player
                     .ui_state
@@ -529,6 +531,19 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     ui.add(unselectable_label(duration_string));
                 });
 
+                let rest_of_row_is_hovered = row.response().hovered();
+                let mut more_cell_contains_pointer = false;
+                row.col(|ui| {
+                    more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                    let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer;
+
+                    ui.add_space(8.0);
+
+                    // if should_show_more_button {
+                        ui.menu_button(icons::ICON_MORE_HORIZ, |ui| library_context_menu(ui, &mut gem_player.player, song));
+                    // }
+                });
+
                 let response = row.response();
                 if response.clicked() {
                     gem_player.ui_state.selected_library_song = Some(song.clone());
@@ -538,43 +553,45 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     play_library_from_song(gem_player, song);
                 }
 
-                response.context_menu(|ui| {
-                    if ui.button("Play Next").clicked() {
-                        add_next_to_queue(&mut gem_player.player.queue, song.clone());
-                        ui.close_menu();
-                    }
-
-                    if ui.button("Add to queue").clicked() {
-                        add_to_queue(&mut gem_player.player.queue, song.clone());
-                        ui.close_menu();
-                    }
-
-                    ui.separator();
-
-                    if ui.button("Open file location").clicked() {
-                        let maybe_folder = song.file_path.as_path().parent();
-                        match maybe_folder {
-                            Some(folder) => {
-                                let result = open::that_detached(folder);
-                                match result {
-                                    Ok(_) => print_info(format!("Opening file location: {:?}", folder)),
-                                    Err(e) => print_error(format!("Error opening file location: {:?}", e)),
-                                }
-                            }
-                            None => {
-                                print_info("No file location to open");
-                            }
-                        }
-
-                        ui.close_menu();
-                    }
-
-                    if ui.button("Remove from library").clicked() {
-                        ui.close_menu();
-                    }
-                });
+                response.context_menu(|ui| library_context_menu(ui, &mut gem_player.player, song));
             });
         });
+}
+
+pub fn library_context_menu(ui: &mut Ui, player: &mut Player, song: &mut Song) {
+    if ui.button("Play Next").clicked() {
+        add_next_to_queue(&mut player.queue, song.clone());
+        ui.close_menu();
+    }
+
+    if ui.button("Add to queue").clicked() {
+        add_to_queue(&mut player.queue, song.clone());
+        ui.close_menu();
+    }
+
+    ui.separator();
+
+    if ui.button("Open file location").clicked() {
+        let maybe_folder = song.file_path.as_path().parent();
+        match maybe_folder {
+            Some(folder) => {
+                let result = open::that_detached(folder);
+                match result {
+                    Ok(_) => print_info(format!("Opening file location: {:?}", folder)),
+                    Err(e) => print_error(format!("Error opening file location: {:?}", e)),
+                }
+            }
+            None => {
+                print_info("No file location to open");
+            }
+        }
+
+        ui.close_menu();
+    }
+
+    if ui.button("Remove from library").clicked() {
+        ui.close_menu();
+    }
 }
 
 pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {

@@ -12,6 +12,7 @@ mod ui;
 /*
 TODO:
 * ... button on songs in library to open context menu.
+* multiple song selection.
 * deleted m3u file should be moved to trash (and not permanently deleted).
 * figure out why selecting a playlist causes teh ui to shift down.
 * playlists / m3u.
