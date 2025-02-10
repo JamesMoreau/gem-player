@@ -102,7 +102,6 @@ impl eframe::App for player::GemPlayer {
                 .vertical(|mut strip| {
                     strip.cell(|ui| {
                         render_control_ui(ui, self);
-                        ui.add(Separator::default().spacing(0.0).shrink(1.0));
                     });
                     strip.cell(|ui| match self.ui_state.current_view {
                         View::Library => render_library_ui(ui, self),
@@ -242,7 +241,7 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.spacing_mut().item_spacing.y = 0.0;
 
-    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+    Frame::none().fill(ui.visuals().faint_bg_color).inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
         Flex::horizontal().w_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
             flex.add_ui(item(), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
@@ -922,8 +921,6 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                         },
                     );
                 }
-
-                ui.add(Separator::default().spacing(0.0));
             });
 
             strip.cell(|ui| {
