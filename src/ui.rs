@@ -21,7 +21,7 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
         self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, Player, KEYMAP,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEYMAP,
     },
     print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -539,9 +539,18 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     ui.add_space(8.0);
 
-                    // if should_show_more_button {
-                        ui.menu_button(icons::ICON_MORE_HORIZ, |ui| library_context_menu(ui, &mut gem_player.player, song));
-                    // }
+                    ui.scope_builder(
+                        {
+                            if should_show_more_button {
+                                UiBuilder::new()
+                            } else {
+                                UiBuilder::new().invisible()
+                            }
+                        },
+                        |ui| {
+                            ui.menu_button(icons::ICON_MORE_HORIZ, |ui| library_context_menu(ui, gem_player, song));
+                        },
+                    );
                 });
 
                 let response = row.response();
@@ -553,19 +562,29 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     play_library_from_song(gem_player, song);
                 }
 
-                response.context_menu(|ui| library_context_menu(ui, &mut gem_player.player, song));
+                response.context_menu(|ui| library_context_menu(ui, gem_player, song));
             });
         });
 }
 
-pub fn library_context_menu(ui: &mut Ui, player: &mut Player, song: &mut Song) {
+pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &mut Song) {
+    // TODO: make this take in multiple songs.
+    ui.set_max_width(200.0);
+
+    ui.menu_button("Add to playlist", |ui| {
+        //TODO, make this scrollable
+        for playlist in gem_player.playlists.iter() {
+            let _ = ui.button(&playlist.name);
+        }
+    });
+
     if ui.button("Play Next").clicked() {
-        add_next_to_queue(&mut player.queue, song.clone());
+        add_next_to_queue(&mut gem_player.player.queue, song.clone());
         ui.close_menu();
     }
 
     if ui.button("Add to queue").clicked() {
-        add_to_queue(&mut player.queue, song.clone());
+        add_to_queue(&mut gem_player.player.queue, song.clone());
         ui.close_menu();
     }
 
