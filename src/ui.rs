@@ -3,8 +3,8 @@ use std::time::Duration;
 use chrono::Utc;
 use eframe::egui::{
     containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
-    Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
-    TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -92,18 +92,24 @@ impl eframe::App for player::GemPlayer {
         custom_window_frame(ctx, "", |ui| {
             let control_ui_height = 64.0;
             let navigation_ui_height = 36.0;
-
-            // ui.style_mut().debug.debug_on_hover = true;
+            let default_separator_width = 6.0;
 
             StripBuilder::new(ui)
+                .size(Size::exact(default_separator_width))
                 .size(Size::exact(control_ui_height))
+                .size(Size::exact(default_separator_width))
                 .size(Size::remainder())
+                .size(Size::exact(default_separator_width))
                 .size(Size::exact(navigation_ui_height))
                 .vertical(|mut strip| {
                     strip.cell(|ui| {
-                        ui.add(Separator::default().spacing(0.0));
+                        ui.separator();
+                    });
+                    strip.cell(|ui| {
                         render_control_ui(ui, self);
-                        ui.add(Separator::default().spacing(0.0));
+                    });
+                    strip.cell(|ui| {
+                        ui.separator();
                     });
                     strip.cell(|ui| match self.ui_state.current_view {
                         View::Library => render_library_ui(ui, self),
@@ -112,7 +118,9 @@ impl eframe::App for player::GemPlayer {
                         View::Settings => render_settings_ui(ui, self),
                     });
                     strip.cell(|ui| {
-                        ui.add(Separator::default().spacing(0.0));
+                        ui.separator();
+                    });
+                    strip.cell(|ui| {
                         render_navigation_ui(ui, self);
                     });
                 });
