@@ -78,8 +78,8 @@ impl eframe::App for player::GemPlayer {
             Theme::Light => ctx.set_visuals(Visuals::light()),
         }
 
-        // Check if the current song has ended and play the next song in the queue.
-        if self.player.sink.empty() {
+        let should_check_for_next_song_in_queue = self.player.sink.empty();
+        if should_check_for_next_song_in_queue {
             let result = play_next(&mut self.player);
             if let Err(e) = result {
                 print_error(e);
@@ -92,24 +92,24 @@ impl eframe::App for player::GemPlayer {
         custom_window_frame(ctx, "", |ui| {
             let control_ui_height = 64.0;
             let navigation_ui_height = 32.0;
-            let default_separator_width = 6.0;
+            let separator_space = 2.0; // Even numbers seem to work better for getting pixel perfect placements.
 
             StripBuilder::new(ui)
-                .size(Size::exact(default_separator_width))
+                .size(Size::exact(separator_space))
                 .size(Size::exact(control_ui_height))
-                .size(Size::exact(default_separator_width))
+                .size(Size::exact(separator_space))
                 .size(Size::remainder())
-                .size(Size::exact(default_separator_width))
+                .size(Size::exact(separator_space))
                 .size(Size::exact(navigation_ui_height))
                 .vertical(|mut strip| {
                     strip.cell(|ui| {
-                        ui.separator();
+                        ui.add(Separator::default().spacing(separator_space));
                     });
                     strip.cell(|ui| {
                         render_control_ui(ui, self);
                     });
                     strip.cell(|ui| {
-                        ui.separator();
+                        ui.add(Separator::default().spacing(separator_space));
                     });
                     strip.cell(|ui| match self.ui_state.current_view {
                         View::Library => render_library_ui(ui, self),
@@ -118,7 +118,7 @@ impl eframe::App for player::GemPlayer {
                         View::Settings => render_settings_ui(ui, self),
                     });
                     strip.cell(|ui| {
-                        ui.separator();
+                        ui.add(Separator::default().spacing(separator_space));
                     });
                     strip.cell(|ui| {
                         render_navigation_ui(ui, self);
@@ -251,7 +251,7 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
-        Flex::horizontal().w_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
+        Flex::horizontal().h_full().w_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
             flex.add_ui(item(), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
                 let is_previous_enabled = gem_player.player.current_song.is_some() || !gem_player.player.history.is_empty();
@@ -1099,8 +1099,8 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none().inner_margin(Margin::symmetric(16.0, 4.0)).show(ui, |ui| {
-        Flex::horizontal().w_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
+    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+        Flex::horizontal().h_full().w_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
             flex.add_ui(item(), |ui| {
                 let get_icon_and_tooltip = |view: &View| match view {
                     View::Library => icons::ICON_LIBRARY_MUSIC,
