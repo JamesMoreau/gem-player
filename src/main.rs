@@ -11,6 +11,7 @@ mod ui;
 
 /*
 TODO:
+* keybinds need to check that we are not typing in the text boxes. is there an easy egui .not_focused proc? ctx.input!
 * figure out why selecting a playlist causes teh ui to shift down.
 * playlists / m3u. deleted m3u file should be moved to trash (and not permanently deleted).
 * Music Visualizer.

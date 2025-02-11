@@ -1,3 +1,5 @@
+//.fill(ui.visuals().faint_bg_color)
+
 // ui.style_mut().text_styles.insert(TextStyle::Button, FontId::new(18.0, FontFamily::Proportional));
 // row.col(|ui| {
 // 	let cell_rect = ui.max_rect();

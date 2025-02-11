@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use chrono::Utc;
 use eframe::egui::{
-    containers, include_image, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image,
-    Label, Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
+    Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
+    TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -91,7 +91,7 @@ impl eframe::App for player::GemPlayer {
 
         custom_window_frame(ctx, "", |ui| {
             let control_ui_height = 64.0;
-            let navigation_ui_height = 32.0;
+            let navigation_ui_height = 36.0;
 
             // ui.style_mut().debug.debug_on_hover = true;
 
@@ -101,7 +101,9 @@ impl eframe::App for player::GemPlayer {
                 .size(Size::exact(navigation_ui_height))
                 .vertical(|mut strip| {
                     strip.cell(|ui| {
+                        ui.add(Separator::default().spacing(0.0));
                         render_control_ui(ui, self);
+                        ui.add(Separator::default().spacing(0.0));
                     });
                     strip.cell(|ui| match self.ui_state.current_view {
                         View::Library => render_library_ui(ui, self),
@@ -110,7 +112,7 @@ impl eframe::App for player::GemPlayer {
                         View::Settings => render_settings_ui(ui, self),
                     });
                     strip.cell(|ui| {
-                        ui.add(Separator::default().spacing(0.0).shrink(1.0));
+                        ui.add(Separator::default().spacing(0.0));
                         render_navigation_ui(ui, self);
                     });
                 });
@@ -142,7 +144,8 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
             let mut rect = app_rect;
             rect.min.y = title_bar_rect.max.y;
             rect
-        };
+        }
+        .shrink2(Vec2::new(2.0, 0.0));
         let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
         add_contents(&mut content_ui);
     });
@@ -162,13 +165,13 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
     );
 
     // Paint the line under the title:
-    painter.line_segment(
-        [
-            title_bar_rect.left_bottom() + vec2(1.0, 0.0),
-            title_bar_rect.right_bottom() + vec2(-1.0, 0.0),
-        ],
-        ui.visuals().widgets.noninteractive.bg_stroke,
-    );
+    // painter.line_segment(
+    //     [
+    //         title_bar_rect.left_bottom() + vec2(1.0, 0.0),
+    //         title_bar_rect.right_bottom() + vec2(-1.0, 0.0),
+    //     ],
+    //     ui.visuals().widgets.noninteractive.bg_stroke,
+    // );
 
     if title_bar_response.double_clicked() {
         let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
@@ -239,9 +242,7 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 }
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    ui.spacing_mut().item_spacing.y = 0.0;
-
-    Frame::none().fill(ui.visuals().faint_bg_color).inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
         Flex::horizontal().w_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
             flex.add_ui(item(), |ui| {
                 let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
