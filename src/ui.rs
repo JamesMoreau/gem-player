@@ -91,7 +91,7 @@ impl eframe::App for player::GemPlayer {
 
         custom_window_frame(ctx, "", |ui| {
             let control_ui_height = 64.0;
-            let navigation_ui_height = 36.0;
+            let navigation_ui_height = 32.0;
             let default_separator_width = 6.0;
 
             StripBuilder::new(ui)
