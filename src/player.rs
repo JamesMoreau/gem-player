@@ -367,7 +367,7 @@ pub struct KeyBinding {
 }
 
 lazy_static! {
-    pub static ref KEYMAP: IndexMap<Key, KeyBinding> = {
+    pub static ref KEY_COMMANDS: IndexMap<Key, KeyBinding> = {
         let mut map = IndexMap::new();
 
         // Insert key bindings in the desired order.
@@ -427,7 +427,12 @@ lazy_static! {
     };
 }
 
-pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
+pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
+    if ctx.wants_keyboard_input() {
+        // Return early if any widget that accepts keyboard input is focused.
+        return;
+    }
+
     ctx.input(|i| {
         for event in &i.events {
             if let Event::Key {
@@ -438,7 +443,7 @@ pub fn handle_input(ctx: &Context, gem_player: &mut GemPlayer) {
                 modifiers: _,
             } = event
             {
-                let Some(binding) = KEYMAP.get(key) else {
+                let Some(binding) = KEY_COMMANDS.get(key) else {
                     continue;
                 };
 

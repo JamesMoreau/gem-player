@@ -20,8 +20,8 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
     player::{
-        self, add_next_to_queue, add_to_queue, handle_input, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEYMAP,
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
     },
     print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -87,7 +87,7 @@ impl eframe::App for player::GemPlayer {
             }
         }
 
-        handle_input(ctx, self);
+        handle_key_commands(ctx, self);
 
         custom_window_frame(ctx, "", |ui| {
             let control_ui_height = 64.0;
@@ -1082,7 +1082,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(Separator::default().spacing(32.0));
 
                 ui.add(unselectable_label(RichText::new("Key Commands").heading()));
-                for (key, binding) in KEYMAP.iter() {
+                for (key, binding) in KEY_COMMANDS.iter() {
                     containers::Sides::new().show(
                         ui,
                         |ui| {
