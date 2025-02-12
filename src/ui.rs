@@ -492,7 +492,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     // Since we are setting the widths of the table columns manually by dividing up the available width,
     // if we leave the default item spacing, the width taken up by the table will be greater than the available width,
-    // casuing the right side of the table to be cut off by the window.
+    // causing the right side of the table to be cut off by the window.
     ui.spacing_mut().item_spacing.x = 0.0;
 
     TableBuilder::new(ui)
@@ -778,9 +778,12 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
 
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
+    let separator_space = 2.0;
 
+    ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui() as to why we do this.
     StripBuilder::new(ui)
         .size(Size::exact(playlists_width))
+        .size(Size::exact(separator_space))
         .size(Size::remainder())
         .horizontal(|mut strip| {
             strip.cell(|ui| {
@@ -838,6 +841,10 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
                             }
                         });
                     });
+            });
+
+            strip.cell(|ui| {
+                ui.add(Separator::default().vertical().spacing(separator_space));
             });
 
             strip.cell(|ui| {
