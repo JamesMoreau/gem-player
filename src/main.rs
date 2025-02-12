@@ -12,12 +12,12 @@ mod ui;
 /*
 TODO:
 * playlists / m3u. deleted m3u file should be moved to trash (and not permanently deleted).
-* Music Visualizer.
-* maybe make volume slider hover.
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
+* Music Visualizer.
+* maybe make volume slider hover.
 */
 
 fn main() -> eframe::Result {
