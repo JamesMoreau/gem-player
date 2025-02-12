@@ -1,5 +1,5 @@
 use crate::{
-    print_error, print_info,
+    print_error, print_info, print_success,
     ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
     Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -13,10 +13,12 @@ use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
+use m3u::Writer;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
-    io::BufReader,
+    fs::{self, File},
+    io::{self, BufReader, Write},
     path::{Path, PathBuf},
 };
 use uuid::Uuid;
@@ -461,4 +463,70 @@ pub fn _add_songs_to_playlist(playlist: &mut Playlist, songs: Vec<Song>) {
 
 fn _load_playlist_from_m3u(_path: &Path) -> Result<Playlist, String> {
     todo!()
+}
+
+pub fn save_playlist_to_m3u<P: AsRef<Path>>(playlist: Playlist, directory: P) -> io::Result<()> {
+    let filename = format!("{}.m3u", playlist.name);
+    let file_path = directory.as_ref().join(filename);
+    let mut file = File::create(&file_path)?;
+
+    let mut writer = m3u::Writer::new(&mut file);
+    for song in &playlist.songs {
+        let entry = m3u::path_entry(song.file_path.clone());
+        writer.write_entry(&entry)?;
+    }
+
+    print_success(format!("Playlist saved to {:?}", file_path));
+
+    Ok(())
+}
+
+pub fn load_playlist_from_m3u<P: AsRef<Path>>(m3u_path: P) -> io::Result<Playlist> {
+    let result = m3u::Reader::open(m3u_path.as_ref());
+    let mut reader = match result {
+        Ok(reader) => reader,
+        Err(e) => return Err(io::Error::new(io::ErrorKind::NotFound, format!("Error opening file: {:?}", e))),
+    };
+
+    let entries: Vec<Result<m3u::Entry, std::io::Error>> = reader.entries().collect();
+    let mut songs = Vec::new();
+
+    for entry in entries {
+        match entry {
+            Ok(m3u::Entry::Path(path)) => {
+                if let Ok(song) = get_song_from_file(&path) {
+                    songs.push(song);
+                }
+            }
+            Ok(url) => {
+                // We do not support urls.
+                print_error(format!("Unsupported url: {:?}", url));
+                continue;
+            }
+            Err(e) => {
+                print_error(e);
+                continue;
+            },
+        }
+    }
+
+
+    let id = Uuid::new_v4();
+    let creation_date_time = chrono::Utc::now();
+    let name = m3u_path.as_ref().file_stem().unwrap().to_string_lossy().to_string();
+
+
+    Ok(Playlist {
+        id,
+        name,
+        creation_date_time,
+        songs,
+        path: Some(m3u_path.as_ref().to_path_buf()),
+    })
+}
+
+fn rename_playlist_file(old_name: &str, new_name: &str) -> io::Result<()> {
+    let old_filename = format!("{}.m3u", old_name);
+    let new_filename = format!("{}.m3u", new_name);
+    fs::rename(old_filename, new_filename)
 }
