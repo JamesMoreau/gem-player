@@ -778,12 +778,12 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
 
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
-    let separator_space = 2.0;
 
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui() as to why we do this.
+
     StripBuilder::new(ui)
         .size(Size::exact(playlists_width))
-        .size(Size::exact(separator_space))
+        .size(Size::exact(6.0))
         .size(Size::remainder())
         .horizontal(|mut strip| {
             strip.cell(|ui| {
@@ -844,7 +844,7 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
             });
 
             strip.cell(|ui| {
-                ui.add(Separator::default().vertical().spacing(separator_space));
+                ui.add(Separator::default().vertical());
             });
 
             strip.cell(|ui| {
@@ -896,6 +896,8 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                                 discard_clicked = true;
                             }
 
+                            ui.add_space(8.0);
+
                             let confirm_button = Button::new(icons::ICON_SAVE);
                             let response = ui.add(confirm_button).on_hover_text("Save");
                             if response.clicked() {
@@ -931,6 +933,8 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                                 print_info(format!("Opening delete playlist modal: {}", playlist.name));
                                 playlist_ui_state.confirm_delete_playlist_modal_is_open = true;
                             }
+
+                            ui.add_space(8.0);
 
                             let edit_name_button = Button::new(icons::ICON_EDIT);
                             let response = ui.add(edit_name_button).on_hover_text("Edit name");
