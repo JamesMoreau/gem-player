@@ -11,8 +11,6 @@ mod ui;
 
 /*
 TODO:
-* text boxes are pushing the ui when too much text! maybe use a container with a max width?
-* figure out why selecting a playlist causes teh ui to shift down.
 * playlists / m3u. deleted m3u file should be moved to trash (and not permanently deleted).
 * Music Visualizer.
 * maybe make volume slider hover.
