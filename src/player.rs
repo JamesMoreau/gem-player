@@ -519,16 +519,16 @@ pub fn load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     let mut creation_date_time = Utc::now();
     let metadata_result = fs::metadata(path);
     match metadata_result {
+        Err(err) => print_error(err),
         Ok(metadata) => {
             let created_result = metadata.created();
             match created_result {
+                Err(err) => print_error(&err),
                 Ok(created) => {
                     creation_date_time = created.into();
                 }
-                Err(err) => print_error(&err),
             }
-        },
-        Err(err) => print_error(err),
+        }
     };
 
     let path = Some(path.to_path_buf());
