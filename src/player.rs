@@ -527,11 +527,9 @@ pub fn load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
                 }
                 Err(err) => print_error(&err),
             }
-        }
-        Err(err) => {
-            print_error(&err);
-        }
-    }
+        },
+        Err(err) => print_error(err),
+    };
 
     let path = Some(path.to_path_buf());
 
