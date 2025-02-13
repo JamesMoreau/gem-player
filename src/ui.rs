@@ -22,7 +22,7 @@ use crate::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
         play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
     },
-    playlist::{create_a_new_playlist, save_playlist_to_m3u, Playlist},
+    playlist::{create_a_new_playlist, delete_playlist_m3u, save_playlist_to_m3u, Playlist},
     print_error, print_info, print_success,
     song::{sort_songs, SortBy, SortOrder},
     Song, Theme,
@@ -768,8 +768,23 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
         if confirm_clicked {
             if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
-                print_info(format!("Confirmed deletion of playlist: {}", gem_player.playlists[index].name));
+                let playlist = &gem_player.playlists[index];
+                print_info(format!("Confirmed deletion of playlist: {}", playlist.name));
+                let result = delete_playlist_m3u(playlist);
+                if let Err(e) = result {
+                    let message = format!("Unable to remove the .m3u file for playlist: {}. {}", playlist.name, e);
+                    print_error(message);
+                } else {
+                    let message = format!(
+                        "Playlist: {} was deleted successfully. If this was a mistake, the m3u file can be found in the trash.",
+                        playlist.name
+                    );
+                    print_success(&message);
+                    gem_player.ui_state.toasts.success(&message);
+                }
+
                 gem_player.playlists.remove(index);
+
                 gem_player.ui_state.playlists_ui_state.selected_playlist_index = None;
             }
             gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = false;

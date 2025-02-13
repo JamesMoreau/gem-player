@@ -117,3 +117,17 @@ pub fn create_a_new_playlist(name: &str) -> Playlist {
         path: None,
     }
 }
+
+pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> {
+    let Some(path) = playlist.path.as_ref() else {
+        return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
+    };
+    
+    // Send the m3u file to the trash!
+    let result = trash::delete(path);
+    if let Err(e) = result {
+        return Err(io::Error::new(ErrorKind::Other, e));
+    }
+
+    Ok(())
+}
