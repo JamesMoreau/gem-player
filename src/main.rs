@@ -20,6 +20,7 @@ TODO:
 * Music Visualizer.
 * maybe make volume slider hover.
 * rename unselectable_label().
+* images with different aspect ratios should be stretched or cropped to match 1:1.
 */
 
 fn main() -> eframe::Result {
