@@ -1048,9 +1048,8 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .show(ui, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
-
+                ui.add_space(8.0);
                 ui.add(unselectable_label("Playlists are also stored here as .m3u files."));
-
                 ui.horizontal(|ui| {
                     let path = gem_player
                         .library_directory
@@ -1076,6 +1075,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(Separator::default().spacing(32.0));
 
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
+                ui.add_space(8.0);
                 ComboBox::from_label("Select Theme")
                     .selected_text(format!("{:?}", gem_player.ui_state.theme))
                     .show_ui(ui, |ui| {
@@ -1093,6 +1093,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(Separator::default().spacing(32.0));
 
                 ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
+                ui.add_space(8.0);
                 let version = env!("CARGO_PKG_VERSION");
                 ui.add(unselectable_label(format!("Version: {version}")));
                 ui.add(unselectable_label("Gem Player is a lightweight music player."));
@@ -1100,12 +1101,14 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(Separator::default().spacing(32.0));
 
                 ui.add(unselectable_label(RichText::new("Author").heading()));
+                ui.add_space(8.0);
                 ui.add(unselectable_label("James Moreau"));
                 ui.hyperlink("https://jamesmoreau.github.io");
 
                 ui.add(Separator::default().spacing(32.0));
 
                 ui.add(unselectable_label(RichText::new("Key Commands").heading()));
+                ui.add_space(8.0);
                 for (key, binding) in KEY_COMMANDS.iter() {
                     containers::Sides::new().show(
                         ui,
