@@ -199,17 +199,16 @@ pub fn load_and_play_song(player: &mut Player, song: &Song) -> Result<(), String
     Ok(())
 }
 
-pub fn get_song_from_file(path: &Path) -> Result<Song, String> {
-    // TODO: change this to a io::Result
+pub fn get_song_from_file(path: &Path) -> io::Result<Song> {
     if !path.is_file() {
-        return Err("Path is not a file".to_string());
+        return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
 
     let result_file = lofty::read_from_path(path);
     let tagged_file = match result_file {
         Ok(file) => file,
         Err(e) => {
-            return Err(format!("Error reading file: {}", e));
+            return Err(io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)));
         }
     };
 
@@ -217,7 +216,7 @@ pub fn get_song_from_file(path: &Path) -> Result<Song, String> {
         Some(tag) => tag,
         None => match tagged_file.first_tag() {
             Some(tag) => tag,
-            None => return Err(format!("No tags found in file: {:?}", path)),
+            None => return Err(io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path))),
         },
     };
 
