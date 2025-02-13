@@ -3,6 +3,7 @@ use crate::{
     ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
     Playlist, Song, SortBy, SortOrder, Theme,
 };
+use chrono::Utc;
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
@@ -198,7 +199,8 @@ pub fn load_and_play_song(player: &mut Player, song: &Song) -> Result<(), String
     Ok(())
 }
 
-pub fn get_song_from_file(path: &Path) -> Result<Song, String> { // TODO: change this to a io::Result
+pub fn get_song_from_file(path: &Path) -> Result<Song, String> {
+    // TODO: change this to a io::Result
     if !path.is_file() {
         return Err("Path is not a file".to_string());
     }
@@ -489,21 +491,21 @@ pub fn load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
 
     let id: Uuid = Uuid::new_v4();
 
-    let name = path
-        .file_stem()
-        .and_then(|os_str| os_str.to_str())
-        .unwrap_or("Unnamed Playlist")
-        .to_string();
+    let mut name = "Unnamed Playlist".to_owned();
+    let maybe_stem = path.file_stem();
+    if let Some(stem) = maybe_stem {
+        name = stem.to_string_lossy().to_string();
+    }
 
     let file_contents = fs::read_to_string(path)?;
     let mut songs = Vec::new();
     for line in file_contents.lines() {
-        let trim = line.trim();
-        if trim.is_empty() || trim.starts_with("#") {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("#") {
             continue;
         }
 
-        let path = PathBuf::from(trim);
+        let path = PathBuf::from(trimmed);
         let maybe_song = get_song_from_file(&path);
         match maybe_song {
             Ok(song) => songs.push(song),
@@ -514,15 +516,22 @@ pub fn load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         }
     }
 
-    let metadata = match fs::metadata(path) {
-        Ok(metadata) => metadata,
+    let mut creation_date_time = Utc::now();
+    let result = fs::metadata(path);
+    match result {
+        Ok(metadata) => {
+            let result = metadata.created();
+            match result {
+                Ok(created) => {
+                    creation_date_time = created.into();
+                }
+                Err(err) => print_error(&err),
+            }
+        }
         Err(err) => {
             print_error(&err);
-            return Err(err);
         }
-    };
-    let created = metadata.created()?;
-    let creation_date_time = created.into();
+    }
 
     let path = Some(path.to_path_buf());
 
