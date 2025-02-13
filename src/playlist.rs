@@ -1,10 +1,9 @@
 use std::{
     fs::{self, File},
     io::{self, ErrorKind, Write},
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, time::SystemTime,
 };
 
-use chrono::{DateTime, Utc};
 use fully_pub::fully_pub;
 use uuid::Uuid;
 
@@ -15,7 +14,7 @@ use crate::{song::get_song_from_file, print_error, Song};
 pub struct Playlist {
     id: Uuid,
     name: String,
-    creation_date_time: DateTime<Utc>,
+    creation_date_time: SystemTime,
     songs: Vec<Song>,
     path: Option<PathBuf>,
 }
@@ -76,7 +75,7 @@ pub fn _load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         }
     }
 
-    let mut creation_date_time = Utc::now();
+    let mut creation_date_time = SystemTime::now();
     let metadata_result = fs::metadata(path);
     match metadata_result {
         Err(err) => print_error(err),
@@ -85,7 +84,7 @@ pub fn _load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
             match created_result {
                 Err(err) => print_error(&err),
                 Ok(created) => {
-                    creation_date_time = created.into();
+                    creation_date_time = created;
                 }
             }
         }
@@ -113,7 +112,7 @@ pub fn create_a_new_playlist(name: &str) -> Playlist {
     Playlist {
         id: Uuid::new_v4(),
         name: name.to_owned(),
-        creation_date_time: Utc::now(),
+        creation_date_time: SystemTime::now(),
         songs: Vec::new(),
         path: None,
     }
