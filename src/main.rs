@@ -19,7 +19,6 @@ TODO:
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
 * maybe make volume slider hover.
-* rename unselectable_label().
 * images with different aspect ratios should be stretched or cropped to match 1:1.
 */
 
