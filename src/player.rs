@@ -1,5 +1,5 @@
 use crate::{
-    print_error, print_info, print_success,
+    print_error, print_info,
     ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
     Playlist, Song, SortBy, SortOrder, Theme,
 };
@@ -464,9 +464,9 @@ fn _load_playlist_from_m3u(_path: &Path) -> Result<Playlist, String> {
     todo!()
 }
 
-pub fn save_playlist_to_m3u<P: AsRef<Path>>(playlist: Playlist, directory: P) -> io::Result<()> {
+pub fn save_playlist_to_m3u(playlist: &mut Playlist, directory: &Path) -> io::Result<()> {
     let filename = format!("{}.m3u", playlist.name);
-    let file_path = directory.as_ref().join(filename);
+    let file_path = directory.join(filename);
 
     let mut file = File::create(&file_path)?;
 
@@ -475,7 +475,8 @@ pub fn save_playlist_to_m3u<P: AsRef<Path>>(playlist: Playlist, directory: P) ->
         writeln!(file, "{}", line)?;
     }
 
-    print_success(format!("Saved playlist: {}", playlist.name));
+    playlist.path = Some(file_path);
+
     Ok(())
 }
 
@@ -545,4 +546,14 @@ fn _rename_playlist_file(old_name: &str, new_name: &str) -> io::Result<()> {
     let old_filename = format!("{}.m3u", old_name);
     let new_filename = format!("{}.m3u", new_name);
     fs::rename(old_filename, new_filename)
+}
+
+pub fn create_a_new_playlist(name: &str) -> Playlist {
+    Playlist {
+        id: Uuid::new_v4(),
+        name: name.to_owned(),
+        creation_date_time: Utc::now(),
+        songs: Vec::new(),
+        path: None,
+    }
 }

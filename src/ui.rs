@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use chrono::Utc;
 use eframe::egui::{
     containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
     Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
@@ -18,12 +17,9 @@ use strum_macros::EnumIter;
 use uuid::Uuid;
 
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
-    player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
-    },
-    print_error, print_info, sort_songs, Playlist, Song, SortBy, SortOrder, Theme,
+    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
+        self, add_next_to_queue, add_to_queue, create_a_new_playlist, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, save_playlist_to_m3u, shuffle_queue, GemPlayer, KEY_COMMANDS
+    }, print_error, print_info, print_success, sort_songs, Playlist, Song, SortBy, SortOrder, Theme
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -114,7 +110,7 @@ impl eframe::App for player::GemPlayer {
                     strip.cell(|ui| match self.ui_state.current_view {
                         View::Library => render_library_ui(ui, self),
                         View::Queue => render_queue_ui(ui, &mut self.player.queue),
-                        View::Playlists => render_playlists_ui(ui, &mut self.playlists, &mut self.ui_state.playlists_ui_state),
+                        View::Playlists => render_playlists_ui(ui, self),
                         View::Settings => render_settings_ui(ui, self),
                     });
                     strip.cell(|ui| {
@@ -733,8 +729,8 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
         });
 }
 
-pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists_ui_state: &mut PlaylistsUIState) {
-    if playlists_ui_state.confirm_delete_playlist_modal_is_open {
+pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    if gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open {
         let mut cancel_clicked = false;
         let mut confirm_clicked = false;
 
@@ -765,14 +761,14 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
         });
 
         if confirm_clicked {
-            if let Some(index) = playlists_ui_state.selected_playlist_index {
-                print_info(format!("Confirmed deletion of playlist: {}", playlists[index].name));
-                playlists.remove(index);
-                playlists_ui_state.selected_playlist_index = None;
+            if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
+                print_info(format!("Confirmed deletion of playlist: {}", gem_player.playlists[index].name));
+                gem_player.playlists.remove(index);
+                gem_player.ui_state.playlists_ui_state.selected_playlist_index = None;
             }
-            playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
+            gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
         } else if cancel_clicked || modal.should_close() {
-            playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
+            gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
         }
     }
 
@@ -806,27 +802,38 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
                                     let add_button = Button::new(icons::ICON_ADD);
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
-                                        print_info("Adding playlist");
+                                        let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
+                                        let mut new_playlist = create_a_new_playlist(&new_playlist_name);
 
-                                        let new_playlist = Playlist {
-                                            id: uuid::Uuid::new_v4(),
-                                            name: format!("Playlist {}", playlists.len() + 1),
-                                            creation_date_time: Utc::now(),
-                                            songs: Vec::new(),
-                                            path: None,
-                                        };
+                                        let maybe_library_directory = gem_player.library_directory.clone();
+                                        match maybe_library_directory {
+                                            None => {
+                                                let error_message = "Could not create a new playlist as there is no library directory.";
+                                                print_error(error_message);
+                                                gem_player.ui_state.toasts.error(error_message);
+                                            },
+                                            Some(library_directory) => {
+                                                if let Err(err) = save_playlist_to_m3u(&mut new_playlist, &library_directory) {
+                                                    let error_message = format!("Could not save the playlist to library: {}.", err);
+                                                    print_error(&error_message);
+                                                    gem_player.ui_state.toasts.error(&error_message);
+                                                }
 
-                                        playlists.push(new_playlist);
+                                                print_success(format!("Created and saved new playlist: {}", new_playlist.name));
+                                            },
+                                        }
+
+                                        gem_player.playlists.push(new_playlist);
                                     }
                                 },
                             );
                         });
                     })
                     .body(|body| {
-                        body.rows(36.0, playlists.len(), |mut row| {
-                            let playlist = &mut playlists[row.index()];
+                        body.rows(36.0, gem_player.playlists.len(), |mut row| {
+                            let playlist = &mut gem_player.playlists[row.index()];
 
-                            let playlist_is_selected = playlists_ui_state.selected_playlist_index == Some(row.index());
+                            let playlist_is_selected = gem_player.ui_state.playlists_ui_state.selected_playlist_index == Some(row.index());
                             row.set_selected(playlist_is_selected);
 
                             row.col(|ui| {
@@ -837,7 +844,7 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
                             let response = row.response();
                             if response.clicked() {
                                 print_info(format!("Selected playlist: {}", playlist.name));
-                                playlists_ui_state.selected_playlist_index = Some(row.index());
+                                gem_player.ui_state.playlists_ui_state.selected_playlist_index = Some(row.index());
                             }
                         });
                     });
@@ -848,10 +855,10 @@ pub fn render_playlists_ui(ui: &mut Ui, playlists: &mut Vec<Playlist>, playlists
             });
 
             strip.cell(|ui| {
-                let maybe_playlist = playlists_ui_state
+                let maybe_playlist = gem_player.ui_state.playlists_ui_state
                     .selected_playlist_index
-                    .and_then(|index| playlists.get_mut(index));
-                render_playlist_content(ui, playlists_ui_state, maybe_playlist);
+                    .and_then(|index| gem_player.playlists.get_mut(index));
+                render_playlist_content(ui, &mut gem_player.ui_state.playlists_ui_state, maybe_playlist);
             });
         });
 }
