@@ -1,5 +1,6 @@
 use colored::Colorize;
 use eframe::egui::{Vec2, ViewportBuilder};
+use player::init_gem_player;
 use song::Song;
 use std::time::Duration;
 use strum_macros::EnumIter;
@@ -34,7 +35,7 @@ fn main() -> eframe::Result {
             .with_transparent(true),
         ..Default::default()
     };
-    eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(player::GemPlayer::new(cc)))))
+    eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
 }
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]

@@ -47,84 +47,81 @@ pub struct Player {
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
 }
 
-impl GemPlayer {
-    // TODO: change to function.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        egui_extras::install_image_loaders(&cc.egui_ctx);
+pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
+    egui_extras::install_image_loaders(&cc.egui_ctx);
 
-        egui_material_icons::initialize(&cc.egui_ctx);
+    egui_material_icons::initialize(&cc.egui_ctx);
 
-        let (_stream, handle) = OutputStream::try_default().unwrap();
-        let sink = Sink::try_new(&handle).unwrap();
-        sink.pause();
-        sink.set_volume(0.6);
+    let (_stream, handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&handle).unwrap();
+    sink.pause();
+    sink.set_volume(0.6);
 
-        let library_directory = dirs::audio_dir().map(|dir| dir.join("MyMusic"));
+    let library_directory = dirs::audio_dir().map(|dir| dir.join("MyMusic"));
 
-        let mut library = Vec::new();
-        let mut playlists = Vec::new();
-        if let Some(directory) = &library_directory {
-            let result = read_music_from_a_directory(directory);
-            match result {
-                Ok(found_songs) => {
-                    library.extend(found_songs);
-                }
-                Err(e) => {
-                    print_error(e);
-                }
+    let mut library = Vec::new();
+    let mut playlists = Vec::new();
+    if let Some(directory) = &library_directory {
+        let result = read_music_from_a_directory(directory);
+        match result {
+            Ok(found_songs) => {
+                library.extend(found_songs);
             }
-
-            let result = read_playlists_from_a_directory(directory);
-            match result {
-                Ok(found_playlists) => {
-                    playlists.extend(found_playlists);
-                }
-                Err(e) => {
-                    print_error(e);
-                }
+            Err(e) => {
+                print_error(e);
             }
-        };
-        print_info(format!("Found {} songs", library.len()));
-
-        Self {
-            ui_state: UIState {
-                current_view: ui::View::Library,
-                theme: Theme::System,
-                search_text: String::new(),
-                selected_library_song: None,
-                sort_by: SortBy::Title,
-                sort_order: SortOrder::Ascending,
-                playlists_ui_state: PlaylistsUIState {
-                    selected_playlist_index: None,
-                    edit_playlist_name_info: None,
-                    confirm_delete_playlist_modal_is_open: false,
-                },
-                _edit_song_metadata_ui_state: EditSongMetadaUIState {
-                    _buffer_song: None,
-                    _edit_song_metadata_modal_is_open: false,
-                },
-                toasts: Toasts::default(),
-            },
-
-            library,
-            library_directory,
-            playlists,
-
-            player: Player {
-                current_song: None,
-
-                queue: Vec::new(),
-                history: Vec::new(),
-
-                repeat: false,
-                muted: false,
-                volume_before_mute: None,
-                paused_before_scrubbing: None,
-
-                _stream,
-                sink,
-            },
         }
+
+        let result = read_playlists_from_a_directory(directory);
+        match result {
+            Ok(found_playlists) => {
+                playlists.extend(found_playlists);
+            }
+            Err(e) => {
+                print_error(e);
+            }
+        }
+    };
+    print_info(format!("Found {} songs", library.len()));
+
+    GemPlayer {
+        ui_state: UIState {
+            current_view: ui::View::Library,
+            theme: Theme::System,
+            search_text: String::new(),
+            selected_library_song: None,
+            sort_by: SortBy::Title,
+            sort_order: SortOrder::Ascending,
+            playlists_ui_state: PlaylistsUIState {
+                selected_playlist_index: None,
+                edit_playlist_name_info: None,
+                confirm_delete_playlist_modal_is_open: false,
+            },
+            _edit_song_metadata_ui_state: EditSongMetadaUIState {
+                _buffer_song: None,
+                _edit_song_metadata_modal_is_open: false,
+            },
+            toasts: Toasts::default(),
+        },
+
+        library,
+        library_directory,
+        playlists,
+
+        player: Player {
+            current_song: None,
+
+            queue: Vec::new(),
+            history: Vec::new(),
+
+            repeat: false,
+            muted: false,
+            volume_before_mute: None,
+            paused_before_scrubbing: None,
+
+            _stream,
+            sink,
+        },
     }
 }
 
