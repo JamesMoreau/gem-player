@@ -133,7 +133,7 @@ impl eframe::App for player::GemPlayer {
 pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
     let panel_frame = Frame {
         fill: ctx.style().visuals.window_fill(),
-        rounding: 10.0.into(),
+        corner_radius: 10.0.into(),
         stroke: ctx.style().visuals.widgets.noninteractive.fg_stroke,
         outer_margin: 0.5.into(), // so the stroke is within the bounds
         ..Default::default()
@@ -252,7 +252,7 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 }
 
 pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+    Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         Flex::horizontal()
             .h_full()
             .w_full()
@@ -453,8 +453,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library.is_empty() {
-        Frame::none()
-            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+        Frame::new()
+            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label(
@@ -630,8 +630,8 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &mut 
 
 pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
     if queue.is_empty() {
-        Frame::none()
-            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+        Frame::new()
+            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("The queue is empty."));
@@ -742,7 +742,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
         let modal = containers::Modal::new(Id::new("Delete Playlist Modal")).show(ui.ctx(), |ui| {
             ui.set_width(200.0);
-            Frame::none().outer_margin(Margin::same(4.0)).show(ui, |ui| {
+            Frame::new().outer_margin(Margin::same(4)).show(ui, |ui| {
                 let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
                 ui.add(label);
 
@@ -875,8 +875,8 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
     let Some(playlist) = maybe_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
 
-        Frame::none()
-            .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+        Frame::new()
+            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("No playlist selected"));
@@ -964,8 +964,8 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
 
             strip.cell(|ui| {
                 if playlist.songs.is_empty() {
-                    Frame::none()
-                        .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+                    Frame::new()
+                        .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
                         .show(ui, |ui| {
                             ui.vertical_centered(|ui| {
                                 ui.add(unselectable_label("The playlist is empty."));
@@ -1051,8 +1051,8 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
 }
 
 pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none()
-        .outer_margin(Margin::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
+    Frame::new()
+        .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
         .show(ui, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
@@ -1134,7 +1134,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    Frame::none().inner_margin(Margin::symmetric(16.0, 0.0)).show(ui, |ui| {
+    Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         Flex::horizontal()
             .h_full()
             .w_full()

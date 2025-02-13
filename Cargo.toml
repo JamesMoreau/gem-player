@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 dirs = "6.0.0"
-eframe = { version = "0.30.0", features = ["default"] }
-egui_extras = { version = "0.30.0", features = ["all_loaders"] }
-egui_flex = "0.2.0"
-egui_material_icons = "0.2.0"
+eframe = { version = "0.31.0", features = ["default"] }
+egui_extras = { version = "0.31.0", features = ["all_loaders"] }
+egui_flex = "0.3.0"
+egui_material_icons = "0.3.0"
 env_logger = { version = "0.11.6", default-features = false, features = [
     "auto-color",
     "humantime",
@@ -24,8 +24,8 @@ rodio = { version = "0.20.1", features = ["symphonia-all"] }
 strum = "0.26.3"
 strum_macros = "0.26.4"
 colored = "3.0.0"
-egui-notify = "0.18.0"
-uuid = { version = "1.12.1", features = ["fast-rng", "v4"]}
+egui-notify = "0.19.0"
+uuid = { version = "1.13.1", features = ["fast-rng", "v4"]}
 lazy_static = "1.5.0"
 fully_pub = "0.1.4"
 indexmap = "2.7.1"
