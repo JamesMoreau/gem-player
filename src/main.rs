@@ -11,7 +11,6 @@ mod ui;
 
 /*
 TODO:
-* playlists / m3u. deleted m3u file should be moved to trash (and not permanently deleted).
 * library directory should be persisted. maybe other state as well?
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
@@ -20,6 +19,7 @@ TODO:
 * Music Visualizer.
 * maybe make volume slider hover.
 * images with different aspect ratios should be stretched or cropped to match 1:1.
+* should library and playlist views have different sort by ui state?
 */
 
 fn main() -> eframe::Result {
