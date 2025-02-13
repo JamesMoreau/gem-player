@@ -12,7 +12,7 @@ mod ui;
 /*
 TODO:
 * actually read in the playlists.
-* library directory should be persisted. maybe other state as well?
+* library directory should be persisted. maybe other state as well (like theme)?
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
 * could use egui_inbox for library updating with watcher.

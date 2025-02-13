@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use eframe::egui::{
-    containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, FontId, Frame, Id, Image, Label,
+    containers, include_image, text, Align, Align2, Button, CentralPanel, ComboBox, Context, FontId, Frame, Id, Image, Label,
     Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
     TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
@@ -390,14 +390,14 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
                                 flex.add_ui(item().shrink(), |ui| {
                                     let default_text_style = TextStyle::Body.resolve(ui.style());
-                                    let default_color = ui.visuals().text_color();
-                                    let data_format = TextFormat::simple(default_text_style.clone(), Color32::WHITE);
+                                    let divider_color = ui.visuals().weak_text_color();
+                                    let data_format = TextFormat::simple(default_text_style.clone(), ui.visuals().text_color());
 
                                     let mut job = text::LayoutJob::default();
                                     job.append(&title, 0.0, data_format.clone());
-                                    job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
+                                    job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), divider_color));
                                     job.append(&artist, 0.0, data_format.clone());
-                                    job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), default_color));
+                                    job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), divider_color));
                                     job.append(&album, 0.0, data_format.clone());
 
                                     let song_label = Label::new(job).selectable(false).truncate();
