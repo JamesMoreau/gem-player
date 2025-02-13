@@ -18,8 +18,8 @@ use uuid::Uuid;
 
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
-        self, add_next_to_queue, add_to_queue, create_a_new_playlist, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, save_playlist_to_m3u, shuffle_queue, GemPlayer, KEY_COMMANDS
-    }, print_error, print_info, print_success, sort_songs, Playlist, Song, SortBy, SortOrder, Theme
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS
+    }, playlist::{create_a_new_playlist, save_playlist_to_m3u, Playlist}, print_error, print_info, print_success, sort_songs, Song, SortBy, SortOrder, Theme
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]

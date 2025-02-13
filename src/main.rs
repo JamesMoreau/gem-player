@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use eframe::egui::{Vec2, ViewportBuilder};
 use fully_pub::fully_pub;
 use uuid::Uuid;
@@ -7,6 +6,7 @@ use strum_macros::EnumIter;
 use colored::Colorize;
 
 mod player;
+mod playlist;
 mod ui;
 
 /*
@@ -102,16 +102,6 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
     let seconds = total_seconds % seconds_per_minute;
 
     format!("{}:{:02}:{:02}", hours, minutes, seconds)
-}
-
-#[fully_pub]
-#[derive(Debug, Clone)]
-pub struct Playlist {
-    id: Uuid,
-    name: String,
-    creation_date_time: DateTime<Utc>,
-    songs: Vec<Song>,
-    path: Option<PathBuf>,
 }
 
 pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
