@@ -16,7 +16,6 @@ env_logger = { version = "0.11.6", default-features = false, features = [
 glob = "0.3.1"
 image = { version = "0.25.2", features = ["jpeg", "png"] }
 lofty = "0.22.1"
-m3u = "1.0.0"
 notify = "8.0.0"
 open = "5.3.2"
 rand = "0.9.0"
