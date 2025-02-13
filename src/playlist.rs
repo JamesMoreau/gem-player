@@ -1,13 +1,15 @@
+use glob::glob;
 use std::{
     fs::{self, File},
     io::{self, ErrorKind, Write},
-    path::{Path, PathBuf}, time::SystemTime,
+    path::{Path, PathBuf},
+    time::SystemTime,
 };
 
 use fully_pub::fully_pub;
 use uuid::Uuid;
 
-use crate::{song::get_song_from_file, print_error, Song};
+use crate::{print_error, song::get_song_from_file, Song};
 
 #[fully_pub]
 #[derive(Debug, Clone)]
@@ -21,6 +23,35 @@ pub struct Playlist {
 
 pub fn _add_songs_to_playlist(playlist: &mut Playlist, songs: Vec<Song>) {
     playlist.songs.extend(songs);
+}
+
+pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
+    let file_type = "m3u";
+    let pattern = format!("{}/*.{}", path.to_string_lossy(), file_type);
+
+    let mut m3u_paths = Vec::new();
+    let result = glob(&pattern);
+    match result {
+        Ok(paths) => {
+            for path in paths.filter_map(Result::ok) {
+                m3u_paths.push(path);
+            }
+        }
+        Err(e) => {
+            return Err(io::Error::new(ErrorKind::Other, format!("Invalid pattern: {}", e)));
+        }
+    }
+
+    let mut playlists = Vec::new();
+    for path in m3u_paths {
+        let result = get_playlist_from_m3u(&path);
+        match result {
+            Ok(playlist) => playlists.push(playlist),
+            Err(e) => print_error(e.to_string()),
+        }
+    }
+
+    Ok(playlists)
 }
 
 pub fn save_playlist_to_m3u(playlist: &mut Playlist, directory: &Path) -> io::Result<()> {
@@ -39,7 +70,7 @@ pub fn save_playlist_to_m3u(playlist: &mut Playlist, directory: &Path) -> io::Re
     Ok(())
 }
 
-pub fn _load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
+pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     let Some(extension) = path.extension() else {
         return Err(io::Error::new(ErrorKind::InvalidInput, "File has no extension"));
     };
@@ -122,7 +153,7 @@ pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> {
     let Some(path) = playlist.path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
     };
-    
+
     // Send the m3u file to the trash!
     let result = trash::delete(path);
     if let Err(e) = result {

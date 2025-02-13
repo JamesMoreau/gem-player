@@ -1,8 +1,9 @@
 use crate::{
-    playlist::Playlist,
+    playlist::{read_playlists_from_a_directory, Playlist},
     print_error, print_info,
     song::{get_song_from_file, Song, SortBy, SortOrder},
-    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState}, Theme,
+    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
+    Theme,
 };
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
@@ -47,6 +48,7 @@ pub struct Player {
 }
 
 impl GemPlayer {
+    // TODO: change to function.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
@@ -59,18 +61,28 @@ impl GemPlayer {
 
         let library_directory = dirs::audio_dir().map(|dir| dir.join("MyMusic"));
 
-        let library = match &library_directory {
-            Some(path) => {
-                let result = read_music_from_a_directory(path);
-                match result {
-                    Ok(songs) => songs,
-                    Err(e) => {
-                        print_error(e);
-                        Vec::new()
-                    }
+        let mut library = Vec::new();
+        let mut playlists = Vec::new();
+        if let Some(directory) = &library_directory {
+            let result = read_music_from_a_directory(directory);
+            match result {
+                Ok(found_songs) => {
+                    library.extend(found_songs);
+                }
+                Err(e) => {
+                    print_error(e);
                 }
             }
-            None => Vec::new(),
+
+            let result = read_playlists_from_a_directory(directory);
+            match result {
+                Ok(found_playlists) => {
+                    playlists.extend(found_playlists);
+                }
+                Err(e) => {
+                    print_error(e);
+                }
+            }
         };
         print_info(format!("Found {} songs", library.len()));
 
@@ -96,7 +108,7 @@ impl GemPlayer {
 
             library,
             library_directory,
-            playlists: Vec::new(),
+            playlists,
 
             player: Player {
                 current_song: None,
@@ -194,6 +206,7 @@ pub fn load_and_play_song(player: &mut Player, song: &Song) -> Result<(), String
 }
 
 pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
+    // TODO change to io::Result and move to song.rs
     let patterns = SUPPORTED_AUDIO_FILE_TYPES
         .iter()
         .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
@@ -209,18 +222,14 @@ pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
                 }
             }
             Err(e) => {
-                return Err(format!("Error reading pattern {}: {}", pattern, e));
+                return Err(format!("Invalid pattern: {}", e));
             }
         }
     }
 
-    if file_paths.is_empty() {
-        return Err(format!("No music files found in directory: {:?}", path));
-    }
-
     let mut songs = Vec::new();
-    for entry in file_paths {
-        let result = get_song_from_file(&entry);
+    for path in file_paths {
+        let result = get_song_from_file(&path);
         match result {
             Ok(song) => songs.push(song),
             Err(e) => print_error(e.to_string()),
