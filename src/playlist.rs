@@ -1,4 +1,8 @@
-use std::{fs::{self, File}, io::{self, ErrorKind, Write}, path::{Path, PathBuf}};
+use std::{
+    fs::{self, File},
+    io::{self, ErrorKind, Write},
+    path::{Path, PathBuf},
+};
 
 use chrono::{DateTime, Utc};
 use fully_pub::fully_pub;
@@ -15,7 +19,6 @@ pub struct Playlist {
     songs: Vec<Song>,
     path: Option<PathBuf>,
 }
-
 
 pub fn _add_songs_to_playlist(playlist: &mut Playlist, songs: Vec<Song>) {
     playlist.songs.extend(songs);
@@ -100,6 +103,7 @@ pub fn _load_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
 }
 
 fn _rename_playlist_file(old_name: &str, new_name: &str) -> io::Result<()> {
+    //TODO fix!
     let old_filename = format!("{}.m3u", old_name);
     let new_filename = format!("{}.m3u", new_name);
     fs::rename(old_filename, new_filename)

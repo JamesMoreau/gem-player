@@ -1,5 +1,8 @@
 use crate::{
-    playlist::Playlist, print_error, print_info, ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState}, Song, SortBy, SortOrder, Theme
+    playlist::Playlist,
+    print_error, print_info,
+    song::{Song, SortBy, SortOrder},
+    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState}, Theme,
 };
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
@@ -451,4 +454,3 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
         }
     });
 }
-

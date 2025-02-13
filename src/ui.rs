@@ -17,9 +17,15 @@ use strum_macros::EnumIter;
 use uuid::Uuid;
 
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs, player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next, play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS
-    }, playlist::{create_a_new_playlist, save_playlist_to_m3u, Playlist}, print_error, print_info, print_success, sort_songs, Song, SortBy, SortOrder, Theme
+    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
+    player::{
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
+        play_or_pause, play_previous, read_music_from_a_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
+    },
+    playlist::{create_a_new_playlist, save_playlist_to_m3u, Playlist},
+    print_error, print_info, print_success,
+    song::{sort_songs, SortBy, SortOrder},
+    Song, Theme,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -811,7 +817,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                                 let error_message = "Could not create a new playlist as there is no library directory.";
                                                 print_error(error_message);
                                                 gem_player.ui_state.toasts.error(error_message);
-                                            },
+                                            }
                                             Some(library_directory) => {
                                                 if let Err(err) = save_playlist_to_m3u(&mut new_playlist, &library_directory) {
                                                     let error_message = format!("Could not save the playlist to library: {}.", err);
@@ -820,7 +826,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                                 }
 
                                                 print_success(format!("Created and saved new playlist: {}", new_playlist.name));
-                                            },
+                                            }
                                         }
 
                                         gem_player.playlists.push(new_playlist);
@@ -855,7 +861,9 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                let maybe_playlist = gem_player.ui_state.playlists_ui_state
+                let maybe_playlist = gem_player
+                    .ui_state
+                    .playlists_ui_state
                     .selected_playlist_index
                     .and_then(|index| gem_player.playlists.get_mut(index));
                 render_playlist_content(ui, &mut gem_player.ui_state.playlists_ui_state, maybe_playlist);
