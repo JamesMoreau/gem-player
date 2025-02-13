@@ -1,7 +1,7 @@
 use crate::{
     playlist::Playlist,
     print_error, print_info,
-    song::{Song, SortBy, SortOrder},
+    song::{get_song_from_file, Song, SortBy, SortOrder},
     ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState}, Theme,
 };
 use eframe::egui::{Context, Event, Key};
@@ -10,17 +10,12 @@ use fully_pub::fully_pub;
 use glob::glob;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
-use lofty::{
-    file::{AudioFile, TaggedFileExt},
-    tag::ItemKey,
-};
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
-    io::{self, BufReader, ErrorKind},
+    io::BufReader,
     path::{Path, PathBuf},
 };
-use uuid::Uuid;
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -196,57 +191,6 @@ pub fn load_and_play_song(player: &mut Player, song: &Song) -> Result<(), String
     player.sink.play();
 
     Ok(())
-}
-
-pub fn get_song_from_file(path: &Path) -> io::Result<Song> {
-    if !path.is_file() {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
-    }
-
-    let result_file = lofty::read_from_path(path);
-    let tagged_file = match result_file {
-        Ok(file) => file,
-        Err(e) => {
-            return Err(io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)));
-        }
-    };
-
-    let tag = match tagged_file.primary_tag() {
-        Some(tag) => tag,
-        None => match tagged_file.first_tag() {
-            Some(tag) => tag,
-            None => return Err(io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path))),
-        },
-    };
-
-    let id = Uuid::new_v4();
-
-    let title = tag
-        .get_string(&ItemKey::TrackTitle)
-        .map(|t| t.to_owned())
-        .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
-
-    let artist = tag.get_string(&ItemKey::TrackArtist).map(|a| a.to_owned());
-
-    let album = tag.get_string(&ItemKey::AlbumTitle).map(|a| a.to_owned());
-
-    let properties = tagged_file.properties();
-    let duration = properties.duration();
-
-    let artwork_result = tag.pictures().first();
-    let artwork = artwork_result.map(|artwork| artwork.data().to_vec());
-
-    let file_path = path.to_path_buf();
-
-    Ok(Song {
-        id,
-        title,
-        artist,
-        album,
-        duration,
-        artwork,
-        file_path,
-    })
 }
 
 pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {

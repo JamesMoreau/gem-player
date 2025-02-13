@@ -1,6 +1,7 @@
-use std::{path::PathBuf, time::Duration};
+use std::{io::{self, ErrorKind}, path::{Path, PathBuf}, time::Duration};
 
 use fully_pub::fully_pub;
+use lofty::{file::{AudioFile, TaggedFileExt}, tag::ItemKey};
 use strum_macros::EnumIter;
 use uuid::Uuid;
 
@@ -44,4 +45,55 @@ pub fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
             SortOrder::Descending => ordering.reverse(),
         }
     });
+}
+
+pub fn get_song_from_file(path: &Path) -> io::Result<Song> {
+    if !path.is_file() {
+        return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
+    }
+
+    let result_file = lofty::read_from_path(path);
+    let tagged_file = match result_file {
+        Ok(file) => file,
+        Err(e) => {
+            return Err(io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)));
+        }
+    };
+
+    let tag = match tagged_file.primary_tag() {
+        Some(tag) => tag,
+        None => match tagged_file.first_tag() {
+            Some(tag) => tag,
+            None => return Err(io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path))),
+        },
+    };
+
+    let id = Uuid::new_v4();
+
+    let title = tag
+        .get_string(&ItemKey::TrackTitle)
+        .map(|t| t.to_owned())
+        .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
+
+    let artist = tag.get_string(&ItemKey::TrackArtist).map(|a| a.to_owned());
+
+    let album = tag.get_string(&ItemKey::AlbumTitle).map(|a| a.to_owned());
+
+    let properties = tagged_file.properties();
+    let duration = properties.duration();
+
+    let artwork_result = tag.pictures().first();
+    let artwork = artwork_result.map(|artwork| artwork.data().to_vec());
+
+    let file_path = path.to_path_buf();
+
+    Ok(Song {
+        id,
+        title,
+        artist,
+        album,
+        duration,
+        artwork,
+        file_path,
+    })
 }

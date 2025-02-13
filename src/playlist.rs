@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use fully_pub::fully_pub;
 use uuid::Uuid;
 
-use crate::{player::get_song_from_file, print_error, Song};
+use crate::{song::get_song_from_file, print_error, Song};
 
 #[fully_pub]
 #[derive(Debug, Clone)]
