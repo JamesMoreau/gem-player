@@ -1049,6 +1049,8 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
 
+                ui.add(unselectable_label("Playlists are also stored here as .m3u files."));
+
                 ui.horizontal(|ui| {
                     let path = gem_player
                         .library_directory
