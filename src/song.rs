@@ -10,10 +10,11 @@ use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
+use log::error;
 use strum_macros::EnumIter;
 use uuid::Uuid;
 
-use crate::{player::SUPPORTED_AUDIO_FILE_TYPES, print_error};
+use crate::player::SUPPORTED_AUDIO_FILE_TYPES;
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {
@@ -134,7 +135,7 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Song>> {
         let result = get_song_from_file(&path);
         match result {
             Ok(song) => songs.push(song),
-            Err(e) => print_error(e.to_string()),
+            Err(e) => error!("{}", e),
         }
     }
 

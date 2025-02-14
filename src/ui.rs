@@ -10,6 +10,7 @@ use egui_flex::{item, Flex, FlexJustify};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
+use log::{error, info};
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -22,7 +23,6 @@ use crate::{
         play_or_pause, play_previous, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
     },
     playlist::{create_a_new_playlist, delete_playlist_m3u, save_playlist_to_m3u, Playlist},
-    print_error, print_info, print_success,
     song::{read_music_from_a_directory, sort_songs, SortBy, SortOrder},
     Song, Theme,
 };
@@ -83,7 +83,7 @@ impl eframe::App for player::GemPlayer {
         if should_check_for_next_song_in_queue {
             let result = play_next(&mut self.player);
             if let Err(e) = result {
-                print_error(e);
+                error!("{}", e);
                 self.ui_state.toasts.error("Error playing the next song");
             }
         }
@@ -246,7 +246,7 @@ pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 }
 
 pub fn switch_view(ui_state: &mut UIState, view: View) {
-    print_info(format!("Switching to view: {:?}", view));
+    info!("Switching to view: {:?}", view);
     ui_state.current_view = view;
 }
 
@@ -274,13 +274,13 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if playback_position < rewind_threshold && !gem_player.player.history.is_empty() {
                             let result = play_previous(&mut gem_player.player);
                             if let Err(e) = result {
-                                print_error(e);
+                                error!("{}", e);
                                 gem_player.ui_state.toasts.error("Error playing the previous song");
                             }
                         } else {
                             let result = gem_player.player.sink.try_seek(Duration::ZERO);
                             if let Err(e) = result {
-                                print_error(format!("Error rewinding song: {:?}", e));
+                                error!("Error rewinding song: {:?}", e);
                             }
                         }
                     }
@@ -310,7 +310,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if response.clicked() {
                         let result = play_next(&mut gem_player.player);
                         if let Err(e) = result {
-                            print_error(e);
+                            error!("{}", e);
                             gem_player.ui_state.toasts.error("Error playing the next song");
                         }
                     }
@@ -371,9 +371,9 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             if response.drag_stopped() {
                                 let new_position = Duration::from_secs_f32(position_as_secs);
-                                print_info(format!("Seeking to {} of {}", format_duration_to_mmss(new_position), title));
+                                info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
                                 if let Err(e) = gem_player.player.sink.try_seek(new_position) {
-                                    print_error(format!("Error seeking to new position: {:?}", e));
+                                    error!("Error seeking to new position: {:?}", e);
                                 }
 
                                 // Resume playback if the player was not paused before scrubbing
@@ -614,12 +614,12 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &mut 
             Some(folder) => {
                 let result = open::that_detached(folder);
                 match result {
-                    Ok(_) => print_info(format!("Opening file location: {:?}", folder)),
-                    Err(e) => print_error(format!("Error opening file location: {:?}", e)),
+                    Ok(_) => info!("Opening file location: {:?}", folder),
+                    Err(e) => error!("Error opening file location: {:?}", e),
                 }
             }
             None => {
-                print_info("No file location to open");
+                info!("No file location to open");
             }
         }
 
@@ -768,17 +768,17 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         if confirm_clicked {
             if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
                 let playlist = &gem_player.playlists[index];
-                print_info(format!("Confirmed deletion of playlist: {}", playlist.name));
+                info!("Confirmed deletion of playlist: {}", playlist.name);
                 let result = delete_playlist_m3u(playlist);
                 if let Err(e) = result {
                     let message = format!("Unable to remove the .m3u file for playlist: {}. {}", playlist.name, e);
-                    print_error(message);
+                    error!("{}", message);
                 } else {
                     let message = format!(
                         "Playlist: {} was deleted successfully. If this was a mistake, the m3u file can be found in the trash.",
                         playlist.name
                     );
-                    print_success(&message);
+                    info!("{}", message);
                     gem_player.ui_state.toasts.success(&message);
                 }
 
@@ -829,17 +829,17 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         match maybe_library_directory {
                                             None => {
                                                 let error_message = "Could not create a new playlist as there is no library directory.";
-                                                print_error(error_message);
+                                                error!("{}", error_message);
                                                 gem_player.ui_state.toasts.error(error_message);
                                             }
                                             Some(library_directory) => {
                                                 if let Err(err) = save_playlist_to_m3u(&mut new_playlist, &library_directory) {
                                                     let error_message = format!("Could not save the playlist to library: {}.", err);
-                                                    print_error(&error_message);
+                                                    error!("{}", error_message);
                                                     gem_player.ui_state.toasts.error(&error_message);
                                                 }
 
-                                                print_success(format!("Created and saved new playlist: {}", new_playlist.name));
+                                                info!("Created and saved new playlist: {}", new_playlist.name);
                                             }
                                         }
 
@@ -863,7 +863,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             let response = row.response();
                             if response.clicked() {
-                                print_info(format!("Selected playlist: {}", playlist.name));
+                                info!("Selected playlist: {}", playlist.name);
                                 gem_player.ui_state.playlists_ui_state.selected_playlist_index = Some(row.index());
                             }
                         });
@@ -959,7 +959,7 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                             let delete_button = Button::new(icons::ICON_DELETE);
                             let response = ui.add(delete_button).on_hover_text("Delete");
                             if response.clicked() {
-                                print_info(format!("Opening delete playlist modal: {}", playlist.name));
+                                info!("Opening delete playlist modal: {}", playlist.name);
                                 playlist_ui_state.confirm_delete_playlist_modal_is_open = true;
                             }
 
@@ -968,7 +968,7 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                             let edit_name_button = Button::new(icons::ICON_EDIT);
                             let response = ui.add(edit_name_button).on_hover_text("Edit name");
                             if response.clicked() {
-                                print_info(format!("Editing playlist name: {}", playlist.name));
+                                info!("Editing playlist name: {}", playlist.name);
                                 playlist_ui_state.edit_playlist_name_info = Some((playlist.id, playlist.name.clone()));
                             }
                         },
@@ -1084,11 +1084,11 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let maybe_directory = FileDialog::new().set_directory("/").pick_folder();
                         match maybe_directory {
                             Some(directory) => {
-                                print_info(format!("Selected folder: {:?}", directory));
+                                info!("Selected folder: {:?}", directory);
                                 let _old_folder = gem_player.library_directory.clone();
                             }
                             None => {
-                                print_info("No folder selected");
+                                info!("No folder selected");
                             }
                         }
                     }
@@ -1201,7 +1201,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     match result {
                                         Ok(songs) => songs,
                                         Err(e) => {
-                                            print_error(e.to_string());
+                                            error!("{}", e);
                                             gem_player.ui_state.toasts.error(format!("Error refreshing library: {}", e));
                                             Vec::new()
                                         }

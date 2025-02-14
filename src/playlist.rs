@@ -6,10 +6,11 @@ use std::{
 };
 
 use glob::glob;
+use log::error;
 use uuid::Uuid;
 use fully_pub::fully_pub;
 
-use crate::{print_error, song::get_song_from_file, Song};
+use crate::{song::get_song_from_file, Song};
 
 #[fully_pub]
 #[derive(Debug, Clone)]
@@ -47,7 +48,7 @@ pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>>
         let result = get_playlist_from_m3u(&path);
         match result {
             Ok(playlist) => playlists.push(playlist),
-            Err(e) => print_error(e.to_string()),
+            Err(e) => error!("{}", e),
         }
     }
 
@@ -100,7 +101,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         match maybe_song {
             Ok(song) => songs.push(song),
             Err(err) => {
-                print_error(err);
+                error!("{}", err);
                 continue;
             }
         }
@@ -109,11 +110,11 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     let mut creation_date_time = SystemTime::now();
     let metadata_result = fs::metadata(path);
     match metadata_result {
-        Err(err) => print_error(err),
+        Err(err) => error!("{}", err),
         Ok(metadata) => {
             let created_result = metadata.created();
             match created_result {
-                Err(err) => print_error(&err),
+                Err(err) => error!("{}", &err),
                 Ok(created) => {
                     creation_date_time = created;
                 }

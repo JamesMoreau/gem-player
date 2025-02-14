@@ -1,6 +1,7 @@
 use std::{io::BufReader, path::PathBuf};
 
 use eframe::egui::{Context, Event, Key};
+use log::{error, info};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use indexmap::IndexMap;
@@ -9,11 +10,7 @@ use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 
 use crate::{
-    playlist::{read_playlists_from_a_directory, Playlist},
-    print_error, print_info,
-    song::{read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
-    Theme,
+    playlist::{read_playlists_from_a_directory, Playlist}, song::{read_music_from_a_directory, Song, SortBy, SortOrder}, ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState}, Theme
 };
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -66,7 +63,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 library.extend(found_songs);
             }
             Err(e) => {
-                print_error(e);
+                error!("{}", e);
             }
         }
 
@@ -76,11 +73,11 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 playlists.extend(found_playlists);
             }
             Err(e) => {
-                print_error(e);
+                error!("{}", e);
             }
         }
     }
-    print_info(format!("Found {} songs", library.len()));
+    info!("Found {} songs", library.len());
 
     GemPlayer {
         ui_state: UIState {
@@ -257,7 +254,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     let maybe_song_index = gem_player.library.iter().position(|s| s.id == song.id);
     match maybe_song_index {
         None => {
-            print_error("Song not found in the library.");
+            error!("Song not found in the library.");
         }
         Some(index) => {
             gem_player.player.queue.extend_from_slice(&gem_player.library[index + 1..]);
@@ -265,7 +262,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
 
             let result = load_and_play_song(&mut gem_player.player, song);
             if let Err(e) = result {
-                print_error(e.to_string());
+                error!("{}", e);
                 gem_player
                     .ui_state
                     .toasts
@@ -298,7 +295,7 @@ lazy_static! {
                 name: "Next",
                 action: |gp| {
                     if let Err(e) = play_next(&mut gp.player) {
-                        print_error(e);
+                        error!("{}", e);
                         gp.ui_state.toasts.error("Error playing the next song");
                     }
                 },
@@ -310,7 +307,7 @@ lazy_static! {
                 name: "Previous",
                 action: |gp| {
                     if let Err(e) = play_previous(&mut gp.player) {
-                        print_error(e);
+                        error!("{}", e);
                         gp.ui_state.toasts.error("Error playing the previous song");
                     }
                 },
@@ -361,7 +358,7 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
                     continue;
                 };
 
-                print_info(format!("Key pressed: {}", binding.name));
+                info!("Key pressed: {}", binding.name);
 
                 (binding.action)(gem_player); // Call the action associated with the key binding.
             }

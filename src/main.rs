@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use colored::Colorize;
 use eframe::egui::{Vec2, ViewportBuilder};
+use log::info;
 use strum_macros::EnumIter;
 
 use player::init_gem_player;
@@ -28,7 +28,8 @@ TODO:
 */
 
 fn main() -> eframe::Result {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+    env_logger::init(); // Log to stderr (if run with `RUST_LOG=debug`).
+    info!("Starting up Gem Player.");
 
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default()
@@ -71,17 +72,17 @@ pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
     songs.iter().map(|song| song.duration).sum()
 }
 
-#[cfg(debug_assertions)]
-pub fn print_info<T: std::fmt::Display>(info: T) {
-    println!("ℹ {}", info);
-}
+// #[cfg(debug_assertions)]
+// pub fn print_info<T: std::fmt::Display>(info: T) {
+//     println!("ℹ {}", info);
+// }
 
-#[cfg(debug_assertions)]
-pub fn print_success<T: std::fmt::Display>(success: T) {
-    println!("✔ {}", success.to_string().green());
-}
+// #[cfg(debug_assertions)]
+// pub fn print_success<T: std::fmt::Display>(success: T) {
+//     println!("✔ {}", success.to_string().green());
+// }
 
-#[cfg(debug_assertions)]
-pub fn print_error<T: std::fmt::Display>(error: T) {
-    println!("✖ {}", error.to_string().red());
-}
+// #[cfg(debug_assertions)]
+// pub fn print_error<T: std::fmt::Display>(error: T) {
+//     println!("✖ {}", error.to_string().red());
+// }

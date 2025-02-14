@@ -9,10 +9,7 @@ eframe = { version = "0.31.0", features = ["default"] }
 egui_extras = { version = "0.31.0", features = ["all_loaders"] }
 egui_flex = "0.3.0"
 egui_material_icons = "0.3.0"
-env_logger = { version = "0.11.6", default-features = false, features = [
-    "auto-color",
-    "humantime",
-] }
+env_logger = { version = "0.11.6", default-features = false, features = ["auto-color", "humantime"] }
 glob = "0.3.1"
 image = { version = "0.25.2", features = ["jpeg", "png"] }
 lofty = "0.22.1"
@@ -30,3 +27,4 @@ lazy_static = "1.5.0"
 fully_pub = "0.1.4"
 indexmap = "2.7.1"
 trash = "5.2.1"
+log = "0.4.25"
