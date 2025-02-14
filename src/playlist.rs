@@ -5,10 +5,10 @@ use std::{
     time::SystemTime,
 };
 
+use fully_pub::fully_pub;
 use glob::glob;
 use log::error;
 use uuid::Uuid;
-use fully_pub::fully_pub;
 
 use crate::{song::get_song_from_file, Song};
 

@@ -71,18 +71,3 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
 pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
     songs.iter().map(|song| song.duration).sum()
 }
-
-// #[cfg(debug_assertions)]
-// pub fn print_info<T: std::fmt::Display>(info: T) {
-//     println!("ℹ {}", info);
-// }
-
-// #[cfg(debug_assertions)]
-// pub fn print_success<T: std::fmt::Display>(success: T) {
-//     println!("✔ {}", success.to_string().green());
-// }
-
-// #[cfg(debug_assertions)]
-// pub fn print_error<T: std::fmt::Display>(error: T) {
-//     println!("✖ {}", error.to_string().red());
-// }
