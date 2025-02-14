@@ -141,17 +141,22 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
 //     Ok(())
 // }
 
-pub fn create_a_new_playlist(name: &str) -> Playlist { // TODO: should be responsible for creating the m3u file as well?
-    Playlist {
+pub fn create_a_new_playlist(name: &str, directory: &Path) -> io::Result<Playlist> {
+    let mut playlist = Playlist {
         id: Uuid::new_v4(),
         name: name.to_owned(),
         creation_date_time: SystemTime::now(),
         songs: Vec::new(),
         path: None,
-    }
+    };
+
+    save_playlist_to_m3u(&mut playlist, directory)?;
+
+    Ok(playlist)
 }
 
-pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> { // TODO: should this also remove the playlist from the library?
+pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> {
+    // TODO: should this also remove the playlist from the library?
     let Some(path) = playlist.path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
     };

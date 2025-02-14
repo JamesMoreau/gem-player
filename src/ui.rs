@@ -22,7 +22,7 @@ use crate::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
         play_or_pause, play_previous, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
     },
-    playlist::{create_a_new_playlist, delete_playlist_m3u, save_playlist_to_m3u, Playlist},
+    playlist::{create_a_new_playlist, delete_playlist_m3u, Playlist},
     song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
     Song, Theme,
 };
@@ -822,9 +822,6 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let add_button = Button::new(icons::ICON_ADD);
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
-                                        let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
-                                        let mut new_playlist = create_a_new_playlist(&new_playlist_name);
-
                                         let maybe_library_directory = gem_player.library_directory.clone();
                                         match maybe_library_directory {
                                             None => {
@@ -833,17 +830,21 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                                 gem_player.ui_state.toasts.error(error_message);
                                             }
                                             Some(library_directory) => {
-                                                if let Err(err) = save_playlist_to_m3u(&mut new_playlist, &library_directory) {
-                                                    let error_message = format!("Could not save the playlist to library: {}.", err);
-                                                    error!("{}", error_message);
-                                                    gem_player.ui_state.toasts.error(&error_message);
+                                                let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
+                                                let result = create_a_new_playlist(&new_playlist_name, &library_directory);
+                                                match result {
+                                                    Ok(new_playlist) => {
+                                                        info!("Created and saved: {}.", &new_playlist.name);
+                                                        gem_player.playlists.push(new_playlist);
+                                                    }
+                                                    Err(e) => {
+                                                        let error_message = format!("Failed to create: {}.", e);
+                                                        error!("{}", error_message);
+                                                        gem_player.ui_state.toasts.error(&error_message);
+                                                    }
                                                 }
-
-                                                info!("Created and saved new playlist: {}", new_playlist.name);
                                             }
                                         }
-
-                                        gem_player.playlists.push(new_playlist);
                                     }
                                 },
                             );
