@@ -66,6 +66,7 @@ pub fn save_playlist_to_m3u(playlist: &mut Playlist, directory: &Path) -> io::Re
         writeln!(file, "{}", line)?;
     }
 
+    // Update the object once the file operations are successful.
     playlist.path = Some(file_path);
 
     Ok(())
@@ -133,13 +134,14 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     })
 }
 
-fn _rename_playlist(old_name: &str, new_name: &str) -> io::Result<()> {
-    let old_filename = format!("{}.m3u", old_name);
-    let new_filename = format!("{}.m3u", new_name);
-    fs::rename(old_filename, new_filename)
-}
+// fn rename_playlist(playlist: &mut Playlist, new_name: &str) -> Result<(), ()> { // TODO: should we delete the old playlist file?
+//     playlist.name = new_name.to_string();
+//     save_playlist_to_m3u(playlist, );
 
-pub fn create_a_new_playlist(name: &str) -> Playlist {
+//     Ok(())
+// }
+
+pub fn create_a_new_playlist(name: &str) -> Playlist { // TODO: should be responsible for creating the m3u file as well?
     Playlist {
         id: Uuid::new_v4(),
         name: name.to_owned(),
@@ -149,7 +151,7 @@ pub fn create_a_new_playlist(name: &str) -> Playlist {
     }
 }
 
-pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> {
+pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> { // TODO: should this also remove the playlist from the library?
     let Some(path) = playlist.path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
     };
