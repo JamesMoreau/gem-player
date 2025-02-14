@@ -141,3 +141,7 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Song>> {
 
     Ok(songs)
 }
+
+pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
+    songs.iter().map(|song| song.duration).sum()
+}

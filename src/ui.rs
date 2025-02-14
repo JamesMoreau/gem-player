@@ -17,13 +17,13 @@ use strum_macros::EnumIter;
 use uuid::Uuid;
 
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, get_duration_of_songs,
+    format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
         play_or_pause, play_previous, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
     },
     playlist::{create_a_new_playlist, delete_playlist_m3u, save_playlist_to_m3u, Playlist},
-    song::{read_music_from_a_directory, sort_songs, SortBy, SortOrder},
+    song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
     Song, Theme,
 };
 

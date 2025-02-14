@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use eframe::egui::{Vec2, ViewportBuilder};
 use log::info;
 use strum_macros::EnumIter;
@@ -14,7 +12,6 @@ mod ui;
 
 /*
 TODO:
-* actually read in the playlists.
 * library directory should be persisted. maybe other state as well (like theme)?
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
@@ -68,6 +65,3 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
     format!("{}:{:02}:{:02}", hours, minutes, seconds)
 }
 
-pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
-    songs.iter().map(|song| song.duration).sum()
-}

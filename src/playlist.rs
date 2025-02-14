@@ -22,8 +22,8 @@ pub struct Playlist {
     path: Option<PathBuf>,
 }
 
-pub fn _add_songs_to_playlist(playlist: &mut Playlist, songs: Vec<Song>) {
-    playlist.songs.extend(songs);
+pub fn _add_a_song_to_playlist(playlist: &mut Playlist, songs: Song) {
+    playlist.songs.push(songs);
 }
 
 pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
@@ -133,8 +133,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     })
 }
 
-fn _rename_playlist_file(old_name: &str, new_name: &str) -> io::Result<()> {
-    //TODO fix!
+fn _rename_playlist(old_name: &str, new_name: &str) -> io::Result<()> {
     let old_filename = format!("{}.m3u", old_name);
     let new_filename = format!("{}.m3u", new_name);
     fs::rename(old_filename, new_filename)
