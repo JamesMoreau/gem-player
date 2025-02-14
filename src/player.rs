@@ -12,10 +12,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-use std::{
-    io::BufReader,
-    path::PathBuf,
-};
+use std::{io::BufReader, path::PathBuf};
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -80,7 +77,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 print_error(e);
             }
         }
-    };
+    }
     print_info(format!("Found {} songs", library.len()));
 
     GemPlayer {
