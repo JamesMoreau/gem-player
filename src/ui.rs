@@ -1,11 +1,10 @@
 use std::time::Duration;
 
 use eframe::egui::{
-    containers, include_image, text, Align, Align2, Button, CentralPanel, ComboBox, Context, FontId, Frame, Id, Image, Label,
-    Layout, Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
+    containers, include_image, text, Align, Align2, Button, CentralPanel, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout,
+    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
     TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
-
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
 use egui_material_icons::icons;

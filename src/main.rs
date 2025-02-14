@@ -1,9 +1,11 @@
+use std::time::Duration;
+
 use colored::Colorize;
 use eframe::egui::{Vec2, ViewportBuilder};
+use strum_macros::EnumIter;
+
 use player::init_gem_player;
 use song::Song;
-use std::time::Duration;
-use strum_macros::EnumIter;
 
 mod player;
 mod playlist;

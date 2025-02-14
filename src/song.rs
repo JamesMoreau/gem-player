@@ -1,17 +1,19 @@
-use crate::{player::SUPPORTED_AUDIO_FILE_TYPES, print_error};
+use std::{
+    io::{self, ErrorKind},
+    path::{Path, PathBuf},
+    time::Duration,
+};
+
 use fully_pub::fully_pub;
 use glob::glob;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
-use std::{
-    io::{self, ErrorKind},
-    path::{Path, PathBuf},
-    time::Duration,
-};
 use strum_macros::EnumIter;
 use uuid::Uuid;
+
+use crate::{player::SUPPORTED_AUDIO_FILE_TYPES, print_error};
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {

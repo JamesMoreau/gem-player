@@ -1,10 +1,5 @@
-use crate::{
-    playlist::{read_playlists_from_a_directory, Playlist},
-    print_error, print_info,
-    song::{read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
-    Theme,
-};
+use std::{io::BufReader, path::PathBuf};
+
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
@@ -12,7 +7,14 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-use std::{io::BufReader, path::PathBuf};
+
+use crate::{
+    playlist::{read_playlists_from_a_directory, Playlist},
+    print_error, print_info,
+    song::{read_music_from_a_directory, Song, SortBy, SortOrder},
+    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
+    Theme,
+};
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
