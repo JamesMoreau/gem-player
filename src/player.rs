@@ -1,21 +1,20 @@
 use crate::{
     playlist::{read_playlists_from_a_directory, Playlist},
     print_error, print_info,
-    song::{get_song_from_file, Song, SortBy, SortOrder},
+    song::{read_music_from_a_directory, Song, SortBy, SortOrder},
     ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
     Theme,
 };
 use eframe::egui::{Context, Event, Key};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
-use glob::glob;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     io::BufReader,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
@@ -200,40 +199,6 @@ pub fn load_and_play_song(player: &mut Player, song: &Song) -> Result<(), String
     player.sink.play();
 
     Ok(())
-}
-
-pub fn read_music_from_a_directory(path: &Path) -> Result<Vec<Song>, String> {
-    // TODO change to io::Result and move to song.rs
-    let patterns = SUPPORTED_AUDIO_FILE_TYPES
-        .iter()
-        .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
-        .collect::<Vec<String>>();
-
-    let mut file_paths = Vec::new();
-    for pattern in patterns {
-        let file_paths_result = glob(&pattern);
-        match file_paths_result {
-            Ok(paths) => {
-                for path in paths.filter_map(Result::ok) {
-                    file_paths.push(path);
-                }
-            }
-            Err(e) => {
-                return Err(format!("Invalid pattern: {}", e));
-            }
-        }
-    }
-
-    let mut songs = Vec::new();
-    for path in file_paths {
-        let result = get_song_from_file(&path);
-        match result {
-            Ok(song) => songs.push(song),
-            Err(e) => print_error(e.to_string()),
-        }
-    }
-
-    Ok(songs)
 }
 
 pub fn _get_song_position_in_queue(queue: Vec<Song>, song: &Song) -> Option<usize> {

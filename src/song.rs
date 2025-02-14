@@ -1,7 +1,15 @@
-use std::{io::{self, ErrorKind}, path::{Path, PathBuf}, time::Duration};
-
+use crate::{player::SUPPORTED_AUDIO_FILE_TYPES, print_error};
 use fully_pub::fully_pub;
-use lofty::{file::{AudioFile, TaggedFileExt}, tag::ItemKey};
+use glob::glob;
+use lofty::{
+    file::{AudioFile, TaggedFileExt},
+    tag::ItemKey,
+};
+use std::{
+    io::{self, ErrorKind},
+    path::{Path, PathBuf},
+    time::Duration,
+};
 use strum_macros::EnumIter;
 use uuid::Uuid;
 
@@ -96,4 +104,37 @@ pub fn get_song_from_file(path: &Path) -> io::Result<Song> {
         artwork,
         file_path,
     })
+}
+
+pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Song>> {
+    let patterns = SUPPORTED_AUDIO_FILE_TYPES
+        .iter()
+        .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
+        .collect::<Vec<String>>();
+
+    let mut file_paths = Vec::new();
+    for pattern in patterns {
+        let file_paths_result = glob(&pattern);
+        match file_paths_result {
+            Ok(paths) => {
+                for path in paths.filter_map(Result::ok) {
+                    file_paths.push(path);
+                }
+            }
+            Err(e) => {
+                return Err(io::Error::new(io::ErrorKind::Other, format!("Invalid pattern: {}", e)));
+            }
+        }
+    }
+
+    let mut songs = Vec::new();
+    for path in file_paths {
+        let result = get_song_from_file(&path);
+        match result {
+            Ok(song) => songs.push(song),
+            Err(e) => print_error(e.to_string()),
+        }
+    }
+
+    Ok(songs)
 }

@@ -1,3 +1,4 @@
+use fully_pub::fully_pub;
 use glob::glob;
 use std::{
     fs::{self, File},
@@ -5,8 +6,6 @@ use std::{
     path::{Path, PathBuf},
     time::SystemTime,
 };
-
-use fully_pub::fully_pub;
 use uuid::Uuid;
 
 use crate::{print_error, song::get_song_from_file, Song};
