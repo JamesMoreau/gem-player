@@ -22,7 +22,7 @@ use crate::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
         play_or_pause, play_previous, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
     },
-    playlist::{create_a_new_playlist, delete_playlist, Playlist},
+    playlist::{create_a_new_playlist, delete_playlist, rename_playlist},
     song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
     Song, Theme,
 };
@@ -783,6 +783,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 gem_player.ui_state.playlists_ui_state.selected_playlist_index = None;
             }
+
             gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
         } else if cancel_clicked || modal.should_close() {
             gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
@@ -863,7 +864,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             if response.clicked() {
                                 info!("Selected playlist: {}", playlist.name);
                                 gem_player.ui_state.playlists_ui_state.selected_playlist_index = Some(row.index());
-                                
+
                                 // Reset in case we were currently editiing.
                                 gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
                             }
@@ -876,17 +877,18 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                let maybe_playlist = gem_player
-                    .ui_state
-                    .playlists_ui_state
-                    .selected_playlist_index
-                    .and_then(|index| gem_player.playlists.get_mut(index));
-                render_playlist_content(ui, &mut gem_player.ui_state.playlists_ui_state, maybe_playlist);
+                render_playlist_content_ui(ui, gem_player);
             });
         });
 }
 
-pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIState, maybe_playlist: Option<&mut Playlist>) {
+pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let maybe_playlist = gem_player
+        .ui_state
+        .playlists_ui_state
+        .selected_playlist_index
+        .and_then(|index| gem_player.playlists.get_mut(index));
+
     let Some(playlist) = maybe_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
 
@@ -906,7 +908,7 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
         .size(Size::remainder())
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                if let Some((_, name_buffer)) = &mut playlist_ui_state.edit_playlist_name_info {
+                if let Some((_, name_buffer)) = &mut gem_player.ui_state.playlists_ui_state.edit_playlist_name_info {
                     // In edit mode
                     let mut discard_clicked = false;
                     let mut save_clicked = false;
@@ -936,10 +938,25 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                         },
                     );
                     if discard_clicked {
-                        playlist_ui_state.edit_playlist_name_info = None;
+                        gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
                     } else if save_clicked {
-                        playlist.name = name_buffer.clone();
-                        playlist_ui_state.edit_playlist_name_info = None;
+                        match &gem_player.library_directory {
+                            Some(directory) => {
+                                let result = rename_playlist(playlist, name_buffer, directory);
+                                if let Err(e) = result {
+                                    error!("{}", e);
+                                } else {
+                                    gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
+                                }
+                            }
+                            None => {
+                                debug_assert!(
+                                    false,
+                                    "Unexpected state: Trying to rename a playlist, but library_directory is None."
+                                );
+                                error!("Unexpected error: No library directory found while renaming playlist.");
+                            }
+                        }
                     }
                 } else {
                     // Not in edit mode
@@ -961,7 +978,7 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                             let response = ui.add(delete_button).on_hover_text("Delete");
                             if response.clicked() {
                                 info!("Opening delete playlist modal: {}", playlist.name);
-                                playlist_ui_state.confirm_delete_playlist_modal_is_open = true;
+                                gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = true;
                             }
 
                             ui.add_space(8.0);
@@ -970,7 +987,7 @@ pub fn render_playlist_content(ui: &mut Ui, playlist_ui_state: &mut PlaylistsUIS
                             let response = ui.add(edit_name_button).on_hover_text("Edit name");
                             if response.clicked() {
                                 info!("Editing playlist name: {}", playlist.name);
-                                playlist_ui_state.edit_playlist_name_info = Some((playlist.id, playlist.name.clone()));
+                                gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = Some((playlist.id, playlist.name.clone()));
                             }
                         },
                     );

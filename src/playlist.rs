@@ -134,12 +134,22 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     })
 }
 
-// fn rename_playlist(playlist: &mut Playlist, new_name: &str) -> Result<(), ()> { // TODO: should we delete the old playlist file?
-//     playlist.name = new_name.to_string();
-//     save_playlist_to_m3u(playlist, );
+//TODO: check if these functions should pass &str vs a String?
+pub fn rename_playlist(playlist: &mut Playlist, new_name: &str, directory: &Path) -> io::Result<()> { // TODO: should we delete the old playlist file?
+    let Some(old_path) = playlist.path.as_ref() else {
+        return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
+    };
 
-//     Ok(())
-// }
+    let new_filename = format!("{}.m3u", new_name);
+    let new_path = directory.join(new_filename);
+
+    fs::rename(old_path, &new_path)?;
+
+    playlist.name = new_name.to_string();
+    playlist.path = Some(new_path);
+
+    Ok(())
+}
 
 pub fn create_a_new_playlist(name: &str, directory: &Path) -> io::Result<Playlist> {
     let mut playlist = Playlist {
