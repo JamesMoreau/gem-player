@@ -863,6 +863,9 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             if response.clicked() {
                                 info!("Selected playlist: {}", playlist.name);
                                 gem_player.ui_state.playlists_ui_state.selected_playlist_index = Some(row.index());
+                                
+                                // Reset in case we were currently editiing.
+                                gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
                             }
                         });
                     });
