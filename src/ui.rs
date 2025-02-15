@@ -883,13 +883,13 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let maybe_playlist = gem_player
+    let maybe_selected_playlist = gem_player
         .ui_state
         .playlists_ui_state
         .selected_playlist_index
         .and_then(|index| gem_player.playlists.get_mut(index));
 
-    let Some(playlist) = maybe_playlist else {
+    let Some(playlist) = maybe_selected_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
 
         Frame::new()
