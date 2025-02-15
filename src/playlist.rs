@@ -7,7 +7,7 @@ use std::{
 
 use fully_pub::fully_pub;
 use glob::glob;
-use log::error;
+use log::{error, warn};
 use uuid::Uuid;
 
 use crate::{song::get_song_from_file, Song};
@@ -155,8 +155,23 @@ pub fn create_a_new_playlist(name: &str, directory: &Path) -> io::Result<Playlis
     Ok(playlist)
 }
 
+// Removes the playlist from the list and deletes the associated m3u file.
+pub fn delete_playlist(playlist_to_delete: &Playlist, playlists: &mut Vec<Playlist>) -> Result<(), String> {
+    // Remove the playlist before deleting the m3u file so that the app and file state remains consistent.
+    let Some(index) = playlists.iter().position(|x| x.id == playlist_to_delete.id) else {
+        return Err("Playlist not found in library".to_string());
+    };
+
+    let playlist = playlists.remove(index);
+
+    if let Err(err) = delete_playlist_m3u(&playlist) {
+        warn!("Warning: Failed to delete the playlist's associated m3u file: {}", err);
+    }
+
+    Ok(())
+}
+
 pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> {
-    // TODO: should this also remove the playlist from the library?
     let Some(path) = playlist.path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
     };
