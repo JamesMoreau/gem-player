@@ -772,6 +772,24 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     |ui| {
                         let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
                         if response.clicked() {
+                            if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
+                                let playlist = gem_player.playlists[index].clone();
+                                let result = delete_playlist(&playlist, &mut gem_player.playlists);
+                                if let Err(e) = result {
+                                    let message = format!("Unable to remove the .m3u file for playlist: {}. {}", playlist.name, e);
+                                    error!("{}", message);
+                                } else {
+                                    let message = format!(
+                                        "{} was deleted successfully. If this was a mistake, the m3u file can be found in the trash.",
+                                        playlist.name
+                                    );
+                                    info!("{}", message);
+                                    gem_player.ui_state.toasts.success(&message);
+                                }
+                
+                                gem_player.ui_state.playlists_ui_state.selected_playlist_index = None;
+                            }
+
                             confirm_clicked = true;
                         }
                     },
@@ -779,28 +797,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
         });
 
-        if confirm_clicked {
-            // TODO can this be moved into the closure?
-            if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
-                let playlist = gem_player.playlists[index].clone();
-                let result = delete_playlist(&playlist, &mut gem_player.playlists);
-                if let Err(e) = result {
-                    let message = format!("Unable to remove the .m3u file for playlist: {}. {}", playlist.name, e);
-                    error!("{}", message);
-                } else {
-                    let message = format!(
-                        "{} was deleted successfully. If this was a mistake, the m3u file can be found in the trash.",
-                        playlist.name
-                    );
-                    info!("{}", message);
-                    gem_player.ui_state.toasts.success(&message);
-                }
-
-                gem_player.ui_state.playlists_ui_state.selected_playlist_index = None;
-            }
-
-            gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
-        } else if cancel_clicked || modal.should_close() {
+        if confirm_clicked || cancel_clicked || modal.should_close() {
             gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open = false;
         }
     }
