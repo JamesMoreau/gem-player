@@ -277,72 +277,25 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
 
 pub struct KeyBinding {
     pub name: &'static str,
-    pub action: fn(&mut GemPlayer),
 }
 
 lazy_static! {
     pub static ref KEY_COMMANDS: IndexMap<Key, KeyBinding> = {
         let mut map = IndexMap::new();
 
-        map.insert(
-            Key::Space,
-            KeyBinding {
-                name: "Play/Pause",
-                action: |gp| play_or_pause(&mut gp.player),
-            },
-        );
-        map.insert(
-            Key::ArrowRight,
-            KeyBinding {
-                name: "Next",
-                action: |gp| {
-                    if let Err(e) = play_next(&mut gp.player) {
-                        error!("{}", e);
-                        gp.ui_state.toasts.error("Error playing the next song");
-                    }
-                },
-            },
-        );
-        map.insert(
-            Key::ArrowLeft,
-            KeyBinding {
-                name: "Previous",
-                action: |gp| {
-                    if let Err(e) = play_previous(&mut gp.player) {
-                        error!("{}", e);
-                        gp.ui_state.toasts.error("Error playing the previous song");
-                    }
-                },
-            },
-        );
-        map.insert(
-            Key::ArrowUp,
-            KeyBinding {
-                name: "Volume Up",
-                action: |gp| adjust_volume_by_percentage(&mut gp.player, 0.1),
-            },
-        );
-        map.insert(
-            Key::ArrowDown,
-            KeyBinding {
-                name: "Volume Down",
-                action: |gp| adjust_volume_by_percentage(&mut gp.player, -0.1),
-            },
-        );
-        map.insert(
-            Key::M,
-            KeyBinding {
-                name: "Mute/Unmute",
-                action: |gp| mute_or_unmute(&mut gp.player),
-            },
-        );
+        map.insert(Key::Space, KeyBinding { name: "Play/Pause" });
+        map.insert(Key::ArrowLeft, KeyBinding { name: "Previous" });
+        map.insert(Key::ArrowRight, KeyBinding { name: "Next" });
+        map.insert(Key::ArrowUp, KeyBinding { name: "Volume Up" });
+        map.insert(Key::ArrowDown, KeyBinding { name: "Volume Down" });
+        map.insert(Key::M, KeyBinding { name: "Mute/Unmute" });
+
         map
     };
 }
 
-pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) { //TODO: move the action back into here
+pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
     if ctx.wants_keyboard_input() {
-        // Return early if any widget that accepts keyboard input is focused.
         return;
     }
 
@@ -362,7 +315,25 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) { //TODO: 
 
                 info!("Key pressed: {}", binding.name);
 
-                (binding.action)(gem_player); // Call the action associated with the key binding.
+                match key {
+                    Key::Space => play_or_pause(&mut gem_player.player),
+                    Key::ArrowLeft => {
+                        if let Err(e) = play_previous(&mut gem_player.player) {
+                            error!("{}", e);
+                            gem_player.ui_state.toasts.error("Error playing the previous song");
+                        }
+                    }
+                    Key::ArrowRight => {
+                        if let Err(e) = play_next(&mut gem_player.player) {
+                            error!("{}", e);
+                            gem_player.ui_state.toasts.error("Error playing the next song");
+                        }
+                    }
+                    Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
+                    Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
+                    Key::M => mute_or_unmute(&mut gem_player.player),
+                    _ => {}
+                }
             }
         }
     });
