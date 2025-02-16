@@ -20,12 +20,19 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
+        play_or_pause, play_previous, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{create_a_new_playlist, delete_playlist, rename_playlist},
     song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
-    Song, Theme,
+    Song,
 };
+
+#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Theme {
+    System,
+    Dark,
+    Light,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
@@ -65,6 +72,13 @@ impl eframe::App for player::GemPlayer {
     fn clear_color(&self, _visuals: &Visuals) -> [f32; 4] {
         Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        if let Some(library_directory) = &self.library_directory {
+            storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
+        }
+        storage.set_string(THEME_STORAGE_KEY, format!("{:?}", self.ui_state.theme));
+    }    
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.

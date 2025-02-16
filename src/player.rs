@@ -1,4 +1,7 @@
-use std::{io::BufReader, path::{Path, PathBuf}};
+use std::{
+    io::BufReader,
+    path::{Path, PathBuf},
+};
 
 use eframe::egui::{Color32, Context, Event, Key};
 use egui_notify::Toasts;
@@ -12,9 +15,11 @@ use rodio::{Decoder, OutputStream, Sink};
 use crate::{
     playlist::{read_playlists_from_a_directory, Playlist},
     song::{read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
-    Theme,
+    ui::{self, EditSongMetadaUIState, PlaylistsUIState, Theme, UIState},
 };
+
+pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
+pub const THEME_STORAGE_KEY: &str = "theme";
 
 pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"];
 
@@ -55,7 +60,21 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     sink.pause();
     sink.set_volume(0.6);
 
-    let library_directory = dirs::audio_dir().map(|dir| dir.join("MyMusic"));
+    let mut library_directory = None;
+    let mut theme = Theme::System;
+    if let Some(storage) = cc.storage {
+        if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
+            library_directory = Some(PathBuf::from(library_directory_string));
+        }
+
+        if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
+            theme = match theme_string.as_str() {
+                "Dark" => Theme::Dark,
+                "Light" => Theme::Light,
+                _ => Theme::System, // Default to System if it's invalid or missing
+            };
+        }
+    }
 
     let mut library = Vec::new();
     let mut playlists = Vec::new();
@@ -68,7 +87,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     GemPlayer {
         ui_state: UIState {
             current_view: ui::View::Library,
-            theme: Theme::System,
+            theme,
             search_text: String::new(),
             selected_library_song: None,
             sort_by: SortBy::Title,

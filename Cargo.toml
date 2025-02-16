@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dirs = "6.0.0"
-eframe = { version = "0.31.0", features = ["default"] }
+eframe = { version = "0.31.0", features = ["default", "persistence"] }
 egui_extras = { version = "0.31.0", features = ["all_loaders"] }
 egui_flex = "0.3.0"
 egui_material_icons = "0.3.0"
@@ -28,3 +27,4 @@ fully_pub = "0.1.4"
 indexmap = "2.7.1"
 trash = "5.2.1"
 log = "0.4.25"
+serde = "1.0.217"

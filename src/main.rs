@@ -1,6 +1,5 @@
 use eframe::egui::{Vec2, ViewportBuilder};
 use log::info;
-use strum_macros::EnumIter;
 
 use player::init_gem_player;
 use song::Song;
@@ -12,6 +11,7 @@ mod ui;
 
 /*
 TODO:
+* previous and next not disabling correctly. also left and right key commands not doing proper check!
 * library directory should be persisted. maybe other state as well (like theme)? where should it be persisted (if a user is allowed to change library folders...)?
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
@@ -22,6 +22,7 @@ TODO:
 * images with different aspect ratios should be stretched or cropped to match 1:1.
 * should library and playlist views have different sort by ui state?
 * library song more... button should open to the left instead of right (is it possible to control direction of this with egui?).
+* maybe just make library_directory non Option?
 */
 
 fn main() -> eframe::Result {
@@ -36,13 +37,6 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
-}
-
-#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Theme {
-    System,
-    Dark,
-    Light,
 }
 
 pub fn format_duration_to_mmss(duration: std::time::Duration) -> String {
