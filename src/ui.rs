@@ -737,6 +737,18 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
 }
 
 pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    if gem_player.library_directory.is_none() {
+        Frame::new()
+            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(unselectable_label("Try adding your music directory in the settings."));
+                });
+            });
+
+        return;
+    };
+
     if gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open {
         let mut cancel_clicked = false;
         let mut confirm_clicked = false;
@@ -767,7 +779,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
         });
 
-        if confirm_clicked {
+        if confirm_clicked { // TODO can this be moved into the closure?
             if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
                 let playlist = gem_player.playlists[index].clone();
                 let result = delete_playlist(&playlist, &mut gem_player.playlists);
