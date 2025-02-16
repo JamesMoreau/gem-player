@@ -737,7 +737,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
 }
 
 pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(library_directory) = gem_player.library_directory.clone() else {
+    if gem_player.library_directory.is_none() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -746,7 +746,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
             });
 
-        return; // Return early so we don't check `library_directory` later
+        return;
     };
 
     if gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open {
@@ -786,7 +786,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     info!("{}", message);
                                     gem_player.ui_state.toasts.success(&message);
                                 }
-                
+
                                 gem_player.ui_state.playlists_ui_state.selected_playlist_index = None;
                             }
 
@@ -832,16 +832,25 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let add_button = Button::new(icons::ICON_ADD);
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
-                                        let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
-                                        match create_a_new_playlist(&new_playlist_name, &library_directory) {
-                                            Ok(new_playlist) => {
-                                                info!("Created and saved: {}.", &new_playlist.name);
-                                                gem_player.playlists.push(new_playlist);
+                                        let maybe_library_directory = &gem_player.library_directory;
+                                        match maybe_library_directory {
+                                            Some(directory) => {
+                                                let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
+                                                let result = create_a_new_playlist(&new_playlist_name, directory);
+                                                match result {
+                                                    Ok(new_playlist) => {
+                                                        info!("Created and saved: {}.", &new_playlist.name);
+                                                        gem_player.playlists.push(new_playlist);
+                                                    }
+                                                    Err(e) => {
+                                                        let error_message = format!("Failed to create: {}.", e);
+                                                        error!("{}", &error_message);
+                                                        gem_player.ui_state.toasts.error(&error_message);
+                                                    }
+                                                }
                                             }
-                                            Err(e) => {
-                                                let error_message = format!("Failed to create: {}.", e);
-                                                error!("{}", &error_message);
-                                                gem_player.ui_state.toasts.error(&error_message);
+                                            None => {
+                                                error!("This should be unreachable state. We checked library directory is Some earlier!");
                                             }
                                         }
                                     }
