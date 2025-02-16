@@ -1159,7 +1159,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             ui.add_space(16.0);
-                            ui.label(binding.name.to_string());
+                            ui.label(*binding);
                         },
                     );
                 }
