@@ -12,6 +12,7 @@ use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
 use rfd::FileDialog;
+use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use uuid::Uuid;
@@ -20,14 +21,15 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        play_or_pause, play_previous, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
+        LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{create_a_new_playlist, delete_playlist, rename_playlist},
     song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
     Song,
 };
 
-#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub enum Theme {
     System,
     Dark,
@@ -77,8 +79,10 @@ impl eframe::App for player::GemPlayer {
         if let Some(library_directory) = &self.library_directory {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
-        storage.set_string(THEME_STORAGE_KEY, format!("{:?}", self.ui_state.theme));
-    }    
+
+        let theme_ron_string = ron::to_string(&self.ui_state.theme).unwrap();
+        storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
+    }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         // let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.

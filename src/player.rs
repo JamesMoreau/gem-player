@@ -68,11 +68,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         }
 
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
-            theme = match theme_string.as_str() {
-                "Dark" => Theme::Dark,
-                "Light" => Theme::Light,
-                _ => Theme::System, // Default to System if it's invalid or missing
-            };
+            theme = ron::from_str(&theme_string).unwrap_or(Theme::System);
         }
     }
 
