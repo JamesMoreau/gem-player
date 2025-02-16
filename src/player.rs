@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use eframe::egui::{Color32, Context, Event, Key};
+use eframe::egui::{Color32, Context, Event, Key, ThemePreference};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use indexmap::IndexMap;
@@ -15,7 +15,7 @@ use rodio::{Decoder, OutputStream, Sink};
 use crate::{
     playlist::{read_playlists_from_a_directory, Playlist},
     song::{read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, EditSongMetadaUIState, PlaylistsUIState, Theme, UIState},
+    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
 };
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -56,14 +56,14 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     egui_material_icons::initialize(&cc.egui_ctx);
 
     let mut library_directory = None;
-    let mut theme = Theme::System;
+    let mut theme_preference = ThemePreference::System;
     if let Some(storage) = cc.storage {
         if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
             library_directory = Some(PathBuf::from(library_directory_string));
         }
 
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
-            theme = ron::from_str(&theme_string).unwrap_or(Theme::System);
+            theme_preference = ron::from_str(&theme_string).unwrap_or(ThemePreference::System);
         }
     }
 
@@ -84,7 +84,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     GemPlayer {
         ui_state: UIState {
             current_view: ui::View::Library,
-            theme,
+            theme_preference,
             search_text: String::new(),
             selected_library_song: None,
             sort_by: SortBy::Title,

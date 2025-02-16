@@ -1,9 +1,10 @@
 use std::time::Duration;
 
+use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, text, Align, Align2, Button, CentralPanel, ComboBox, Context, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
-    TextureOptions, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, text, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Image, Label, Layout, Margin,
+    PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions,
+    ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -12,7 +13,6 @@ use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
 use rfd::FileDialog;
-use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use uuid::Uuid;
@@ -29,13 +29,6 @@ use crate::{
     Song,
 };
 
-#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
-pub enum Theme {
-    System,
-    Dark,
-    Light,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
     Library,
@@ -47,7 +40,7 @@ pub enum View {
 #[fully_pub]
 pub struct UIState {
     current_view: View,
-    theme: Theme,
+    theme_preference: ThemePreference,
     selected_library_song: Option<Song>, // Currently selected song in the library.
     search_text: String,
     sort_by: SortBy,
@@ -80,7 +73,7 @@ impl eframe::App for player::GemPlayer {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
 
-        let theme_ron_string = ron::to_string(&self.ui_state.theme).unwrap();
+        let theme_ron_string = ron::to_string(&self.ui_state.theme_preference).unwrap();
         storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
     }
 
@@ -91,10 +84,16 @@ impl eframe::App for player::GemPlayer {
         // Necessary to keep UI up-to-date with the current state of the sink/player.
         ctx.request_repaint_after_secs(1.0);
 
-        match self.ui_state.theme {
-            Theme::System => {} // We don't need to do anything here since egui will automatically switch when the system theme changes.
-            Theme::Dark => ctx.set_visuals(Visuals::dark()),
-            Theme::Light => ctx.set_visuals(Visuals::light()),
+        match self.ui_state.theme_preference {
+            ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
+            ThemePreference::Light => ctx.set_visuals(Visuals::light()),
+            ThemePreference::System => {
+                let visuals = match dark_light::detect() {
+                    Ok(Mode::Light) => Visuals::light(),
+                    _ => Visuals::dark(), // Covers both Mode::Dark, Mode::Unspecified, and errors
+                };
+                ctx.set_visuals(visuals);
+            }
         }
 
         let should_check_for_next_song_in_queue = self.player.sink.empty();
@@ -1148,19 +1147,8 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
-                ComboBox::from_label("Select Theme")
-                    .selected_text(format!("{:?}", gem_player.ui_state.theme))
-                    .show_ui(ui, |ui| {
-                        let theme_name = |theme: Theme| match theme {
-                            Theme::System => "System",
-                            Theme::Dark => icons::ICON_NIGHTS_STAY,
-                            Theme::Light => icons::ICON_SUNNY,
-                        };
 
-                        for theme in Theme::iter() {
-                            ui.selectable_value(&mut gem_player.ui_state.theme, theme, theme_name(theme));
-                        }
-                    });
+                ThemePreference::radio_buttons(&mut gem_player.ui_state.theme_preference, ui);
 
                 ui.add(Separator::default().spacing(32.0));
 
