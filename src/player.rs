@@ -275,20 +275,16 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-pub struct KeyBinding {
-    pub name: &'static str,
-}
-
 lazy_static! {
-    pub static ref KEY_COMMANDS: IndexMap<Key, KeyBinding> = {
+    pub static ref KEY_COMMANDS: IndexMap<Key, &'static str> = {
         let mut map = IndexMap::new();
 
-        map.insert(Key::Space, KeyBinding { name: "Play/Pause" });
-        map.insert(Key::ArrowLeft, KeyBinding { name: "Previous" });
-        map.insert(Key::ArrowRight, KeyBinding { name: "Next" });
-        map.insert(Key::ArrowUp, KeyBinding { name: "Volume Up" });
-        map.insert(Key::ArrowDown, KeyBinding { name: "Volume Down" });
-        map.insert(Key::M, KeyBinding { name: "Mute/Unmute" });
+        map.insert(Key::Space, "Play/Pause");
+        map.insert(Key::ArrowLeft, "Previous");
+        map.insert(Key::ArrowRight, "Next");
+        map.insert(Key::ArrowUp, "Volume Up");
+        map.insert(Key::ArrowDown, "Volume Down");
+        map.insert(Key::M, "Mute/Unmute");
 
         map
     };
@@ -313,7 +309,7 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
                     continue;
                 };
 
-                info!("Key pressed: {}", binding.name);
+                info!("Key pressed: {}", binding);
 
                 match key {
                     Key::Space => play_or_pause(&mut gem_player.player),
