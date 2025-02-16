@@ -55,11 +55,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     egui_material_icons::initialize(&cc.egui_ctx);
 
-    let (_stream, handle) = OutputStream::try_default().unwrap();
-    let sink = Sink::try_new(&handle).unwrap();
-    sink.pause();
-    sink.set_volume(0.6);
-
     let mut library_directory = None;
     let mut theme = Theme::System;
     if let Some(storage) = cc.storage {
@@ -79,6 +74,12 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         library = found_library;
         playlists = found_playlists;
     }
+
+    let (_stream, handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&handle).unwrap();
+    sink.pause();
+    let initial_volume = 0.6;
+    sink.set_volume(initial_volume);
 
     GemPlayer {
         ui_state: UIState {
