@@ -13,7 +13,6 @@ mod ui;
 TODO:
 * previous and next not disabling correctly. also left and right key commands not doing proper check!
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
-* system theme not switching automatically.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
