@@ -737,7 +737,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
 }
 
 pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    if gem_player.library_directory.is_none() {
+    let Some(library_directory) = gem_player.library_directory.clone() else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -746,7 +746,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
             });
 
-        return;
+        return; // Return early so we don't check `library_directory` later
     };
 
     if gem_player.ui_state.playlists_ui_state.confirm_delete_playlist_modal_is_open {
@@ -779,7 +779,8 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
         });
 
-        if confirm_clicked { // TODO can this be moved into the closure?
+        if confirm_clicked {
+            // TODO can this be moved into the closure?
             if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
                 let playlist = gem_player.playlists[index].clone();
                 let result = delete_playlist(&playlist, &mut gem_player.playlists);
@@ -834,27 +835,16 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let add_button = Button::new(icons::ICON_ADD);
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
-                                        let maybe_library_directory = gem_player.library_directory.clone();
-                                        match maybe_library_directory {
-                                            None => {
-                                                let error_message = "Could not create a new playlist as there is no library directory.";
-                                                error!("{}", error_message);
-                                                gem_player.ui_state.toasts.error(error_message);
+                                        let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
+                                        match create_a_new_playlist(&new_playlist_name, &library_directory) {
+                                            Ok(new_playlist) => {
+                                                info!("Created and saved: {}.", &new_playlist.name);
+                                                gem_player.playlists.push(new_playlist);
                                             }
-                                            Some(library_directory) => {
-                                                let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
-                                                let result = create_a_new_playlist(&new_playlist_name, &library_directory);
-                                                match result {
-                                                    Ok(new_playlist) => {
-                                                        info!("Created and saved: {}.", &new_playlist.name);
-                                                        gem_player.playlists.push(new_playlist);
-                                                    }
-                                                    Err(e) => {
-                                                        let error_message = format!("Failed to create: {}.", e);
-                                                        error!("{}", &error_message);
-                                                        gem_player.ui_state.toasts.error(&error_message);
-                                                    }
-                                                }
+                                            Err(e) => {
+                                                let error_message = format!("Failed to create: {}.", e);
+                                                error!("{}", &error_message);
+                                                gem_player.ui_state.toasts.error(&error_message);
                                             }
                                         }
                                     }
