@@ -1,6 +1,6 @@
 use std::{io::BufReader, path::PathBuf};
 
-use eframe::egui::{Context, Event, Key};
+use eframe::egui::{Color32, Context, Event, Key};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use indexmap::IndexMap;
@@ -99,7 +99,14 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 _buffer_song: None,
                 _edit_song_metadata_modal_is_open: false,
             },
-            toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight),
+            toasts: Toasts::default()
+                .with_anchor(egui_notify::Anchor::BottomRight)
+                .with_shadow(eframe::egui::Shadow {
+                    offset: [0, 0],
+                    blur: 1,
+                    spread: 1,
+                    color: Color32::BLACK,
+                }),
         },
 
         library,
