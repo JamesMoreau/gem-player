@@ -1,4 +1,4 @@
-use std::{io::BufReader, path::PathBuf};
+use std::{io::BufReader, path::{Path, PathBuf}};
 
 use eframe::egui::{Color32, Context, Event, Key};
 use egui_notify::Toasts;
@@ -60,27 +60,10 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let mut library = Vec::new();
     let mut playlists = Vec::new();
     if let Some(directory) = &library_directory {
-        let result = read_music_from_a_directory(directory);
-        match result {
-            Ok(found_songs) => {
-                library.extend(found_songs);
-            }
-            Err(e) => {
-                error!("{}", e);
-            }
-        }
-
-        let result = read_playlists_from_a_directory(directory);
-        match result {
-            Ok(found_playlists) => {
-                playlists.extend(found_playlists);
-            }
-            Err(e) => {
-                error!("{}", e);
-            }
-        }
+        let (found_library, found_playlists) = read_music_and_playlists_from_directory(directory);
+        library = found_library;
+        playlists = found_playlists;
     }
-    info!("Found {} songs", library.len());
 
     GemPlayer {
         ui_state: UIState {
@@ -128,6 +111,38 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             sink,
         },
     }
+}
+
+pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Song>, Vec<Playlist>) {
+    let mut library = Vec::new();
+    let mut playlists = Vec::new();
+
+    match read_music_from_a_directory(directory) {
+        Ok(found_songs) => {
+            library = found_songs;
+        }
+        Err(e) => {
+            error!("{}", e);
+        }
+    }
+
+    match read_playlists_from_a_directory(directory) {
+        Ok(found_playlists) => {
+            playlists = found_playlists;
+        }
+        Err(e) => {
+            error!("{}", e);
+        }
+    }
+
+    info!(
+        "Loaded library from {:?}: {} songs, {} playlists.",
+        directory,
+        library.len(),
+        playlists.len()
+    );
+
+    (library, playlists)
 }
 
 pub fn is_playing(player: &mut Player) -> bool {

@@ -20,7 +20,7 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
+        play_or_pause, play_previous, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
     },
     playlist::{create_a_new_playlist, delete_playlist, rename_playlist},
     song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
@@ -1105,7 +1105,11 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         match maybe_directory {
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
-                                let _old_folder = gem_player.library_directory.clone();
+
+                                let (found_music, found_playlists) = read_music_and_playlists_from_directory(&directory);
+                                gem_player.library = found_music;
+                                gem_player.playlists = found_playlists;
+                                gem_player.library_directory = Some(directory);
                             }
                             None => {
                                 info!("No folder selected");

@@ -12,7 +12,7 @@ mod ui;
 
 /*
 TODO:
-* library directory should be persisted. maybe other state as well (like theme)?
+* library directory should be persisted. maybe other state as well (like theme)? where should it be persisted (if a user is allowed to change library folders...)?
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * system theme not switching automatically.
 * could use egui_inbox for library updating with watcher.
