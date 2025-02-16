@@ -99,7 +99,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 _buffer_song: None,
                 _edit_song_metadata_modal_is_open: false,
             },
-            toasts: Toasts::default(),
+            toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight),
         },
 
         library,
@@ -284,7 +284,6 @@ lazy_static! {
     pub static ref KEY_COMMANDS: IndexMap<Key, KeyBinding> = {
         let mut map = IndexMap::new();
 
-        // Insert key bindings in the desired order.
         map.insert(
             Key::Space,
             KeyBinding {
@@ -341,7 +340,7 @@ lazy_static! {
     };
 }
 
-pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
+pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) { //TODO: move the action back into here
     if ctx.wants_keyboard_input() {
         // Return early if any widget that accepts keyboard input is focused.
         return;

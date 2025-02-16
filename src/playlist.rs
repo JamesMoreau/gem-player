@@ -134,8 +134,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     })
 }
 
-//TODO: check if these functions should pass &str vs a String?
-pub fn rename_playlist(playlist: &mut Playlist, new_name: &str, directory: &Path) -> io::Result<()> { // TODO: should we delete the old playlist file?
+pub fn rename_playlist(playlist: &mut Playlist, new_name: &str, directory: &Path) -> io::Result<()> {
     let Some(old_path) = playlist.path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
     };

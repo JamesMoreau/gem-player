@@ -90,6 +90,8 @@ impl eframe::App for player::GemPlayer {
 
         handle_key_commands(ctx, self);
 
+        self.ui_state.toasts.show(ctx);
+
         custom_window_frame(ctx, "", |ui| {
             let control_ui_height = 64.0;
             let navigation_ui_height = 32.0;
@@ -774,7 +776,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     error!("{}", message);
                 } else {
                     let message = format!(
-                        "Playlist: {} was deleted successfully. If this was a mistake, the m3u file can be found in the trash.",
+                        "{} was deleted successfully. If this was a mistake, the m3u file can be found in the trash.",
                         playlist.name
                     );
                     info!("{}", message);
@@ -837,7 +839,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                                     }
                                                     Err(e) => {
                                                         let error_message = format!("Failed to create: {}.", e);
-                                                        error!("{}", error_message);
+                                                        error!("{}", &error_message);
                                                         gem_player.ui_state.toasts.error(&error_message);
                                                     }
                                                 }
@@ -865,7 +867,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 info!("Selected playlist: {}", playlist.name);
                                 gem_player.ui_state.playlists_ui_state.selected_playlist_index = Some(row.index());
 
-                                // Reset in case we were currently editiing.
+                                // Reset in case we were currently editing.
                                 gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
                             }
                         });
