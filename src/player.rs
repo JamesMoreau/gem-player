@@ -313,6 +313,10 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
+pub fn _play_playlist_from_song() {
+    todo!();
+}
+
 lazy_static! {
     pub static ref KEY_COMMANDS: IndexMap<Key, &'static str> = {
         let mut map = IndexMap::new();

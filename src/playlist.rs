@@ -22,8 +22,18 @@ pub struct Playlist {
     path: Option<PathBuf>,
 }
 
-pub fn _add_a_song_to_playlist(playlist: &mut Playlist, songs: Song) {
-    playlist.songs.push(songs);
+pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) {
+    playlist.songs.push(song);
+}
+
+// TODO: should this remove all of the same song? Should playlists allow duplicates?
+pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song_id: Uuid) -> Result<(), String> {
+    let Some(index) = playlist.songs.iter().position(|x| x.id == song_id) else {
+        return Err("Song not found in playlist".to_string());
+    };
+
+    playlist.songs.remove(index);
+    Ok(())
 }
 
 pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {

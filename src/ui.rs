@@ -11,7 +11,7 @@ use egui_flex::{item, Flex, FlexJustify};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
-use log::{error, info};
+use log::{error, info, warn};
 use rfd::FileDialog;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -24,7 +24,7 @@ use crate::{
         play_or_pause, play_previous, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
         LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
-    playlist::{create_a_new_playlist, delete_playlist, rename_playlist},
+    playlist::{add_a_song_to_playlist, create_a_new_playlist, delete_playlist, remove_a_song_from_playlist, rename_playlist, Playlist},
     song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
     Song,
 };
@@ -469,7 +469,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: right click should select the song (as with left click).
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -599,15 +599,17 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &mut Song) {
-    ui.set_max_width(200.0);
+pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &Song) {
+    ui.set_min_width(128.0);
 
     let add_to_playlists_enabled = !gem_player.playlists.is_empty();
     ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
         ui.menu_button("Add to playlist", |ui| {
-            ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
-                for playlist in gem_player.playlists.iter() {
+            ui.set_min_width(128.0);
+            ScrollArea::vertical().max_height(250.0).show(ui, |ui| {
+                for playlist in gem_player.playlists.iter_mut() {
                     if ui.button(&playlist.name).clicked() {
+                        add_a_song_to_playlist(playlist, song.clone());
                         ui.close_menu(); // Optionally close the menu when clicked
                     }
                 }
@@ -909,7 +911,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: add current selected song.
     let maybe_selected_playlist = gem_player
         .ui_state
         .playlists_ui_state
@@ -1026,12 +1028,19 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     return;
                 }
 
-                let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
+                let header_labels = [
+                    icons::ICON_TAG,
+                    icons::ICON_MUSIC_NOTE,
+                    icons::ICON_ARTIST,
+                    icons::ICON_ALBUM,
+                    icons::ICON_HOURGLASS,
+                ];
 
                 let available_width = ui.available_width();
                 let position_width = 64.0;
                 let time_width = 80.0;
-                let remaining_width = available_width - position_width - time_width;
+                let more_width = 80.0;
+                let remaining_width = available_width - position_width - time_width - more_width;
                 let title_width = remaining_width * (2.0 / 4.0);
                 let artist_width = remaining_width * (1.0 / 4.0);
                 let album_width = remaining_width * (1.0 / 4.0);
@@ -1047,6 +1056,7 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .column(egui_extras::Column::exact(artist_width))
                     .column(egui_extras::Column::exact(album_width))
                     .column(egui_extras::Column::exact(time_width))
+                    .column(egui_extras::Column::exact(more_width))
                     .header(16.0, |mut header| {
                         for (i, h) in header_labels.iter().enumerate() {
                             header.col(|ui| {
@@ -1084,21 +1094,77 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 ui.add(unselectable_label(duration_string));
                             });
 
-                            let row_is_hovered = row.response().hovered();
-                            let mut actions_cell_contains_pointer = false;
+                            let rest_of_row_is_hovered = row.response().hovered();
+                            let mut more_cell_contains_pointer = false;
                             row.col(|ui| {
-                                actions_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                                let should_show_action_button = row_is_hovered || actions_cell_contains_pointer;
+                                more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                                let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer;
 
                                 ui.add_space(8.0);
 
-                                let _response = ui.add_visible(should_show_action_button, Button::new(icons::ICON_MORE));
-                                // Show context menu
+                                ui.scope_builder(
+                                    {
+                                        if should_show_more_button {
+                                            UiBuilder::new()
+                                        } else {
+                                            UiBuilder::new().invisible()
+                                        }
+                                    },
+                                    |ui| {
+                                        ui.menu_button(icons::ICON_MORE_HORIZ, |ui| playlist_content_context_menu(ui, playlist, &song));
+                                    },
+                                );
                             });
+
+                            let response = row.response();
+                            if response.clicked() {
+                                // TODO: selected 
+                            }
+
+                            if response.double_clicked() {
+                                // TODO: play playlist from song
+                            }
+
+                            response.context_menu(|ui| playlist_content_context_menu(ui, playlist, &song));
                         });
                     });
             });
         });
+}
+
+pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song: &Song) {
+    ui.set_min_width(128.0);
+
+    if ui.button("Remove from playlist").clicked() {
+        let result = remove_a_song_from_playlist(playlist, song.id);
+        match result {
+            Ok(_) => info!("Removed song from playlist: {}", song.title.as_deref().unwrap_or("Unknown Title")),
+            Err(e) => error!("Error removing song from playlist: {:?}", e),
+        }
+
+        ui.close_menu();
+    }
+
+    ui.separator();
+
+    if ui.button("Open file location").clicked() {
+        // TODO extract this into its own function (also replace the other context menu in library!).
+        let maybe_folder = song.file_path.as_path().parent();
+        match maybe_folder {
+            Some(folder) => {
+                let result = open::that_detached(folder);
+                match result {
+                    Ok(_) => info!("Opening file location: {:?}", folder),
+                    Err(e) => error!("Error opening file location: {:?}", e),
+                }
+            }
+            None => {
+                info!("No file location to open");
+            }
+        }
+
+        ui.close_menu();
+    }
 }
 
 pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
@@ -1148,7 +1214,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
                 let version = env!("CARGO_PKG_VERSION");
                 ui.add(unselectable_label(format!("Version: {version}")));
-                ui.add(unselectable_label("Gem Player is a lightweight music player."));
+                ui.add(unselectable_label("Gem Player is a lightweight and minimalist music player."));
 
                 ui.add(Separator::default().spacing(32.0));
 
@@ -1225,22 +1291,14 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let refresh_button = Button::new(icons::ICON_REFRESH);
                         let response = ui.add(refresh_button).on_hover_text("Refresh library");
                         if response.clicked() {
-                            let library = match &gem_player.library_directory {
-                                Some(path) => {
-                                    let result = read_music_from_a_directory(path);
-                                    match result {
-                                        Ok(songs) => songs,
-                                        Err(e) => {
-                                            error!("{}", e);
-                                            gem_player.ui_state.toasts.error(format!("Error refreshing library: {}", e));
-                                            Vec::new()
-                                        }
-                                    }
-                                }
-                                None => Vec::new(),
-                            };
-
-                            gem_player.library = library;
+                            match &gem_player.library_directory {
+                                Some(directory) => {
+                                    let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
+                                    gem_player.library = found_music;
+                                    gem_player.playlists = found_playlists;
+                                },
+                                None => warn!("Cannot refresh library, as there is no library path."),
+                            }
                         }
 
                         ui.add_space(16.0);
