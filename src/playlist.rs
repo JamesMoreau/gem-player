@@ -12,23 +12,27 @@ use uuid::Uuid;
 
 use crate::{song::get_song_from_file, Song};
 
+// Duplicates of songs are not allowed.
 #[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Playlist {
     id: Uuid,
     name: String,
     creation_date_time: SystemTime,
-    songs: Vec<Song>,
+    songs: Vec<Song>, 
     path: Option<PathBuf>,
 }
 
 pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) {
+    if playlist.songs.iter().any(|s| s.id == song.id) {
+        return;
+    }
+    
     playlist.songs.push(song);
 }
 
-// TODO: should this remove all of the same song? Should playlists allow duplicates?
-pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song_id: Uuid) -> Result<(), String> {
-    let Some(index) = playlist.songs.iter().position(|x| x.id == song_id) else {
+pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song: &Song) -> Result<(), String> {
+    let Some(index) = playlist.songs.iter().position(|x| x.id == song.id) else {
         return Err("Song not found in playlist".to_string());
     };
 

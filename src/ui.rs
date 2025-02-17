@@ -25,7 +25,7 @@ use crate::{
         LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{add_a_song_to_playlist, create_a_new_playlist, delete_playlist, remove_a_song_from_playlist, rename_playlist, Playlist},
-    song::{get_duration_of_songs, open_song_file_location, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
+    song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
 };
 
@@ -675,7 +675,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
 
     TableBuilder::new(ui)
         .striped(true)
-        .sense(Sense::click())
+        .sense(Sense::hover())
         .cell_layout(Layout::left_to_right(Align::Center))
         .column(egui_extras::Column::exact(position_width))
         .column(egui_extras::Column::exact(title_width))
@@ -1128,7 +1128,7 @@ pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song:
     ui.set_min_width(128.0);
 
     if ui.button("Remove from playlist").clicked() {
-        let result = remove_a_song_from_playlist(playlist, song.id);
+        let result = remove_a_song_from_playlist(playlist, song);
         match result {
             Ok(_) => info!("Removed song from playlist: {}", song.title.as_deref().unwrap_or("Unknown Title")),
             Err(e) => error!("Error removing song from playlist: {:?}", e),
