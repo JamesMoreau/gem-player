@@ -19,7 +19,6 @@ TODO:
 * maybe make volume slider hover.
 * images with different aspect ratios should be stretched or cropped to match 1:1.
 * should library and playlist views have different sort by ui state?
-* library song more... button should open to the left instead of right (is it possible to control direction of this with egui?).
 */
 
 fn main() -> eframe::Result {
