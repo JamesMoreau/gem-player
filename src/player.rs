@@ -11,6 +11,7 @@ use lazy_static::lazy_static;
 use log::{error, info};
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
+use uuid::Uuid;
 
 use crate::{
     playlist::{read_playlists_from_a_directory, Playlist},
@@ -310,31 +311,53 @@ pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
 }
 
 pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
+    gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
     let maybe_song_index = gem_player.library.iter().position(|s| s.id == song.id);
-    match maybe_song_index {
-        None => {
-            error!("Song not found in the library.");
-        }
-        Some(index) => {
-            gem_player.player.queue.extend_from_slice(&gem_player.library[index + 1..]);
-            gem_player.player.queue.extend_from_slice(&gem_player.library[..index]);
+    let Some(index) = maybe_song_index else {
+        error!("Song not found in the library.");
+        return;
+    };
 
-            let result = load_and_play_song(&mut gem_player.player, song);
-            if let Err(e) = result {
-                error!("{}", e);
-                gem_player
-                    .ui_state
-                    .toasts
-                    .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
-            }
-        }
+    gem_player.player.queue.extend_from_slice(&gem_player.library[index + 1..]);
+    gem_player.player.queue.extend_from_slice(&gem_player.library[..index]);
+
+    let result = load_and_play_song(&mut gem_player.player, song);
+    if let Err(e) = result {
+        error!("{}", e);
+        gem_player
+            .ui_state
+            .toasts
+            .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
     }
 }
 
-pub fn _play_playlist_from_song() {
-    todo!();
+pub fn play_playlist_from_song(gem_player: &mut GemPlayer, song: &Song, playlist_id: Uuid) {
+    gem_player.player.history.clear();
+    gem_player.player.queue.clear();
+
+    let Some(playlist) = gem_player.playlists.iter().find(|p| p.id == playlist_id) else {
+        error!("Playlist not found.");
+        return;
+    };
+
+    let Some(index) = playlist.songs.iter().position(|s| s.id == song.id) else {
+        error!("Song not found in the playlist.");
+        return;
+    };
+
+    gem_player.player.queue.extend_from_slice(&playlist.songs[index + 1..]);
+    gem_player.player.queue.extend_from_slice(&playlist.songs[..index]);
+
+    let result = load_and_play_song(&mut gem_player.player, song);
+    if let Err(e) = result {
+        error!("{}", e);
+        gem_player
+            .ui_state
+            .toasts
+            .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
+    }
 }
 
 lazy_static! {
