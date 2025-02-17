@@ -51,7 +51,7 @@ pub struct UIState {
 
 #[fully_pub]
 pub struct LibraryViewState {
-    selected_song: Option<Uuid>, //TODO: should this be a Uuid?
+    selected_song: Option<Uuid>,
     sort_by: SortBy,
     sort_order: SortOrder,
     search_text: String,
