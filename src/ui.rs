@@ -853,7 +853,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         match maybe_library_directory {
                                             Some(directory) => {
                                                 let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
-                                                let result = create_a_new_playlist(&new_playlist_name, directory);
+                                                let result = create_a_new_playlist(new_playlist_name, directory);
                                                 match result {
                                                     Ok(new_playlist) => {
                                                         info!("Created and saved: {}.", &new_playlist.name);
@@ -967,22 +967,11 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if discard_clicked {
                         gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
                     } else if save_clicked {
-                        match &gem_player.library_directory {
-                            Some(directory) => {
-                                let result = rename_playlist(playlist, name_buffer, directory);
-                                if let Err(e) = result {
-                                    error!("{}", e);
-                                } else {
-                                    gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
-                                }
-                            }
-                            None => {
-                                debug_assert!(
-                                    false,
-                                    "Unexpected state: Trying to rename a playlist, but library_directory is None."
-                                );
-                                error!("Unexpected error: No library directory found while renaming playlist.");
-                            }
+                        let result = rename_playlist(playlist, name_buffer.to_owned());
+                        if let Err(e) = result {
+                            error!("{}", e);
+                        } else {
+                            gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
                         }
                     }
                 } else {

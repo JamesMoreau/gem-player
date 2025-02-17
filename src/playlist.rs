@@ -134,9 +134,13 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     })
 }
 
-pub fn rename_playlist(playlist: &mut Playlist, new_name: &str, directory: &Path) -> io::Result<()> {
+pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
     let Some(old_path) = playlist.path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
+    };
+
+    let Some(directory) = old_path.parent() else {
+        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist path has no parent directory"));
     };
 
     let new_filename = format!("{}.m3u", new_name);
@@ -144,16 +148,16 @@ pub fn rename_playlist(playlist: &mut Playlist, new_name: &str, directory: &Path
 
     fs::rename(old_path, &new_path)?;
 
-    playlist.name = new_name.to_string();
+    playlist.name = new_name;
     playlist.path = Some(new_path);
 
     Ok(())
 }
 
-pub fn create_a_new_playlist(name: &str, directory: &Path) -> io::Result<Playlist> {
+pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playlist> {
     let mut playlist = Playlist {
         id: Uuid::new_v4(),
-        name: name.to_owned(),
+        name,
         creation_date_time: SystemTime::now(),
         songs: Vec::new(),
         path: None,
