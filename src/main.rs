@@ -20,6 +20,7 @@ TODO:
 * images with different aspect ratios should be stretched or cropped to match 1:1.
 * should library and playlist views have different sort by ui state?
 * sort by and order thing. Could just use a combobox?
+* profile app.
 * maybe just remove right clicking songs and only have more buttons!?
 */
 
