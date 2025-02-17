@@ -20,9 +20,14 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front, play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
+        play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue,
+        GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
-    playlist::{add_a_song_to_playlist, create_a_new_playlist, delete_playlist, remove_a_song_from_playlist, rename_playlist, Playlist},
+    playlist::{
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
+        Playlist,
+    },
     song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
 };
@@ -44,21 +49,19 @@ pub struct UIState {
     sort_by: SortBy,
     sort_order: SortOrder,
     playlists_ui_state: PlaylistsUIState,
-    _edit_song_metadata_ui_state: EditSongMetadaUIState,
     toasts: Toasts,
 }
 
 #[fully_pub]
-pub struct EditSongMetadaUIState {
-    _buffer_song: Option<Song>,
-    _edit_song_metadata_modal_is_open: bool,
-}
-
-#[fully_pub]
 pub struct PlaylistsUIState {
-    selected_playlist_index: Option<usize>,
+    selected_playlist_id: Option<Uuid>,
     edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
     confirm_delete_playlist_modal_is_open: bool,
+}
+
+pub enum _DeletePlaylistModalState {
+    None,       // The modal is not open.
+    Some(Uuid), // The modal is open for a specific playlist to be deleted.
 }
 
 impl eframe::App for player::GemPlayer {
@@ -453,7 +456,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 // pub fn handle_previous_button()
 
-pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: right click should select the song (as with left click).
+pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    // TODO: right click should select the song (as with left click).
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -767,25 +771,24 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     |ui| {
                         let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
                         if response.clicked() {
-                            if let Some(index) = gem_player.ui_state.playlists_ui_state.selected_playlist_index {
-                                let playlist = gem_player.playlists[index].clone();
-                                let result = delete_playlist(&playlist, &mut gem_player.playlists);
-                                if let Err(e) = result {
-                                    let message = format!("Unable to remove the .m3u file for playlist: {}. {}", playlist.name, e);
-                                    error!("{}", message);
-                                } else {
-                                    let message = format!(
-                                        "{} was deleted successfully. If this was a mistake, the m3u file can be found in the trash.",
-                                        playlist.name
-                                    );
-                                    info!("{}", message);
-                                    gem_player.ui_state.toasts.success(&message);
-                                }
+                            confirm_clicked = true;
 
-                                gem_player.ui_state.playlists_ui_state.selected_playlist_index = None;
+                            let Some(id) = gem_player.ui_state.playlists_ui_state.selected_playlist_id else {
+                                error!("Unexpected state: Trying to delete a playlist but none is selected.");
+                                return;
+                            };
+
+                            let result = delete_playlist(id, &mut gem_player.playlists);
+                            if let Err(e) = result {
+                                error!("{}", e);
+                                return;
                             }
 
-                            confirm_clicked = true;
+                            let message =
+                                "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
+                            info!("{}", message);
+                            gem_player.ui_state.toasts.success(message);
+                            gem_player.ui_state.playlists_ui_state.selected_playlist_id = None;
                         }
                     },
                 );
@@ -857,8 +860,10 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         body.rows(36.0, gem_player.playlists.len(), |mut row| {
                             let playlist = &mut gem_player.playlists[row.index()];
 
-                            let playlist_is_selected = gem_player.ui_state.playlists_ui_state.selected_playlist_index == Some(row.index());
-                            row.set_selected(playlist_is_selected);
+                            if let Some(id) = gem_player.ui_state.playlists_ui_state.selected_playlist_id {
+                                let playlist_is_selected = id == playlist.id;
+                                row.set_selected(playlist_is_selected);
+                            }
 
                             row.col(|ui| {
                                 ui.add_space(8.0);
@@ -868,7 +873,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let response = row.response();
                             if response.clicked() {
                                 info!("Selected playlist: {}", playlist.name);
-                                gem_player.ui_state.playlists_ui_state.selected_playlist_index = Some(row.index());
+                                gem_player.ui_state.playlists_ui_state.selected_playlist_id = Some(playlist.id);
 
                                 // Reset in case we were currently editing.
                                 gem_player.ui_state.playlists_ui_state.edit_playlist_name_info = None;
@@ -887,12 +892,13 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: add current selected song.
+pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    // TODO: add current selected song.
     let maybe_selected_playlist = gem_player
         .ui_state
         .playlists_ui_state
-        .selected_playlist_index
-        .and_then(|index| gem_player.playlists.get_mut(index));
+        .selected_playlist_id
+        .and_then(|id| find_playlist_mut(id, &mut gem_player.playlists));
 
     let Some(playlist) = maybe_selected_playlist else {
         ui.add(unselectable_label(RichText::new("").heading()));
@@ -1094,7 +1100,7 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // 
 
                             let response = row.response();
                             if response.clicked() {
-                                // TODO: selected 
+                                // TODO: selected
                             }
 
                             if response.double_clicked() {
@@ -1263,7 +1269,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
                                     gem_player.library = found_music;
                                     gem_player.playlists = found_playlists;
-                                },
+                                }
                                 None => warn!("Cannot refresh library, as there is no library path."),
                             }
                         }

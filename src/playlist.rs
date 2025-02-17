@@ -23,6 +23,14 @@ pub struct Playlist {
     path: Option<PathBuf>,
 }
 
+pub fn _find_playlist(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
+    playlists.iter().find(|p| p.id == playlist_id)
+}
+
+pub fn find_playlist_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Option<&mut Playlist> {
+    playlists.iter_mut().find(|p| p.id == playlist_id)
+}
+
 pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) {
     if playlist.songs.iter().any(|s| s.id == song.id) {
         return;
@@ -183,9 +191,8 @@ pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playl
 }
 
 // Removes the playlist from the list and deletes the associated m3u file.
-pub fn delete_playlist(playlist_to_delete: &Playlist, playlists: &mut Vec<Playlist>) -> Result<(), String> {
-    // Remove the playlist before deleting the m3u file so that the app and file state remains consistent.
-    let Some(index) = playlists.iter().position(|x| x.id == playlist_to_delete.id) else {
+pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Result<(), String> {
+    let Some(index) = playlists.iter().position(|p| p.id == playlist_id) else {
         return Err("Playlist not found in library".to_string());
     };
 

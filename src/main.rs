@@ -12,7 +12,6 @@ mod ui;
 /*
 TODO:
 * play from playlist.
-* edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.

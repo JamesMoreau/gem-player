@@ -1,6 +1,7 @@
 use std::{
     io::BufReader,
-    path::{Path, PathBuf}, time::Duration,
+    path::{Path, PathBuf},
+    time::Duration,
 };
 
 use eframe::egui::{Color32, Context, Event, Key, ThemePreference};
@@ -16,7 +17,7 @@ use uuid::Uuid;
 use crate::{
     playlist::{read_playlists_from_a_directory, Playlist},
     song::{read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, EditSongMetadaUIState, PlaylistsUIState, UIState},
+    ui::{self, PlaylistsUIState, UIState},
 };
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -91,13 +92,9 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             sort_by: SortBy::Title,
             sort_order: SortOrder::Ascending,
             playlists_ui_state: PlaylistsUIState {
-                selected_playlist_index: None,
+                selected_playlist_id: None,
                 edit_playlist_name_info: None,
                 confirm_delete_playlist_modal_is_open: false,
-            },
-            _edit_song_metadata_ui_state: EditSongMetadaUIState {
-                _buffer_song: None,
-                _edit_song_metadata_modal_is_open: false,
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
