@@ -51,11 +51,12 @@ pub struct UIState {
 
 #[fully_pub]
 pub struct LibraryViewState {
-    selected_song: Option<Song>, //TODO: should this be a Uuid?
+    selected_song: Option<Uuid>, //TODO: should this be a Uuid?
     sort_by: SortBy,
     sort_order: SortOrder,
     search_text: String,
 }
+
 #[fully_pub]
 pub struct PlaylistsViewState {
     selected_playlist_id: Option<Uuid>,
@@ -528,7 +529,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .library_view_state
                     .selected_song
                     .as_ref()
-                    .map_or(false, |selected_song| selected_song.id == song.id);
+                    .map_or(false, |selected_song| *selected_song == song.id);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -573,7 +574,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = row.response();
                 if response.clicked() {
-                    gem_player.ui_state.library_view_state.selected_song = Some(song.clone());
+                    gem_player.ui_state.library_view_state.selected_song = Some(song.id);
                 }
 
                 if response.double_clicked() {
