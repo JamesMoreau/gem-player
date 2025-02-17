@@ -31,8 +31,8 @@ pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) {
     playlist.songs.push(song);
 }
 
-pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song: &Song) -> Result<(), String> {
-    let Some(index) = playlist.songs.iter().position(|x| x.id == song.id) else {
+pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song_id: Uuid) -> Result<(), String> {
+    let Some(index) = playlist.songs.iter().position(|x| x.id == song_id) else {
         return Err("Song not found in playlist".to_string());
     };
 

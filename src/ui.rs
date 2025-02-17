@@ -575,7 +575,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: rig
                 }
 
                 if response.double_clicked() {
-                    play_library_from_song(gem_player, song);
+                    play_library_from_song(gem_player, song.id);
                 }
 
                 response.context_menu(|ui| library_context_menu(ui, gem_player, song));
@@ -1112,7 +1112,7 @@ pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song:
     ui.set_min_width(128.0);
 
     if ui.button("Remove from playlist").clicked() {
-        let result = remove_a_song_from_playlist(playlist, song);
+        let result = remove_a_song_from_playlist(playlist, song.id);
         match result {
             Ok(_) => info!("Removed song from playlist: {}", song.title.as_deref().unwrap_or("Unknown Title")),
             Err(e) => error!("Error removing song from playlist: {:?}", e),

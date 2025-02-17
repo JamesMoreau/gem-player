@@ -21,7 +21,6 @@ TODO:
 * should library and playlist views have different sort by ui state?
 * sort by and order thing. Could just use a combobox?
 * maybe just remove right clicking songs and only have more buttons!?
-* should song history be cleared at any point?
 */
 
 fn main() -> eframe::Result {

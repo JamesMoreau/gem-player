@@ -310,15 +310,16 @@ pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
     player.sink.set_volume(new_volume);
 }
 
-pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
+pub fn play_library_from_song(gem_player: &mut GemPlayer, song_id: Uuid) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    let maybe_song_index = gem_player.library.iter().position(|s| s.id == song.id);
-    let Some(index) = maybe_song_index else {
+    let Some(index) = gem_player.library.iter().position(|s| s.id == song_id) else {
         error!("Song not found in the library.");
         return;
     };
+
+    let song = &gem_player.library[index];
 
     gem_player.player.queue.extend_from_slice(&gem_player.library[index + 1..]);
     gem_player.player.queue.extend_from_slice(&gem_player.library[..index]);
@@ -333,7 +334,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song: &Song) {
     }
 }
 
-pub fn play_playlist_from_song(gem_player: &mut GemPlayer, song: &Song, playlist_id: Uuid) {
+pub fn _play_playlist_from_song(gem_player: &mut GemPlayer, song_id: Uuid, playlist_id: Uuid) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
@@ -342,10 +343,12 @@ pub fn play_playlist_from_song(gem_player: &mut GemPlayer, song: &Song, playlist
         return;
     };
 
-    let Some(index) = playlist.songs.iter().position(|s| s.id == song.id) else {
+    let Some(index) = playlist.songs.iter().position(|s| s.id == song_id) else {
         error!("Song not found in the playlist.");
         return;
     };
+
+    let song = &playlist.songs[index];
 
     gem_player.player.queue.extend_from_slice(&playlist.songs[index + 1..]);
     gem_player.player.queue.extend_from_slice(&playlist.songs[..index]);
