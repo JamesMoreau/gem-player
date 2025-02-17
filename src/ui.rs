@@ -20,9 +20,7 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, move_song_to_front, play_library_from_song, play_next,
-        play_or_pause, play_previous, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS,
-        LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front, play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
     },
     playlist::{add_a_song_to_playlist, create_a_new_playlist, delete_playlist, remove_a_song_from_playlist, rename_playlist, Playlist},
     song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
@@ -285,23 +283,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Previous")
                         .on_disabled_hover_text("No previous song");
                     if response.clicked() {
-                        // If we are near the beginning of the song, we go to the previously played song.
-                        // Otherwise, we seek to the beginning.
-                        let playback_position = gem_player.player.sink.get_pos().as_secs_f32();
-                        let rewind_threshold = 5.0; // If playback is within first 5 seconds, go to previous song.
-
-                        if playback_position < rewind_threshold && !gem_player.player.history.is_empty() {
-                            let result = play_previous(&mut gem_player.player);
-                            if let Err(e) = result {
-                                error!("{}", e);
-                                gem_player.ui_state.toasts.error("Error playing the previous song");
-                            }
-                        } else {
-                            let result = gem_player.player.sink.try_seek(Duration::ZERO);
-                            if let Err(e) = result {
-                                error!("Error rewinding song: {:?}", e);
-                            }
-                        }
+                        maybe_play_previous(gem_player);
                     }
 
                     let play_pause_icon = if is_playing(&mut gem_player.player) {
@@ -468,6 +450,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
     });
 }
+
+// pub fn handle_previous_button()
 
 pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: right click should select the song (as with left click).
     if gem_player.library.is_empty() {

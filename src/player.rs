@@ -1,6 +1,6 @@
 use std::{
     io::BufReader,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, time::Duration,
 };
 
 use eframe::egui::{Color32, Context, Event, Key, ThemePreference};
@@ -196,6 +196,26 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     load_and_play_song(player, &next_song)
 }
 
+// If we are near the beginning of the song, we go to the previously played song.
+// Otherwise, we seek to the beginning.
+// This is what actually gets called by the UI and key command.
+pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
+    let playback_position = gem_player.player.sink.get_pos().as_secs_f32();
+    let rewind_threshold = 5.0;
+
+    if playback_position < rewind_threshold {
+        if let Err(e) = play_previous(&mut gem_player.player) {
+            error!("{}", e);
+            gem_player.ui_state.toasts.error("Error playing the previous song");
+        }
+    } else {
+        if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
+            error!("Error rewinding song: {:?}", e);
+        }
+        gem_player.player.sink.play();
+    }
+}
+
 pub fn play_previous(player: &mut Player) -> Result<(), String> {
     let Some(previous_song) = player.history.pop() else {
         return Ok(());
@@ -355,12 +375,7 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
 
                 match key {
                     Key::Space => play_or_pause(&mut gem_player.player),
-                    Key::ArrowLeft => {
-                        if let Err(e) = play_previous(&mut gem_player.player) {
-                            error!("{}", e);
-                            gem_player.ui_state.toasts.error("Error playing the previous song");
-                        }
-                    }
+                    Key::ArrowLeft => maybe_play_previous(gem_player),
                     Key::ArrowRight => {
                         if let Err(e) = play_next(&mut gem_player.player) {
                             error!("{}", e);

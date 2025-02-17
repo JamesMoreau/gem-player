@@ -12,7 +12,6 @@ mod ui;
 /*
 TODO:
 * play from playlist.
-* previous and next not disabling correctly. also left and right key commands not doing proper check!
 * edit track metadata view (but not listed in the navigation. only available by right clicking on a track). could be a popup menu.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
@@ -22,6 +21,7 @@ TODO:
 * should library and playlist views have different sort by ui state?
 * sort by and order thing. Could just use a combobox?
 * maybe just remove right clicking songs and only have more buttons!?
+* should song history be cleared at any point?
 */
 
 fn main() -> eframe::Result {
