@@ -152,7 +152,7 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
     let panel_frame = Frame {
         fill: ctx.style().visuals.window_fill(),
         corner_radius: 10.0.into(),
-        stroke: ctx.style().visuals.widgets.noninteractive.fg_stroke,
+        stroke: ctx.style().visuals.widgets.noninteractive.bg_stroke,
         outer_margin: 0.5.into(), // so the stroke is within the bounds
         ..Default::default()
     };
