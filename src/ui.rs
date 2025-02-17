@@ -25,7 +25,7 @@ use crate::{
         LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{add_a_song_to_playlist, create_a_new_playlist, delete_playlist, remove_a_song_from_playlist, rename_playlist, Playlist},
-    song::{get_duration_of_songs, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
+    song::{get_duration_of_songs, open_song_file_location, read_music_from_a_directory, sort_songs, SortBy, SortOrder},
     Song,
 };
 
@@ -630,18 +630,10 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &Song
     ui.separator();
 
     if ui.button("Open file location").clicked() {
-        let maybe_folder = song.file_path.as_path().parent();
-        match maybe_folder {
-            Some(folder) => {
-                let result = open::that_detached(folder);
-                match result {
-                    Ok(_) => info!("Opening file location: {:?}", folder),
-                    Err(e) => error!("Error opening file location: {:?}", e),
-                }
-            }
-            None => {
-                info!("No file location to open");
-            }
+        let result = open_song_file_location(song);
+        match result {
+            Ok(_) => info!("Opening song location"),
+            Err(e) => error!("{}", e),
         }
 
         ui.close_menu();
@@ -662,7 +654,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
     }
 
     let header_labels = [
-        "",
+        icons::ICON_TAG,
         icons::ICON_MUSIC_NOTE,
         icons::ICON_ARTIST,
         icons::ICON_ALBUM,
@@ -1039,7 +1031,7 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) { // 
                 let available_width = ui.available_width();
                 let position_width = 64.0;
                 let time_width = 80.0;
-                let more_width = 80.0;
+                let more_width = 48.0;
                 let remaining_width = available_width - position_width - time_width - more_width;
                 let title_width = remaining_width * (2.0 / 4.0);
                 let artist_width = remaining_width * (1.0 / 4.0);
@@ -1148,19 +1140,10 @@ pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song:
     ui.separator();
 
     if ui.button("Open file location").clicked() {
-        // TODO extract this into its own function (also replace the other context menu in library!).
-        let maybe_folder = song.file_path.as_path().parent();
-        match maybe_folder {
-            Some(folder) => {
-                let result = open::that_detached(folder);
-                match result {
-                    Ok(_) => info!("Opening file location: {:?}", folder),
-                    Err(e) => error!("Error opening file location: {:?}", e),
-                }
-            }
-            None => {
-                info!("No file location to open");
-            }
+        let result = open_song_file_location(song);
+        match result {
+            Ok(_) => info!("Opening song location"),
+            Err(e) => error!("{}", e),
         }
 
         ui.close_menu();

@@ -145,3 +145,14 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Song>> {
 pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
     songs.iter().map(|song| song.duration).sum()
 }
+
+pub fn open_song_file_location(song: &Song) -> io::Result<()> {
+    let maybe_folder = song.file_path.as_path().parent();
+    let Some(folder) = maybe_folder else {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Song has no file path."));
+    };
+
+    open::that_detached(folder)?;
+    
+    Ok(())
+}
