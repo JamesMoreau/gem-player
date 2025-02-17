@@ -17,7 +17,7 @@ use uuid::Uuid;
 use crate::{
     playlist::{read_playlists_from_a_directory, Playlist},
     song::{read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, PlaylistsUIState, UIState},
+    ui::{self, LibraryViewState, PlaylistsViewState, UIState},
 };
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -87,11 +87,13 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         ui_state: UIState {
             current_view: ui::View::Library,
             theme_preference,
-            search_text: String::new(),
-            selected_library_song: None,
-            sort_by: SortBy::Title,
-            sort_order: SortOrder::Ascending,
-            playlists_ui_state: PlaylistsUIState {
+            library_view_state: LibraryViewState {
+                search_text: String::new(),
+                selected_song: None,
+                sort_by: SortBy::Title,
+                sort_order: SortOrder::Ascending,
+            },
+            playlists_view_state: PlaylistsViewState {
                 selected_playlist_id: None,
                 edit_playlist_name_info: None,
                 delete_playlist_modal_state: None,
