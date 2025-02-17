@@ -33,7 +33,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
-pub enum View {
+pub enum View { // TODO: could have fat enum with the ui's state struct (create this) attached.
     Library,
     Queue,
     Playlists,
@@ -44,7 +44,7 @@ pub enum View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
-    selected_library_song: Option<Song>, // Currently selected song in the library.
+    selected_library_song: Option<Song>, // The currently selected song in the library.
     search_text: String,
     sort_by: SortBy,
     sort_order: SortOrder,
@@ -55,13 +55,8 @@ pub struct UIState {
 #[fully_pub]
 pub struct PlaylistsUIState {
     selected_playlist_id: Option<Uuid>,
-    edit_playlist_name_info: Option<(Uuid, String)>, // The id of the playlist being edited, and a buffer for the new name.
-    delete_playlist_modal_state: DeletePlaylistModalState,
-}
-
-pub enum DeletePlaylistModalState {
-    None,       // The modal is not open.
-    Some(Uuid), // The modal is open for a specific playlist to be deleted.
+    edit_playlist_name_info: Option<(Uuid, String)>, // None: No playlist is being edited. Some: the id of the playlist being edited, and a buffer for the new name.
+    delete_playlist_modal_state: Option<Uuid>, // None: the modal is not open. Some: the modal for a specific playlist.
 }
 
 impl eframe::App for player::GemPlayer {
@@ -748,7 +743,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    if let DeletePlaylistModalState::Some(playlist_id) = gem_player.ui_state.playlists_ui_state.delete_playlist_modal_state {
+    if let Some(playlist_id) = gem_player.ui_state.playlists_ui_state.delete_playlist_modal_state {
         let mut cancel_clicked = false;
         let mut confirm_clicked = false;
 
@@ -791,7 +786,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 
         if confirm_clicked || cancel_clicked || modal.should_close() {
-            gem_player.ui_state.playlists_ui_state.delete_playlist_modal_state = DeletePlaylistModalState::None;
+            gem_player.ui_state.playlists_ui_state.delete_playlist_modal_state = None;
         }
     }
 
@@ -974,7 +969,7 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 let response = ui.add(delete_button).on_hover_text("Delete");
                                 if response.clicked() {
                                     info!("Opening delete playlist modal: {}", playlist.name);
-                                    gem_player.ui_state.playlists_ui_state.delete_playlist_modal_state = DeletePlaylistModalState::Some(playlist.id);
+                                    gem_player.ui_state.playlists_ui_state.delete_playlist_modal_state = Some(playlist.id);
                                 }
 
                                 ui.add_space(8.0);

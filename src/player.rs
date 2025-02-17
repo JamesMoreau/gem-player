@@ -17,7 +17,7 @@ use uuid::Uuid;
 use crate::{
     playlist::{read_playlists_from_a_directory, Playlist},
     song::{read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, DeletePlaylistModalState, PlaylistsUIState, UIState},
+    ui::{self, PlaylistsUIState, UIState},
 };
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -94,7 +94,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             playlists_ui_state: PlaylistsUIState {
                 selected_playlist_id: None,
                 edit_playlist_name_info: None,
-                delete_playlist_modal_state: DeletePlaylistModalState::None,
+                delete_playlist_modal_state: None,
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
