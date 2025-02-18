@@ -36,9 +36,15 @@ pub struct GemPlayer {
     player: Player,
 }
 
+pub enum PlayerAction {
+    PlayFromPlaylist { playlist_id: Uuid, song_id: Uuid },
+    PlayFromLibrary { song_id: Uuid },
+}
+
 #[fully_pub]
 pub struct Player {
     current_song: Option<Song>,
+    action: Option<PlayerAction>,
 
     queue: Vec<Song>,
     history: Vec<Song>,
@@ -114,6 +120,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists,
 
         player: Player {
+            action: None,
             current_song: None,
 
             queue: Vec::new(),
@@ -334,7 +341,7 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song_id: Uuid) {
     }
 }
 
-pub fn _play_playlist_from_song(gem_player: &mut GemPlayer, song_id: Uuid, playlist_id: Uuid) {
+pub fn play_playlist_from_song(gem_player: &mut GemPlayer, playlist_id: Uuid, song_id: Uuid) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
