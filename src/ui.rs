@@ -33,7 +33,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
-pub enum View { // TODO: could have fat enum with the ui's state struct (create this) attached.
+pub enum View {
     Library,
     Queue,
     Playlists,
