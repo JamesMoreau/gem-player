@@ -20,9 +20,7 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
-        play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue,
-        GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front, play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, _play_playlist_from_song, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
     },
     playlist::{
         add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
@@ -1126,9 +1124,9 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = row.response();
                 if response.clicked() {
-                    gem_player.ui_state.playlists_view_state.selected_playlist_id = Some(song.id);
+                    gem_player.ui_state.playlists_view_state.selected_song_id = Some(song.id);
                 } else if response.double_clicked() {
-                    // play_playlist_from_song(gem_player, song.id, playlist.id);
+                    // _play_playlist_from_song(gem_player, song.id, playlist.id);
                 }
 
                 response.context_menu(|ui| playlist_content_context_menu(ui, playlist, &song));
