@@ -769,7 +769,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .striped(true)
                     .sense(Sense::click())
                     .cell_layout(Layout::left_to_right(Align::Center))
-                    .column(egui_extras::Column::exact(playlists_width))
+                    .column(egui_extras::Column::remainder())
                     .header(36.0, |mut header| {
                         header.col(|ui| {
                             containers::Sides::new().height(ui.available_height()).show(
