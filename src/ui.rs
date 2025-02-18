@@ -1032,9 +1032,6 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-// let playlist_is_empty = find_playlist(playlist_id, &gem_player.playlists).map_or(false, |p| p.songs.is_empty());
-
-
 pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let maybe_selected_playlist_id = gem_player.ui_state.playlists_view_state.selected_playlist_id;
     let Some(playlist_id) = maybe_selected_playlist_id else {
