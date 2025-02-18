@@ -25,10 +25,9 @@ use crate::{
         remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
-        Playlist,
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, Playlist
     },
-    song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
+    song::{find_song, get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
 };
 
@@ -122,12 +121,31 @@ fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) {
 fn process_player_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
-            PlayerAction::PlayFromPlaylist { playlist_id, song_id } => {
-                play_playlist_from_song(gem_player, playlist_id, song_id);
+            PlayerAction::PlayFromPlaylist { playlist_id, song_id } => play_playlist_from_song(gem_player, playlist_id, song_id),
+            PlayerAction::PlayFromLibrary { song_id } => play_library_from_song(gem_player, song_id),
+            PlayerAction::AddSongToQueueFromLibrary { song_id } => {
+                let maybe_song = find_song(song_id, &gem_player.library);
+                if let Some(song) = maybe_song {
+                    add_to_queue(&mut gem_player.player.queue, song.clone());
+                }
             }
-            PlayerAction::PlayFromLibrary { song_id } => {
-                play_library_from_song(gem_player, song_id);
+            PlayerAction::AddSongToQueueFromPlaylist { song_id, playlist_id } => {
+                let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
+                let Some(playlist) = maybe_playlist else {
+                    error!("Unable to find playlist for AddSongToQueueFromPlaylist action.");
+                    continue;
+                };
+
+                let maybe_song = find_song(song_id, &playlist.songs);
+                let Some(song) = maybe_song else {
+                    error!("Unable to find song for AddSongToQueueFromPlaylist action.");
+                    continue;
+                };
+
+                add_to_queue(&mut gem_player.player.queue, song.clone());
             }
+            PlayerAction::PlayPrevious => todo!(),
+            PlayerAction::PlayNext => todo!(),
         }
     }
 }
@@ -639,7 +657,7 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &Song
     }
 
     if ui.button("Add to queue").clicked() {
-        add_to_queue(&mut gem_player.player.queue, song.clone());
+        gem_player.player.actions.push(PlayerAction::AddSongToQueueFromLibrary { song_id: song.id });
         ui.close_menu();
     }
 

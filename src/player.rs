@@ -15,7 +15,7 @@ use rodio::{Decoder, OutputStream, Sink};
 use uuid::Uuid;
 
 use crate::{
-    playlist::{read_playlists_from_a_directory, Playlist},
+    playlist::{read_playlists_from_a_directory, Playlist, find_playlist},
     song::{read_music_from_a_directory, Song, SortBy, SortOrder},
     ui::{self, LibraryViewState, PlaylistsViewState, UIState},
 };
@@ -39,6 +39,10 @@ pub struct GemPlayer {
 pub enum PlayerAction {
     PlayFromPlaylist { playlist_id: Uuid, song_id: Uuid },
     PlayFromLibrary { song_id: Uuid },
+    AddSongToQueueFromLibrary { song_id: Uuid },
+    AddSongToQueueFromPlaylist { song_id: Uuid, playlist_id: Uuid },
+    PlayPrevious,
+    PlayNext,
 }
 
 #[fully_pub]
@@ -319,7 +323,11 @@ pub fn mute_or_unmute(player: &mut Player) {
 
 pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
     let current_volume = player.sink.volume();
-    let new_volume = (current_volume + percentage).clamp(0.0, 1.0);
+
+    let min_volume = 0.0;
+    let max_volume = 1.0;
+
+    let new_volume = (current_volume + percentage).clamp(min_volume, max_volume);
     player.sink.set_volume(new_volume);
 }
 
@@ -351,7 +359,7 @@ pub fn play_playlist_from_song(gem_player: &mut GemPlayer, playlist_id: Uuid, so
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    let Some(playlist) = gem_player.playlists.iter().find(|p| p.id == playlist_id) else {
+    let Some(playlist) = find_playlist(playlist_id, &gem_player.playlists) else {
         error!("Playlist not found.");
         return;
     };

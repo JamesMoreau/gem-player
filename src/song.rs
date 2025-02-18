@@ -42,6 +42,14 @@ pub struct Song {
     file_path: PathBuf,
 }
 
+pub fn find_song(song_id: Uuid, songs: &[Song]) -> Option<&Song> {
+    songs.iter().find(|p| p.id == song_id)
+}
+
+pub fn _find_song_mut(song_id: Uuid, songs: &mut [Song]) -> Option<&mut Song> {
+    songs.iter_mut().find(|p| p.id == song_id)
+}
+
 pub fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
     songs.sort_by(|a, b| {
         let ordering = match sort_by {
