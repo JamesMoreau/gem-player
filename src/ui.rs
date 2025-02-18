@@ -83,7 +83,7 @@ impl eframe::App for player::GemPlayer {
         handle_key_commands(ctx, self);
 
         check_for_next_song_in_queue(self);
-        process_player_action(self);
+        process_player_actions(self);
 
         ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
         update_theme(self, ctx);
@@ -119,17 +119,15 @@ fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) {
     }
 }
 
-fn process_player_action(gem_player: &mut GemPlayer) {
-    let Some(action) = gem_player.player.action.take() else {
-        return;
-    };
-
-    match action {
-        PlayerAction::PlayFromPlaylist { playlist_id, song_id } => {
-            play_playlist_from_song(gem_player, playlist_id, song_id);
-        }
-        PlayerAction::PlayFromLibrary { song_id } => {
-            play_library_from_song(gem_player, song_id);
+fn process_player_actions(gem_player: &mut GemPlayer) {
+    while let Some(action) = gem_player.player.actions.pop() {
+        match action {
+            PlayerAction::PlayFromPlaylist { playlist_id, song_id } => {
+                play_playlist_from_song(gem_player, playlist_id, song_id);
+            }
+            PlayerAction::PlayFromLibrary { song_id } => {
+                play_library_from_song(gem_player, song_id);
+            }
         }
     }
 }
@@ -414,7 +412,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             ui.add_space(8.0);
 
-                            // Placing the song info after the slider ensures that the playback position display is accurate. The seek operation is only 
+                            // Placing the song info after the slider ensures that the playback position display is accurate. The seek operation is only
                             // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
                             Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
                                 flex.add_ui(item().shrink(), |ui| {
@@ -609,7 +607,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.player.action = Some(PlayerAction::PlayFromLibrary { song_id: song.id });
+                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { song_id: song.id });
                 }
 
                 response.context_menu(|ui| library_context_menu(ui, gem_player, song));
@@ -1161,10 +1159,10 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.player.action = Some(PlayerAction::PlayFromPlaylist {
+                    gem_player.player.actions.push(PlayerAction::PlayFromPlaylist {
                         playlist_id: playlist.id,
                         song_id: song.id,
-                    })
+                    });
                 }
 
                 response.context_menu(|ui| {

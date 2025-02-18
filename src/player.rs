@@ -44,7 +44,7 @@ pub enum PlayerAction {
 #[fully_pub]
 pub struct Player {
     current_song: Option<Song>,
-    action: Option<PlayerAction>, // Actions get processed every frame. For now there can only be one action since we are not anticipating multiple user actions per frame.
+    actions: Vec<PlayerAction>, // Actions get immedietly processed every frame.
 
     queue: Vec<Song>,
     history: Vec<Song>,
@@ -120,7 +120,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists,
 
         player: Player {
-            action: None,
+            actions: Vec::new(),
             current_song: None,
 
             queue: Vec::new(),
