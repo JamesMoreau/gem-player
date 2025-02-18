@@ -22,10 +22,10 @@ use crate::{
     player::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
         play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue,
-        GemPlayer, _play_playlist_from_song, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist, find_playlist_mut, remove_a_song_from_playlist,
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist,
         rename_playlist, Playlist,
     },
     song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
@@ -1019,18 +1019,22 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let playlist_is_empty = find_playlist(playlist_id, &gem_player.playlists).map_or(false, |p| p.songs.is_empty());
-    if playlist_is_empty {
-        Frame::new()
-            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("The playlist is empty."));
-                });
-            });
-
+    let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
         return;
-    }
+    };
+
+    // let playlist_is_empty = find_playlist(playlist_id, &gem_player.playlists).map_or(false, |p| p.songs.is_empty());
+    // if playlist_is_empty {
+    //     Frame::new()
+    //         .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+    //         .show(ui, |ui| {
+    //             ui.vertical_centered(|ui| {
+    //                 ui.add(unselectable_label("The playlist is empty."));
+    //             });
+    //         });
+
+    //     return;
+    // }
 
     let header_labels = [
         icons::ICON_TAG,
@@ -1116,9 +1120,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             ui.menu_button(icons::ICON_MORE_HORIZ, |ui| {
-                                if let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) {
-                                    playlist_content_context_menu(ui, playlist, song);
-                                }
+                                playlist_content_context_menu(ui, playlist, &song);
                             });
                         },
                     );
@@ -1135,9 +1137,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 response.context_menu(|ui| {
-                    if let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) {
-                        playlist_content_context_menu(ui, playlist, song);
-                    }
+                    playlist_content_context_menu(ui, playlist, &song);
                 });
             });
         });

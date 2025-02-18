@@ -23,7 +23,7 @@ pub struct Playlist {
     path: Option<PathBuf>,
 }
 
-pub fn find_playlist(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
+pub fn _find_playlist(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
     playlists.iter().find(|p| p.id == playlist_id)
 }
 
