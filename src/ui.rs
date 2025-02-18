@@ -144,8 +144,14 @@ fn process_player_actions(gem_player: &mut GemPlayer) {
 
                 add_to_queue(&mut gem_player.player.queue, song.clone());
             }
-            PlayerAction::PlayPrevious => todo!(),
-            PlayerAction::PlayNext => todo!(),
+            PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
+            PlayerAction::PlayNext => {
+                let result = play_next(&mut gem_player.player);
+                if let Err(e) = result {
+                    error!("{}", e);
+                    gem_player.ui_state.toasts.error("Error playing the next song");
+                }
+            },
         }
     }
 }
@@ -326,7 +332,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Previous")
                         .on_disabled_hover_text("No previous song");
                     if response.clicked() {
-                        maybe_play_previous(gem_player);
+                        gem_player.player.actions.push(PlayerAction::PlayPrevious);
                     }
 
                     let play_pause_icon = if is_playing(&mut gem_player.player) {
@@ -352,11 +358,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Next")
                         .on_disabled_hover_text("No next song");
                     if response.clicked() {
-                        let result = play_next(&mut gem_player.player);
-                        if let Err(e) = result {
-                            error!("{}", e);
-                            gem_player.ui_state.toasts.error("Error playing the next song");
-                        }
+                        gem_player.player.actions.push(PlayerAction::PlayNext);
                     }
                 });
 

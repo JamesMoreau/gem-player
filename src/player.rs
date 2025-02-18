@@ -420,7 +420,7 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
 
                 info!("Key pressed: {}", binding);
 
-                match key {
+                match key { // TODO should these make actions?
                     Key::Space => play_or_pause(&mut gem_player.player),
                     Key::ArrowLeft => maybe_play_previous(gem_player),
                     Key::ArrowRight => {
