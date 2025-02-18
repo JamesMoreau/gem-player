@@ -587,9 +587,12 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 let response = row.response();
+                
                 if response.clicked() {
                     gem_player.ui_state.library_view_state.selected_song = Some(song.id);
-                } else if response.double_clicked() {
+                }
+                
+                if response.double_clicked() {
                     gem_player.player.action = Some(PlayerAction::PlayFromLibrary { song_id: song.id });
                 }
 
