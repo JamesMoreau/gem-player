@@ -20,7 +20,9 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front, play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, play_playlist_from_song, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
+        play_library_from_song, play_next, play_or_pause, play_playlist_from_song, read_music_and_playlists_from_directory,
+        remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
         add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
@@ -78,85 +80,97 @@ impl eframe::App for player::GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        // let _window_rect = ctx.input(|i: &eframe::egui::InputState| i.screen_rect()); // For debugging.
-        // info!("Window rect: {:?}", window_rect);
-
-        // Necessary to keep UI up-to-date with the current state of the sink/player.
-        ctx.request_repaint_after_secs(1.0);
-
-        match self.ui_state.theme_preference {
-            ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
-            ThemePreference::Light => ctx.set_visuals(Visuals::light()),
-            ThemePreference::System => {
-                let visuals = match dark_light::detect() {
-                    Ok(Mode::Light) => Visuals::light(),
-                    _ => Visuals::dark(), // Covers both Mode::Dark, Mode::Unspecified, and errors
-                };
-                ctx.set_visuals(visuals);
-            }
-        }
-
-        let should_check_for_next_song_in_queue = self.player.sink.empty();
-        if should_check_for_next_song_in_queue {
-            let result = play_next(&mut self.player);
-            if let Err(e) = result {
-                error!("{}", e);
-                self.ui_state.toasts.error("Error playing the next song");
-            }
-        }
-
-        if let Some(action) = self.player.action.take() {
-            match action {
-                PlayerAction::PlayFromPlaylist { playlist_id, song_id } => {
-                    play_playlist_from_song(self, playlist_id, song_id);
-                }
-                PlayerAction::PlayFromLibrary { song_id } => {
-                    play_library_from_song(self, song_id);
-                }
-            }
-        }
-
         handle_key_commands(ctx, self);
 
+        check_for_next_song_in_queue(self);
+        process_player_action(self);
+
+        ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
+        update_theme(self, ctx);
+        render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
-
-        custom_window_frame(ctx, "", |ui| {
-            let control_ui_height = 64.0;
-            let navigation_ui_height = 32.0;
-            let separator_space = 2.0; // Even numbers seem to work better for getting pixel perfect placements.
-
-            StripBuilder::new(ui)
-                .size(Size::exact(separator_space))
-                .size(Size::exact(control_ui_height))
-                .size(Size::exact(separator_space))
-                .size(Size::remainder())
-                .size(Size::exact(separator_space))
-                .size(Size::exact(navigation_ui_height))
-                .vertical(|mut strip| {
-                    strip.cell(|ui| {
-                        ui.add(Separator::default().spacing(separator_space));
-                    });
-                    strip.cell(|ui| {
-                        render_control_ui(ui, self);
-                    });
-                    strip.cell(|ui| {
-                        ui.add(Separator::default().spacing(separator_space));
-                    });
-                    strip.cell(|ui| match self.ui_state.current_view {
-                        View::Library => render_library_ui(ui, self),
-                        View::Queue => render_queue_ui(ui, &mut self.player.queue),
-                        View::Playlists => render_playlists_ui(ui, self),
-                        View::Settings => render_settings_ui(ui, self),
-                    });
-                    strip.cell(|ui| {
-                        ui.add(Separator::default().spacing(separator_space));
-                    });
-                    strip.cell(|ui| {
-                        render_navigation_ui(ui, self);
-                    });
-                });
-        });
     }
+}
+
+fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
+    match gem_player.ui_state.theme_preference {
+        ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
+        ThemePreference::Light => ctx.set_visuals(Visuals::light()),
+        ThemePreference::System => {
+            let visuals = match dark_light::detect() {
+                Ok(Mode::Light) => Visuals::light(),
+                _ => Visuals::dark(), // Covers both Mode::Dark, Mode::Unspecified, and errors
+            };
+            ctx.set_visuals(visuals);
+        }
+    }
+}
+
+fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) {
+    let should_check_for_next_song_in_queue = !gem_player.player.sink.empty();
+    if should_check_for_next_song_in_queue {
+        return;
+    }
+
+    let result = play_next(&mut gem_player.player);
+    if let Err(e) = result {
+        error!("{}", e);
+        gem_player.ui_state.toasts.error("Error playing the next song");
+    }
+}
+
+fn process_player_action(gem_player: &mut GemPlayer) {
+    let Some(action) = gem_player.player.action.take() else {
+        return;
+    };
+
+    match action {
+        PlayerAction::PlayFromPlaylist { playlist_id, song_id } => {
+            play_playlist_from_song(gem_player, playlist_id, song_id);
+        }
+        PlayerAction::PlayFromLibrary { song_id } => {
+            play_library_from_song(gem_player, song_id);
+        }
+    }
+}
+
+fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
+    custom_window_frame(ctx, "", |ui| {
+        let control_ui_height = 64.0;
+        let navigation_ui_height = 32.0;
+        let separator_space = 2.0; // Even numbers seem to work better for getting pixel perfect placements.
+
+        StripBuilder::new(ui)
+            .size(Size::exact(separator_space))
+            .size(Size::exact(control_ui_height))
+            .size(Size::exact(separator_space))
+            .size(Size::remainder())
+            .size(Size::exact(separator_space))
+            .size(Size::exact(navigation_ui_height))
+            .vertical(|mut strip| {
+                strip.cell(|ui| {
+                    ui.add(Separator::default().spacing(separator_space));
+                });
+                strip.cell(|ui| {
+                    render_control_ui(ui, gem_player);
+                });
+                strip.cell(|ui| {
+                    ui.add(Separator::default().spacing(separator_space));
+                });
+                strip.cell(|ui| match gem_player.ui_state.current_view {
+                    View::Library => render_library_ui(ui, gem_player),
+                    View::Queue => render_queue_ui(ui, &mut gem_player.player.queue),
+                    View::Playlists => render_playlists_ui(ui, gem_player),
+                    View::Settings => render_settings_ui(ui, gem_player),
+                });
+                strip.cell(|ui| {
+                    ui.add(Separator::default().spacing(separator_space));
+                });
+                strip.cell(|ui| {
+                    render_navigation_ui(ui, gem_player);
+                });
+            });
+    });
 }
 
 pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
@@ -587,11 +601,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 let response = row.response();
-                
+
                 if response.clicked() {
                     gem_player.ui_state.library_view_state.selected_song = Some(song.id);
                 }
-                
+
                 if response.double_clicked() {
                     gem_player.player.action = Some(PlayerAction::PlayFromLibrary { song_id: song.id });
                 }

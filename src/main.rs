@@ -11,16 +11,15 @@ mod ui;
 
 /*
 TODO:
-* play from playlist.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
 * images with different aspect ratios should be stretched or cropped to match 1:1.
-* should library and playlist views have different sort by ui state?
 * sort by and order thing. Could just use a combobox?
 * profile app.
-* maybe just remove right clicking songs and only have more buttons!?
+* maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
+* make function that are pub but don't need to be back.
 */
 
 fn main() -> eframe::Result {
