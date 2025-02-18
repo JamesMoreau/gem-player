@@ -44,7 +44,7 @@ pub enum PlayerAction {
 #[fully_pub]
 pub struct Player {
     current_song: Option<Song>,
-    action: Option<PlayerAction>,
+    action: Option<PlayerAction>, // Actions get processed every frame. For now there can only be one action since we are not anticipating multiple user actions per frame.
 
     queue: Vec<Song>,
     history: Vec<Song>,
@@ -103,7 +103,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 selected_playlist_id: None,
                 edit_playlist_name_state: None,
                 delete_playlist_modal_state: None,
-                selected_song_id: None
+                selected_song_id: None,
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
@@ -212,7 +212,13 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     let rewind_threshold = 5.0;
 
     if playback_position < rewind_threshold {
-        if let Err(e) = play_previous(&mut gem_player.player) {
+        if gem_player.player.history.is_empty() {
+            // No previous song to play, just restart the current song
+            if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
+                error!("Error rewinding song: {:?}", e);
+            }
+            gem_player.player.sink.play();
+        } else if let Err(e) = play_previous(&mut gem_player.player) {
             error!("{}", e);
             gem_player.ui_state.toasts.error("Error playing the previous song");
         }
