@@ -22,7 +22,7 @@ use crate::{
     player::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
         play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue,
-        GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        GemPlayer, _play_playlist_from_song, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
         add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
@@ -61,7 +61,8 @@ pub struct LibraryViewState {
 pub struct PlaylistsViewState {
     selected_playlist_id: Option<Uuid>,
     edit_playlist_name_state: Option<(Uuid, String)>, // None: No playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name.
-    delete_playlist_modal_state: Option<Uuid>, // None: the modal is not open. Some: the modal for a specific playlist.
+    delete_playlist_modal_state: Option<Uuid>,        // None: the modal is not open. Some: the modal for a specific playlist.
+    selected_song_id: Option<Uuid>,
 }
 
 impl eframe::App for player::GemPlayer {
@@ -484,7 +485,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    sort_songs(&mut library_copy, gem_player.ui_state.library_view_state.sort_by, gem_player.ui_state.library_view_state.sort_order);
+    sort_songs(
+        &mut library_copy,
+        gem_player.ui_state.library_view_state.sort_by,
+        gem_player.ui_state.library_view_state.sort_order,
+    );
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
@@ -887,7 +892,6 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    // TODO: add current selected song.
     let maybe_selected_playlist = gem_player
         .ui_state
         .playlists_view_state
@@ -1094,11 +1098,11 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             let response = row.response();
                             if response.clicked() {
-                                // TODO: selected
+                                gem_player.ui_state.playlists_view_state.selected_playlist_id = Some(song.id);
                             }
 
                             if response.double_clicked() {
-                                // TODO: play playlist from song
+                                // _play_playlist_from_song(gem_player, song.id, playlist.id); TODO
                             }
 
                             response.context_menu(|ui| playlist_content_context_menu(ui, playlist, &song));
@@ -1322,13 +1326,21 @@ fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let filter_icon = icons::ICON_FILTER_LIST;
     ui.menu_button(filter_icon, |ui| {
         for sort_by in SortBy::iter() {
-            ui.radio_value(&mut gem_player.ui_state.library_view_state.sort_by, sort_by, format!("{:?}", sort_by));
+            ui.radio_value(
+                &mut gem_player.ui_state.library_view_state.sort_by,
+                sort_by,
+                format!("{:?}", sort_by),
+            );
         }
 
         ui.separator();
 
         for sort_order in SortOrder::iter() {
-            ui.radio_value(&mut gem_player.ui_state.library_view_state.sort_order, sort_order, format!("{:?}", sort_order));
+            ui.radio_value(
+                &mut gem_player.ui_state.library_view_state.sort_order,
+                sort_order,
+                format!("{:?}", sort_order),
+            );
         }
     })
     .response

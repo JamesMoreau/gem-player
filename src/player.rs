@@ -97,6 +97,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 selected_playlist_id: None,
                 edit_playlist_name_state: None,
                 delete_playlist_modal_state: None,
+                selected_song_id: None
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
