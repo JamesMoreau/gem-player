@@ -414,6 +414,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             ui.add_space(8.0);
 
+                            // Placing the song info after the slider ensures accurate playback position display. The seek operation is only executed 
+                            // after the slider thumb is released. if we placed the info before, the current position would not be reflected.
                             Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
                                 flex.add_ui(item().shrink(), |ui| {
                                     let default_text_style = TextStyle::Body.resolve(ui.style());

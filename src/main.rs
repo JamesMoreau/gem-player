@@ -11,6 +11,7 @@ mod ui;
 
 /*
 TODO:
+* actually save playlist when song is added.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
@@ -19,7 +20,6 @@ TODO:
 * sort by and order thing. Could just use a combobox? ALSO JUST USE A MODAL
 * profile app.
 * maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
-* make function that are pub but don't need to be back.
 */
 
 fn main() -> eframe::Result {
