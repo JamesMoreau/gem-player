@@ -750,51 +750,8 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    if let Some(playlist_id) = gem_player.ui_state.playlists_view_state.delete_playlist_modal_state {
-        let mut cancel_clicked = false;
-        let mut confirm_clicked = false;
-
-        let modal = containers::Modal::new(Id::new("Delete Playlist Modal")).show(ui.ctx(), |ui| {
-            ui.set_width(200.0);
-            Frame::new().outer_margin(Margin::same(4)).show(ui, |ui| {
-                let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
-                ui.add(label);
-
-                ui.separator();
-
-                containers::Sides::new().show(
-                    ui,
-                    |ui| {
-                        let response = ui.button(format!("\t{}\t", icons::ICON_CLOSE));
-                        if response.clicked() {
-                            cancel_clicked = true;
-                        }
-                    },
-                    |ui| {
-                        let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
-                        if response.clicked() {
-                            confirm_clicked = true;
-
-                            let result = delete_playlist(playlist_id, &mut gem_player.playlists);
-                            if let Err(e) = result {
-                                error!("{}", e);
-                                return;
-                            }
-
-                            let message =
-                                "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
-                            info!("{}", message);
-                            gem_player.ui_state.toasts.success(message);
-                            gem_player.ui_state.playlists_view_state.selected_playlist_id = None;
-                        }
-                    },
-                );
-            });
-        });
-
-        if confirm_clicked || cancel_clicked || modal.should_close() {
-            gem_player.ui_state.playlists_view_state.delete_playlist_modal_state = None;
-        }
+    if gem_player.ui_state.playlists_view_state.delete_playlist_modal_state.is_some() {
+        render_delete_playlist_modal(ui, gem_player);
     }
 
     let size = ui.available_size();
@@ -887,6 +844,57 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 render_playlist_content(ui, gem_player);
             });
         });
+}
+
+pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let Some(playlist_id) = gem_player.ui_state.playlists_view_state.delete_playlist_modal_state else {
+        return;
+    };
+
+    let mut cancel_clicked = false;
+    let mut confirm_clicked = false;
+
+    let modal = containers::Modal::new(Id::new("Delete Playlist Modal")).show(ui.ctx(), |ui| {
+        ui.set_width(200.0);
+        Frame::new().outer_margin(Margin::same(4)).show(ui, |ui| {
+            let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
+            ui.add(label);
+
+            ui.separator();
+
+            containers::Sides::new().show(
+                ui,
+                |ui| {
+                    let response = ui.button(format!("\t{}\t", icons::ICON_CLOSE));
+                    if response.clicked() {
+                        cancel_clicked = true;
+                    }
+                },
+                |ui| {
+                    let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
+                    if response.clicked() {
+                        confirm_clicked = true;
+
+                        let result = delete_playlist(playlist_id, &mut gem_player.playlists);
+                        if let Err(e) = result {
+                            error!("{}", e);
+                            return;
+                        }
+
+                        let message =
+                            "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
+                        info!("{}", message);
+                        gem_player.ui_state.toasts.success(message);
+                        gem_player.ui_state.playlists_view_state.selected_playlist_id = None;
+                    }
+                },
+            );
+        });
+    });
+
+    if confirm_clicked || cancel_clicked || modal.should_close() {
+        gem_player.ui_state.playlists_view_state.delete_playlist_modal_state = None;
+    }
 }
 
 pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
