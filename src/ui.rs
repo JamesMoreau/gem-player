@@ -21,8 +21,8 @@ use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
         self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
-        play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue,
-        GemPlayer, _play_playlist_from_song, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory,
+        remove_from_queue, shuffle_queue, GemPlayer, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
         add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
@@ -580,9 +580,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
                 if response.clicked() {
                     gem_player.ui_state.library_view_state.selected_song = Some(song.id);
-                }
-
-                if response.double_clicked() {
+                } else if response.double_clicked() {
                     play_library_from_song(gem_player, song.id);
                 }
 
@@ -922,6 +920,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         // In edit mode
                         let mut discard_clicked = false;
                         let mut save_clicked = false;
+
                         containers::Sides::new().height(ui.available_height()).show(
                             ui,
                             |ui| {
@@ -947,51 +946,55 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 }
                             },
                         );
+
                         if discard_clicked {
                             gem_player.ui_state.playlists_view_state.edit_playlist_name_state = None;
                         } else if save_clicked {
-                            let result = rename_playlist(playlist, name_buffer.to_owned());
+                            let name_buffer_clone = name_buffer.to_owned();
+                            let result = rename_playlist(playlist, name_buffer_clone);
                             if let Err(e) = result {
                                 error!("{}", e);
-                            } else {
-                                gem_player.ui_state.playlists_view_state.edit_playlist_name_state = None;
                             }
+
+                            gem_player.ui_state.playlists_view_state.edit_playlist_name_state = None;
                         }
-                    } else {
-                        // Not in edit mode
-                        let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                        containers::Sides::new().height(ui.available_height()).show(
-                            ui,
-                            |ui| {
-                                ui.add_space(16.0);
-                                ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
-                            },
-                            |ui| {
-                                if !strip_contains_pointer {
-                                    return;
-                                }
 
-                                ui.add_space(16.0);
-
-                                let delete_button = Button::new(icons::ICON_DELETE);
-                                let response = ui.add(delete_button).on_hover_text("Delete");
-                                if response.clicked() {
-                                    info!("Opening delete playlist modal: {}", playlist.name);
-                                    gem_player.ui_state.playlists_view_state.delete_playlist_modal_state = Some(playlist.id);
-                                }
-
-                                ui.add_space(8.0);
-
-                                let edit_name_button = Button::new(icons::ICON_EDIT);
-                                let response = ui.add(edit_name_button).on_hover_text("Edit name");
-                                if response.clicked() {
-                                    info!("Editing playlist name: {}", playlist.name);
-                                    gem_player.ui_state.playlists_view_state.edit_playlist_name_state =
-                                        Some((playlist.id, playlist.name.clone()));
-                                }
-                            },
-                        );
+                        return;
                     }
+
+                    // Not in edit mode
+                    let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                    containers::Sides::new().height(ui.available_height()).show(
+                        ui,
+                        |ui| {
+                            ui.add_space(16.0);
+                            ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
+                        },
+                        |ui| {
+                            if !strip_contains_pointer {
+                                return;
+                            }
+
+                            ui.add_space(16.0);
+
+                            let delete_button = Button::new(icons::ICON_DELETE);
+                            let response = ui.add(delete_button).on_hover_text("Delete");
+                            if response.clicked() {
+                                info!("Opening delete playlist modal: {}", playlist.name);
+                                gem_player.ui_state.playlists_view_state.delete_playlist_modal_state = Some(playlist.id);
+                            }
+
+                            ui.add_space(8.0);
+
+                            let edit_name_button = Button::new(icons::ICON_EDIT);
+                            let response = ui.add(edit_name_button).on_hover_text("Edit name");
+                            if response.clicked() {
+                                info!("Editing playlist name: {}", playlist.name);
+                                gem_player.ui_state.playlists_view_state.edit_playlist_name_state =
+                                    Some((playlist.id, playlist.name.clone()));
+                            }
+                        },
+                    );
                 });
             });
 
@@ -1125,10 +1128,8 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
                 if response.clicked() {
                     gem_player.ui_state.playlists_view_state.selected_playlist_id = Some(song.id);
-                }
-
-                if response.double_clicked() {
-                    // _play_playlist_from_song(gem_player, song.id, playlist.id); TODO
+                } else if response.double_clicked() {
+                    // play_playlist_from_song(gem_player, song.id, playlist.id);
                 }
 
                 response.context_menu(|ui| playlist_content_context_menu(ui, playlist, &song));
