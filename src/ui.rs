@@ -855,11 +855,12 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let width = ui.available_width();
     TableBuilder::new(ui)
         .striped(true)
         .sense(Sense::click())
         .cell_layout(Layout::left_to_right(Align::Center))
-        .column(egui_extras::Column::remainder())
+        .column(egui_extras::Column::exact(width))
         .header(36.0, |mut header| {
             header.col(|ui| {
                 containers::Sides::new().height(ui.available_height()).show(

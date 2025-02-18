@@ -16,7 +16,7 @@ TODO:
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
 * images with different aspect ratios should be stretched or cropped to match 1:1.
-* sort by and order thing. Could just use a combobox?
+* sort by and order thing. Could just use a combobox? ALSO JUST USE A MODAL
 * profile app.
 * maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
 * make function that are pub but don't need to be back.
