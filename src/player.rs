@@ -95,7 +95,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             },
             playlists_view_state: PlaylistsViewState {
                 selected_playlist_id: None,
-                edit_playlist_name_info: None,
+                edit_playlist_name_state: None,
                 delete_playlist_modal_state: None,
             },
             toasts: Toasts::default()

@@ -60,7 +60,7 @@ pub struct LibraryViewState {
 #[fully_pub]
 pub struct PlaylistsViewState {
     selected_playlist_id: Option<Uuid>,
-    edit_playlist_name_info: Option<(Uuid, String)>, // None: No playlist is being edited. Some: the id of the playlist being edited, and a buffer for the new name.
+    edit_playlist_name_state: Option<(Uuid, String)>, // None: No playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name.
     delete_playlist_modal_state: Option<Uuid>, // None: the modal is not open. Some: the modal for a specific playlist.
 }
 
@@ -870,7 +870,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 gem_player.ui_state.playlists_view_state.selected_playlist_id = Some(playlist.id);
 
                                 // Reset in case we were currently editing.
-                                gem_player.ui_state.playlists_view_state.edit_playlist_name_info = None;
+                                gem_player.ui_state.playlists_view_state.edit_playlist_name_state = None;
                             }
                         });
                     });
@@ -914,7 +914,7 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .vertical(|mut strip| {
             strip.cell(|ui| {
                 Frame::new().fill(ui.visuals().faint_bg_color).show(ui, |ui| {
-                    if let Some((_, name_buffer)) = &mut gem_player.ui_state.playlists_view_state.edit_playlist_name_info {
+                    if let Some((_, name_buffer)) = &mut gem_player.ui_state.playlists_view_state.edit_playlist_name_state {
                         // In edit mode
                         let mut discard_clicked = false;
                         let mut save_clicked = false;
@@ -944,13 +944,13 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             },
                         );
                         if discard_clicked {
-                            gem_player.ui_state.playlists_view_state.edit_playlist_name_info = None;
+                            gem_player.ui_state.playlists_view_state.edit_playlist_name_state = None;
                         } else if save_clicked {
                             let result = rename_playlist(playlist, name_buffer.to_owned());
                             if let Err(e) = result {
                                 error!("{}", e);
                             } else {
-                                gem_player.ui_state.playlists_view_state.edit_playlist_name_info = None;
+                                gem_player.ui_state.playlists_view_state.edit_playlist_name_state = None;
                             }
                         }
                     } else {
@@ -982,7 +982,7 @@ pub fn render_playlist_content_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 let response = ui.add(edit_name_button).on_hover_text("Edit name");
                                 if response.clicked() {
                                     info!("Editing playlist name: {}", playlist.name);
-                                    gem_player.ui_state.playlists_view_state.edit_playlist_name_info =
+                                    gem_player.ui_state.playlists_view_state.edit_playlist_name_state =
                                         Some((playlist.id, playlist.name.clone()));
                                 }
                             },
