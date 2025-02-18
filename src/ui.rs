@@ -20,11 +20,13 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front, play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, _play_playlist_from_song, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
+        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
+        play_library_from_song, play_next, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue,
+        GemPlayer, _play_playlist_from_song, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
-        Playlist,
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist, find_playlist_mut, remove_a_song_from_playlist,
+        rename_playlist, Playlist,
     },
     song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
@@ -771,7 +773,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                render_playlist_content(ui, gem_player); // TODO maybe we should just have the strip builder in here 
+                render_playlist_content(ui, gem_player); // TODO maybe we should just have the strip builder in here
             });
         });
 }
@@ -1004,13 +1006,8 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let maybe_selected_playlist = gem_player
-        .ui_state
-        .playlists_view_state
-        .selected_playlist_id
-        .and_then(|id| find_playlist_mut(id, &mut gem_player.playlists));
-
-    let Some(playlist) = maybe_selected_playlist else {
+    let maybe_selected_playlist_id = gem_player.ui_state.playlists_view_state.selected_playlist_id;
+    let Some(playlist_id) = maybe_selected_playlist_id else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1022,7 +1019,8 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    if playlist.songs.is_empty() {
+    let playlist_is_empty = find_playlist(playlist_id, &gem_player.playlists).map_or(false, |p| p.songs.is_empty());
+    if playlist_is_empty {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1117,19 +1115,30 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             }
                         },
                         |ui| {
-                            ui.menu_button(icons::ICON_MORE_HORIZ, |ui| playlist_content_context_menu(ui, playlist, &song));
+                            ui.menu_button(icons::ICON_MORE_HORIZ, |ui| {
+                                if let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) {
+                                    playlist_content_context_menu(ui, playlist, song);
+                                }
+                            });
                         },
                     );
                 });
 
                 let response = row.response();
+                
                 if response.clicked() {
                     gem_player.ui_state.playlists_view_state.selected_song_id = Some(song.id);
-                } else if response.double_clicked() {
+                }
+                
+                if response.double_clicked() {
                     // _play_playlist_from_song(gem_player, song.id, playlist.id);
                 }
 
-                response.context_menu(|ui| playlist_content_context_menu(ui, playlist, &song));
+                response.context_menu(|ui| {
+                    if let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) {
+                        playlist_content_context_menu(ui, playlist, song);
+                    }
+                });
             });
         });
 }
