@@ -118,7 +118,7 @@ fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) {
     }
 }
 
-fn process_player_actions(gem_player: &mut GemPlayer) {
+fn process_player_actions(gem_player: &mut GemPlayer) { // TODO: SHould this be moved to player.rs? Also make PlayNext() handle the error instead of returning it.
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
             PlayerAction::PlayFromPlaylist { playlist_id, song_id } => play_playlist_from_song(gem_player, playlist_id, song_id),
