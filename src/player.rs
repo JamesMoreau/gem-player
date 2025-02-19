@@ -141,6 +141,18 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     }
 }
 
+pub fn check_for_next_song(gem_player: &mut GemPlayer) {
+    if !gem_player.player.sink.empty() {
+        return; // If a song is still playing, do nothing
+    }
+
+    let result = play_next(&mut gem_player.player);
+    if let Err(e) = result {
+        error!("{}", e);
+        gem_player.ui_state.toasts.error("Error playing the next song");
+    }
+}
+
 pub fn process_player_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
