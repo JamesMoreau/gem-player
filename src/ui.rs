@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, text, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
+    containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout,
+    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter,
     TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -391,12 +391,15 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let text_color = ui.visuals().text_color();
                                     let divider_color = ui.visuals().weak_text_color();
 
+                                    let get_text_format =
+                                        |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+
                                     let mut job = text::LayoutJob::default();
-                                    job.append(title, leading_space, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
-                                    job.append(" / ", leading_space, TextFormat::simple(TextStyle::Body.resolve(style), divider_color));
-                                    job.append(artist, leading_space, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
-                                    job.append(" / ", leading_space, TextFormat::simple(TextStyle::Body.resolve(style), divider_color));
-                                    job.append(album, leading_space, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
+                                    job.append(title, leading_space, get_text_format(style, text_color));
+                                    job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                    job.append(artist, leading_space, get_text_format(style, text_color));
+                                    job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                    job.append(album, leading_space, get_text_format(style, text_color));
 
                                     let song_label = Label::new(job).selectable(false).truncate();
                                     ui.add(song_label);
