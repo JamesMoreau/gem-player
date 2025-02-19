@@ -11,7 +11,6 @@ mod ui;
 
 /*
 TODO:
-* actually save playlist when song is added.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
