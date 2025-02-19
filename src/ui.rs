@@ -2,9 +2,7 @@ use std::time::Duration;
 
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter,
-    TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -550,10 +548,10 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         |ui| {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
                             let response = ui.add(more_button).on_hover_text("More");
-                            if response.clicked() {
-                                gem_player.ui_state.library_view_state.selected_song = Some(song.id);
-                                gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
-                            }
+                            // if response.clicked() {
+                            //     gem_player.ui_state.library_view_state.selected_song = Some(song.id);
+                                // gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
+                            // }
                         },
                     );
                 });
@@ -1319,7 +1317,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                         ui.add_space(16.0);
 
-                        search_and_filter_ui(ui, gem_player)
+                        render_sort_by_and_search(ui, gem_player)
                     }
                     View::Queue => {
                         let queue_is_not_empty = !gem_player.player.queue.is_empty();
@@ -1367,9 +1365,20 @@ fn get_count_and_duration_string_from_songs(songs: &[Song]) -> String {
     format!("{} songs / {}", songs.len(), duration_string)
 }
 
-fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let filter_icon = icons::ICON_FILTER_LIST;
-    ui.menu_button(filter_icon, |ui| {
+const SORT_BY_POPUP_ID: &str = "filter_popup";
+
+fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
+    let popup_id = ui.make_persistent_id(SORT_BY_POPUP_ID);
+    if response.clicked() {
+        ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+    }
+    
+    let below = AboveOrBelow::Above;
+    let close_on_click_outside = popup::PopupCloseBehavior::CloseOnClickOutside;
+    popup::popup_above_or_below_widget(ui, popup_id, &response, below, close_on_click_outside, |ui| {
+        ui.set_min_width(150.0);
+
         for sort_by in SortBy::iter() {
             ui.radio_value(
                 &mut gem_player.ui_state.library_view_state.sort_by,
@@ -1387,9 +1396,7 @@ fn search_and_filter_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 format!("{:?}", sort_order),
             );
         }
-    })
-    .response
-    .on_hover_text("Sort by and order");
+    });
 
     let search_bar = TextEdit::singleline(&mut gem_player.ui_state.library_view_state.search_text)
         .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
