@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, text, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Image, Label, Layout, Margin,
-    PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions,
-    ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout,
+    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter,
+    TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -20,7 +20,9 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, check_for_next_song, handle_key_commands, is_playing, move_song_to_front, play_or_pause, process_player_actions, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
+        self, add_next_to_queue, check_for_next_song, handle_key_commands, is_playing, move_song_to_front, play_or_pause,
+        process_player_actions, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, PlayerAction,
+        KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
         add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
@@ -384,16 +386,15 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
                             Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
                                 flex.add_ui(item().shrink(), |ui| {
-                                    let default_text_style = TextStyle::Body.resolve(ui.style());
                                     let divider_color = ui.visuals().weak_text_color();
-                                    let data_format = TextFormat::simple(default_text_style.clone(), ui.visuals().text_color());
+                                    let text_color = ui.visuals().text_color();
 
                                     let mut job = text::LayoutJob::default();
-                                    job.append(title, 0.0, data_format.clone());
-                                    job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), divider_color));
-                                    job.append(artist, 0.0, data_format.clone());
-                                    job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), divider_color));
-                                    job.append(album, 0.0, data_format.clone());
+                                    job.append(title, 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), text_color));
+                                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), divider_color));
+                                    job.append(artist, 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), text_color));
+                                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), divider_color));
+                                    job.append(album, 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), text_color));
 
                                     let song_label = Label::new(job).selectable(false).truncate();
                                     ui.add(song_label);
