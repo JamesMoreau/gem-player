@@ -518,7 +518,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .body(|body| {
             body.rows(26.0, library_copy.len(), |mut row| {
-                let song = &mut library_copy[row.index()];
+                let song = &library_copy[row.index()];
 
                 let row_is_selected = gem_player
                     .ui_state
@@ -683,7 +683,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
         .body(|body| {
             body.rows(26.0, queue.len(), |mut row| {
                 let index = row.index();
-                let song = queue[index].clone(); // TODO: can this clone be removed?
+                let song = &queue[index];
 
                 row.col(|ui| {
                     ui.add_space(16.0);
