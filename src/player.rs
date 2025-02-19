@@ -226,24 +226,25 @@ pub fn play_or_pause(player: &mut Player) {
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(current_song) = &player.current_song {
-            let song = current_song.clone();
-            let result = load_and_play_song(player, &song);
+            let result = load_and_play_song(player, &current_song.clone());
             return result;
         }
         return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
     }
 
-    if player.queue.is_empty() {
-        return Ok(());
-    }
-    let next_song = player.queue.remove(0);
+    let next_song = if player.queue.is_empty() {
+        return Ok(()) // Queue is empty, nothing to play
+    } else {
+        player.queue.remove(0)
+    };
 
     if let Some(current_song) = player.current_song.take() {
         player.history.push(current_song);
     }
-
-    player.current_song = Some(next_song.clone());
-    load_and_play_song(player, &next_song)
+    
+    load_and_play_song(player, &next_song)?;
+    player.current_song = Some(next_song);
+    Ok(())
 }
 
 // If we are near the beginning of the song, we go to the previously played song.

@@ -355,7 +355,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
                             if let Some(song) = &gem_player.player.current_song {
-                                title = song.title.clone().unwrap_or("Unknown Title".to_string());
+                                title = song.title.clone().unwrap_or("Unknown Title".to_string()); //TODO: can these clones be removed
                                 artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
                                 album = song.album.clone().unwrap_or("Unknown Album".to_string());
                                 position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
@@ -692,7 +692,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
         .body(|body| {
             body.rows(26.0, queue.len(), |mut row| {
                 let index = row.index();
-                let song = queue[index].clone();
+                let song = queue[index].clone(); // TODO: can this clone be removed?
 
                 row.col(|ui| {
                     ui.add_space(16.0);
