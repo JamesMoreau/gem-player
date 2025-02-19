@@ -316,7 +316,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_size = Vec2::splat(ui.available_height());
                     let default_artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
                         .texture_options(artwork_texture_options)
-                        .fit_to_exact_size(artwork_size);
+                        .fit_to_exact_size(artwork_size)
+                        .maintain_aspect_ratio(false);
 
                     let artwork = gem_player
                         .player
@@ -329,6 +330,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 Image::from_bytes(artwork_uri, artwork_bytes.clone())
                                     .texture_options(artwork_texture_options)
                                     .fit_to_exact_size(artwork_size)
+                                    .maintain_aspect_ratio(false)
                             })
                         })
                         .unwrap_or(default_artwork);
