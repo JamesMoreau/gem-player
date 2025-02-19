@@ -1365,9 +1365,9 @@ fn get_count_and_duration_string_from_songs(songs: &[Song]) -> String {
     format!("{} songs / {}", songs.len(), duration_string)
 }
 
-const SORT_BY_POPUP_ID: &str = "filter_popup";
-
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    const SORT_BY_POPUP_ID: &str = "filter_popup";
+
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
     let popup_id = ui.make_persistent_id(SORT_BY_POPUP_ID);
     if response.clicked() {
