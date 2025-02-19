@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image,
+    Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -325,7 +327,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 song_duration_as_secs = song.duration.as_secs_f32();
                             }
 
-                            ui.style_mut().spacing.slider_width = 500.0;
+                            let playback_progress_slider_width = 500.0;
+                            ui.style_mut().spacing.slider_width = playback_progress_slider_width;
                             let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=song_duration_as_secs)
                                 .trailing_fill(true)
                                 .show_value(false)
@@ -357,8 +360,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             // Placing the song info after the slider ensures that the playback position display is accurate. The seek operation is only
                             // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-                            Flex::horizontal().justify(FlexJustify::SpaceBetween).width(500.0).show(ui, |flex| {
-                                flex.add_ui(item().shrink(), |ui| {
+                            Flex::horizontal().justify(FlexJustify::SpaceBetween).width(playback_progress_slider_width).show(ui, |flex| {
+                                flex.add_ui(item().basis(playback_progress_slider_width * (4.0 / 5.0)), |ui| {
                                     let leading_space = 0.0;
                                     let style = ui.style();
                                     let text_color = ui.visuals().text_color();
@@ -547,10 +550,10 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
-                            let response = ui.add(more_button).on_hover_text("More");
+                            let _response = ui.add(more_button).on_hover_text("More");
                             // if response.clicked() {
                             //     gem_player.ui_state.library_view_state.selected_song = Some(song.id);
-                                // gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
+                            // gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
                             // }
                         },
                     );
@@ -1373,7 +1376,7 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if response.clicked() {
         ui.memory_mut(|mem| mem.toggle_popup(popup_id));
     }
-    
+
     let below = AboveOrBelow::Above;
     let close_on_click_outside = popup::PopupCloseBehavior::CloseOnClickOutside;
     popup::popup_above_or_below_widget(ui, popup_id, &response, below, close_on_click_outside, |ui| {

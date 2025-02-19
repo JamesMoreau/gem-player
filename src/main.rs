@@ -25,7 +25,6 @@ TODO:
 * profile app.
 * maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
 * Fullscreen?
-* weird egui flex issue: request_discard called. this causes large spike in cpu usage. probably becuase of the image. Try removing the sizing stuff with "Parfum des fleurs".
 * UI + aestethics
 * modal dark background is going outside of the window.
 */
