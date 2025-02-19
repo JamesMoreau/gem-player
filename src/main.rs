@@ -1,8 +1,15 @@
-use eframe::egui::{Vec2, ViewportBuilder};
+use std::path::PathBuf;
+
+use eframe::egui::{Color32, Context, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals};
+use egui_notify::Toasts;
 use log::info;
 
-use player::init_gem_player;
-use song::Song;
+use player::{
+    check_for_next_song, handle_key_commands, process_player_actions, read_music_and_playlists_from_directory, GemPlayer, Player, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
+};
+use rodio::{OutputStream, Sink};
+use song::{Song, SortBy, SortOrder};
+use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 
 mod player;
 mod playlist;
@@ -19,6 +26,8 @@ TODO:
 * profile app.
 * maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
 * Fullscreen?
+* weird egui flex issue: request_discard called. this causes large spike in cpu usage. probably becuase of the image. Try removing the sizing stuff with "Parfum des fleurs".
+* UI + aestethics
 */
 
 fn main() -> eframe::Result {
@@ -33,6 +42,117 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
+}
+
+pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
+    egui_extras::install_image_loaders(&cc.egui_ctx);
+
+    egui_material_icons::initialize(&cc.egui_ctx);
+
+    let mut library_directory = None;
+    let mut theme_preference = ThemePreference::System;
+    if let Some(storage) = cc.storage {
+        if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
+            library_directory = Some(PathBuf::from(library_directory_string));
+        }
+
+        if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
+            theme_preference = ron::from_str(&theme_string).unwrap_or(ThemePreference::System);
+        }
+    }
+
+    let mut library = Vec::new();
+    let mut playlists = Vec::new();
+    if let Some(directory) = &library_directory {
+        let (found_library, found_playlists) = read_music_and_playlists_from_directory(directory);
+        library = found_library;
+        playlists = found_playlists;
+    }
+
+    let (_stream, handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&handle).unwrap();
+    sink.pause();
+    let initial_volume = 0.6;
+    sink.set_volume(initial_volume);
+
+    GemPlayer {
+        ui_state: UIState {
+            current_view: ui::View::Library,
+            theme_preference,
+            library_view_state: LibraryViewState {
+                search_text: String::new(),
+                selected_song: None,
+                sort_by: SortBy::Title,
+                sort_order: SortOrder::Ascending,
+            },
+            playlists_view_state: PlaylistsViewState {
+                selected_playlist_id: None,
+                edit_playlist_name_state: None,
+                delete_playlist_modal_state: None,
+                selected_song_id: None,
+            },
+            toasts: Toasts::default()
+                .with_anchor(egui_notify::Anchor::BottomRight)
+                .with_shadow(eframe::egui::Shadow {
+                    offset: [0, 0],
+                    blur: 1,
+                    spread: 1,
+                    color: Color32::BLACK,
+                }),
+        },
+
+        library,
+        library_directory,
+        playlists,
+
+        player: Player {
+            actions: Vec::new(),
+            current_song: None,
+
+            queue: Vec::new(),
+            history: Vec::new(),
+
+            repeat: false,
+            muted: false,
+            volume_before_mute: None,
+            paused_before_scrubbing: None,
+
+            _stream,
+            sink,
+        },
+    }
+}
+
+impl eframe::App for player::GemPlayer {
+    fn clear_color(&self, _visuals: &Visuals) -> [f32; 4] {
+        Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
+    }
+
+    // This is set because egui was persisting the state of the library table scroll position across runs.
+    fn persist_egui_memory(&self) -> bool {
+        false
+    }
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        if let Some(library_directory) = &self.library_directory {
+            storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
+        }
+
+        let theme_ron_string = ron::to_string(&self.ui_state.theme_preference).unwrap();
+        storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
+    }
+
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        handle_key_commands(ctx, &mut self.player);
+
+        check_for_next_song(self);
+        process_player_actions(self);
+
+        ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
+        update_theme(self, ctx);
+        render_gem_player(self, ctx);
+        self.ui_state.toasts.show(ctx);
+    }
 }
 
 pub fn format_duration_to_mmss(duration: std::time::Duration) -> String {
@@ -54,4 +174,3 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
 
     format!("{}:{:02}:{:02}", hours, minutes, seconds)
 }
-

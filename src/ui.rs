@@ -3,7 +3,7 @@ use std::time::Duration;
 use dark_light::Mode;
 use eframe::egui::{
     containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, Rgba, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter,
+    Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter,
     TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
@@ -20,12 +20,12 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, check_for_next_song, handle_key_commands, is_playing, move_song_to_front, play_or_pause,
-        process_player_actions, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, PlayerAction,
-        KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        add_next_to_queue, is_playing, move_song_to_front, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue,
+        shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, save_playlist_to_m3u, Playlist
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
+        save_playlist_to_m3u, Playlist,
     },
     song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
@@ -64,39 +64,7 @@ pub struct PlaylistsViewState {
     selected_song_id: Option<Uuid>,
 }
 
-impl eframe::App for player::GemPlayer {
-    fn clear_color(&self, _visuals: &Visuals) -> [f32; 4] {
-        Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
-    }
-
-    // This is set because egui was persisting the state of the library table scroll position across runs.
-    fn persist_egui_memory(&self) -> bool {
-        false
-    }
-
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        if let Some(library_directory) = &self.library_directory {
-            storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
-        }
-
-        let theme_ron_string = ron::to_string(&self.ui_state.theme_preference).unwrap();
-        storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
-    }
-
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        handle_key_commands(ctx, &mut self.player);
-
-        check_for_next_song(self);
-        process_player_actions(self);
-
-        ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
-        update_theme(self, ctx);
-        render_gem_player(self, ctx);
-        self.ui_state.toasts.show(ctx);
-    }
-}
-
-fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
     match gem_player.ui_state.theme_preference {
         ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
         ThemePreference::Light => ctx.set_visuals(Visuals::light()),
@@ -110,7 +78,7 @@ fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
     }
 }
 
-fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
     custom_window_frame(ctx, "", |ui| {
         let control_ui_height = 64.0;
         let navigation_ui_height = 32.0;
@@ -607,7 +575,8 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &Song
                     if ui.button(&playlist.name).clicked() {
                         if let Some(library_directory) = &gem_player.library_directory {
                             add_a_song_to_playlist(playlist, song.clone());
-                            let _result = save_playlist_to_m3u(playlist, library_directory); //TODO
+                            let _result = save_playlist_to_m3u(playlist, library_directory);
+                            //TODO
                         }
                         ui.close_menu(); // Optionally close the menu when clicked
                     }

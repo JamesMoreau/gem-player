@@ -19,7 +19,7 @@ pub struct Playlist {
     id: Uuid,
     name: String,
     creation_date_time: SystemTime,
-    songs: Vec<Song>, 
+    songs: Vec<Song>,
     path: Option<PathBuf>,
 }
 
@@ -35,7 +35,7 @@ pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) {
     if playlist.songs.iter().any(|s| s.id == song.id) {
         return;
     }
-    
+
     playlist.songs.push(song);
 }
 

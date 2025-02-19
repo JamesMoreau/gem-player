@@ -161,6 +161,6 @@ pub fn open_song_file_location(song: &Song) -> io::Result<()> {
     };
 
     open::that_detached(folder)?;
-    
+
     Ok(())
 }

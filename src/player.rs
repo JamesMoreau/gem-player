@@ -4,8 +4,7 @@ use std::{
     time::Duration,
 };
 
-use eframe::egui::{Color32, Context, Event, Key, ThemePreference};
-use egui_notify::Toasts;
+use eframe::egui::{Context, Event, Key};
 use fully_pub::fully_pub;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
@@ -16,8 +15,8 @@ use uuid::Uuid;
 
 use crate::{
     playlist::{find_playlist, read_playlists_from_a_directory, Playlist},
-    song::{find_song, read_music_from_a_directory, Song, SortBy, SortOrder},
-    ui::{self, LibraryViewState, PlaylistsViewState, UIState},
+    song::{find_song, read_music_from_a_directory, Song},
+    ui::UIState,
 };
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -60,85 +59,6 @@ pub struct Player {
 
     _stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
-}
-
-pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
-    egui_extras::install_image_loaders(&cc.egui_ctx);
-
-    egui_material_icons::initialize(&cc.egui_ctx);
-
-    let mut library_directory = None;
-    let mut theme_preference = ThemePreference::System;
-    if let Some(storage) = cc.storage {
-        if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
-            library_directory = Some(PathBuf::from(library_directory_string));
-        }
-
-        if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
-            theme_preference = ron::from_str(&theme_string).unwrap_or(ThemePreference::System);
-        }
-    }
-
-    let mut library = Vec::new();
-    let mut playlists = Vec::new();
-    if let Some(directory) = &library_directory {
-        let (found_library, found_playlists) = read_music_and_playlists_from_directory(directory);
-        library = found_library;
-        playlists = found_playlists;
-    }
-
-    let (_stream, handle) = OutputStream::try_default().unwrap();
-    let sink = Sink::try_new(&handle).unwrap();
-    sink.pause();
-    let initial_volume = 0.6;
-    sink.set_volume(initial_volume);
-
-    GemPlayer {
-        ui_state: UIState {
-            current_view: ui::View::Library,
-            theme_preference,
-            library_view_state: LibraryViewState {
-                search_text: String::new(),
-                selected_song: None,
-                sort_by: SortBy::Title,
-                sort_order: SortOrder::Ascending,
-            },
-            playlists_view_state: PlaylistsViewState {
-                selected_playlist_id: None,
-                edit_playlist_name_state: None,
-                delete_playlist_modal_state: None,
-                selected_song_id: None,
-            },
-            toasts: Toasts::default()
-                .with_anchor(egui_notify::Anchor::BottomRight)
-                .with_shadow(eframe::egui::Shadow {
-                    offset: [0, 0],
-                    blur: 1,
-                    spread: 1,
-                    color: Color32::BLACK,
-                }),
-        },
-
-        library,
-        library_directory,
-        playlists,
-
-        player: Player {
-            actions: Vec::new(),
-            current_song: None,
-
-            queue: Vec::new(),
-            history: Vec::new(),
-
-            repeat: false,
-            muted: false,
-            volume_before_mute: None,
-            paused_before_scrubbing: None,
-
-            _stream,
-            sink,
-        },
-    }
 }
 
 pub fn check_for_next_song(gem_player: &mut GemPlayer) {
@@ -186,7 +106,7 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
                     error!("{}", e);
                     gem_player.ui_state.toasts.error("Error playing the next song");
                 }
-            },
+            }
         }
     }
 }
@@ -245,7 +165,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     }
 
     let next_song = if player.queue.is_empty() {
-        return Ok(()) // Queue is empty, nothing to play
+        return Ok(()); // Queue is empty, nothing to play
     } else {
         player.queue.remove(0)
     };
@@ -253,7 +173,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     if let Some(current_song) = player.current_song.take() {
         player.history.push(current_song);
     }
-    
+
     load_and_play_song(player, &next_song)?;
     player.current_song = Some(next_song);
     Ok(())
