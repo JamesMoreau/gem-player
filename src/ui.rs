@@ -336,16 +336,16 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
                         flex.add_ui(item(), |ui| {
-                            let mut title = "None".to_string();
-                            let mut artist = "None".to_string();
-                            let mut album = "None".to_string();
+                            let mut title = "None";
+                            let mut artist = "None";
+                            let mut album = "None";
                             let mut position_as_secs = 0.0;
                             let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
                             if let Some(song) = &gem_player.player.current_song {
-                                title = song.title.clone().unwrap_or("Unknown Title".to_string()); //TODO: can these clones be removed
-                                artist = song.artist.clone().unwrap_or("Unknown Artist".to_string());
-                                album = song.album.clone().unwrap_or("Unknown Album".to_string());
+                                title = song.title.as_deref().unwrap_or("Unknown Title");
+                                artist = song.artist.as_deref().unwrap_or("Unknown Artist");
+                                album = song.album.as_deref().unwrap_or("Unknown Album");
                                 position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
                                 song_duration_as_secs = song.duration.as_secs_f32();
                             }
@@ -389,11 +389,11 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let data_format = TextFormat::simple(default_text_style.clone(), ui.visuals().text_color());
 
                                     let mut job = text::LayoutJob::default();
-                                    job.append(&title, 0.0, data_format.clone());
+                                    job.append(title, 0.0, data_format.clone());
                                     job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), divider_color));
-                                    job.append(&artist, 0.0, data_format.clone());
+                                    job.append(artist, 0.0, data_format.clone());
                                     job.append(" / ", 0.0, TextFormat::simple(default_text_style.clone(), divider_color));
-                                    job.append(&album, 0.0, data_format.clone());
+                                    job.append(album, 0.0, data_format.clone());
 
                                     let song_label = Label::new(job).selectable(false).truncate();
                                     ui.add(song_label);
