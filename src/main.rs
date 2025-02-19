@@ -20,6 +20,7 @@ TODO:
 * sort by and order thing. Could just use a combobox? ALSO JUST USE A MODAL
 * profile app.
 * maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
+* Fullscreen?
 */
 
 fn main() -> eframe::Result {

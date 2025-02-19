@@ -20,10 +20,13 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, handle_key_commands, is_playing, move_song_to_front, play_next, play_or_pause, process_player_actions, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
+        self, add_next_to_queue, handle_key_commands, is_playing, move_song_to_front, play_next, play_or_pause, process_player_actions,
+        read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
+        LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, Playlist
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
+        Playlist,
     },
     song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
@@ -103,10 +106,9 @@ fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
     }
 }
 
-fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) { // TODO: should this be in player.rs? the only reason it's no is because access to ui_state.
-    let should_check_for_next_song_in_queue = !gem_player.player.sink.empty();
-    if should_check_for_next_song_in_queue {
-        return;
+fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) {
+    if !gem_player.player.sink.empty() {
+        return; // If a song is still playing, do nothing
     }
 
     let result = play_next(&mut gem_player.player);
@@ -619,7 +621,10 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &Song
     }
 
     if ui.button("Add to queue").clicked() {
-        gem_player.player.actions.push(PlayerAction::AddSongToQueueFromLibrary { song_id: song.id });
+        gem_player
+            .player
+            .actions
+            .push(PlayerAction::AddSongToQueueFromLibrary { song_id: song.id });
         ui.close_menu();
     }
 
