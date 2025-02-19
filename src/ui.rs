@@ -2,9 +2,7 @@ use std::time::Duration;
 
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter,
-    TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, menu::menu_custom_button, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -575,33 +573,40 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
+    let mut close_clicked = false;
+
     let modal = containers::Modal::new(Id::new("Library Song Menu Modal")).show(ui.ctx(), |ui| {
-        ui.set_width(200.0);
+        ui.set_width(220.0);
+
         ui.vertical_centered_justified(|ui| {
             let song = find_song(song_id, &gem_player.library);
             if let Some(song) = song {
+                ui.label(RichText::new(song.title.as_deref().unwrap_or("Unknown Title")).strong());
+
+                ui.add_space(8.0);
+
                 let add_to_playlists_enabled = !gem_player.playlists.is_empty();
                 ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
-                    ui.menu_button("Add to playlist", |ui| {
-                        ui.set_min_width(128.0);
-                        ScrollArea::vertical().max_height(250.0).show(ui, |ui| {
-                            for playlist in gem_player.playlists.iter_mut() {
-                                if ui.button(&playlist.name).clicked() {
-                                    if let Some(library_directory) = &gem_player.library_directory {
-                                        add_a_song_to_playlist(playlist, song.clone());
-                                        let _result = save_playlist_to_m3u(playlist, library_directory);
-                                    }
+                    ui.label("Add to Playlist:");
+                    ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
+                        for playlist in gem_player.playlists.iter_mut() {
+                            if ui.button(&playlist.name).clicked() {
+                                if let Some(library_directory) = &gem_player.library_directory {
+                                    add_a_song_to_playlist(playlist, song.clone());
+                                    let _result = save_playlist_to_m3u(playlist, library_directory);
                                 }
                             }
-                        });
+                        }
                     });
                 });
 
-                if ui.button("Play Next").clicked() {
+                ui.add_space(10.0);
+
+                if ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW)).clicked() {
                     add_next_to_queue(&mut gem_player.player.queue, song.clone());
                 }
 
-                if ui.button("Add to queue").clicked() {
+                if ui.button(format!("{} Add to Queue", icons::ICON_ADD)).clicked() {
                     gem_player
                         .player
                         .actions
@@ -610,12 +615,18 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.separator();
 
-                if ui.button("Open file location").clicked() {
+                if ui.button(format!("{} Open File Location", icons::ICON_FILE)).clicked() {
                     let result = open_song_file_location(song);
                     match result {
                         Ok(_) => info!("Opening song location"),
                         Err(e) => error!("{}", e),
                     }
+                }
+
+                ui.add_space(10.0);
+
+                if ui.button(format!("{} Close", icons::ICON_CLOSE)).clicked() {
+                    close_clicked = true;
                 }
             } else {
                 ui.label("Error: Song not found.");
@@ -623,7 +634,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
     });
 
-    if modal.should_close() {
+    if close_clicked || modal.should_close() {
         gem_player.ui_state.library_view_state.song_menu_is_open = None;
     }
 }

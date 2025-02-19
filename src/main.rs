@@ -28,6 +28,7 @@ TODO:
 * Fullscreen?
 * weird egui flex issue: request_discard called. this causes large spike in cpu usage. probably becuase of the image. Try removing the sizing stuff with "Parfum des fleurs".
 * UI + aestethics
+* modal dark background is going outside of the window.
 */
 
 fn main() -> eframe::Result {
