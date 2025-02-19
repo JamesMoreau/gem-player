@@ -390,11 +390,12 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let text_color = ui.visuals().text_color();
 
                                     let mut job = text::LayoutJob::default();
-                                    job.append(title, 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), text_color));
-                                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), divider_color));
-                                    job.append(artist, 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), text_color));
-                                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), divider_color));
-                                    job.append(album, 0.0, TextFormat::simple(TextStyle::Body.resolve(ui.style()), text_color));
+                                    let style = ui.style();
+                                    job.append(title, 0.0, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
+                                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(style), divider_color));
+                                    job.append(artist, 0.0, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
+                                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(style), divider_color));
+                                    job.append(album, 0.0, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
 
                                     let song_label = Label::new(job).selectable(false).truncate();
                                     ui.add(song_label);
