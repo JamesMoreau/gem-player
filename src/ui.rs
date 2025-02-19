@@ -25,8 +25,7 @@ use crate::{
         KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
-        Playlist,
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, save_playlist_to_m3u, Playlist
     },
     song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
@@ -599,7 +598,10 @@ pub fn library_context_menu(ui: &mut Ui, gem_player: &mut GemPlayer, song: &Song
             ScrollArea::vertical().max_height(250.0).show(ui, |ui| {
                 for playlist in gem_player.playlists.iter_mut() {
                     if ui.button(&playlist.name).clicked() {
-                        add_a_song_to_playlist(playlist, song.clone());
+                        if let Some(library_directory) = &gem_player.library_directory {
+                            add_a_song_to_playlist(playlist, song.clone());
+                            let _result = save_playlist_to_m3u(playlist, library_directory); //TODO
+                        }
                         ui.close_menu(); // Optionally close the menu when clicked
                     }
                 }
