@@ -20,14 +20,12 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        self, add_next_to_queue, add_to_queue, handle_key_commands, is_playing, maybe_play_previous, move_song_to_front,
-        play_library_from_song, play_next, play_or_pause, play_playlist_from_song, read_music_and_playlists_from_directory,
-        remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY,
+        self, add_next_to_queue, handle_key_commands, is_playing, move_song_to_front, play_next, play_or_pause, process_player_actions, read_music_and_playlists_from_directory, remove_from_queue, shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, Playlist
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, Playlist
     },
-    song::{find_song, get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
+    song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
 };
 
@@ -79,7 +77,7 @@ impl eframe::App for player::GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        handle_key_commands(ctx, self);
+        handle_key_commands(ctx, &mut self.player);
 
         check_for_next_song_in_queue(self);
         process_player_actions(self);
@@ -105,7 +103,7 @@ fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
     }
 }
 
-fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) {
+fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) { // TODO: should this be in player.rs? the only reason it's no is because access to ui_state.
     let should_check_for_next_song_in_queue = !gem_player.player.sink.empty();
     if should_check_for_next_song_in_queue {
         return;
@@ -115,44 +113,6 @@ fn check_for_next_song_in_queue(gem_player: &mut GemPlayer) {
     if let Err(e) = result {
         error!("{}", e);
         gem_player.ui_state.toasts.error("Error playing the next song");
-    }
-}
-
-fn process_player_actions(gem_player: &mut GemPlayer) { // TODO: SHould this be moved to player.rs? Also make PlayNext() handle the error instead of returning it.
-    while let Some(action) = gem_player.player.actions.pop() {
-        match action {
-            PlayerAction::PlayFromPlaylist { playlist_id, song_id } => play_playlist_from_song(gem_player, playlist_id, song_id),
-            PlayerAction::PlayFromLibrary { song_id } => play_library_from_song(gem_player, song_id),
-            PlayerAction::AddSongToQueueFromLibrary { song_id } => {
-                let maybe_song = find_song(song_id, &gem_player.library);
-                if let Some(song) = maybe_song {
-                    add_to_queue(&mut gem_player.player.queue, song.clone());
-                }
-            }
-            PlayerAction::AddSongToQueueFromPlaylist { song_id, playlist_id } => {
-                let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
-                let Some(playlist) = maybe_playlist else {
-                    error!("Unable to find playlist for AddSongToQueueFromPlaylist action.");
-                    continue;
-                };
-
-                let maybe_song = find_song(song_id, &playlist.songs);
-                let Some(song) = maybe_song else {
-                    error!("Unable to find song for AddSongToQueueFromPlaylist action.");
-                    continue;
-                };
-
-                add_to_queue(&mut gem_player.player.queue, song.clone());
-            }
-            PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
-            PlayerAction::PlayNext => {
-                let result = play_next(&mut gem_player.player);
-                if let Err(e) = result {
-                    error!("{}", e);
-                    gem_player.ui_state.toasts.error("Error playing the next song");
-                }
-            },
-        }
     }
 }
 
@@ -819,7 +779,7 @@ pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                render_playlist_content(ui, gem_player); // TODO maybe we should just have the strip builder in here
+                render_playlist_content(ui, gem_player);
             });
         });
 }

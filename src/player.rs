@@ -15,8 +15,8 @@ use rodio::{Decoder, OutputStream, Sink};
 use uuid::Uuid;
 
 use crate::{
-    playlist::{read_playlists_from_a_directory, Playlist, find_playlist},
-    song::{read_music_from_a_directory, Song, SortBy, SortOrder},
+    playlist::{find_playlist, read_playlists_from_a_directory, Playlist},
+    song::{find_song, read_music_from_a_directory, Song, SortBy, SortOrder},
     ui::{self, LibraryViewState, PlaylistsViewState, UIState},
 };
 
@@ -40,7 +40,7 @@ pub enum PlayerAction {
     PlayFromPlaylist { playlist_id: Uuid, song_id: Uuid },
     PlayFromLibrary { song_id: Uuid },
     AddSongToQueueFromLibrary { song_id: Uuid },
-    AddSongToQueueFromPlaylist { song_id: Uuid, playlist_id: Uuid },
+    _AddSongToQueueFromPlaylist { song_id: Uuid, playlist_id: Uuid },
     PlayPrevious,
     PlayNext,
 }
@@ -138,6 +138,44 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             _stream,
             sink,
         },
+    }
+}
+
+pub fn process_player_actions(gem_player: &mut GemPlayer) {
+    while let Some(action) = gem_player.player.actions.pop() {
+        match action {
+            PlayerAction::PlayFromPlaylist { playlist_id, song_id } => play_playlist_from_song(gem_player, playlist_id, song_id),
+            PlayerAction::PlayFromLibrary { song_id } => play_library_from_song(gem_player, song_id),
+            PlayerAction::AddSongToQueueFromLibrary { song_id } => {
+                let maybe_song = find_song(song_id, &gem_player.library);
+                if let Some(song) = maybe_song {
+                    add_to_queue(&mut gem_player.player.queue, song.clone());
+                }
+            }
+            PlayerAction::_AddSongToQueueFromPlaylist { song_id, playlist_id } => {
+                let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
+                let Some(playlist) = maybe_playlist else {
+                    error!("Unable to find playlist for AddSongToQueueFromPlaylist action.");
+                    continue;
+                };
+
+                let maybe_song = find_song(song_id, &playlist.songs);
+                let Some(song) = maybe_song else {
+                    error!("Unable to find song for AddSongToQueueFromPlaylist action.");
+                    continue;
+                };
+
+                add_to_queue(&mut gem_player.player.queue, song.clone());
+            }
+            PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
+            PlayerAction::PlayNext => {
+                let result = play_next(&mut gem_player.player);
+                if let Err(e) = result {
+                    error!("{}", e);
+                    gem_player.ui_state.toasts.error("Error playing the next song");
+                }
+            },
+        }
     }
 }
 
@@ -399,7 +437,7 @@ lazy_static! {
     };
 }
 
-pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
+pub fn handle_key_commands(ctx: &Context, player: &mut Player) {
     if ctx.wants_keyboard_input() {
         return;
     }
@@ -420,18 +458,13 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
 
                 info!("Key pressed: {}", binding);
 
-                match key { // TODO should these make actions?
-                    Key::Space => play_or_pause(&mut gem_player.player),
-                    Key::ArrowLeft => maybe_play_previous(gem_player),
-                    Key::ArrowRight => {
-                        if let Err(e) = play_next(&mut gem_player.player) {
-                            error!("{}", e);
-                            gem_player.ui_state.toasts.error("Error playing the next song");
-                        }
-                    }
-                    Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
-                    Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
-                    Key::M => mute_or_unmute(&mut gem_player.player),
+                match key {
+                    Key::Space => play_or_pause(player),
+                    Key::ArrowLeft => player.actions.push(PlayerAction::PlayPrevious),
+                    Key::ArrowRight => player.actions.push(PlayerAction::PlayNext),
+                    Key::ArrowUp => adjust_volume_by_percentage(player, 0.1),
+                    Key::ArrowDown => adjust_volume_by_percentage(player, -0.1),
+                    Key::M => mute_or_unmute(player),
                     _ => {}
                 }
             }
