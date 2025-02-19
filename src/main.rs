@@ -84,11 +84,12 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 selected_song: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
+                song_menu_is_open: None,
             },
             playlists_view_state: PlaylistsViewState {
                 selected_playlist_id: None,
-                edit_playlist_name_state: None,
-                delete_playlist_modal_state: None,
+                playlist_rename: None,
+                delete_playlist_modal_is_open: None,
                 selected_song_id: None,
             },
             toasts: Toasts::default()
