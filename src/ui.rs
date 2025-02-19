@@ -69,6 +69,11 @@ impl eframe::App for player::GemPlayer {
         Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
 
+    // This is set because egui was persisting the state of the library table scroll position across runs.
+    fn persist_egui_memory(&self) -> bool {
+        false
+    }
+
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         if let Some(library_directory) = &self.library_directory {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
