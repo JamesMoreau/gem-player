@@ -19,7 +19,6 @@ TODO:
 * profile app.
 * maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
 * Fullscreen?
-* egui is persisting the state of the library table scroll position. do we want this?
 */
 
 fn main() -> eframe::Result {
