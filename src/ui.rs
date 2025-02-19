@@ -1377,7 +1377,7 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let below = AboveOrBelow::Above;
     let close_on_click_outside = popup::PopupCloseBehavior::CloseOnClickOutside;
     popup::popup_above_or_below_widget(ui, popup_id, &response, below, close_on_click_outside, |ui| {
-        ui.set_min_width(150.0);
+        ui.set_min_width(100.0);
 
         for sort_by in SortBy::iter() {
             ui.radio_value(
