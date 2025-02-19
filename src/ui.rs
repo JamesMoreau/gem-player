@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, menu::menu_custom_button, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, text, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image, Label, Layout,
+    Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter,
+    TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -615,7 +617,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.separator();
 
-                if ui.button(format!("{} Open File Location", icons::ICON_FILE)).clicked() {
+                if ui.button(format!("{} Open File Location", icons::ICON_FOLDER)).clicked() {
                     let result = open_song_file_location(song);
                     match result {
                         Ok(_) => info!("Opening song location"),
@@ -1001,8 +1003,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let response = ui.add(edit_name_button).on_hover_text("Edit name");
                             if response.clicked() {
                                 info!("Editing playlist name: {}", playlist.name);
-                                gem_player.ui_state.playlists_view_state.playlist_rename =
-                                    Some((playlist.id, playlist.name.clone()));
+                                gem_player.ui_state.playlists_view_state.playlist_rename = Some((playlist.id, playlist.name.clone()));
                             }
                         },
                     );
