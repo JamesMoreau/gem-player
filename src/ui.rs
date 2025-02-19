@@ -551,6 +551,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
                             let response = ui.add(more_button).on_hover_text("More");
                             if response.clicked() {
+                                gem_player.ui_state.library_view_state.selected_song = Some(song.id);
                                 gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
                             }
                         },
