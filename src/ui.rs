@@ -289,23 +289,21 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                     let artwork_size = Vec2::splat(ui.available_height());
 
-                    let artwork = if let Some(song) = &gem_player.player.current_song {
+                    let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
+                    if let Some(song) = &gem_player.player.current_song {
                         if let Some(artwork_bytes) = &song.artwork {
                             let artwork_uri = format!("bytes://artwork-{}", song.id);
-                            Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                        } else {
-                            Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
+                            artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
                         }
-                    } else {
-                        Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
-                    };
+                    }
 
-                    let a = artwork
-                        .texture_options(artwork_texture_options)
-                        .fit_to_exact_size(artwork_size)
-                        .maintain_aspect_ratio(false)
-                        .corner_radius(2.0);
-                    ui.add(a);
+                    ui.add(
+                        artwork
+                            .texture_options(artwork_texture_options)
+                            .fit_to_exact_size(artwork_size)
+                            .maintain_aspect_ratio(false)
+                            .corner_radius(2.0),
+                    );
 
                     Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
                         flex.add_ui(item(), |ui| {
