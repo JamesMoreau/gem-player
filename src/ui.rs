@@ -536,7 +536,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let mut more_cell_contains_pointer = false;
                 row.col(|ui| {
                     more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                    let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer;
+                    let should_show_more_button: bool = rest_of_row_is_hovered || more_cell_contains_pointer || row_is_selected;
 
                     ui.add_space(8.0);
 
@@ -603,7 +603,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 ui.separator();
-                
+
                 if ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW)).clicked() {
                     add_next_to_queue(&mut gem_player.player.queue, song.clone());
                 }
