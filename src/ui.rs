@@ -24,7 +24,8 @@ use crate::{
         shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, Playlist,
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
+        Playlist,
     },
     song::{find_song, get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
@@ -287,28 +288,24 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 flex.add_ui(item(), |ui| {
                     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                     let artwork_size = Vec2::splat(ui.available_height());
-                    let default_artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
+
+                    let artwork = if let Some(song) = &gem_player.player.current_song {
+                        if let Some(artwork_bytes) = &song.artwork {
+                            let artwork_uri = format!("bytes://artwork-{}", song.id);
+                            Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                        } else {
+                            Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
+                        }
+                    } else {
+                        Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"))
+                    };
+
+                    let a = artwork
                         .texture_options(artwork_texture_options)
                         .fit_to_exact_size(artwork_size)
-                        .maintain_aspect_ratio(false);
-
-                    let artwork = gem_player
-                        .player
-                        .current_song
-                        .as_ref()
-                        .and_then(|song| {
-                            song.artwork.as_ref().map(|artwork_bytes| {
-                                let artwork_uri = format!("bytes://artwork-{}", song.id);
-
-                                Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                                    .texture_options(artwork_texture_options)
-                                    .fit_to_exact_size(artwork_size)
-                                    .maintain_aspect_ratio(false)
-                            })
-                        })
-                        .unwrap_or(default_artwork);
-
-                    ui.add(artwork);
+                        .maintain_aspect_ratio(false)
+                        .corner_radius(2.0);
+                    ui.add(a);
 
                     Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
                         flex.add_ui(item(), |ui| {
