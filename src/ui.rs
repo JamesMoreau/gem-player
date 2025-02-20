@@ -579,7 +579,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let mut close_clicked = false;
 
-    let modal = containers::Modal::new(Id::new("Library Song Menu Modal")).show(ui.ctx(), |ui| {
+    let modal = containers::Modal::new(Id::new("library_song_menu_modal")).show(ui.ctx(), |ui| {
         ui.set_width(220.0);
 
         ui.vertical_centered_justified(|ui| {
@@ -799,7 +799,7 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let mut cancel_clicked = false;
     let mut confirm_clicked = false;
 
-    let modal = containers::Modal::new(Id::new("Delete Playlist Modal")).show(ui.ctx(), |ui| {
+    let modal = containers::Modal::new(Id::new("delete_playlist_modal")).show(ui.ctx(), |ui| {
         ui.set_width(200.0);
         Frame::new().outer_margin(Margin::same(4)).show(ui, |ui| {
             let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
