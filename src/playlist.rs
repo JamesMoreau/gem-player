@@ -31,22 +31,36 @@ pub fn find_playlist_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Optio
     playlists.iter_mut().find(|p| p.id == playlist_id)
 }
 
-pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) {
+pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) -> io::Result<()> {
+    let Some(path) = playlist.path.as_ref() else {
+        return Err(io::Error::new(ErrorKind::NotFound, "The playlist has no associated file path."));
+    };
+    
     if playlist.songs.iter().any(|s| s.id == song.id) {
-        return;
+        return Err(io::Error::new(ErrorKind::Other, "The song is already in the playlist. Duplicates are not allowed."));
     }
 
     playlist.songs.push(song);
+    save_playlist_to_m3u(playlist, &path.clone())?;
+
+    Ok(())
 }
 
-pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song_id: Uuid) -> Result<(), String> {
+pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song_id: Uuid) -> io::Result<()> {
+    let Some(path) = playlist.path.as_ref() else {
+        return Err(io::Error::new(ErrorKind::NotFound, "The playlist has no associated file path."));
+    };
+
     let Some(index) = playlist.songs.iter().position(|x| x.id == song_id) else {
-        return Err("Song not found in playlist".to_string());
+        return Err(io::Error::new(ErrorKind::NotFound, "The song to be removed was not found in the playlist."));
     };
 
     playlist.songs.remove(index);
+    save_playlist_to_m3u(playlist, &path.clone())?;
+
     Ok(())
 }
+
 
 pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
     let file_type = "m3u";
@@ -158,11 +172,11 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
 
 pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
     let Some(old_path) = playlist.path.as_ref() else {
-        return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
+        return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path."));
     };
 
     let Some(directory) = old_path.parent() else {
-        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist path has no parent directory"));
+        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist path has no parent directory."));
     };
 
     let new_filename = format!("{}.m3u", new_name);
@@ -199,7 +213,7 @@ pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Resu
     let playlist = playlists.remove(index);
 
     if let Err(err) = delete_playlist_m3u(&playlist) {
-        warn!("Warning: Failed to delete the playlist's associated m3u file: {}", err);
+        warn!("Warning: Failed to delete the playlist's associated m3u file: {}.", err);
     }
 
     Ok(())
@@ -207,7 +221,7 @@ pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Resu
 
 pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> {
     let Some(path) = playlist.path.as_ref() else {
-        return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path"));
+        return Err(io::Error::new(ErrorKind::NotFound, "The playlist has no associated file path."));
     };
 
     // Send the m3u file to the trash!

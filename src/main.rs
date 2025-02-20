@@ -27,6 +27,7 @@ TODO:
 * Fullscreen?
 * UI + aestethics
 * modal dark background is going outside of the window.
+* cleanup error handling. add periods.
 */
 
 fn main() -> eframe::Result {

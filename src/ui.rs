@@ -24,8 +24,7 @@ use crate::{
         shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
-        save_playlist_to_m3u, Playlist,
+        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist, Playlist,
     },
     song::{find_song, get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
@@ -598,9 +597,10 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
                                 for playlist in gem_player.playlists.iter_mut() {
                                     if ui.button(&playlist.name).clicked() {
-                                        if let Some(library_directory) = &gem_player.library_directory {
-                                            add_a_song_to_playlist(playlist, song.clone());
-                                            let _result = save_playlist_to_m3u(playlist, library_directory);
+                                        let result = add_a_song_to_playlist(playlist, song.clone());
+                                        if let Err(e) = result {
+                                            error!("{}", e);
+                                            gem_player.ui_state.toasts.error(format!("{}", e));
                                         }
                                     }
                                 }
