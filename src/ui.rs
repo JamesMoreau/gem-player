@@ -550,11 +550,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
-                            let _response = ui.add(more_button).on_hover_text("More");
-                            // if response.clicked() {
-                            //     gem_player.ui_state.library_view_state.selected_song = Some(song.id);
-                            // gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
-                            // }
+                            let response = ui.add(more_button).on_hover_text("More");
+                            if response.clicked() {
+                                gem_player.ui_state.library_view_state.selected_song = Some(song.id);
+                                gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
+                            }
                         },
                     );
                 });
@@ -577,9 +577,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let mut close_clicked = false;
-
-    let modal = containers::Modal::new(Id::new("library_song_menu_modal")).show(ui.ctx(), |ui| {
+    let modal = containers::Modal::new(Id::new("library_song_menu_modal")).backdrop_color(Color32::TRANSPARENT).show(ui.ctx(), |ui| {
         ui.set_width(220.0);
 
         ui.vertical_centered_justified(|ui| {
@@ -604,8 +602,8 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     });
                 });
 
-                ui.add_space(10.0);
-
+                ui.separator();
+                
                 if ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW)).clicked() {
                     add_next_to_queue(&mut gem_player.player.queue, song.clone());
                 }
@@ -626,19 +624,13 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         Err(e) => error!("{}", e),
                     }
                 }
-
-                ui.add_space(10.0);
-
-                if ui.button(format!("{} Close", icons::ICON_CLOSE)).clicked() {
-                    close_clicked = true;
-                }
             } else {
                 ui.label("Error: Song not found.");
             }
         });
     });
 
-    if close_clicked || modal.should_close() {
+    if modal.should_close() {
         gem_player.ui_state.library_view_state.song_menu_is_open = None;
     }
 }
