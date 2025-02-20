@@ -360,37 +360,40 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             // Placing the song info after the slider ensures that the playback position display is accurate. The seek operation is only
                             // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-                            Flex::horizontal().justify(FlexJustify::SpaceBetween).width(playback_progress_slider_width).show(ui, |flex| {
-                                flex.add_ui(item().basis(playback_progress_slider_width * (4.0 / 5.0)), |ui| {
-                                    let leading_space = 0.0;
-                                    let style = ui.style();
-                                    let text_color = ui.visuals().text_color();
-                                    let divider_color = ui.visuals().weak_text_color();
+                            Flex::horizontal()
+                                .justify(FlexJustify::SpaceBetween)
+                                .width(playback_progress_slider_width)
+                                .show(ui, |flex| {
+                                    flex.add_ui(item().basis(playback_progress_slider_width * (4.0 / 5.0)), |ui| {
+                                        let leading_space = 0.0;
+                                        let style = ui.style();
+                                        let text_color = ui.visuals().text_color();
+                                        let divider_color = ui.visuals().weak_text_color();
 
-                                    let get_text_format =
-                                        |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+                                        let get_text_format =
+                                            |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
 
-                                    let mut job = text::LayoutJob::default();
-                                    job.append(title, leading_space, get_text_format(style, text_color));
-                                    job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                    job.append(artist, leading_space, get_text_format(style, text_color));
-                                    job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                    job.append(album, leading_space, get_text_format(style, text_color));
+                                        let mut job = text::LayoutJob::default();
+                                        job.append(title, leading_space, get_text_format(style, text_color));
+                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                        job.append(artist, leading_space, get_text_format(style, text_color));
+                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                        job.append(album, leading_space, get_text_format(style, text_color));
 
-                                    let song_label = Label::new(job).selectable(false).truncate();
-                                    ui.add(song_label);
+                                        let song_label = Label::new(job).selectable(false).truncate();
+                                        ui.add(song_label);
+                                    });
+
+                                    flex.add_ui(item(), |ui| {
+                                        let position = Duration::from_secs_f32(position_as_secs);
+                                        let song_duration = Duration::from_secs_f32(song_duration_as_secs);
+                                        let time_label_text =
+                                            format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
+
+                                        let time_label = unselectable_label(time_label_text);
+                                        ui.add(time_label);
+                                    });
                                 });
-
-                                flex.add_ui(item(), |ui| {
-                                    let position = Duration::from_secs_f32(position_as_secs);
-                                    let song_duration = Duration::from_secs_f32(song_duration_as_secs);
-                                    let time_label_text =
-                                        format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
-
-                                    let time_label = unselectable_label(time_label_text);
-                                    ui.add(time_label);
-                                });
-                            });
                         });
                     });
                 });
@@ -577,58 +580,61 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let modal = containers::Modal::new(Id::new("library_song_menu_modal")).backdrop_color(Color32::TRANSPARENT).show(ui.ctx(), |ui| {
-        ui.set_width(220.0);
+    let modal = containers::Modal::new(Id::new("library_song_menu_modal"))
+        .backdrop_color(Color32::TRANSPARENT)
+        .show(ui.ctx(), |ui| {
+            ui.set_width(220.0);
 
-        ui.vertical_centered_justified(|ui| {
-            let song = find_song(song_id, &gem_player.library);
-            if let Some(song) = song {
-                ui.label(RichText::new(song.title.as_deref().unwrap_or("Unknown Title")).strong());
+            ui.vertical_centered_justified(|ui| {
+                let song = find_song(song_id, &gem_player.library);
+                if let Some(song) = song {
+                    ui.label(RichText::new(song.title.as_deref().unwrap_or("Unknown Title")).strong());
 
-                ui.add_space(8.0);
+                    ui.add_space(8.0);
 
-                let add_to_playlists_enabled = !gem_player.playlists.is_empty();
-                ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
-                    ui.label("Add to Playlist:");
-                    ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
-                        for playlist in gem_player.playlists.iter_mut() {
-                            if ui.button(&playlist.name).clicked() {
-                                if let Some(library_directory) = &gem_player.library_directory {
-                                    add_a_song_to_playlist(playlist, song.clone());
-                                    let _result = save_playlist_to_m3u(playlist, library_directory);
+                    let add_to_playlists_enabled = !gem_player.playlists.is_empty();
+                    ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
+                        ui.menu_button("Add to Playlist", |ui| {
+                            ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
+                                for playlist in gem_player.playlists.iter_mut() {
+                                    if ui.button(&playlist.name).clicked() {
+                                        if let Some(library_directory) = &gem_player.library_directory {
+                                            add_a_song_to_playlist(playlist, song.clone());
+                                            let _result = save_playlist_to_m3u(playlist, library_directory);
+                                        }
+                                    }
                                 }
-                            }
-                        }
+                            });
+                        });
                     });
-                });
 
-                ui.separator();
+                    ui.separator();
 
-                if ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW)).clicked() {
-                    add_next_to_queue(&mut gem_player.player.queue, song.clone());
-                }
-
-                if ui.button(format!("{} Add to Queue", icons::ICON_ADD)).clicked() {
-                    gem_player
-                        .player
-                        .actions
-                        .push(PlayerAction::AddSongToQueueFromLibrary { song_id: song.id });
-                }
-
-                ui.separator();
-
-                if ui.button(format!("{} Open File Location", icons::ICON_FOLDER)).clicked() {
-                    let result = open_song_file_location(song);
-                    match result {
-                        Ok(_) => info!("Opening song location"),
-                        Err(e) => error!("{}", e),
+                    if ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW)).clicked() {
+                        add_next_to_queue(&mut gem_player.player.queue, song.clone());
                     }
+
+                    if ui.button(format!("{} Add to Queue", icons::ICON_ADD)).clicked() {
+                        gem_player
+                            .player
+                            .actions
+                            .push(PlayerAction::AddSongToQueueFromLibrary { song_id: song.id });
+                    }
+
+                    ui.separator();
+
+                    if ui.button(format!("{} Open File Location", icons::ICON_FOLDER)).clicked() {
+                        let result = open_song_file_location(song);
+                        match result {
+                            Ok(_) => info!("Opening song location"),
+                            Err(e) => error!("{}", e),
+                        }
+                    }
+                } else {
+                    ui.label("Error: Song not found.");
                 }
-            } else {
-                ui.label("Error: Song not found.");
-            }
+            });
         });
-    });
 
     if modal.should_close() {
         gem_player.ui_state.library_view_state.song_menu_is_open = None;
