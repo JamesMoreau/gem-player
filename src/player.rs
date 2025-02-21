@@ -1,5 +1,5 @@
 use std::{
-    io::BufReader,
+    io::{self, BufReader, ErrorKind},
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -158,7 +158,9 @@ pub fn play_or_pause(player: &mut Player) {
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(current_song) = &player.current_song {
-            return load_and_play_song(player, &current_song.clone());
+            if let Err(e) = load_and_play_song(player, &current_song.clone()) {
+                return Err(e.to_string());
+            }
         }
         return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
     }
@@ -173,7 +175,9 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
         player.history.push(current_song);
     }
 
-    load_and_play_song(player, &next_song)?;
+    if let Err(e) = load_and_play_song(player, &next_song) {
+        return Err(e.to_string());
+    }
     player.current_song = Some(next_song);
     
     Ok(())
@@ -216,27 +220,25 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 
     player.current_song = Some(previous_song.clone());
 
-    load_and_play_song(player, &previous_song)
+    if let Err(e) = load_and_play_song(player, &previous_song) {
+        return Err(e.to_string())
+    }
+
+    Ok(())
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play_song(player: &mut Player, song: &Song) -> Result<(), String> {
+pub fn load_and_play_song(player: &mut Player, song: &Song) -> io::Result<()> {
     player.sink.stop(); // Stop the current song if any.
     player.current_song = None;
 
-    let file_result = std::fs::File::open(&song.file_path);
-    let file = match file_result {
-        Ok(file) => file,
-        Err(e) => {
-            return Err(format!("Error opening file: {:?}", e));
-        }
-    };
+    let file = std::fs::File::open(&song.file_path)?;
 
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {
         Ok(source) => source,
         Err(e) => {
-            return Err(format!("Error decoding file: {:?}", e));
+            return Err(io::Error::new(ErrorKind::Other, e.to_string()))
         }
     };
 
