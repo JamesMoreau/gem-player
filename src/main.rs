@@ -26,7 +26,6 @@ TODO:
 * maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
 * Fullscreen?
 * UI + aestethics
-* modal dark background is going outside of the window.
 * cleanup error handling. add periods.
 */
 

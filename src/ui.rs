@@ -792,42 +792,45 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let mut cancel_clicked = false;
     let mut confirm_clicked = false;
 
-    let modal = containers::Modal::new(Id::new("delete_playlist_modal")).show(ui.ctx(), |ui| {
-        ui.set_width(200.0);
-        Frame::new().outer_margin(Margin::same(4)).show(ui, |ui| {
-            let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
-            ui.add(label);
+    let modal = containers::Modal::new(Id::new("delete_playlist_modal"))
+        .backdrop_color(Color32::TRANSPARENT)
+        .show(ui.ctx(), |ui| {
+            ui.set_width(200.0);
+            Frame::new().outer_margin(Margin::same(4)).show(ui, |ui| {
+                let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
+                ui.add(label);
 
-            ui.separator();
+                ui.separator();
 
-            containers::Sides::new().show(
-                ui,
-                |ui| {
-                    let response = ui.button(format!("\t{}\t", icons::ICON_CLOSE));
-                    if response.clicked() {
-                        cancel_clicked = true;
-                    }
-                },
-                |ui| {
-                    let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
-                    if response.clicked() {
-                        confirm_clicked = true;
-
-                        let result = delete_playlist(playlist_id, &mut gem_player.playlists);
-                        if let Err(e) = result {
-                            error!("{}", e);
-                            return;
+                containers::Sides::new().show(
+                    ui,
+                    |ui| {
+                        let response = ui.button(format!("\t{}\t", icons::ICON_CLOSE));
+                        if response.clicked() {
+                            cancel_clicked = true;
                         }
+                    },
+                    |ui| {
+                        let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
+                        if response.clicked() {
+                            confirm_clicked = true;
 
-                        let message = "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
-                        info!("{}", message);
-                        gem_player.ui_state.toasts.success(message);
-                        gem_player.ui_state.playlists_view_state.selected_playlist_id = None;
-                    }
-                },
-            );
+                            let result = delete_playlist(playlist_id, &mut gem_player.playlists);
+                            if let Err(e) = result {
+                                error!("{}", e);
+                                return;
+                            }
+
+                            let message =
+                                "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
+                            info!("{}", message);
+                            gem_player.ui_state.toasts.success(message);
+                            gem_player.ui_state.playlists_view_state.selected_playlist_id = None;
+                        }
+                    },
+                );
+            });
         });
-    });
 
     if confirm_clicked || cancel_clicked || modal.should_close() {
         gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open = None;
