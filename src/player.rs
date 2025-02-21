@@ -158,8 +158,7 @@ pub fn play_or_pause(player: &mut Player) {
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(current_song) = &player.current_song {
-            let result = load_and_play_song(player, &current_song.clone());
-            return result;
+            return load_and_play_song(player, &current_song.clone());
         }
         return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
     }
@@ -176,6 +175,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
 
     load_and_play_song(player, &next_song)?;
     player.current_song = Some(next_song);
+    
     Ok(())
 }
 
@@ -207,7 +207,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 
 pub fn play_previous(player: &mut Player) -> Result<(), String> {
     let Some(previous_song) = player.history.pop() else {
-        return Ok(());
+        return Ok(()); // No previous song? Do nothing.
     };
 
     if let Some(maybe_current_song) = player.current_song.take() {
