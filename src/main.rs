@@ -18,6 +18,7 @@ mod ui;
 
 /*
 TODO:
+* should queue, history, playlist, etc. just be a list of song ids? and then we would have a main repo of ALL the songs available.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.

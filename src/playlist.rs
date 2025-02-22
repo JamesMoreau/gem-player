@@ -32,35 +32,26 @@ pub fn find_playlist_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Optio
 }
 
 pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) -> io::Result<()> {
-    let Some(path) = playlist.path.as_ref() else {
-        return Err(io::Error::new(ErrorKind::NotFound, "The playlist has no associated file path."));
-    };
-    
     if playlist.songs.iter().any(|s| s.id == song.id) {
         return Err(io::Error::new(ErrorKind::Other, "The song is already in the playlist. Duplicates are not allowed."));
     }
 
     playlist.songs.push(song);
-    save_playlist_to_m3u(playlist, &path.clone())?;
+    save_playlist_to_m3u(playlist)?;
 
     Ok(())
 }
 
 pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song_id: Uuid) -> io::Result<()> {
-    let Some(path) = playlist.path.as_ref() else {
-        return Err(io::Error::new(ErrorKind::NotFound, "The playlist has no associated file path."));
-    };
-
     let Some(index) = playlist.songs.iter().position(|x| x.id == song_id) else {
         return Err(io::Error::new(ErrorKind::NotFound, "The song to be removed was not found in the playlist."));
     };
 
     playlist.songs.remove(index);
-    save_playlist_to_m3u(playlist, &path.clone())?;
+    save_playlist_to_m3u(playlist)?;
 
     Ok(())
 }
-
 
 pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
     let file_type = "m3u";
@@ -91,19 +82,17 @@ pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>>
     Ok(playlists)
 }
 
-pub fn save_playlist_to_m3u(playlist: &mut Playlist, directory: &Path) -> io::Result<()> {
-    let filename = format!("{}.m3u", playlist.name);
-    let file_path = directory.join(filename);
+pub fn save_playlist_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
+    let Some(path) = &playlist.path else {
+        return Err(io::Error::new(io::ErrorKind::NotFound, "The playlist has no associated file path."));
+    };
 
-    let mut file = File::create(&file_path)?;
+    let mut file = File::create(path)?;
 
     for song in &playlist.songs {
         let line = song.file_path.to_string_lossy();
         writeln!(file, "{}", line)?;
     }
-
-    // Update the object once the file operations are successful.
-    playlist.path = Some(file_path);
 
     Ok(())
 }
@@ -191,15 +180,18 @@ pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<
 }
 
 pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playlist> {
+    let filename = format!("{}.m3u", name);
+    let file_path = directory.join(filename);
+
     let mut playlist = Playlist {
         id: Uuid::new_v4(),
         name,
         creation_date_time: SystemTime::now(),
         songs: Vec::new(),
-        path: None,
+        path: Some(file_path),
     };
 
-    save_playlist_to_m3u(&mut playlist, directory)?;
+    save_playlist_to_m3u(&mut playlist)?;
 
     Ok(playlist)
 }
@@ -219,7 +211,7 @@ pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Resu
     Ok(())
 }
 
-pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> {
+pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> { // TODO. just put this in the above function.
     let Some(path) = playlist.path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "The playlist has no associated file path."));
     };
