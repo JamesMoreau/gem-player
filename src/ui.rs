@@ -574,6 +574,8 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
+    let modal_width = 220.0;
+
     let modal = containers::Modal::new(Id::new("library_song_menu_modal"))
         .backdrop_color(Color32::TRANSPARENT)
         .show(ui.ctx(), |ui| {
@@ -589,7 +591,9 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let add_to_playlists_enabled = !gem_player.playlists.is_empty();
                     ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
                         ui.menu_button("Add to Playlist", |ui| {
-                            ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
+                            ui.set_min_width(modal_width);
+
+                            ScrollArea::vertical().max_height(164.0).show(ui, |ui| {
                                 for playlist in gem_player.playlists.iter_mut() {
                                     if ui.button(&playlist.name).clicked() {
                                         let result = add_a_song_to_playlist(playlist, song.clone());
@@ -605,11 +609,14 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     ui.separator();
 
-                    if ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW)).clicked() {
+                    let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
+                    if response.clicked() {
                         add_next_to_queue(&mut gem_player.player.queue, song.clone());
+                        gem_player.ui_state.library_view_state.song_menu_is_open = None;
                     }
 
-                    if ui.button(format!("{} Add to Queue", icons::ICON_ADD)).clicked() {
+                    let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
+                    if response.clicked() {
                         gem_player
                             .player
                             .actions
@@ -1365,10 +1372,8 @@ fn get_count_and_duration_string_from_songs(songs: &[Song]) -> String {
 }
 
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    const SORT_BY_POPUP_ID: &str = "filter_popup";
-
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
-    let popup_id = ui.make_persistent_id(SORT_BY_POPUP_ID);
+    let popup_id = ui.make_persistent_id("filter_popup");
     if response.clicked() {
         ui.memory_mut(|mem| mem.toggle_popup(popup_id));
     }
