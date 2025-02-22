@@ -625,7 +625,8 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     ui.separator();
 
-                    if ui.button(format!("{} Open File Location", icons::ICON_FOLDER)).clicked() {
+                    let response = ui.button(format!("{} Open File Location", icons::ICON_FOLDER));
+                    if response.clicked() {
                         let result = open_song_file_location(song);
                         match result {
                             Ok(_) => info!("Opening song location"),
