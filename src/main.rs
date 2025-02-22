@@ -24,10 +24,8 @@ TODO:
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
 * profile app.
-* maybe just remove right clicking songs and only have more buttons!? LETS JUST HAVE MODALS FOR EVERYTHING!
 * Fullscreen?
 * UI + aestethics
-* cleanup error handling. add periods.
 */
 
 fn main() -> eframe::Result {
