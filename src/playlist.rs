@@ -7,7 +7,7 @@ use std::{
 
 use fully_pub::fully_pub;
 use glob::glob;
-use log::{error, warn};
+use log::error;
 use uuid::Uuid;
 
 use crate::{song::get_song_from_file, Song};
@@ -204,22 +204,14 @@ pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Resu
 
     let playlist = playlists.remove(index);
 
-    if let Err(err) = delete_playlist_m3u(&playlist) {
-        warn!("Warning: Failed to delete the playlist's associated m3u file: {}.", err);
-    }
-
-    Ok(())
-}
-
-pub fn delete_playlist_m3u(playlist: &Playlist) -> io::Result<()> { // TODO. just put this in the above function.
     let Some(path) = playlist.path.as_ref() else {
-        return Err(io::Error::new(ErrorKind::NotFound, "The playlist has no associated file path."));
+        return Err("The playlist has no associated file path.".to_string());
     };
 
     // Send the m3u file to the trash!
     let result = trash::delete(path);
     if let Err(e) = result {
-        return Err(io::Error::new(ErrorKind::Other, e));
+        return Err(e.to_string());
     }
 
     Ok(())
