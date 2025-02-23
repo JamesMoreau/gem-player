@@ -879,7 +879,7 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let result = create_a_new_playlist(new_playlist_name, directory);
                                     match result {
                                         Ok(new_playlist) => {
-                                            info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.path);
+                                            info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
                                             gem_player.playlists.push(new_playlist);
                                         }
                                         Err(e) => {

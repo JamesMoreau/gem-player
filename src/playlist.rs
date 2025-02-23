@@ -20,7 +20,7 @@ pub struct Playlist {
     name: String,
     creation_date_time: SystemTime,
     songs: Vec<Song>,
-    path: Option<PathBuf>,
+    m3u_path: Option<PathBuf>,
 }
 
 pub fn find_playlist(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
@@ -83,7 +83,7 @@ pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>>
 }
 
 pub fn save_playlist_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
-    let Some(path) = &playlist.path else {
+    let Some(path) = &playlist.m3u_path else {
         return Err(io::Error::new(io::ErrorKind::NotFound, "The playlist has no associated file path."));
     };
 
@@ -155,12 +155,12 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         name,
         creation_date_time,
         songs,
-        path,
+        m3u_path: path,
     })
 }
 
 pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
-    let Some(old_path) = playlist.path.as_ref() else {
+    let Some(old_path) = playlist.m3u_path.as_ref() else {
         return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path."));
     };
 
@@ -174,7 +174,7 @@ pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<
     fs::rename(old_path, &new_path)?;
 
     playlist.name = new_name;
-    playlist.path = Some(new_path);
+    playlist.m3u_path = Some(new_path);
 
     Ok(())
 }
@@ -188,7 +188,7 @@ pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playl
         name,
         creation_date_time: SystemTime::now(),
         songs: Vec::new(),
-        path: Some(file_path),
+        m3u_path: Some(file_path),
     };
 
     save_playlist_to_m3u(&mut playlist)?;
@@ -204,7 +204,7 @@ pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Resu
 
     let playlist = playlists.remove(index);
 
-    let Some(path) = playlist.path.as_ref() else {
+    let Some(path) = playlist.m3u_path.as_ref() else {
         return Err("The playlist has no associated file path.".to_string());
     };
 
