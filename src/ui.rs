@@ -290,10 +290,12 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_size = Vec2::splat(ui.available_height());
 
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                    if let Some(song) = &gem_player.player.current_song {
-                        if let Some(artwork_bytes) = &song.artwork {
-                            let artwork_uri = format!("bytes://artwork-{}", song.id);
-                            artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                    if let Some(song_id) = &gem_player.player.current_song {
+                        if let Some(song) = gem_player.library.get(song_id) {
+                            if let Some(artwork_bytes) = &song.artwork {
+                                let artwork_uri = format!("bytes://artwork-{}", song.id);
+                                artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                            }
                         }
                     }
 
@@ -313,12 +315,14 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut position_as_secs = 0.0;
                             let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
-                            if let Some(song) = &gem_player.player.current_song {
-                                title = song.title.as_deref().unwrap_or("Unknown Title");
-                                artist = song.artist.as_deref().unwrap_or("Unknown Artist");
-                                album = song.album.as_deref().unwrap_or("Unknown Album");
-                                position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
-                                song_duration_as_secs = song.duration.as_secs_f32();
+                            if let Some(song_id) = &gem_player.player.current_song {
+                                if let Some(song) = gem_player.library.get(song_id) {
+                                    title = song.title.as_deref().unwrap_or("Unknown Title");
+                                    artist = song.artist.as_deref().unwrap_or("Unknown Artist");
+                                    album = song.album.as_deref().unwrap_or("Unknown Album");
+                                    position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
+                                    song_duration_as_secs = song.duration.as_secs_f32();
+                                }
                             }
 
                             let playback_progress_slider_width = 500.0;
