@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 use eframe::egui::{Color32, Context, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
@@ -59,11 +59,15 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    let mut library = Vec::new();
+    let mut library = HashMap::new();
     let mut playlists = Vec::new();
     if let Some(directory) = &library_directory {
-        let (found_library, found_playlists) = read_music_and_playlists_from_directory(directory);
-        library = found_library;
+        let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
+        
+        for song in found_music {
+            library.insert(song.id, song);
+        }
+
         playlists = found_playlists;
     }
 

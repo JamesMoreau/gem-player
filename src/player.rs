@@ -1,7 +1,5 @@
 use std::{
-    io::{self, BufReader, ErrorKind},
-    path::{Path, PathBuf},
-    time::Duration,
+    collections::HashMap, io::{self, BufReader, ErrorKind}, path::{Path, PathBuf}, time::Duration
 };
 
 use eframe::egui::{Context, Event, Key};
@@ -28,7 +26,7 @@ pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", 
 pub struct GemPlayer {
     ui_state: UIState,
 
-    library: Vec<Song>,                 // All the songs stored in the user's music directory.
+    library: HashMap<Uuid, Song>,                 // All the songs stored in the user's music directory.
     library_directory: Option<PathBuf>, // The directory where music is stored.
     playlists: Vec<Playlist>,
 
@@ -79,7 +77,7 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
             PlayerAction::PlayFromPlaylist { playlist_id, song_id } => play_playlist_from_song(gem_player, playlist_id, song_id),
             PlayerAction::PlayFromLibrary { song_id } => play_library_from_song(gem_player, song_id),
             PlayerAction::AddSongToQueueFromLibrary { song_id } => {
-                let maybe_song = find_song(song_id, &gem_player.library);
+                let maybe_song = gem_player.library.get(&song_id);
                 if let Some(song) = maybe_song {
                     add_to_queue(&mut gem_player.player.queue, song.clone());
                 }
@@ -308,15 +306,19 @@ pub fn play_library_from_song(gem_player: &mut GemPlayer, song_id: Uuid) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    let Some(index) = gem_player.library.iter().position(|s| s.id == song_id) else {
+    let Some(song) = gem_player.library.get(&song_id) else {
         error!("Song not found in the library.");
         return;
     };
 
-    let song = &gem_player.library[index];
+    // Add all of the other songs to the queue.
+    for (id, song) in gem_player.library.iter() {
+        if *id == song_id {
+            continue;
+        }
 
-    gem_player.player.queue.extend_from_slice(&gem_player.library[index + 1..]);
-    gem_player.player.queue.extend_from_slice(&gem_player.library[..index]);
+        gem_player.player.queue.push(song.clone());
+    }
 
     let result = load_and_play_song(&mut gem_player.player, song);
     if let Err(e) = result {

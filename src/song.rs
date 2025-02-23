@@ -150,8 +150,8 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Song>> {
     Ok(songs)
 }
 
-pub fn get_duration_of_songs(songs: &[Song]) -> Duration {
-    songs.iter().map(|song| song.duration).sum()
+pub fn get_duration_of_songs<'a>(songs: impl Iterator<Item = &'a Song>) -> Duration {
+    songs.map(|song| song.duration).sum()
 }
 
 pub fn open_song_file_location(song: &Song) -> io::Result<()> {

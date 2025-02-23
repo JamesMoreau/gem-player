@@ -27,7 +27,7 @@ use crate::{
         add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
         Playlist,
     },
-    song::{find_song, get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
+    song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
     Song,
 };
 
@@ -426,7 +426,6 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    // TODO: right click should select the song (as with left click).
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -447,15 +446,19 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let mut library_copy: Vec<Song> = gem_player
         .library
-        .iter()
+        .values() // Iterate over the Song objects
         .filter(|song| {
             let search_lower = gem_player.ui_state.library_view_state.search_text.to_lowercase();
-            let search_fields = [&song.title, &song.artist, &song.album];
-
-            search_fields
-                .iter()
-                .any(|field| field.as_ref().map_or(false, |text| text.to_lowercase().contains(&search_lower)))
-        })
+        
+            let matches_search = |field: &Option<String>| {
+                field
+                    .as_ref()
+                    .map(|text| text.to_lowercase().contains(&search_lower))
+                    .unwrap_or(false)
+            };
+        
+            matches_search(&song.title) || matches_search(&song.artist) || matches_search(&song.album)
+        })        
         .cloned()
         .collect();
 
@@ -575,7 +578,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let Some(song) = find_song(song_id, &gem_player.library) else {
+    let Some(song) = gem_player.library.get(&song_id) else {
         error!("Cannot find the associated song for the library song menu modal.");
         gem_player.ui_state.library_view_state.song_menu_is_open = None;
         return;
@@ -1217,7 +1220,11 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 info!("Selected folder: {:?}", directory);
 
                                 let (found_music, found_playlists) = read_music_and_playlists_from_directory(&directory);
-                                gem_player.library = found_music;
+                                
+                                gem_player.library.clear();
+                                for song in found_music {
+                                    gem_player.library.insert(song.id, song);
+                                }
                                 gem_player.playlists = found_playlists;
                                 gem_player.library_directory = Some(directory);
                             }
@@ -1300,12 +1307,12 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
                     View::Library => {
-                        let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.library);
+                        let songs_count_and_duration = get_count_and_duration_string_from_songs(gem_player.library.values());
                         ui.add(unselectable_label(songs_count_and_duration));
                     }
                     View::Queue => {
-                        let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.player.queue);
-                        ui.add(unselectable_label(songs_count_and_duration));
+                        // let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.player.queue);
+                        // ui.add(unselectable_label(songs_count_and_duration));
 
                         ui.add_space(8.0);
                     }
@@ -1321,7 +1328,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             match &gem_player.library_directory {
                                 Some(directory) => {
                                     let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
-                                    gem_player.library = found_music;
+                                    gem_player.library.clear();
+                                    for song in found_music {
+                                        gem_player.library.insert(song.id, song);
+                                    }
                                     gem_player.playlists = found_playlists;
                                 }
                                 None => warn!("Cannot refresh library, as there is no library path."),
@@ -1372,10 +1382,11 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-fn get_count_and_duration_string_from_songs(songs: &[Song]) -> String {
+pub fn get_count_and_duration_string_from_songs<'a>(songs: impl Iterator<Item = &'a Song>) -> String {
+    let count = songs.size_hint().0; // Get the lower bound of the iterator length
     let duration = get_duration_of_songs(songs);
     let duration_string = format_duration_to_hhmmss(duration);
-    format!("{} songs / {}", songs.len(), duration_string)
+    format!("{} songs / {}", count, duration_string)
 }
 
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
