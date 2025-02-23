@@ -48,7 +48,7 @@ pub struct Player {
     actions: Vec<PlayerAction>, // Actions get immedietly processed every frame.
 
     queue: Vec<Song>,
-    history: Vec<Song>,
+    history: Vec<Uuid>,
 
     repeat: bool,
     muted: bool,
@@ -170,7 +170,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     };
 
     if let Some(current_song) = player.current_song.take() {
-        player.history.push(current_song);
+        player.history.push(current_song.id);
     }
 
     if let Err(e) = load_and_play_song(player, &next_song) {
@@ -195,7 +195,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
                 error!("Error rewinding song: {:?}", e);
             }
             gem_player.player.sink.play();
-        } else if let Err(e) = play_previous(&mut gem_player.player) {
+        } else if let Err(e) = play_previous(gem_player) {
             error!("{}", e);
             gem_player.ui_state.toasts.error("Error playing the previous song");
         }
@@ -207,18 +207,22 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn play_previous(player: &mut Player) -> Result<(), String> {
-    let Some(previous_song) = player.history.pop() else {
+pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
+    let Some(previous_song_id) = gem_player.player.history.pop() else {
         return Ok(()); // No previous song? Do nothing.
     };
 
-    if let Some(maybe_current_song) = player.current_song.take() {
-        player.queue.insert(0, maybe_current_song);
+    let Some(previous_song) = gem_player.library.get(&previous_song_id) else {
+        return Err("Previous song not found in the library.".to_string());
+    };
+
+    if let Some(maybe_current_song) = gem_player.player.current_song.take() {
+        gem_player.player.queue.insert(0, maybe_current_song);
     }
 
-    player.current_song = Some(previous_song.clone());
+    gem_player.player.current_song = Some(previous_song.clone());
 
-    if let Err(e) = load_and_play_song(player, &previous_song) {
+    if let Err(e) = load_and_play_song(&mut gem_player.player, previous_song) {
         return Err(e.to_string())
     }
 
