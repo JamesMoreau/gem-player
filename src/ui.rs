@@ -248,7 +248,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .show(ui, |flex| {
                 flex.add_ui(item(), |ui| {
                     let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                    let is_previous_enabled = gem_player.player.current_song.is_some() || !gem_player.player.history.is_empty();
+                    let is_previous_enabled = gem_player.player.playing_song.is_some() || !gem_player.player.history.is_empty();
 
                     let response = ui
                         .add_enabled(is_previous_enabled, previous_button)
@@ -265,7 +265,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     };
                     let tooltip = if is_playing(&mut gem_player.player) { "Pause" } else { "Play" };
                     let play_pause_button = Button::new(RichText::new(play_pause_icon));
-                    let song_is_playing = gem_player.player.current_song.is_some();
+                    let song_is_playing = gem_player.player.playing_song.is_some();
                     let response = ui
                         .add_enabled(song_is_playing, play_pause_button)
                         .on_hover_text(tooltip)
@@ -290,7 +290,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_size = Vec2::splat(ui.available_height());
 
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                    if let Some(song_id) = &gem_player.player.current_song {
+                    if let Some(song_id) = &gem_player.player.playing_song {
                         if let Some(song) = gem_player.library.get(song_id) {
                             if let Some(artwork_bytes) = &song.artwork {
                                 let artwork_uri = format!("bytes://artwork-{}", song.id);
@@ -315,14 +315,13 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut position_as_secs = 0.0;
                             let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
 
-                            if let Some(song_id) = &gem_player.player.current_song {
-                                if let Some(song) = gem_player.library.get(song_id) {
-                                    title = song.title.as_deref().unwrap_or("Unknown Title");
-                                    artist = song.artist.as_deref().unwrap_or("Unknown Artist");
-                                    album = song.album.as_deref().unwrap_or("Unknown Album");
-                                    position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
-                                    song_duration_as_secs = song.duration.as_secs_f32();
-                                }
+                            if let Some(curren_song_id) = &gem_player.player.playing_song {
+                                let playing_song = &gem_player.library[curren_song_id];
+                                title = playing_song.title.as_deref().unwrap_or("Unknown Title");
+                                artist = playing_song.artist.as_deref().unwrap_or("Unknown Artist");
+                                album = playing_song.album.as_deref().unwrap_or("Unknown Album");
+                                position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
+                                song_duration_as_secs = playing_song.duration.as_secs_f32();
                             }
 
                             let playback_progress_slider_width = 500.0;
@@ -331,7 +330,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
-                            let song_is_playing = gem_player.player.current_song.is_some();
+                            let song_is_playing = gem_player.player.playing_song.is_some();
                             let response = ui.add_enabled(song_is_playing, playback_progress_slider);
 
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
@@ -1107,7 +1106,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .body(|body| {
             body.rows(26.0, playlist.songs.len(), |mut row| {
                 let index = row.index();
-                let song = playlist.songs[index].clone();
+                let song = playlist.songs[index].clone(); // TODO: find a way to get rid of this.
 
                 row.col(|ui| {
                     ui.add_space(16.0);
