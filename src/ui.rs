@@ -1389,8 +1389,8 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         ui.add(unselectable_label(tracks_count_and_duration));
                     }
                     View::Queue => {
-                        // let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.player.queue);
-                        // ui.add(unselectable_label(tracks_count_and_duration));
+                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(gem_player.player.queue.iter());
+                        ui.add(unselectable_label(tracks_count_and_duration));
 
                         ui.add_space(8.0);
                     }
