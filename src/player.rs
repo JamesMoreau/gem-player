@@ -158,6 +158,7 @@ pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
             if let Err(e) = load_and_play_song(&mut gem_player.player, &playing_song) {
                 return Err(e.to_string());
             }
+            
         }
         return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
     }

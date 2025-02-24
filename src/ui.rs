@@ -1106,7 +1106,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .body(|body| {
             body.rows(26.0, playlist.songs.len(), |mut row| {
                 let index = row.index();
-                let song = playlist.songs[index].clone(); // TODO: find a way to get rid of this.
+                let song = playlist.songs[index].clone(); // TODO: figure out how to remove this.
 
                 row.col(|ui| {
                     ui.add_space(16.0);

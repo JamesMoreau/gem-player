@@ -18,9 +18,6 @@ mod ui;
 
 /*
 TODO:
-* try to reduce the number of current_song unwraps.
-* maybe just change all library.get() to library[id] since it should be guaranteed to exist.
-* should queue, history, playlist, etc. just be a list of song ids? and then we would have a main repo of ALL the songs available.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
