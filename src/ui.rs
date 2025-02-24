@@ -20,14 +20,14 @@ use uuid::Uuid;
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        add_next_to_queue, is_playing, move_song_to_front, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue,
+        add_next_to_queue, is_playing, move_track_to_front, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue,
         shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
     playlist::{
-        add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
+        add_a_track_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_track_from_playlist, rename_playlist,
         Playlist,
     },
-    song::{get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
+    track::{get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
     Track,
 };
 
@@ -50,8 +50,8 @@ pub struct UIState {
 
 #[fully_pub]
 pub struct LibraryViewState {
-    selected_song: Option<Uuid>,
-    song_menu_is_open: Option<Uuid>, // None: no song menu open, Some: the id of the song with the menu.
+    selected_track: Option<Uuid>,
+    track_menu_is_open: Option<Uuid>, // None: no track menu open, Some: the id of the track with the menu.
     sort_by: SortBy,
     sort_order: SortOrder,
     search_text: String,
@@ -62,7 +62,7 @@ pub struct PlaylistsViewState {
     selected_playlist_id: Option<Uuid>,
     playlist_rename: Option<(Uuid, String)>, // None: no playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name.
     delete_playlist_modal_is_open: Option<Uuid>, // None: the modal is not open. Some: the modal for a specific playlist.
-    selected_song_id: Option<Uuid>,
+    selected_track_id: Option<Uuid>,
 }
 
 pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
@@ -248,12 +248,12 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .show(ui, |flex| {
                 flex.add_ui(item(), |ui| {
                     let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                    let is_previous_enabled = gem_player.player.playing_song.is_some() || !gem_player.player.history.is_empty();
+                    let is_previous_enabled = gem_player.player.playing_track.is_some() || !gem_player.player.history.is_empty();
 
                     let response = ui
                         .add_enabled(is_previous_enabled, previous_button)
                         .on_hover_text("Previous")
-                        .on_disabled_hover_text("No previous song");
+                        .on_disabled_hover_text("No previous track");
                     if response.clicked() {
                         gem_player.player.actions.push(PlayerAction::PlayPrevious);
                     }
@@ -265,21 +265,21 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     };
                     let tooltip = if is_playing(&mut gem_player.player) { "Pause" } else { "Play" };
                     let play_pause_button = Button::new(RichText::new(play_pause_icon));
-                    let song_is_playing = gem_player.player.playing_song.is_some();
+                    let track_is_playing = gem_player.player.playing_track.is_some();
                     let response = ui
-                        .add_enabled(song_is_playing, play_pause_button)
+                        .add_enabled(track_is_playing, play_pause_button)
                         .on_hover_text(tooltip)
-                        .on_disabled_hover_text("No current song");
+                        .on_disabled_hover_text("No current track");
                     if response.clicked() {
                         play_or_pause(&mut gem_player.player);
                     }
 
                     let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
-                    let next_song_exists = !gem_player.player.queue.is_empty();
+                    let next_track_exists = !gem_player.player.queue.is_empty();
                     let response = ui
-                        .add_enabled(next_song_exists, next_button)
+                        .add_enabled(next_track_exists, next_button)
                         .on_hover_text("Next")
-                        .on_disabled_hover_text("No next song");
+                        .on_disabled_hover_text("No next track");
                     if response.clicked() {
                         gem_player.player.actions.push(PlayerAction::PlayNext);
                     }
@@ -290,10 +290,10 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_size = Vec2::splat(ui.available_height());
 
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                    if let Some(song_id) = &gem_player.player.playing_song {
-                        if let Some(song) = gem_player.library.get(song_id) {
-                            if let Some(artwork_bytes) = &song.artwork {
-                                let artwork_uri = format!("bytes://artwork-{}", song.id);
+                    if let Some(track_id) = &gem_player.player.playing_track {
+                        if let Some(track) = gem_player.library.get(track_id) {
+                            if let Some(artwork_bytes) = &track.artwork {
+                                let artwork_uri = format!("bytes://artwork-{}", track.id);
                                 artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
                             }
                         }
@@ -313,25 +313,25 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut artist = "None";
                             let mut album = "None";
                             let mut position_as_secs = 0.0;
-                            let mut song_duration_as_secs = 0.1; // We set to 0.1 so that when no song is playing, the slider is at the start.
+                            let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                            if let Some(curren_song_id) = &gem_player.player.playing_song {
-                                let playing_song = &gem_player.library[curren_song_id];
-                                title = playing_song.title.as_deref().unwrap_or("Unknown Title");
-                                artist = playing_song.artist.as_deref().unwrap_or("Unknown Artist");
-                                album = playing_song.album.as_deref().unwrap_or("Unknown Album");
+                            if let Some(curren_track_id) = &gem_player.player.playing_track {
+                                let playing_track = &gem_player.library[curren_track_id];
+                                title = playing_track.title.as_deref().unwrap_or("Unknown Title");
+                                artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
+                                album = playing_track.album.as_deref().unwrap_or("Unknown Album");
                                 position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
-                                song_duration_as_secs = playing_song.duration.as_secs_f32();
+                                track_duration_as_secs = playing_track.duration.as_secs_f32();
                             }
 
                             let playback_progress_slider_width = 500.0;
                             ui.style_mut().spacing.slider_width = playback_progress_slider_width;
-                            let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=song_duration_as_secs)
+                            let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
-                            let song_is_playing = gem_player.player.playing_song.is_some();
-                            let response = ui.add_enabled(song_is_playing, playback_progress_slider);
+                            let track_is_playing = gem_player.player.playing_track.is_some();
+                            let response = ui.add_enabled(track_is_playing, playback_progress_slider);
 
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
                                 gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
@@ -355,7 +355,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             ui.add_space(8.0);
 
-                            // Placing the song info after the slider ensures that the playback position display is accurate. The seek operation is only
+                            // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
                             // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
                             Flex::horizontal()
                                 .justify(FlexJustify::SpaceBetween)
@@ -377,15 +377,15 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         job.append(" / ", leading_space, get_text_format(style, divider_color));
                                         job.append(album, leading_space, get_text_format(style, text_color));
 
-                                        let song_label = Label::new(job).selectable(false).truncate();
-                                        ui.add(song_label);
+                                        let track_label = Label::new(job).selectable(false).truncate();
+                                        ui.add(track_label);
                                     });
 
                                     flex.add_ui(item(), |ui| {
                                         let position = Duration::from_secs_f32(position_as_secs);
-                                        let song_duration = Duration::from_secs_f32(song_duration_as_secs);
+                                        let track_duration = Duration::from_secs_f32(track_duration_as_secs);
                                         let time_label_text =
-                                            format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(song_duration));
+                                            format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(track_duration));
 
                                         let time_label = unselectable_label(time_label_text);
                                         ui.add(time_label);
@@ -443,14 +443,14 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    if gem_player.ui_state.library_view_state.song_menu_is_open.is_some() {
-        render_library_song_menu_modal(ui, gem_player);
+    if gem_player.ui_state.library_view_state.track_menu_is_open.is_some() {
+        render_library_track_menu_modal(ui, gem_player);
     }
 
     let mut library_copy: Vec<Track> = gem_player
         .library
-        .values() // Iterate over the Song objects
-        .filter(|song| {
+        .values() // Iterate over the Track objects
+        .filter(|track| {
             let search_lower = gem_player.ui_state.library_view_state.search_text.to_lowercase();
         
             let matches_search = |field: &Option<String>| {
@@ -460,7 +460,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .unwrap_or(false)
             };
         
-            matches_search(&song.title) || matches_search(&song.artist) || matches_search(&song.album)
+            matches_search(&track.title) || matches_search(&track.artist) || matches_search(&track.album)
         })        
         .cloned()
         .collect();
@@ -507,31 +507,31 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .body(|body| {
             body.rows(26.0, library_copy.len(), |mut row| {
-                let song = &library_copy[row.index()];
+                let track = &library_copy[row.index()];
 
                 let row_is_selected = gem_player
                     .ui_state
                     .library_view_state
-                    .selected_song
+                    .selected_track
                     .as_ref()
-                    .map_or(false, |selected_song| *selected_song == song.id);
+                    .map_or(false, |selected_track| *selected_track == track.id);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")).truncate());
+                    ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")).truncate());
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")).truncate());
+                    ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")).truncate());
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
+                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
-                    let duration_string = format_duration_to_mmss(song.duration);
+                    let duration_string = format_duration_to_mmss(track.duration);
                     ui.add(unselectable_label(duration_string));
                 });
 
@@ -555,8 +555,8 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
                             let response = ui.add(more_button).on_hover_text("More");
                             if response.clicked() {
-                                gem_player.ui_state.library_view_state.selected_song = Some(song.id);
-                                gem_player.ui_state.library_view_state.song_menu_is_open = Some(song.id);
+                                gem_player.ui_state.library_view_state.selected_track = Some(track.id);
+                                gem_player.ui_state.library_view_state.track_menu_is_open = Some(track.id);
                             }
                         },
                     );
@@ -565,37 +565,37 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
 
                 if response.clicked() {
-                    gem_player.ui_state.library_view_state.selected_song = Some(song.id);
+                    gem_player.ui_state.library_view_state.selected_track = Some(track.id);
                 }
 
                 if response.double_clicked() {
-                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { track_id: song.id });
+                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { track_id: track.id });
                 }
             });
         });
 }
 
-pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(song_id) = gem_player.ui_state.library_view_state.song_menu_is_open else {
-        error!("render_library_song_menu_modal() was called, but there is no song id.");
+pub fn render_library_track_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let Some(track_id) = gem_player.ui_state.library_view_state.track_menu_is_open else {
+        error!("render_library_track_menu_modal() was called, but there is no track id.");
         return;
     };
 
-    let Some(song) = gem_player.library.get(&song_id) else {
-        error!("Cannot find the associated song for the library song menu modal.");
-        gem_player.ui_state.library_view_state.song_menu_is_open = None;
+    let Some(track) = gem_player.library.get(&track_id) else {
+        error!("Cannot find the associated track for the library track menu modal.");
+        gem_player.ui_state.library_view_state.track_menu_is_open = None;
         return;
     };
 
     let modal_width = 220.0;
 
-    let modal = containers::Modal::new(Id::new("library_song_menu_modal"))
+    let modal = containers::Modal::new(Id::new("library_track_menu_modal"))
         .backdrop_color(Color32::TRANSPARENT)
         .show(ui.ctx(), |ui| {
             ui.set_width(220.0);
 
             ui.vertical_centered_justified(|ui| {
-                ui.label(RichText::new(song.title.as_deref().unwrap_or("Unknown Title")).strong());
+                ui.label(RichText::new(track.title.as_deref().unwrap_or("Unknown Title")).strong());
 
                 ui.add_space(8.0);
 
@@ -608,12 +608,12 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             for playlist in gem_player.playlists.iter_mut() {
                                 let response = ui.button(&playlist.name);
                                 if response.clicked() {
-                                    let result = add_a_song_to_playlist(playlist, song.clone());
+                                    let result = add_a_track_to_playlist(playlist, track.clone());
                                     if let Err(e) = result {
                                         error!("{}", e);
                                         gem_player.ui_state.toasts.error(format!("{}", e));
                                     }
-                                    gem_player.ui_state.library_view_state.song_menu_is_open = None;
+                                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
                                 }
                             }
                         });
@@ -624,8 +624,8 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
-                    add_next_to_queue(&mut gem_player.player.queue, song.clone());
-                    gem_player.ui_state.library_view_state.song_menu_is_open = None;
+                    add_next_to_queue(&mut gem_player.player.queue, track.clone());
+                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
                 }
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
@@ -633,26 +633,26 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     gem_player
                         .player
                         .actions
-                        .push(PlayerAction::AddSongToQueueFromLibrary { track_id: song.id });
-                    gem_player.ui_state.library_view_state.song_menu_is_open = None;
+                        .push(PlayerAction::AddTrackToQueueFromLibrary { track_id: track.id });
+                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
                 }
 
                 ui.separator();
 
                 let response = ui.button(format!("{} Open File Location", icons::ICON_FOLDER));
                 if response.clicked() {
-                    let result = open_track_file_location(song);
+                    let result = open_track_file_location(track);
                     match result {
-                        Ok(_) => info!("Opening song location"),
+                        Ok(_) => info!("Opening track location"),
                         Err(e) => error!("{}", e),
                     }
-                    gem_player.ui_state.library_view_state.song_menu_is_open = None;
+                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
                 }
             });
         });
 
     if modal.should_close() {
-        gem_player.ui_state.library_view_state.song_menu_is_open = None;
+        gem_player.ui_state.library_view_state.track_menu_is_open = None;
     }
 }
 
@@ -712,7 +712,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Track>) {
         .body(|body| {
             body.rows(26.0, queue.len(), |mut row| {
                 let index = row.index();
-                let song = &queue[index];
+                let track = &queue[index];
 
                 row.col(|ui| {
                     ui.add_space(16.0);
@@ -720,19 +720,19 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Track>) {
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
+                    ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
+                    ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
+                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
-                    let duration_string = format_duration_to_mmss(song.duration);
+                    let duration_string = format_duration_to_mmss(track.duration);
                     ui.add(unselectable_label(duration_string));
                 });
 
@@ -749,7 +749,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Track>) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        move_song_to_front(queue, index);
+                        move_track_to_front(queue, index);
                     }
 
                     ui.add_space(8.0);
@@ -1029,12 +1029,12 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                render_playlist_songs(ui, gem_player);
+                render_playlist_tracks(ui, gem_player);
             });
         });
 }
 
-pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let maybe_selected_playlist_id = gem_player.ui_state.playlists_view_state.selected_playlist_id;
     let Some(playlist_id) = maybe_selected_playlist_id else {
         Frame::new()
@@ -1052,7 +1052,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return; // If we have an id for a playlist but cannot find it, then there's nothing to do.
     };
 
-    if playlist.songs.is_empty() {
+    if playlist.tracks.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1104,9 +1104,9 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, playlist.songs.len(), |mut row| {
+            body.rows(26.0, playlist.tracks.len(), |mut row| {
                 let index = row.index();
-                let song = playlist.songs[index].clone(); // TODO: figure out how to remove this.
+                let track = playlist.tracks[index].clone(); // TODO: figure out how to remove this.
 
                 row.col(|ui| {
                     ui.add_space(16.0);
@@ -1114,19 +1114,19 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.title.as_deref().unwrap_or("Unknown Title")));
+                    ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.artist.as_deref().unwrap_or("Unknown Artist")));
+                    ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")));
                 });
 
                 row.col(|ui| {
-                    ui.add(unselectable_label(song.album.as_deref().unwrap_or("Unknown")));
+                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
-                    let duration_string = format_duration_to_mmss(song.duration);
+                    let duration_string = format_duration_to_mmss(track.duration);
                     ui.add(unselectable_label(duration_string));
                 });
 
@@ -1148,7 +1148,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             ui.menu_button(icons::ICON_MORE_HORIZ, |ui| {
-                                playlist_content_context_menu(ui, playlist, &song);
+                                playlist_content_context_menu(ui, playlist, &track);
                             });
                         },
                     );
@@ -1157,31 +1157,31 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
 
                 if response.clicked() {
-                    gem_player.ui_state.playlists_view_state.selected_song_id = Some(song.id);
+                    gem_player.ui_state.playlists_view_state.selected_track_id = Some(track.id);
                 }
 
                 if response.double_clicked() {
                     gem_player.player.actions.push(PlayerAction::PlayFromPlaylist {
                         playlist_id: playlist.id,
-                        track_id: song.id,
+                        track_id: track.id,
                     });
                 }
 
                 response.context_menu(|ui| {
-                    playlist_content_context_menu(ui, playlist, &song);
+                    playlist_content_context_menu(ui, playlist, &track);
                 });
             });
         });
 }
 
-pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song: &Track) {
+pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, track: &Track) {
     ui.set_min_width(128.0);
 
     if ui.button("Remove from playlist").clicked() {
-        let result = remove_a_song_from_playlist(playlist, song.id);
+        let result = remove_a_track_from_playlist(playlist, track.id);
         match result {
-            Ok(_) => info!("Removed song from playlist: {}", song.title.as_deref().unwrap_or("Unknown Title")),
-            Err(e) => error!("Error removing song from playlist: {:?}", e),
+            Ok(_) => info!("Removed track from playlist: {}", track.title.as_deref().unwrap_or("Unknown Title")),
+            Err(e) => error!("Error removing track from playlist: {:?}", e),
         }
 
         ui.close_menu();
@@ -1190,9 +1190,9 @@ pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song:
     ui.separator();
 
     if ui.button("Open file location").clicked() {
-        let result = open_track_file_location(song);
+        let result = open_track_file_location(track);
         match result {
-            Ok(_) => info!("Opening song location"),
+            Ok(_) => info!("Opening track location"),
             Err(e) => error!("{}", e),
         }
 
@@ -1225,8 +1225,8 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 let (found_music, found_playlists) = read_music_and_playlists_from_directory(&directory);
                                 
                                 gem_player.library.clear();
-                                for song in found_music {
-                                    gem_player.library.insert(song.id, song);
+                                for track in found_music {
+                                    gem_player.library.insert(track.id, track);
                                 }
                                 gem_player.playlists = found_playlists;
                                 gem_player.library_directory = Some(directory);
@@ -1310,12 +1310,12 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
                     View::Library => {
-                        let songs_count_and_duration = get_count_and_duration_string_from_songs(gem_player.library.values());
-                        ui.add(unselectable_label(songs_count_and_duration));
+                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(gem_player.library.values());
+                        ui.add(unselectable_label(tracks_count_and_duration));
                     }
                     View::Queue => {
-                        // let songs_count_and_duration = get_count_and_duration_string_from_songs(&gem_player.player.queue);
-                        // ui.add(unselectable_label(songs_count_and_duration));
+                        // let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.player.queue);
+                        // ui.add(unselectable_label(tracks_count_and_duration));
 
                         ui.add_space(8.0);
                     }
@@ -1332,8 +1332,8 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 Some(directory) => {
                                     let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
                                     gem_player.library.clear();
-                                    for song in found_music {
-                                        gem_player.library.insert(song.id, song);
+                                    for track in found_music {
+                                        gem_player.library.insert(track.id, track);
                                     }
                                     gem_player.playlists = found_playlists;
                                 }
@@ -1385,11 +1385,11 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn get_count_and_duration_string_from_songs<'a>(songs: impl Iterator<Item = &'a Track>) -> String {
-    let count = songs.size_hint().0; // Get the lower bound of the iterator length
-    let duration = get_duration_of_tracks(songs);
+pub fn get_count_and_duration_string_from_tracks<'a>(tracks: impl Iterator<Item = &'a Track>) -> String {
+    let count = tracks.size_hint().0; // Get the lower bound of the iterator length
+    let duration = get_duration_of_tracks(tracks);
     let duration_string = format_duration_to_hhmmss(duration);
-    format!("{} songs / {}", count, duration_string)
+    format!("{} tracks / {}", count, duration_string)
 }
 
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {

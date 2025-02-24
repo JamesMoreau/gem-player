@@ -10,16 +10,16 @@ use glob::glob;
 use log::error;
 use uuid::Uuid;
 
-use crate::{song::get_track_from_file, Track};
+use crate::{track::get_track_from_file, Track};
 
-// Duplicates of songs are not allowed.
+// Duplicates of tracks are not allowed.
 #[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Playlist {
     id: Uuid,
     name: String,
     creation_date_time: SystemTime,
-    songs: Vec<Track>,
+    tracks: Vec<Track>,
     m3u_path: Option<PathBuf>,
 }
 
@@ -31,23 +31,23 @@ pub fn find_playlist_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Optio
     playlists.iter_mut().find(|p| p.id == playlist_id)
 }
 
-pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Track) -> io::Result<()> {
-    if playlist.songs.iter().any(|s| s.id == song.id) {
-        return Err(io::Error::new(ErrorKind::Other, "The song is already in the playlist. Duplicates are not allowed."));
+pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
+    if playlist.tracks.iter().any(|s| s.id == track.id) {
+        return Err(io::Error::new(ErrorKind::Other, "The track is already in the playlist. Duplicates are not allowed."));
     }
 
-    playlist.songs.push(song);
+    playlist.tracks.push(track);
     save_playlist_to_m3u(playlist)?;
 
     Ok(())
 }
 
-pub fn remove_a_song_from_playlist(playlist: &mut Playlist, song_id: Uuid) -> io::Result<()> {
-    let Some(index) = playlist.songs.iter().position(|x| x.id == song_id) else {
-        return Err(io::Error::new(ErrorKind::NotFound, "The song to be removed was not found in the playlist."));
+pub fn remove_a_track_from_playlist(playlist: &mut Playlist, track_id: Uuid) -> io::Result<()> {
+    let Some(index) = playlist.tracks.iter().position(|x| x.id == track_id) else {
+        return Err(io::Error::new(ErrorKind::NotFound, "The track to be removed was not found in the playlist."));
     };
 
-    playlist.songs.remove(index);
+    playlist.tracks.remove(index);
     save_playlist_to_m3u(playlist)?;
 
     Ok(())
@@ -89,8 +89,8 @@ pub fn save_playlist_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
 
     let mut file = File::create(path)?;
 
-    for song in &playlist.songs {
-        let line = song.file_path.to_string_lossy();
+    for track in &playlist.tracks {
+        let line = track.file_path.to_string_lossy();
         writeln!(file, "{}", line)?;
     }
 
@@ -115,7 +115,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     }
 
     let file_contents = fs::read_to_string(path)?;
-    let mut songs = Vec::new();
+    let mut tracks = Vec::new();
     for line in file_contents.lines() {
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with("#") {
@@ -123,9 +123,9 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         }
 
         let path = PathBuf::from(trimmed);
-        let maybe_song = get_track_from_file(&path);
-        match maybe_song {
-            Ok(song) => songs.push(song),
+        let maybe_track = get_track_from_file(&path);
+        match maybe_track {
+            Ok(track) => tracks.push(track),
             Err(err) => {
                 error!("{}", err);
                 continue;
@@ -154,7 +154,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         id,
         name,
         creation_date_time,
-        songs,
+        tracks,
         m3u_path: path,
     })
 }
@@ -187,7 +187,7 @@ pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playl
         id: Uuid::new_v4(),
         name,
         creation_date_time: SystemTime::now(),
-        songs: Vec::new(),
+        tracks: Vec::new(),
         m3u_path: Some(file_path),
     };
 

@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
     playlist::{find_playlist, read_playlists_from_a_directory, Playlist},
-    song::{find_track, read_music_from_a_directory, Track},
+    track::{find_track, read_music_from_a_directory, Track},
     ui::UIState,
 };
 
@@ -26,7 +26,7 @@ pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", 
 pub struct GemPlayer {
     ui_state: UIState,
 
-    library: HashMap<Uuid, Track>,      // All the songs stored in the user's music directory.
+    library: HashMap<Uuid, Track>,      // All the tracks stored in the user's music directory.
     library_directory: Option<PathBuf>, // The directory where music is stored.
     playlists: Vec<Playlist>,
 
@@ -36,15 +36,15 @@ pub struct GemPlayer {
 pub enum PlayerAction {
     PlayFromPlaylist { playlist_id: Uuid, track_id: Uuid },
     PlayFromLibrary { track_id: Uuid },
-    AddSongToQueueFromLibrary { track_id: Uuid },
-    _AddSongToQueueFromPlaylist { track_id: Uuid, playlist_id: Uuid },
+    AddTrackToQueueFromLibrary { track_id: Uuid },
+    _AddTrackToQueueFromPlaylist { track_id: Uuid, playlist_id: Uuid },
     PlayPrevious,
     PlayNext,
 }
 
 #[fully_pub]
 pub struct Player {
-    playing_song: Option<Uuid>,
+    playing_track: Option<Uuid>,
     actions: Vec<PlayerAction>, // Actions get immedietly processed every frame.
 
     queue: Vec<Track>,
@@ -59,48 +59,48 @@ pub struct Player {
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
 }
 
-pub fn check_for_next_song(gem_player: &mut GemPlayer) {
+pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     if !gem_player.player.sink.empty() {
-        return; // If a song is still playing, do nothing
+        return; // If a track is still playing, do nothing
     }
 
     let result = play_next(gem_player);
     if let Err(e) = result {
         error!("{}", e);
-        gem_player.ui_state.toasts.error("Error playing the next song");
+        gem_player.ui_state.toasts.error("Error playing the next track");
     }
 }
 
 pub fn process_player_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
-            PlayerAction::PlayFromPlaylist { playlist_id, track_id } => play_playlist_from_song(gem_player, playlist_id, track_id),
-            PlayerAction::PlayFromLibrary { track_id } => play_library_from_song(gem_player, track_id),
-            PlayerAction::AddSongToQueueFromLibrary { track_id } => {
-                let song = gem_player.library[&track_id].clone();
-                add_to_queue(&mut gem_player.player.queue, song);
+            PlayerAction::PlayFromPlaylist { playlist_id, track_id } => play_playlist_from_track(gem_player, playlist_id, track_id),
+            PlayerAction::PlayFromLibrary { track_id } => play_library_from_track(gem_player, track_id),
+            PlayerAction::AddTrackToQueueFromLibrary { track_id } => {
+                let track = gem_player.library[&track_id].clone();
+                add_to_queue(&mut gem_player.player.queue, track);
             }
-            PlayerAction::_AddSongToQueueFromPlaylist { track_id, playlist_id } => {
+            PlayerAction::_AddTrackToQueueFromPlaylist { track_id, playlist_id } => {
                 let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
                 let Some(playlist) = maybe_playlist else {
-                    error!("Unable to find playlist for AddSongToQueueFromPlaylist action.");
+                    error!("Unable to find playlist for AddTrackToQueueFromPlaylist action.");
                     continue;
                 };
 
-                let maybe_song = find_track(track_id, &playlist.songs);
-                let Some(song) = maybe_song else {
-                    error!("Unable to find song for AddSongToQueueFromPlaylist action.");
+                let maybe_track = find_track(track_id, &playlist.tracks);
+                let Some(track) = maybe_track else {
+                    error!("Unable to find track for AddTrackToQueueFromPlaylist action.");
                     continue;
                 };
 
-                add_to_queue(&mut gem_player.player.queue, song.clone());
+                add_to_queue(&mut gem_player.player.queue, track.clone());
             }
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
             PlayerAction::PlayNext => {
                 let result = play_next(gem_player);
                 if let Err(e) = result {
                     error!("{}", e);
-                    gem_player.ui_state.toasts.error("Error playing the next song");
+                    gem_player.ui_state.toasts.error("Error playing the next track");
                 }
             }
         }
@@ -112,8 +112,8 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
     let mut playlists = Vec::new();
 
     match read_music_from_a_directory(directory) {
-        Ok(found_songs) => {
-            library = found_songs;
+        Ok(found_tracks) => {
+            library = found_tracks;
         }
         Err(e) => {
             error!("{}", e);
@@ -130,7 +130,7 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
     }
 
     info!(
-        "Loaded library from {:?}: {} songs, {} playlists.",
+        "Loaded library from {:?}: {} tracks, {} playlists.",
         directory,
         library.len(),
         playlists.len()
@@ -153,35 +153,35 @@ pub fn play_or_pause(player: &mut Player) {
 
 pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
     if gem_player.player.repeat {
-        if let Some(playing_track_id) = &gem_player.player.playing_song {
-            let playing_song = gem_player.library[playing_track_id].clone();
-            if let Err(e) = load_and_play_song(&mut gem_player.player, &playing_song) {
+        if let Some(playing_track_id) = &gem_player.player.playing_track {
+            let playing_track = gem_player.library[playing_track_id].clone();
+            if let Err(e) = load_and_play_track(&mut gem_player.player, &playing_track) {
                 return Err(e.to_string());
             }
             
         }
-        return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
+        return Ok(()); // If we are in repeat mode but there is no current track, do nothing!
     }
 
-    let next_song = if gem_player.player.queue.is_empty() {
+    let next_track = if gem_player.player.queue.is_empty() {
         return Ok(()); // Queue is empty, nothing to play
     } else {
         gem_player.player.queue.remove(0)
     };
 
-    if let Some(playing_track_id) = gem_player.player.playing_song.take() {
+    if let Some(playing_track_id) = gem_player.player.playing_track.take() {
         gem_player.player.history.push(playing_track_id);
     }
 
-    if let Err(e) = load_and_play_song(&mut gem_player.player, &next_song) {
+    if let Err(e) = load_and_play_track(&mut gem_player.player, &next_track) {
         return Err(e.to_string());
     }
-    gem_player.player.playing_song = Some(next_song.id);
+    gem_player.player.playing_track = Some(next_track.id);
     
     Ok(())
 }
 
-// If we are near the beginning of the song, we go to the previously played song.
+// If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
 // This is what actually gets called by the UI and key command.
 pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
@@ -190,18 +190,18 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 
     if playback_position < rewind_threshold {
         if gem_player.player.history.is_empty() {
-            // No previous song to play, just restart the current song
+            // No previous track to play, just restart the current track
             if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
-                error!("Error rewinding song: {:?}", e);
+                error!("Error rewinding track: {:?}", e);
             }
             gem_player.player.sink.play();
         } else if let Err(e) = play_previous(gem_player) {
             error!("{}", e);
-            gem_player.ui_state.toasts.error("Error playing the previous song");
+            gem_player.ui_state.toasts.error("Error playing the previous track");
         }
     } else {
         if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
-            error!("Error rewinding song: {:?}", e);
+            error!("Error rewinding track: {:?}", e);
         }
         gem_player.player.sink.play();
     }
@@ -209,21 +209,21 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 
 pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
     let Some(previous_track_id) = gem_player.player.history.pop() else {
-        return Ok(()); // No previous song? Do nothing.
+        return Ok(()); // No previous track? Do nothing.
     };
 
-    let Some(previous_song) = gem_player.library.get(&previous_track_id) else {
-        return Err("Previous song not found in the library.".to_string());
+    let Some(previous_track) = gem_player.library.get(&previous_track_id) else {
+        return Err("Previous track not found in the library.".to_string());
     };
 
-    if let Some(playing_track_id) = gem_player.player.playing_song.take() {
-        let playing_song = gem_player.library[&playing_track_id].clone();
-        gem_player.player.queue.insert(0, playing_song);
+    if let Some(playing_track_id) = gem_player.player.playing_track.take() {
+        let playing_track = gem_player.library[&playing_track_id].clone();
+        gem_player.player.queue.insert(0, playing_track);
     }
 
-    gem_player.player.playing_song = Some(previous_song.id);
+    gem_player.player.playing_track = Some(previous_track.id);
 
-    if let Err(e) = load_and_play_song(&mut gem_player.player, previous_song) {
+    if let Err(e) = load_and_play_track(&mut gem_player.player, previous_track) {
         return Err(e.to_string())
     }
 
@@ -231,11 +231,11 @@ pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play_song(player: &mut Player, song: &Track) -> io::Result<()> {
-    player.sink.stop(); // Stop the current song if any.
-    player.playing_song = None;
+pub fn load_and_play_track(player: &mut Player, track: &Track) -> io::Result<()> {
+    player.sink.stop(); // Stop the current track if any.
+    player.playing_track = None;
 
-    let file = std::fs::File::open(&song.file_path)?;
+    let file = std::fs::File::open(&track.file_path)?;
 
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {
@@ -245,23 +245,23 @@ pub fn load_and_play_song(player: &mut Player, song: &Track) -> io::Result<()> {
         }
     };
 
-    player.playing_song = Some(song.id);
+    player.playing_track = Some(track.id);
     player.sink.append(source);
     player.sink.play();
 
     Ok(())
 }
 
-pub fn _get_song_position_in_queue(queue: Vec<Track>, song: &Track) -> Option<usize> {
-    queue.iter().position(|s| s.id == song.id)
+pub fn _get_track_position_in_queue(queue: Vec<Track>, track: &Track) -> Option<usize> {
+    queue.iter().position(|s| s.id == track.id)
 }
 
-pub fn add_to_queue(queue: &mut Vec<Track>, song: Track) {
-    queue.push(song);
+pub fn add_to_queue(queue: &mut Vec<Track>, track: Track) {
+    queue.push(track);
 }
 
-pub fn add_next_to_queue(queue: &mut Vec<Track>, song: Track) {
-    queue.insert(0, song);
+pub fn add_next_to_queue(queue: &mut Vec<Track>, track: Track) {
+    queue.insert(0, track);
 }
 
 pub fn remove_from_queue(queue: &mut Vec<Track>, index: usize) {
@@ -273,13 +273,13 @@ pub fn shuffle_queue(queue: &mut Vec<Track>) {
     queue.shuffle(&mut rng);
 }
 
-pub fn move_song_to_front(queue: &mut Vec<Track>, index: usize) {
+pub fn move_track_to_front(queue: &mut Vec<Track>, index: usize) {
     if index == 0 || index >= queue.len() {
         return;
     }
 
-    let song = queue.remove(index);
-    queue.insert(0, song);
+    let track = queue.remove(index);
+    queue.insert(0, track);
 }
 
 pub fn mute_or_unmute(player: &mut Player) {
@@ -307,35 +307,35 @@ pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
     player.sink.set_volume(new_volume);
 }
 
-pub fn play_library_from_song(gem_player: &mut GemPlayer, track_id: Uuid) {
+pub fn play_library_from_track(gem_player: &mut GemPlayer, track_id: Uuid) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    let Some(song) = gem_player.library.get(&track_id) else {
-        error!("Song not found in the library.");
+    let Some(track) = gem_player.library.get(&track_id) else {
+        error!("Track not found in the library.");
         return;
     };
 
-    // Add all of the other songs to the queue.
-    for (id, song) in gem_player.library.iter() {
+    // Add all of the other tracks to the queue.
+    for (id, track) in gem_player.library.iter() {
         if *id == track_id {
             continue;
         }
 
-        gem_player.player.queue.push(song.clone());
+        gem_player.player.queue.push(track.clone());
     }
 
-    let result = load_and_play_song(&mut gem_player.player, song);
+    let result = load_and_play_track(&mut gem_player.player, track);
     if let Err(e) = result {
         error!("{}", e);
         gem_player
             .ui_state
             .toasts
-            .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
+            .error(format!("Error playing {}", track.title.as_deref().unwrap_or("Unknown")));
     }
 }
 
-pub fn play_playlist_from_song(gem_player: &mut GemPlayer, playlist_id: Uuid, track_id: Uuid) {
+pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, track_id: Uuid) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
@@ -344,23 +344,23 @@ pub fn play_playlist_from_song(gem_player: &mut GemPlayer, playlist_id: Uuid, tr
         return;
     };
 
-    let Some(index) = playlist.songs.iter().position(|s| s.id == track_id) else {
-        error!("Song not found in the playlist.");
+    let Some(index) = playlist.tracks.iter().position(|s| s.id == track_id) else {
+        error!("Track not found in the playlist.");
         return;
     };
 
-    let song = &playlist.songs[index];
+    let track = &playlist.tracks[index];
 
-    gem_player.player.queue.extend_from_slice(&playlist.songs[index + 1..]);
-    gem_player.player.queue.extend_from_slice(&playlist.songs[..index]);
+    gem_player.player.queue.extend_from_slice(&playlist.tracks[index + 1..]);
+    gem_player.player.queue.extend_from_slice(&playlist.tracks[..index]);
 
-    let result = load_and_play_song(&mut gem_player.player, song);
+    let result = load_and_play_track(&mut gem_player.player, track);
     if let Err(e) = result {
         error!("{}", e);
         gem_player
             .ui_state
             .toasts
-            .error(format!("Error playing {}", song.title.as_deref().unwrap_or("Unknown")));
+            .error(format!("Error playing {}", track.title.as_deref().unwrap_or("Unknown")));
     }
 }
 

@@ -5,15 +5,15 @@ use egui_notify::Toasts;
 use log::info;
 
 use player::{
-    check_for_next_song, handle_key_commands, process_player_actions, read_music_and_playlists_from_directory, GemPlayer, Player, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
+    check_for_next_track, handle_key_commands, process_player_actions, read_music_and_playlists_from_directory, GemPlayer, Player, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
 };
 use rodio::{OutputStream, Sink};
-use song::{Track, SortBy, SortOrder};
+use track::{Track, SortBy, SortOrder};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 
 mod player;
 mod playlist;
-mod song;
+mod track;
 mod ui;
 
 /*
@@ -63,8 +63,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     if let Some(directory) = &library_directory {
         let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
         
-        for song in found_music {
-            library.insert(song.id, song);
+        for track in found_music {
+            library.insert(track.id, track);
         }
 
         playlists = found_playlists;
@@ -82,16 +82,16 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             theme_preference,
             library_view_state: LibraryViewState {
                 search_text: String::new(),
-                selected_song: None,
+                selected_track: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
-                song_menu_is_open: None,
+                track_menu_is_open: None,
             },
             playlists_view_state: PlaylistsViewState {
                 selected_playlist_id: None,
                 playlist_rename: None,
                 delete_playlist_modal_is_open: None,
-                selected_song_id: None,
+                selected_track_id: None,
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
@@ -109,7 +109,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
         player: Player {
             actions: Vec::new(),
-            playing_song: None,
+            playing_track: None,
 
             queue: Vec::new(),
             history: Vec::new(),
@@ -147,7 +147,7 @@ impl eframe::App for player::GemPlayer {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         handle_key_commands(ctx, &mut self.player);
 
-        check_for_next_song(self);
+        check_for_next_track(self);
         process_player_actions(self);
 
         ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
