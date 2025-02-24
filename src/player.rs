@@ -159,6 +159,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
             if let Err(e) = load_and_play_song(player, &current_song.clone()) {
                 return Err(e.to_string());
             }
+            
         }
         return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
     }
