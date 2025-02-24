@@ -1117,6 +1117,14 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let index = row.index();
                 let track = &playlist.tracks[index];
 
+                let row_is_selected = gem_player
+                    .ui_state
+                    .playlists_view_state
+                    .selected_track
+                    .as_ref()
+                    .map_or(false, |selected_track| *selected_track == track.id);
+                row.set_selected(row_is_selected);
+
                 row.col(|ui| {
                     ui.add_space(16.0);
                     ui.add(unselectable_label(format!("{}", index + 1)));
@@ -1185,7 +1193,6 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 #[named]
 pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    //TODO: is it better to just pass the track_id and playlist_id as arguments?
     let Some(track_id) = gem_player.ui_state.playlists_view_state.track_menu_is_open else {
         error!("{} was called, but there is no selected track id.", function_name!());
         return;
