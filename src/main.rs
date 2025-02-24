@@ -8,7 +8,7 @@ use player::{
     check_for_next_song, handle_key_commands, process_player_actions, read_music_and_playlists_from_directory, GemPlayer, Player, LIBRARY_DIRECTORY_STORAGE_KEY, THEME_STORAGE_KEY
 };
 use rodio::{OutputStream, Sink};
-use song::{Song, SortBy, SortOrder};
+use song::{Track, SortBy, SortOrder};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 
 mod player;

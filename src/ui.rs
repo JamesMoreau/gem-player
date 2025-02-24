@@ -27,8 +27,8 @@ use crate::{
         add_a_song_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, remove_a_song_from_playlist, rename_playlist,
         Playlist,
     },
-    song::{get_duration_of_songs, open_song_file_location, sort_songs, SortBy, SortOrder},
-    Song,
+    song::{get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
+    Track,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -447,7 +447,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         render_library_song_menu_modal(ui, gem_player);
     }
 
-    let mut library_copy: Vec<Song> = gem_player
+    let mut library_copy: Vec<Track> = gem_player
         .library
         .values() // Iterate over the Song objects
         .filter(|song| {
@@ -465,7 +465,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    sort_songs(
+    sort_tracks(
         &mut library_copy,
         gem_player.ui_state.library_view_state.sort_by,
         gem_player.ui_state.library_view_state.sort_order,
@@ -569,7 +569,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { song_id: song.id });
+                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { track_id: song.id });
                 }
             });
         });
@@ -633,7 +633,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     gem_player
                         .player
                         .actions
-                        .push(PlayerAction::AddSongToQueueFromLibrary { song_id: song.id });
+                        .push(PlayerAction::AddSongToQueueFromLibrary { track_id: song.id });
                     gem_player.ui_state.library_view_state.song_menu_is_open = None;
                 }
 
@@ -641,7 +641,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Open File Location", icons::ICON_FOLDER));
                 if response.clicked() {
-                    let result = open_song_file_location(song);
+                    let result = open_track_file_location(song);
                     match result {
                         Ok(_) => info!("Opening song location"),
                         Err(e) => error!("{}", e),
@@ -656,7 +656,7 @@ pub fn render_library_song_menu_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Song>) {
+pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Track>) {
     if queue.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1163,7 +1163,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.double_clicked() {
                     gem_player.player.actions.push(PlayerAction::PlayFromPlaylist {
                         playlist_id: playlist.id,
-                        song_id: song.id,
+                        track_id: song.id,
                     });
                 }
 
@@ -1174,7 +1174,7 @@ pub fn render_playlist_songs(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song: &Song) {
+pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song: &Track) {
     ui.set_min_width(128.0);
 
     if ui.button("Remove from playlist").clicked() {
@@ -1190,7 +1190,7 @@ pub fn playlist_content_context_menu(ui: &mut Ui, playlist: &mut Playlist, song:
     ui.separator();
 
     if ui.button("Open file location").clicked() {
-        let result = open_song_file_location(song);
+        let result = open_track_file_location(song);
         match result {
             Ok(_) => info!("Opening song location"),
             Err(e) => error!("{}", e),
@@ -1385,9 +1385,9 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn get_count_and_duration_string_from_songs<'a>(songs: impl Iterator<Item = &'a Song>) -> String {
+pub fn get_count_and_duration_string_from_songs<'a>(songs: impl Iterator<Item = &'a Track>) -> String {
     let count = songs.size_hint().0; // Get the lower bound of the iterator length
-    let duration = get_duration_of_songs(songs);
+    let duration = get_duration_of_tracks(songs);
     let duration_string = format_duration_to_hhmmss(duration);
     format!("{} songs / {}", count, duration_string)
 }

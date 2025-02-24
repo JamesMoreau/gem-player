@@ -10,7 +10,7 @@ use glob::glob;
 use log::error;
 use uuid::Uuid;
 
-use crate::{song::get_song_from_file, Song};
+use crate::{song::get_track_from_file, Track};
 
 // Duplicates of songs are not allowed.
 #[fully_pub]
@@ -19,7 +19,7 @@ pub struct Playlist {
     id: Uuid,
     name: String,
     creation_date_time: SystemTime,
-    songs: Vec<Song>,
+    songs: Vec<Track>,
     m3u_path: Option<PathBuf>,
 }
 
@@ -31,7 +31,7 @@ pub fn find_playlist_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Optio
     playlists.iter_mut().find(|p| p.id == playlist_id)
 }
 
-pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Song) -> io::Result<()> {
+pub fn add_a_song_to_playlist(playlist: &mut Playlist, song: Track) -> io::Result<()> {
     if playlist.songs.iter().any(|s| s.id == song.id) {
         return Err(io::Error::new(ErrorKind::Other, "The song is already in the playlist. Duplicates are not allowed."));
     }
@@ -123,7 +123,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         }
 
         let path = PathBuf::from(trimmed);
-        let maybe_song = get_song_from_file(&path);
+        let maybe_song = get_track_from_file(&path);
         match maybe_song {
             Ok(song) => songs.push(song),
             Err(err) => {

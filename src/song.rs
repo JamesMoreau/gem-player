@@ -32,7 +32,7 @@ pub enum SortOrder {
 
 #[fully_pub]
 #[derive(Debug, Clone)]
-pub struct Song {
+pub struct Track {
     id: Uuid,
     title: Option<String>,
     artist: Option<String>,
@@ -42,16 +42,16 @@ pub struct Song {
     file_path: PathBuf,
 }
 
-pub fn find_song(song_id: Uuid, songs: &[Song]) -> Option<&Song> {
-    songs.iter().find(|p| p.id == song_id)
+pub fn find_track(track_id: Uuid, tracks: &[Track]) -> Option<&Track> {
+    tracks.iter().find(|p| p.id == track_id)
 }
 
-pub fn _find_song_mut(song_id: Uuid, songs: &mut [Song]) -> Option<&mut Song> {
-    songs.iter_mut().find(|p| p.id == song_id)
+pub fn _find_track_mut(track_id: Uuid, tracks: &mut [Track]) -> Option<&mut Track> {
+    tracks.iter_mut().find(|p| p.id == track_id)
 }
 
-pub fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
-    songs.sort_by(|a, b| {
+pub fn sort_tracks(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
+    tracks.sort_by(|a, b| {
         let ordering = match sort_by {
             SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
             SortBy::Artist => a.artist.as_deref().unwrap_or("").cmp(b.artist.as_deref().unwrap_or("")),
@@ -66,7 +66,7 @@ pub fn sort_songs(songs: &mut [Song], sort_by: SortBy, sort_order: SortOrder) {
     });
 }
 
-pub fn get_song_from_file(path: &Path) -> io::Result<Song> {
+pub fn get_track_from_file(path: &Path) -> io::Result<Track> {
     if !path.is_file() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
@@ -106,7 +106,7 @@ pub fn get_song_from_file(path: &Path) -> io::Result<Song> {
 
     let file_path = path.to_path_buf();
 
-    Ok(Song {
+    Ok(Track {
         id,
         title,
         artist,
@@ -117,7 +117,7 @@ pub fn get_song_from_file(path: &Path) -> io::Result<Song> {
     })
 }
 
-pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Song>> {
+pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Track>> {
     let patterns = SUPPORTED_AUDIO_FILE_TYPES
         .iter()
         .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
@@ -138,26 +138,26 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Song>> {
         }
     }
 
-    let mut songs = Vec::new();
+    let mut tracks = Vec::new();
     for path in file_paths {
-        let result = get_song_from_file(&path);
+        let result = get_track_from_file(&path);
         match result {
-            Ok(song) => songs.push(song),
+            Ok(track) => tracks.push(track),
             Err(e) => error!("{}", e),
         }
     }
 
-    Ok(songs)
+    Ok(tracks)
 }
 
-pub fn get_duration_of_songs<'a>(songs: impl Iterator<Item = &'a Song>) -> Duration {
-    songs.map(|song| song.duration).sum()
+pub fn get_duration_of_tracks<'a>(tracks: impl Iterator<Item = &'a Track>) -> Duration {
+    tracks.map(|track| track.duration).sum()
 }
 
-pub fn open_song_file_location(song: &Song) -> io::Result<()> {
-    let maybe_folder = song.file_path.as_path().parent();
+pub fn open_track_file_location(track: &Track) -> io::Result<()> {
+    let maybe_folder = track.file_path.as_path().parent();
     let Some(folder) = maybe_folder else {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Song has no file path."));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Track has no file path."));
     };
 
     open::that_detached(folder)?;
