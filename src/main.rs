@@ -92,7 +92,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 playlist_rename: None,
                 delete_playlist_modal_is_open: None,
                 selected_track: None,
-                track_menu_is_open: None,
+                track_menu_is_open: false,
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
