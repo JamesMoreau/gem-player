@@ -37,7 +37,7 @@ pub enum PlayerAction {
     PlayFromPlaylist { playlist_id: Uuid, track_id: Uuid },
     PlayFromLibrary { track_id: Uuid },
     AddTrackToQueueFromLibrary { track_id: Uuid },
-    _AddTrackToQueueFromPlaylist { track_id: Uuid, playlist_id: Uuid },
+    AddTrackToQueueFromPlaylist { track_id: Uuid, playlist_id: Uuid },
     PlayPrevious,
     PlayNext,
 }
@@ -80,7 +80,7 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
                 let track = gem_player.library[&track_id].clone();
                 add_to_queue(&mut gem_player.player.queue, track);
             }
-            PlayerAction::_AddTrackToQueueFromPlaylist { track_id, playlist_id } => {
+            PlayerAction::AddTrackToQueueFromPlaylist { track_id, playlist_id } => {
                 let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
                 let Some(playlist) = maybe_playlist else {
                     error!("Unable to find playlist for AddTrackToQueueFromPlaylist action.");

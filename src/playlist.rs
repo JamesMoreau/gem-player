@@ -42,7 +42,7 @@ pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Res
     Ok(())
 }
 
-pub fn remove_a_track_from_playlist(playlist: &mut Playlist, track_id: Uuid) -> io::Result<()> {
+pub fn _remove_a_track_from_playlist(playlist: &mut Playlist, track_id: Uuid) -> io::Result<()> {
     let Some(index) = playlist.tracks.iter().position(|x| x.id == track_id) else {
         return Err(io::Error::new(ErrorKind::NotFound, "The track to be removed was not found in the playlist."));
     };
