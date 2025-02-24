@@ -44,11 +44,11 @@ pub enum PlayerAction {
 
 #[fully_pub]
 pub struct Player {
-    current_song: Option<Song>,
+    playing_song: Option<Uuid>,
     actions: Vec<PlayerAction>, // Actions get immedietly processed every frame.
 
     queue: Vec<Song>,
-    history: Vec<Song>,
+    history: Vec<Uuid>,
 
     repeat: bool,
     muted: bool,
@@ -64,7 +64,7 @@ pub fn check_for_next_song(gem_player: &mut GemPlayer) {
         return; // If a song is still playing, do nothing
     }
 
-    let result = play_next(&mut gem_player.player);
+    let result = play_next(gem_player);
     if let Err(e) = result {
         error!("{}", e);
         gem_player.ui_state.toasts.error("Error playing the next song");
@@ -77,10 +77,8 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
             PlayerAction::PlayFromPlaylist { playlist_id, song_id } => play_playlist_from_song(gem_player, playlist_id, song_id),
             PlayerAction::PlayFromLibrary { song_id } => play_library_from_song(gem_player, song_id),
             PlayerAction::AddSongToQueueFromLibrary { song_id } => {
-                let maybe_song = gem_player.library.get(&song_id);
-                if let Some(song) = maybe_song {
-                    add_to_queue(&mut gem_player.player.queue, song.clone());
-                }
+                let song = gem_player.library[&song_id].clone();
+                add_to_queue(&mut gem_player.player.queue, song);
             }
             PlayerAction::_AddSongToQueueFromPlaylist { song_id, playlist_id } => {
                 let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
@@ -99,7 +97,7 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
             }
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
             PlayerAction::PlayNext => {
-                let result = play_next(&mut gem_player.player);
+                let result = play_next(gem_player);
                 if let Err(e) = result {
                     error!("{}", e);
                     gem_player.ui_state.toasts.error("Error playing the next song");
@@ -153,10 +151,11 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
-pub fn play_next(player: &mut Player) -> Result<(), String> {
-    if player.repeat {
-        if let Some(current_song) = &player.current_song {
-            if let Err(e) = load_and_play_song(player, &current_song.clone()) {
+pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
+    if gem_player.player.repeat {
+        if let Some(playing_song_id) = &gem_player.player.playing_song {
+            let playing_song = gem_player.library[playing_song_id].clone();
+            if let Err(e) = load_and_play_song(&mut gem_player.player, &playing_song) {
                 return Err(e.to_string());
             }
             
@@ -164,20 +163,20 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
         return Ok(()); // If we are in repeat mode but there is no current song, do nothing!
     }
 
-    let next_song = if player.queue.is_empty() {
+    let next_song = if gem_player.player.queue.is_empty() {
         return Ok(()); // Queue is empty, nothing to play
     } else {
-        player.queue.remove(0)
+        gem_player.player.queue.remove(0)
     };
 
-    if let Some(current_song) = player.current_song.take() {
-        player.history.push(current_song);
+    if let Some(playing_song_id) = gem_player.player.playing_song.take() {
+        gem_player.player.history.push(playing_song_id);
     }
 
-    if let Err(e) = load_and_play_song(player, &next_song) {
+    if let Err(e) = load_and_play_song(&mut gem_player.player, &next_song) {
         return Err(e.to_string());
     }
-    player.current_song = Some(next_song);
+    gem_player.player.playing_song = Some(next_song.id);
     
     Ok(())
 }
@@ -196,7 +195,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
                 error!("Error rewinding song: {:?}", e);
             }
             gem_player.player.sink.play();
-        } else if let Err(e) = play_previous(&mut gem_player.player) {
+        } else if let Err(e) = play_previous(gem_player) {
             error!("{}", e);
             gem_player.ui_state.toasts.error("Error playing the previous song");
         }
@@ -208,18 +207,23 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn play_previous(player: &mut Player) -> Result<(), String> {
-    let Some(previous_song) = player.history.pop() else {
+pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
+    let Some(previous_song_id) = gem_player.player.history.pop() else {
         return Ok(()); // No previous song? Do nothing.
     };
 
-    if let Some(maybe_current_song) = player.current_song.take() {
-        player.queue.insert(0, maybe_current_song);
+    let Some(previous_song) = gem_player.library.get(&previous_song_id) else {
+        return Err("Previous song not found in the library.".to_string());
+    };
+
+    if let Some(playing_song_id) = gem_player.player.playing_song.take() {
+        let playing_song = gem_player.library[&playing_song_id].clone();
+        gem_player.player.queue.insert(0, playing_song);
     }
 
-    player.current_song = Some(previous_song.clone());
+    gem_player.player.playing_song = Some(previous_song.id);
 
-    if let Err(e) = load_and_play_song(player, &previous_song) {
+    if let Err(e) = load_and_play_song(&mut gem_player.player, previous_song) {
         return Err(e.to_string())
     }
 
@@ -229,7 +233,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play_song(player: &mut Player, song: &Song) -> io::Result<()> {
     player.sink.stop(); // Stop the current song if any.
-    player.current_song = None;
+    player.playing_song = None;
 
     let file = std::fs::File::open(&song.file_path)?;
 
@@ -241,7 +245,7 @@ pub fn load_and_play_song(player: &mut Player, song: &Song) -> io::Result<()> {
         }
     };
 
-    player.current_song = Some(song.clone());
+    player.playing_song = Some(song.id);
     player.sink.append(source);
     player.sink.play();
 

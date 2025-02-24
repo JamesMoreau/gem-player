@@ -18,7 +18,6 @@ mod ui;
 
 /*
 TODO:
-* rename song to track
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
@@ -110,7 +109,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
         player: Player {
             actions: Vec::new(),
-            current_song: None,
+            playing_song: None,
 
             queue: Vec::new(),
             history: Vec::new(),
