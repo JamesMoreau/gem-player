@@ -85,7 +85,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 selected_track: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
-                track_menu_is_open: None,
+                track_menu_is_open: false,
             },
             playlists_view_state: PlaylistsViewState {
                 selected_playlist: None,

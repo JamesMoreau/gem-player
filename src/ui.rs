@@ -51,7 +51,7 @@ pub struct UIState {
 #[fully_pub]
 pub struct LibraryViewState {
     selected_track: Option<Uuid>,
-    track_menu_is_open: Option<Uuid>, // None: no track menu open, Some: the id of the track with the menu. // // TODO: can the id be removed and we just take the selected track? This could just be a bool?
+    track_menu_is_open: bool, // The track for which the menu is open is LibraryViewState.selected_track .
     sort_by: SortBy,
     sort_order: SortOrder,
     search_text: String,
@@ -63,7 +63,7 @@ pub struct PlaylistsViewState {
     playlist_rename: Option<(Uuid, String)>, // None: no playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name.
     delete_playlist_modal_is_open: Option<Uuid>, // None: the modal is not open. Some: the modal for a specific playlist.
     selected_track: Option<Uuid>,
-    track_menu_is_open: bool, // The track for which the menu is open is selected_track.
+    track_menu_is_open: bool, // The track for which the menu is open is PlaylistsViewState.selected_track .
 }
 
 pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
@@ -447,9 +447,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    if gem_player.ui_state.library_view_state.track_menu_is_open.is_some() { // TODO remove
-        render_library_track_menu(ui, gem_player);
-    }
+    render_library_track_menu(ui, gem_player);
 
     let mut library_copy: Vec<Track> = gem_player
         .library
@@ -560,7 +558,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let response = ui.add(more_button).on_hover_text("More");
                             if response.clicked() {
                                 gem_player.ui_state.library_view_state.selected_track = Some(track.id);
-                                gem_player.ui_state.library_view_state.track_menu_is_open = Some(track.id);
+                                gem_player.ui_state.library_view_state.track_menu_is_open = true;
                             }
                         },
                     );
@@ -581,14 +579,18 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 #[named]
 pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(track_id) = gem_player.ui_state.library_view_state.track_menu_is_open else {
+    if !gem_player.ui_state.library_view_state.track_menu_is_open {
+        return;
+    }
+
+    let Some(track_id) = gem_player.ui_state.library_view_state.selected_track else {
         error!("{} was called, but there is no track id.", function_name!());
         return;
     };
 
     let Some(track) = gem_player.library.get(&track_id) else {
         error!("Cannot find the associated track for the library track menu modal.");
-        gem_player.ui_state.library_view_state.track_menu_is_open = None;
+        gem_player.ui_state.library_view_state.track_menu_is_open = false;
         return;
     };
 
@@ -618,7 +620,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         error!("{}", e);
                                         gem_player.ui_state.toasts.error(format!("{}", e));
                                     }
-                                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
+                                    gem_player.ui_state.library_view_state.track_menu_is_open = false;
                                 }
                             }
                         });
@@ -630,7 +632,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
                     add_next_to_queue(&mut gem_player.player.queue, track.clone());
-                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
+                    gem_player.ui_state.library_view_state.track_menu_is_open = false;
                 }
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
@@ -639,7 +641,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .player
                         .actions
                         .push(PlayerAction::AddTrackToQueueFromLibrary { track_id: track.id });
-                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
+                    gem_player.ui_state.library_view_state.track_menu_is_open = false;
                 }
 
                 ui.separator();
@@ -651,13 +653,13 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         Ok(_) => info!("Opening track location"),
                         Err(e) => error!("{}", e),
                     }
-                    gem_player.ui_state.library_view_state.track_menu_is_open = None;
+                    gem_player.ui_state.library_view_state.track_menu_is_open = false;
                 }
             });
         });
 
     if modal.should_close() {
-        gem_player.ui_state.library_view_state.track_menu_is_open = None;
+        gem_player.ui_state.library_view_state.track_menu_is_open = false;
     }
 }
 
@@ -1197,21 +1199,25 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let Some(song_id) = gem_player.ui_state.playlists_view_state.selected_track else {
         error!("{} was called, but there is no selected track id.", function_name!());
+        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
         return;
     };
 
     let Some(playlist_id) = gem_player.ui_state.playlists_view_state.selected_playlist else {
         error!("{} was called, but there is no selected playlist id.", function_name!());
+        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
         return;
     };
 
     let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
         error!("Could not find the playlist associated with the selected playlist id.");
+        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
         return;
     };
 
     let Some(track) = find_track(song_id, &playlist.tracks) else {
         error!("Could not find the track associated with the selected track id.");
+        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
         return;
     };
 
