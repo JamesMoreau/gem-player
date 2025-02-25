@@ -24,9 +24,7 @@ use crate::{
         add_next_to_queue, is_playing, move_track_to_front, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue,
         shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
-    playlist::{
-        add_a_track_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, rename_playlist,
-    },
+    playlist::{add_a_track_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, rename_playlist},
     track::{find_track, get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
     Track,
 };
@@ -1193,28 +1191,36 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let Some(track_id) = gem_player.ui_state.playlists_view_state.selected_track else {
-        error!("{} was called, but there is no selected track id.", function_name!());
-        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
-        return;
+    let playlist = {
+        let Some(playlist_id) = gem_player.ui_state.playlists_view_state.selected_playlist else {
+            error!("{} was called, but there is no selected playlist id.", function_name!());
+            gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
+            return;
+        };
+
+        let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
+            error!("Could not find the playlist associated with the selected playlist id.");
+            gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
+            return;
+        };
+
+        playlist
     };
 
-    let Some(playlist_id) = gem_player.ui_state.playlists_view_state.selected_playlist else {
-        error!("{} was called, but there is no selected playlist id.", function_name!());
-        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
-        return;
-    };
+    let track = {
+        let Some(track_id) = gem_player.ui_state.playlists_view_state.selected_track else {
+            error!("{} was called, but there is no selected track id.", function_name!());
+            gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
+            return;
+        };
 
-    let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
-        error!("Could not find the playlist associated with the selected playlist id.");
-        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
-        return;
-    };
+        let Some(track) = find_track(track_id, &playlist.tracks) else {
+            error!("Could not find the track associated with the selected track id.");
+            gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
+            return;
+        };
 
-    let Some(track) = find_track(track_id, &playlist.tracks) else {
-        error!("Could not find the track associated with the selected track id.");
-        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
-        return;
+        track
     };
 
     let modal_width = 220.0;
@@ -1242,8 +1248,8 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
+                    add_next_to_queue(&mut gem_player.player.queue, track.clone());
                     gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
-                    todo!();
                 }
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));

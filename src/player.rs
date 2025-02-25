@@ -40,11 +40,13 @@ pub enum PlayerAction {
     PlayFromLibrary { track_id: Uuid },
     AddTrackToQueueFromLibrary { track_id: Uuid },
     AddTrackToQueueFromPlaylist { track_id: Uuid, playlist_id: Uuid },
-    // TODO: Play next from library and playlist?
     PlayPrevious,
     PlayNext,
     RemoveTrackFromPlaylist { playlist_id: Uuid, track_id: Uuid },
-    // RemoveTrackFromQueue { track_id: Uuid }, TODO?
+    // TODO: Potential Actions
+    // PlayNextFromLibrary
+    // PlayNextFromPlaylist
+    // RemoveTrackFromQueue { track_id: Uuid }
 }
 
 #[fully_pub]
