@@ -291,12 +291,10 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_size = Vec2::splat(ui.available_height());
 
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                    if let Some(track_id) = &gem_player.player.playing_track {
-                        if let Some(track) = gem_player.library.get(track_id) {
-                            if let Some(artwork_bytes) = &track.artwork {
-                                let artwork_uri = format!("bytes://artwork-{}", track.id);
-                                artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
-                            }
+                    if let Some(track) = &gem_player.player.playing_track {
+                        if let Some(artwork_bytes) = &track.artwork {
+                            let artwork_uri = format!("bytes://artwork-{}", track.id);
+                            artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
                         }
                     }
 
@@ -316,8 +314,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut position_as_secs = 0.0;
                             let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                            if let Some(curren_track_id) = &gem_player.player.playing_track {
-                                let playing_track = &gem_player.library[curren_track_id];
+                            if let Some(playing_track) = &gem_player.player.playing_track {
                                 title = playing_track.title.as_deref().unwrap_or("Unknown Title");
                                 artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
                                 album = playing_track.album.as_deref().unwrap_or("Unknown Album");
@@ -451,7 +448,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let mut library_copy: Vec<Track> = gem_player
         .library
-        .values() // Iterate over the Track objects
+        .iter()
         .filter(|track| {
             let search_lower = gem_player.ui_state.library_view_state.search_text.to_lowercase();
 
@@ -588,7 +585,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let Some(track) = gem_player.library.get(&track_id) else {
+    let Some(track) = find_track(track_id, &gem_player.library) else {
         error!("Cannot find the associated track for the library track menu modal.");
         gem_player.ui_state.library_view_state.track_menu_is_open = false;
         return;
@@ -1302,10 +1299,7 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                                 let (found_music, found_playlists) = read_music_and_playlists_from_directory(&directory);
 
-                                gem_player.library.clear();
-                                for track in found_music {
-                                    gem_player.library.insert(track.id, track);
-                                }
+                                gem_player.library = found_music;
                                 gem_player.playlists = found_playlists;
                                 gem_player.library_directory = Some(directory);
                             }
@@ -1388,11 +1382,11 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
                     View::Library => {
-                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(gem_player.library.values());
+                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.library);
                         ui.add(unselectable_label(tracks_count_and_duration));
                     }
                     View::Queue => {
-                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(gem_player.player.queue.iter());
+                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.player.queue);
                         ui.add(unselectable_label(tracks_count_and_duration));
 
                         ui.add_space(8.0);
@@ -1409,10 +1403,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             match &gem_player.library_directory {
                                 Some(directory) => {
                                     let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
-                                    gem_player.library.clear();
-                                    for track in found_music {
-                                        gem_player.library.insert(track.id, track);
-                                    }
+                                    gem_player.library = found_music;
                                     gem_player.playlists = found_playlists;
                                 }
                                 None => warn!("Cannot refresh library, as there is no library path."),
@@ -1463,11 +1454,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn get_count_and_duration_string_from_tracks<'a>(tracks: impl Iterator<Item = &'a Track>) -> String {
-    let count = tracks.size_hint().0; // Get the lower bound of the iterator length
+pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String { //TODO UPDATE
     let duration = get_duration_of_tracks(tracks);
     let duration_string = format_duration_to_hhmmss(duration);
-    format!("{} tracks / {}", count, duration_string)
+    format!("{} tracks / {}", tracks.len(), duration_string)
 }
 
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {

@@ -46,7 +46,7 @@ pub fn find_track(track_id: Uuid, tracks: &[Track]) -> Option<&Track> {
     tracks.iter().find(|p| p.id == track_id)
 }
 
-pub fn _find_track_mut(track_id: Uuid, tracks: &mut [Track]) -> Option<&mut Track> {
+pub fn find_track_mut(track_id: Uuid, tracks: &mut [Track]) -> Option<&mut Track> {
     tracks.iter_mut().find(|p| p.id == track_id)
 }
 
@@ -150,8 +150,8 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Track>> {
     Ok(tracks)
 }
 
-pub fn get_duration_of_tracks<'a>(tracks: impl Iterator<Item = &'a Track>) -> Duration {
-    tracks.map(|track| track.duration).sum()
+pub fn get_duration_of_tracks(tracks: &[Track]) -> Duration {
+    tracks.iter().map(|track| track.duration).sum()
 }
 
 pub fn open_track_file_location(track: &Track) -> io::Result<()> {
