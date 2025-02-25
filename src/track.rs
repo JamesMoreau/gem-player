@@ -33,7 +33,7 @@ pub enum SortOrder {
 #[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Track {
-    id: Uuid,
+    id: Uuid, //TODO: perhaps forgo the id and use the file path as the id? Is this infallible? Or maybe create the id using the file path?
     title: Option<String>,
     artist: Option<String>,
     album: Option<String>,

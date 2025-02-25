@@ -53,7 +53,7 @@ pub struct Player {
     actions: Vec<PlayerAction>, // Actions get immedietly processed every frame.
 
     queue: Vec<Track>,
-    history: Vec<Uuid>,
+    history: Vec<Track>,
 
     repeat: bool,
     muted: bool,
@@ -175,7 +175,7 @@ pub fn play_or_pause(player: &mut Player) {
 pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
     if gem_player.player.repeat {
         if let Some(playing_track) = gem_player.player.playing_track.clone() {
-            if let Err(e) = load_and_play_track(&mut gem_player.player, &playing_track) {
+            if let Err(e) = load_and_play_track(&mut gem_player.player, playing_track) {
                 return Err(e.to_string());
             }
         }
@@ -189,13 +189,12 @@ pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
     };
 
     if let Some(playing_track) = gem_player.player.playing_track.take() {
-        gem_player.player.history.push(playing_track.id);
+        gem_player.player.history.push(playing_track);
     }
 
-    if let Err(e) = load_and_play_track(&mut gem_player.player, &next_track) {
+    if let Err(e) = load_and_play_track(&mut gem_player.player, next_track) {
         return Err(e.to_string());
     }
-    gem_player.player.playing_track = Some(next_track);
 
     Ok(())
 }
@@ -227,12 +226,8 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
-    let Some(previous_track_id) = gem_player.player.history.pop() else {
+    let Some(previous_track) = gem_player.player.history.pop() else {
         return Ok(()); // No previous track? Do nothing.
-    };
-
-    let Some(previous_track) = find_track(previous_track_id, &gem_player.library) else {
-        return Err("Previous track not found in the library.".to_string());
     };
 
     if let Some(playing_track) = gem_player.player.playing_track.take() {
@@ -247,7 +242,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play_track(player: &mut Player, track: &Track) -> io::Result<()> {
+pub fn load_and_play_track(player: &mut Player, track: Track) -> io::Result<()> {
     player.sink.stop(); // Stop the current track if any.
     player.playing_track = None;
 
@@ -259,7 +254,7 @@ pub fn load_and_play_track(player: &mut Player, track: &Track) -> io::Result<()>
         Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
     };
 
-    player.playing_track = Some(track.clone());
+    player.playing_track = Some(track);
     player.sink.append(source);
     player.sink.play();
 
@@ -339,7 +334,7 @@ pub fn play_library_from_track(gem_player: &mut GemPlayer, track_id: Uuid) {
         gem_player.player.queue.push(t.clone());
     }
 
-    let result = load_and_play_track(&mut gem_player.player, track);
+    let result = load_and_play_track(&mut gem_player.player, track.clone());
     if let Err(e) = result {
         error!("{}", e);
         gem_player
@@ -365,10 +360,11 @@ pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, t
 
     let track = &playlist.tracks[index];
 
+    // Add all of the other tracks to the queue.
     gem_player.player.queue.extend_from_slice(&playlist.tracks[index + 1..]);
     gem_player.player.queue.extend_from_slice(&playlist.tracks[..index]);
 
-    let result = load_and_play_track(&mut gem_player.player, track);
+    let result = load_and_play_track(&mut gem_player.player, track.clone());
     if let Err(e) = result {
         error!("{}", e);
         gem_player

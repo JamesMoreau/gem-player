@@ -1454,7 +1454,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String { //TODO UPDATE
+pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     let duration = get_duration_of_tracks(tracks);
     let duration_string = format_duration_to_hhmmss(duration);
     format!("{} tracks / {}", tracks.len(), duration_string)
