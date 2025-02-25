@@ -85,8 +85,8 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 
 pub fn process_player_actions(gem_player: &mut GemPlayer) {
 
-    todo!();
-    // while let Some(action) = gem_player.player.actions.pop() {
+    while let Some(action) = gem_player.player.actions.pop() {
+        todo!();
         // match action {
         //     PlayerAction::PlayFromPlaylist { playlist_id, track_id } => play_playlist_from_track(gem_player, playlist_id, track_id),
         //     PlayerAction::PlayFromLibrary { track_id } => play_library_from_track(gem_player, track_id),
@@ -134,7 +134,7 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
         //         }
         //     },
         // }
-    // }
+    }
 }
 
 pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {

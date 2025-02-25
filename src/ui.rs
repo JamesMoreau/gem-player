@@ -25,7 +25,7 @@ use crate::{
         shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
     playlist::{add_a_track_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, rename_playlist},
-    track::{find_track, get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
+    track::{get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
     Track,
 };
 
@@ -48,7 +48,7 @@ pub struct UIState {
 
 #[fully_pub]
 pub struct LibraryViewState {
-    selected_track: Option<Uuid>,
+    selected_track: Option<Track>,
     track_menu_is_open: bool, // The track for which the menu is open is LibraryViewState.selected_track .
     sort_by: SortBy,
     sort_order: SortOrder,
@@ -511,7 +511,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .library_view_state
                     .selected_track
                     .as_ref()
-                    .map_or(false, |selected_track| *selected_track == track.id);
+                    .map_or(false, |selected_track| selected_track == track);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -552,7 +552,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
                             let response = ui.add(more_button).on_hover_text("More");
                             if response.clicked() {
-                                gem_player.ui_state.library_view_state.selected_track = Some(track.id);
+                                gem_player.ui_state.library_view_state.selected_track = Some(track.clone());
                                 gem_player.ui_state.library_view_state.track_menu_is_open = true;
                             }
                         },
@@ -562,7 +562,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
 
                 if response.clicked() {
-                    gem_player.ui_state.library_view_state.selected_track = Some(track.id);
+                    gem_player.ui_state.library_view_state.selected_track = Some(track.clone());
                 }
 
                 if response.double_clicked() {
@@ -578,14 +578,8 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let Some(track_id) = gem_player.ui_state.library_view_state.selected_track else {
+    let Some(track) = &gem_player.ui_state.library_view_state.selected_track else {
         error!("{} was called, but there is no track id.", function_name!());
-        return;
-    };
-
-    let Some(track) = find_track(track_id, &gem_player.library) else {
-        error!("Cannot find the associated track for the library track menu modal.");
-        gem_player.ui_state.library_view_state.track_menu_is_open = false;
         return;
     };
 
