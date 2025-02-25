@@ -1178,11 +1178,10 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    // gem_player.player.actions.push(PlayerAction::PlayFromPlaylist {
-                    //     playlist_id: playlist.id,
-                    //     track_id: track.id,
-                    // });
-                    todo!();
+                    gem_player.player.actions.push(PlayerAction::PlayFromPlaylist {
+                        playlist_id: playlist.id,
+                        track_id: track.id,
+                    });
                 }
             });
         });

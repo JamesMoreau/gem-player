@@ -74,6 +74,11 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
         error!("{}", e);
         gem_player.ui_state.toasts.error("Error playing the next track");
     }
+
+    let nothing_left_to_play = gem_player.player.sink.empty() && gem_player.player.queue.is_empty();
+    if nothing_left_to_play {
+        gem_player.player.playing_track = None;
+    }
 }
 
 pub fn process_player_actions(gem_player: &mut GemPlayer) {
