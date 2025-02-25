@@ -12,7 +12,6 @@ use lofty::{
 };
 use log::error;
 use strum_macros::EnumIter;
-use uuid::Uuid;
 
 use crate::player::SUPPORTED_AUDIO_FILE_TYPES;
 
@@ -33,7 +32,6 @@ pub enum SortOrder {
 #[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Track {
-    id: Uuid, //TODO: perhaps forgo the id and use the file path as the id? Is this infallible? Or maybe create the id using the file path?
     title: Option<String>,
     artist: Option<String>,
     album: Option<String>,
@@ -86,8 +84,6 @@ pub fn get_track_from_file(path: &Path) -> io::Result<Track> {
         },
     };
 
-    let id = Uuid::new_v4();
-
     let title = tag
         .get_string(&ItemKey::TrackTitle)
         .map(|t| t.to_owned())
@@ -106,7 +102,6 @@ pub fn get_track_from_file(path: &Path) -> io::Result<Track> {
     let file_path = path.to_path_buf();
 
     Ok(Track {
-        id,
         title,
         artist,
         album,

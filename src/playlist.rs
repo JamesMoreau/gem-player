@@ -33,7 +33,7 @@ pub fn find_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Option<&mut Pl
 
 pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
     // TODO: This doesn't work if the same song has a different id. unless we create the id using the file path?
-    if playlist.tracks.iter().any(|s| s.id == track.id) {
+    if playlist.tracks.iter().any(|s| *s == track) {
         return Err(io::Error::new(
             ErrorKind::Other,
             "The track is already in the playlist. Duplicates are not allowed.",

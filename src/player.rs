@@ -245,10 +245,6 @@ pub fn load_and_play_track(player: &mut Player, track: Track) -> io::Result<()> 
     Ok(())
 }
 
-pub fn _get_track_position_in_queue(queue: Vec<Track>, track: &Track) -> Option<usize> {
-    queue.iter().position(|s| s.id == track.id)
-}
-
 pub fn add_to_queue(queue: &mut Vec<Track>, track: Track) {
     queue.push(track);
 }

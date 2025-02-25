@@ -291,7 +291,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
                     if let Some(track) = &gem_player.player.playing_track {
                         if let Some(artwork_bytes) = &track.artwork {
-                            let artwork_uri = format!("bytes://artwork-{}", track.id);
+                            let artwork_uri = format!("bytes://artwork-{}", track.file_path.to_string_lossy());
                             artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
                         }
                     }
