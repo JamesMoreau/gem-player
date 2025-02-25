@@ -70,7 +70,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
         return; // If a track is still playing, do nothing
     }
 
-    let result = play_next(gem_player);
+    let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);
         gem_player.ui_state.toasts.error("Error playing the next track");
@@ -90,7 +90,7 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
             PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
             PlayerAction::PlayNext => {
-                let result = play_next(gem_player);
+                let result = play_next(&mut gem_player.player);
                 if let Err(e) = result {
                     error!("{}", e);
                     gem_player.ui_state.toasts.error("Error playing the next track");
@@ -156,27 +156,27 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
-pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
-    if gem_player.player.repeat {
-        if let Some(playing_track) = gem_player.player.playing_track.clone() {
-            if let Err(e) = load_and_play_track(&mut gem_player.player, playing_track) {
+pub fn play_next(player: &mut Player) -> Result<(), String> {
+    if player.repeat {
+        if let Some(playing_track) = player.playing_track.clone() {
+            if let Err(e) = load_and_play_track(player, playing_track) {
                 return Err(e.to_string());
             }
         }
         return Ok(()); // If we are in repeat mode but there is no current track, do nothing!
     }
 
-    let next_track = if gem_player.player.queue.is_empty() {
+    let next_track = if player.queue.is_empty() {
         return Ok(()); // Queue is empty, nothing to play
     } else {
-        gem_player.player.queue.remove(0)
+        player.queue.remove(0)
     };
 
-    if let Some(playing_track) = gem_player.player.playing_track.take() {
-        gem_player.player.history.push(playing_track);
+    if let Some(playing_track) = player.playing_track.take() {
+        player.history.push(playing_track);
     }
 
-    if let Err(e) = load_and_play_track(&mut gem_player.player, next_track) {
+    if let Err(e) = load_and_play_track(player, next_track) {
         return Err(e.to_string());
     }
 
@@ -197,7 +197,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
                 error!("Error rewinding track: {:?}", e);
             }
             gem_player.player.sink.play();
-        } else if let Err(e) = play_previous(gem_player) {
+        } else if let Err(e) = play_previous(&mut gem_player.player) {
             error!("{}", e);
             gem_player.ui_state.toasts.error("Error playing the previous track");
         }
@@ -209,16 +209,16 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
-    let Some(previous_track) = gem_player.player.history.pop() else {
+pub fn play_previous(player: &mut Player) -> Result<(), String> {
+    let Some(previous_track) = player.history.pop() else {
         return Ok(()); // No previous track? Do nothing.
     };
 
-    if let Some(playing_track) = gem_player.player.playing_track.take() {
-        gem_player.player.queue.insert(0, playing_track);
+    if let Some(playing_track) = player.playing_track.take() {
+        player.queue.insert(0, playing_track);
     }
 
-    if let Err(e) = load_and_play_track(&mut gem_player.player, previous_track) {
+    if let Err(e) = load_and_play_track(player, previous_track) {
         return Err(e.to_string());
     }
 
