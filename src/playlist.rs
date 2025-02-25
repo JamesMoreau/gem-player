@@ -16,7 +16,7 @@ use crate::{track::get_track_from_file, Track};
 #[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Playlist {
-    id: Uuid,
+    id: Uuid, // TODO: eventually remove this and just use m3u_path as id.
     name: String,
     creation_date_time: SystemTime,
     tracks: Vec<Track>,

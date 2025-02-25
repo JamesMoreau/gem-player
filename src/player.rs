@@ -87,7 +87,7 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
         match action {
             PlayerAction::PlayFromPlaylist { playlist_id, track } => play_playlist_from_track(gem_player, playlist_id, &track),
             PlayerAction::PlayFromLibrary { track } => play_library_from_track(gem_player, &track),
-            PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track.clone()),
+            PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
             PlayerAction::PlayNext => {
                 let result = play_next(gem_player);
