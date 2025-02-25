@@ -20,7 +20,7 @@ pub struct Playlist {
     name: String,
     creation_date_time: SystemTime,
     tracks: Vec<Track>,
-    m3u_path: PathBuf, // TODO: should this be optional? Is it possible to have a playlist without a path?
+    m3u_path: PathBuf,
 }
 
 pub fn find_playlist(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
