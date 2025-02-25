@@ -1,5 +1,8 @@
 use std::{
-    collections::HashMap, io::{self, BufReader, ErrorKind}, path::{Path, PathBuf}, time::Duration
+    collections::HashMap,
+    io::{self, BufReader, ErrorKind},
+    path::{Path, PathBuf},
+    time::Duration,
 };
 
 use eframe::egui::{Context, Event, Key};
@@ -12,7 +15,7 @@ use rodio::{Decoder, OutputStream, Sink};
 use uuid::Uuid;
 
 use crate::{
-    playlist::{find_playlist, read_playlists_from_a_directory, Playlist},
+    playlist::{find_playlist, find_playlist_mut, read_playlists_from_a_directory, remove_a_track_from_playlist, Playlist},
     track::{find_track, read_music_from_a_directory, Track},
     ui::UIState,
 };
@@ -26,7 +29,7 @@ pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", 
 pub struct GemPlayer {
     ui_state: UIState,
 
-    library: HashMap<Uuid, Track>,      // All the tracks stored in the user's music directory.
+    library: HashMap<Uuid, Track>,      // All the tracks stored in the user's music directory. //TODO: go back to vec.
     library_directory: Option<PathBuf>, // The directory where music is stored.
     playlists: Vec<Playlist>,
 
@@ -38,8 +41,11 @@ pub enum PlayerAction {
     PlayFromLibrary { track_id: Uuid },
     AddTrackToQueueFromLibrary { track_id: Uuid },
     AddTrackToQueueFromPlaylist { track_id: Uuid, playlist_id: Uuid },
+    // TODO: Play next from library and playlist?
     PlayPrevious,
     PlayNext,
+    RemoveTrackFromPlaylist { playlist_id: Uuid, track_id: Uuid },
+    // RemoveTrackFromQueue { track_id: Uuid }, TODO?
 }
 
 #[fully_pub]
@@ -103,6 +109,18 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
                     gem_player.ui_state.toasts.error("Error playing the next track");
                 }
             }
+            PlayerAction::RemoveTrackFromPlaylist { playlist_id, track_id } => {
+                let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
+                    error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
+                    continue;
+                };
+
+                let result = remove_a_track_from_playlist(playlist, track_id);
+                if let Err(e) = result {
+                    error!("{}", e);
+                    gem_player.ui_state.toasts.error("Error removing track from playlist");
+                }
+            },
         }
     }
 }
@@ -158,7 +176,6 @@ pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
             if let Err(e) = load_and_play_track(&mut gem_player.player, &playing_track) {
                 return Err(e.to_string());
             }
-            
         }
         return Ok(()); // If we are in repeat mode but there is no current track, do nothing!
     }
@@ -177,7 +194,7 @@ pub fn play_next(gem_player: &mut GemPlayer) -> Result<(), String> {
         return Err(e.to_string());
     }
     gem_player.player.playing_track = Some(next_track.id);
-    
+
     Ok(())
 }
 
@@ -224,7 +241,7 @@ pub fn play_previous(gem_player: &mut GemPlayer) -> Result<(), String> {
     gem_player.player.playing_track = Some(previous_track.id);
 
     if let Err(e) = load_and_play_track(&mut gem_player.player, previous_track) {
-        return Err(e.to_string())
+        return Err(e.to_string());
     }
 
     Ok(())
@@ -240,9 +257,7 @@ pub fn load_and_play_track(player: &mut Player, track: &Track) -> io::Result<()>
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {
         Ok(source) => source,
-        Err(e) => {
-            return Err(io::Error::new(ErrorKind::Other, e.to_string()))
-        }
+        Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
     };
 
     player.playing_track = Some(track.id);

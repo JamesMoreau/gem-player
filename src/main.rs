@@ -18,6 +18,7 @@ mod ui;
 
 /*
 TODO:
+* library track menu: when a song is added to playlist then the menu closes, then another track menu is opened, the add to playlist dropdown is still open.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
