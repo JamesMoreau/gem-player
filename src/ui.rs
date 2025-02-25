@@ -566,7 +566,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { track_id: track.id });
+                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { track: track.clone() });
                 }
             });
         });
@@ -629,7 +629,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     gem_player
                         .player
                         .actions
-                        .push(PlayerAction::AddTrackToQueueFromLibrary { track_id: track.id });
+                        .push(PlayerAction::AddTrackToQueueFromLibrary { track: track.clone() });
                     gem_player.ui_state.library_view_state.track_menu_is_open = false;
                 }
 
@@ -1172,7 +1172,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.double_clicked() {
                     gem_player.player.actions.push(PlayerAction::PlayFromPlaylist {
                         playlist_id: playlist.id,
-                        track_id: track.id,
+                        track: track.clone(),
                     });
                 }
             });

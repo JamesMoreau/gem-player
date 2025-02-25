@@ -36,15 +36,15 @@ pub struct GemPlayer {
 }
 
 pub enum PlayerAction {
-    PlayFromPlaylist { playlist_id: Uuid, track_id: Uuid },
-    PlayFromLibrary { track_id: Uuid },
-    AddTrackToQueueFromLibrary { track_id: Uuid },
-    AddTrackToQueueFromPlaylist { track_id: Uuid, playlist_id: Uuid },
+    PlayFromPlaylist { playlist_id: Uuid, track: Track },
+    PlayFromLibrary { track: Track },
+    AddTrackToQueueFromLibrary { track: Track },
+    AddTrackToQueueFromPlaylist { track: Track, playlist_id: Uuid },
     PlayPrevious,
     PlayNext,
-    RemoveTrackFromPlaylist { playlist_id: Uuid, track_id: Uuid },
+    RemoveTrackFromPlaylist { track: Track, playlist_id: Uuid },
     // TODO: Potential Actions
-    // PlayNextFromLibrary
+    // PlayNextFromLibraryd
     // PlayNextFromPlaylist
     // RemoveTrackFromQueue { track_id: Uuid }
 }
