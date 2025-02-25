@@ -629,7 +629,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     gem_player
                         .player
                         .actions
-                        .push(PlayerAction::AddTrackToQueueFromLibrary { track: track.clone() });
+                        .push(PlayerAction::AddTrackToQueue { track: track.clone() });
                     gem_player.ui_state.library_view_state.track_menu_is_open = false;
                 }
 
