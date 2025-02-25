@@ -31,9 +31,13 @@ pub fn find_playlist_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Optio
     playlists.iter_mut().find(|p| p.id == playlist_id)
 }
 
-pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> { // TODO: This doesn't work if the same song has a different id. unless we create the id using the file path?
+pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
+    // TODO: This doesn't work if the same song has a different id. unless we create the id using the file path?
     if playlist.tracks.iter().any(|s| s.id == track.id) {
-        return Err(io::Error::new(ErrorKind::Other, "The track is already in the playlist. Duplicates are not allowed."));
+        return Err(io::Error::new(
+            ErrorKind::Other,
+            "The track is already in the playlist. Duplicates are not allowed.",
+        ));
     }
 
     playlist.tracks.push(track);
@@ -42,9 +46,12 @@ pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Res
     Ok(())
 }
 
-pub fn remove_a_track_from_playlist(playlist: &mut Playlist, track_id: Uuid) -> io::Result<()> {
-    let Some(index) = playlist.tracks.iter().position(|x| x.id == track_id) else {
-        return Err(io::Error::new(ErrorKind::NotFound, "The track to be removed was not found in the playlist."));
+pub fn remove_a_track_from_playlist(playlist: &mut Playlist, track: &Track) -> io::Result<()> {
+    let Some(index) = playlist.tracks.iter().position(|x| x == track) else {
+        return Err(io::Error::new(
+            ErrorKind::NotFound,
+            "The track to be removed was not found in the playlist.",
+        ));
     };
 
     playlist.tracks.remove(index);

@@ -14,8 +14,8 @@ use rodio::{Decoder, OutputStream, Sink};
 use uuid::Uuid;
 
 use crate::{
-    playlist::{find_playlist, find_playlist_mut, read_playlists_from_a_directory, remove_a_track_from_playlist, Playlist},
-    track::{find_track, read_music_from_a_directory, Track, find_track_mut},
+    playlist::{find_playlist, read_playlists_from_a_directory, Playlist},
+    track::{read_music_from_a_directory, Track},
     ui::UIState,
 };
 
@@ -84,55 +84,57 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 }
 
 pub fn process_player_actions(gem_player: &mut GemPlayer) {
-    while let Some(action) = gem_player.player.actions.pop() {
-        match action {
-            PlayerAction::PlayFromPlaylist { playlist_id, track_id } => play_playlist_from_track(gem_player, playlist_id, track_id),
-            PlayerAction::PlayFromLibrary { track_id } => play_library_from_track(gem_player, track_id),
-            PlayerAction::AddTrackToQueueFromLibrary { track_id } => {
-                let Some(track) = find_track_mut(track_id, &mut gem_player.library) else {
-                    error!("Unable to find track for AddTrackToQueueFromLibrary action.");
-                    return;
-                };
 
-                add_to_queue(&mut gem_player.player.queue, track.clone());
-            }
-            PlayerAction::AddTrackToQueueFromPlaylist { track_id, playlist_id } => {
-                let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
-                let Some(playlist) = maybe_playlist else {
-                    error!("Unable to find playlist for AddTrackToQueueFromPlaylist action.");
-                    continue;
-                };
+    todo!();
+    // while let Some(action) = gem_player.player.actions.pop() {
+        // match action {
+        //     PlayerAction::PlayFromPlaylist { playlist_id, track_id } => play_playlist_from_track(gem_player, playlist_id, track_id),
+        //     PlayerAction::PlayFromLibrary { track_id } => play_library_from_track(gem_player, track_id),
+        //     PlayerAction::AddTrackToQueueFromLibrary { track_id } => {
+        //         let Some(track) = find_track_mut(track_id, &mut gem_player.library) else {
+        //             error!("Unable to find track for AddTrackToQueueFromLibrary action.");
+        //             return;
+        //         };
 
-                let maybe_track = find_track(track_id, &playlist.tracks);
-                let Some(track) = maybe_track else {
-                    error!("Unable to find track for AddTrackToQueueFromPlaylist action.");
-                    continue;
-                };
+        //         add_to_queue(&mut gem_player.player.queue, track.clone());
+        //     }
+        //     PlayerAction::AddTrackToQueueFromPlaylist { track_id, playlist_id } => {
+        //         let maybe_playlist = find_playlist(playlist_id, &gem_player.playlists);
+        //         let Some(playlist) = maybe_playlist else {
+        //             error!("Unable to find playlist for AddTrackToQueueFromPlaylist action.");
+        //             continue;
+        //         };
 
-                add_to_queue(&mut gem_player.player.queue, track.clone());
-            }
-            PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
-            PlayerAction::PlayNext => {
-                let result = play_next(gem_player);
-                if let Err(e) = result {
-                    error!("{}", e);
-                    gem_player.ui_state.toasts.error("Error playing the next track");
-                }
-            }
-            PlayerAction::RemoveTrackFromPlaylist { playlist_id, track_id } => {
-                let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
-                    error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
-                    continue;
-                };
+        //         let maybe_track = find_track(track_id, &playlist.tracks);
+        //         let Some(track) = maybe_track else {
+        //             error!("Unable to find track for AddTrackToQueueFromPlaylist action.");
+        //             continue;
+        //         };
 
-                let result = remove_a_track_from_playlist(playlist, track_id);
-                if let Err(e) = result {
-                    error!("{}", e);
-                    gem_player.ui_state.toasts.error("Error removing track from playlist");
-                }
-            },
-        }
-    }
+        //         add_to_queue(&mut gem_player.player.queue, track.clone());
+        //     }
+        //     PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
+        //     PlayerAction::PlayNext => {
+        //         let result = play_next(gem_player);
+        //         if let Err(e) = result {
+        //             error!("{}", e);
+        //             gem_player.ui_state.toasts.error("Error playing the next track");
+        //         }
+        //     }
+        //     PlayerAction::RemoveTrackFromPlaylist { playlist_id, track_id } => {
+        //         let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
+        //             error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
+        //             continue;
+        //         };
+
+        //         let result = remove_a_track_from_playlist(playlist, track_id);
+        //         if let Err(e) = result {
+        //             error!("{}", e);
+        //             gem_player.ui_state.toasts.error("Error removing track from playlist");
+        //         }
+        //     },
+        // }
+    // }
 }
 
 pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
@@ -323,18 +325,13 @@ pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
     player.sink.set_volume(new_volume);
 }
 
-pub fn play_library_from_track(gem_player: &mut GemPlayer, track_id: Uuid) {
+pub fn play_library_from_track(gem_player: &mut GemPlayer, track: &Track) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    let Some(track) = find_track(track_id, &gem_player.library) else {
-        error!("Track not found in the library.");
-        return;
-    };
-
-    // Add all the other tracks to the queue
+    // Add all the other tracks to the queue.
     for t in &gem_player.library {
-        if t.id == track_id {
+        if track == t {
             continue;
         }
 
@@ -351,7 +348,7 @@ pub fn play_library_from_track(gem_player: &mut GemPlayer, track_id: Uuid) {
     }
 }
 
-pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, track_id: Uuid) {
+pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, track: &Track) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
@@ -360,16 +357,14 @@ pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, t
         return;
     };
 
-    let Some(index) = playlist.tracks.iter().position(|s| s.id == track_id) else {
-        error!("Track not found in the playlist.");
-        return;
-    };
+    // Add all the other tracks to the queue.
+    for t in &playlist.tracks {
+        if track == t {
+            continue;
+        }
 
-    let track = &playlist.tracks[index];
-
-    // Add all of the other tracks to the queue.
-    gem_player.player.queue.extend_from_slice(&playlist.tracks[index + 1..]);
-    gem_player.player.queue.extend_from_slice(&playlist.tracks[..index]);
+        gem_player.player.queue.push(t.clone());
+    }
 
     let result = load_and_play_track(&mut gem_player.player, track.clone());
     if let Err(e) = result {

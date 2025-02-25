@@ -42,13 +42,20 @@ pub struct Track {
     file_path: PathBuf,
 }
 
+impl PartialEq for Track {
+    #[inline]
+    fn eq(&self, other: &Track) -> bool {
+        self.file_path == other.file_path
+    }
+}
+
 pub fn find_track(track_id: Uuid, tracks: &[Track]) -> Option<&Track> {
     tracks.iter().find(|p| p.id == track_id)
 }
 
-pub fn find_track_mut(track_id: Uuid, tracks: &mut [Track]) -> Option<&mut Track> {
-    tracks.iter_mut().find(|p| p.id == track_id)
-}
+// pub fn find_track_mut(track_id: Uuid, tracks: &mut [Track]) -> Option<&mut Track> {
+//     tracks.iter_mut().find(|p| p.id == track_id)
+// }
 
 pub fn sort_tracks(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     tracks.sort_by(|a, b| {
