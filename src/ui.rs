@@ -24,7 +24,7 @@ use crate::{
         add_next_to_queue, is_playing, move_track_to_front, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue,
         shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
-    playlist::{add_a_track_to_playlist, create_a_new_playlist, delete_playlist, find_playlist_mut, rename_playlist},
+    playlist::{add_a_track_to_playlist, create, delete, find_mut, rename},
     track::{get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
     Track,
 };
@@ -831,7 +831,7 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if response.clicked() {
                             confirm_clicked = true;
 
-                            let result = delete_playlist(playlist_id, &mut gem_player.playlists);
+                            let result = delete(playlist_id, &mut gem_player.playlists);
                             if let Err(e) = result {
                                 error!("{}", e);
                                 return;
@@ -878,7 +878,7 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             match maybe_library_directory {
                                 Some(directory) => {
                                     let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
-                                    let result = create_a_new_playlist(new_playlist_name, directory);
+                                    let result = create(new_playlist_name, directory);
                                     match result {
                                         Ok(new_playlist) => {
                                             info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
@@ -938,7 +938,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .ui_state
                     .playlists_view_state
                     .selected_playlist
-                    .and_then(|id| find_playlist_mut(id, &mut gem_player.playlists));
+                    .and_then(|id| find_mut(id, &mut gem_player.playlists));
 
                 let Some(playlist) = maybe_selected_playlist else {
                     return;
@@ -980,7 +980,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.ui_state.playlists_view_state.playlist_rename = None;
                         } else if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
-                            let result = rename_playlist(playlist, name_buffer_clone);
+                            let result = rename(playlist, name_buffer_clone);
                             if let Err(e) = result {
                                 error!("{}", e);
                             }
@@ -1046,7 +1046,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
+    let Some(playlist) = find_mut(playlist_id, &mut gem_player.playlists) else {
         return; // If we have an id for a playlist but cannot find it, then there's nothing to do.
     };
 
@@ -1192,7 +1192,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
             return;
         };
 
-        let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
+        let Some(playlist) = find_mut(playlist_id, &mut gem_player.playlists) else {
             error!("Could not find the playlist associated with the selected playlist id.");
             gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
             return;

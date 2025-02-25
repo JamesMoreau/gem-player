@@ -14,7 +14,7 @@ use rodio::{Decoder, OutputStream, Sink};
 use uuid::Uuid;
 
 use crate::{
-    playlist::{find_playlist, find_playlist_mut, read_playlists_from_a_directory, remove_a_track_from_playlist, Playlist},
+    playlist::{find, find_mut, read_all_from_a_directory, remove_track, Playlist},
     track::{read_music_from_a_directory, Track},
     ui::UIState,
 };
@@ -97,12 +97,12 @@ pub fn process_player_actions(gem_player: &mut GemPlayer) {
                 }
             }
             PlayerAction::RemoveTrackFromPlaylist { playlist_id, track } => {
-                let Some(playlist) = find_playlist_mut(playlist_id, &mut gem_player.playlists) else {
+                let Some(playlist) = find_mut(playlist_id, &mut gem_player.playlists) else {
                     error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
                     continue;
                 };
 
-                let result = remove_a_track_from_playlist(playlist, &track);
+                let result = remove_track(playlist, &track);
                 if let Err(e) = result {
                     error!("{}", e);
                     gem_player.ui_state.toasts.error("Error removing track from playlist");
@@ -125,7 +125,7 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
         }
     }
 
-    match read_playlists_from_a_directory(directory) {
+    match read_all_from_a_directory(directory) {
         Ok(found_playlists) => {
             playlists = found_playlists;
         }
@@ -327,7 +327,7 @@ pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, t
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    let Some(playlist) = find_playlist(playlist_id, &gem_player.playlists) else {
+    let Some(playlist) = find(playlist_id, &gem_player.playlists) else {
         error!("Playlist not found.");
         return;
     };

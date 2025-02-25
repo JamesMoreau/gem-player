@@ -23,11 +23,11 @@ pub struct Playlist {
     m3u_path: PathBuf,
 }
 
-pub fn find_playlist(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
+pub fn find(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
     playlists.iter().find(|p| p.id == playlist_id)
 }
 
-pub fn find_playlist_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Option<&mut Playlist> {
+pub fn find_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Option<&mut Playlist> {
     playlists.iter_mut().find(|p| p.id == playlist_id)
 }
 
@@ -41,12 +41,12 @@ pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Res
     }
 
     playlist.tracks.push(track);
-    save_playlist_to_m3u(playlist)?;
+    save_to_m3u(playlist)?;
 
     Ok(())
 }
 
-pub fn remove_a_track_from_playlist(playlist: &mut Playlist, track: &Track) -> io::Result<()> {
+pub fn remove_track(playlist: &mut Playlist, track: &Track) -> io::Result<()> {
     let Some(index) = playlist.tracks.iter().position(|x| x == track) else {
         return Err(io::Error::new(
             ErrorKind::NotFound,
@@ -55,12 +55,12 @@ pub fn remove_a_track_from_playlist(playlist: &mut Playlist, track: &Track) -> i
     };
 
     playlist.tracks.remove(index);
-    save_playlist_to_m3u(playlist)?;
+    save_to_m3u(playlist)?;
 
     Ok(())
 }
 
-pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
+pub fn read_all_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
     let file_type = "m3u";
     let pattern = format!("{}/*.{}", path.to_string_lossy(), file_type);
 
@@ -79,7 +79,7 @@ pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>>
 
     let mut playlists = Vec::new();
     for path in m3u_paths {
-        let result = get_playlist_from_m3u(&path);
+        let result = get_from_m3u(&path);
         match result {
             Ok(playlist) => playlists.push(playlist),
             Err(e) => error!("{}", e),
@@ -89,7 +89,7 @@ pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>>
     Ok(playlists)
 }
 
-pub fn save_playlist_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
+pub fn save_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
     let mut file = File::create(&playlist.m3u_path)?;
 
     for track in &playlist.tracks {
@@ -100,7 +100,7 @@ pub fn save_playlist_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
     Ok(())
 }
 
-pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
+pub fn get_from_m3u(path: &Path) -> io::Result<Playlist> {
     let Some(extension) = path.extension() else {
         return Err(io::Error::new(ErrorKind::InvalidInput, "File has no extension"));
     };
@@ -162,7 +162,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
     })
 }
 
-pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
+pub fn rename(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
     let Some(directory) = playlist.m3u_path.parent() else {
         return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist path has no parent directory."));
     };
@@ -178,7 +178,7 @@ pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<
     Ok(())
 }
 
-pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playlist> {
+pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
     let filename = format!("{}.m3u", name);
     let file_path = directory.join(filename);
 
@@ -190,13 +190,13 @@ pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playl
         m3u_path: file_path,
     };
 
-    save_playlist_to_m3u(&mut playlist)?;
+    save_to_m3u(&mut playlist)?;
 
     Ok(playlist)
 }
 
 // Removes the playlist from the list and deletes the associated m3u file.
-pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Result<(), String> {
+pub fn delete(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Result<(), String> {
     let Some(index) = playlists.iter().position(|p| p.id == playlist_id) else {
         return Err("Playlist not found in library".to_string());
     };
