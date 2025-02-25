@@ -25,7 +25,7 @@ use crate::{
         shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
     },
     playlist::{add_a_track_to_playlist, create, delete, find_mut, rename},
-    track::{get_duration_of_tracks, open_track_file_location, sort_tracks, SortBy, SortOrder},
+    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
     Track,
 };
 
@@ -462,7 +462,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    sort_tracks(
+    sort(
         &mut library_copy,
         gem_player.ui_state.library_view_state.sort_by,
         gem_player.ui_state.library_view_state.sort_order,
@@ -637,7 +637,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Open File Location", icons::ICON_FOLDER));
                 if response.clicked() {
-                    let result = open_track_file_location(track);
+                    let result = open_file_location(track);
                     match result {
                         Ok(_) => info!("Opening track location"),
                         Err(e) => error!("{}", e),
@@ -1248,7 +1248,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Open File Location", icons::ICON_FOLDER));
                 if response.clicked() {
-                    let result = open_track_file_location(track);
+                    let result = open_file_location(track);
                     match result {
                         Ok(_) => info!("Opening track location"),
                         Err(e) => error!("{}", e),
@@ -1443,7 +1443,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
-    let duration = get_duration_of_tracks(tracks);
+    let duration = calculate_total_duration(tracks);
     let duration_string = format_duration_to_hhmmss(duration);
     format!("{} tracks / {}", tracks.len(), duration_string)
 }

@@ -47,7 +47,7 @@ impl PartialEq for Track {
     }
 }
 
-pub fn sort_tracks(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
+pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     tracks.sort_by(|a, b| {
         let ordering = match sort_by {
             SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
@@ -63,7 +63,7 @@ pub fn sort_tracks(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder)
     });
 }
 
-pub fn get_track_from_file(path: &Path) -> io::Result<Track> {
+pub fn load_from_file(path: &Path) -> io::Result<Track> {
     if !path.is_file() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
@@ -134,7 +134,7 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Track>> {
 
     let mut tracks = Vec::new();
     for path in file_paths {
-        let result = get_track_from_file(&path);
+        let result = load_from_file(&path);
         match result {
             Ok(track) => tracks.push(track),
             Err(e) => error!("{}", e),
@@ -144,11 +144,11 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Track>> {
     Ok(tracks)
 }
 
-pub fn get_duration_of_tracks(tracks: &[Track]) -> Duration {
+pub fn calculate_total_duration(tracks: &[Track]) -> Duration {
     tracks.iter().map(|track| track.duration).sum()
 }
 
-pub fn open_track_file_location(track: &Track) -> io::Result<()> {
+pub fn open_file_location(track: &Track) -> io::Result<()> {
     let maybe_folder = track.file_path.as_path().parent();
     let Some(folder) = maybe_folder else {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "Track has no file path."));

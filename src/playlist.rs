@@ -10,7 +10,7 @@ use glob::glob;
 use log::error;
 use uuid::Uuid;
 
-use crate::{track::get_track_from_file, Track};
+use crate::{track::load_from_file, Track};
 
 // Duplicates of tracks are not allowed.
 #[fully_pub]
@@ -79,7 +79,7 @@ pub fn read_all_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
 
     let mut playlists = Vec::new();
     for path in m3u_paths {
-        let result = get_from_m3u(&path);
+        let result = load_from_m3u(&path);
         match result {
             Ok(playlist) => playlists.push(playlist),
             Err(e) => error!("{}", e),
@@ -100,7 +100,7 @@ pub fn save_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
     Ok(())
 }
 
-pub fn get_from_m3u(path: &Path) -> io::Result<Playlist> {
+pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
     let Some(extension) = path.extension() else {
         return Err(io::Error::new(ErrorKind::InvalidInput, "File has no extension"));
     };
@@ -126,7 +126,7 @@ pub fn get_from_m3u(path: &Path) -> io::Result<Playlist> {
         }
 
         let path = PathBuf::from(trimmed);
-        let maybe_track = get_track_from_file(&path);
+        let maybe_track = load_from_file(&path);
         match maybe_track {
             Ok(track) => tracks.push(track),
             Err(err) => {
