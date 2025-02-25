@@ -1,9 +1,4 @@
-use std::{
-    io::{self, ErrorKind},
-    path::{Path, PathBuf},
-    time::Duration,
-};
-
+use crate::SUPPORTED_AUDIO_FILE_TYPES;
 use fully_pub::fully_pub;
 use glob::glob;
 use lofty::{
@@ -11,9 +6,12 @@ use lofty::{
     tag::ItemKey,
 };
 use log::error;
+use std::{
+    io::{self, ErrorKind},
+    path::{Path, PathBuf},
+    time::Duration,
+};
 use strum_macros::EnumIter;
-
-use crate::player::SUPPORTED_AUDIO_FILE_TYPES;
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {

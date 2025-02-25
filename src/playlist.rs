@@ -1,16 +1,14 @@
+use crate::{track::load_from_file, Track};
+use fully_pub::fully_pub;
+use glob::glob;
+use log::error;
 use std::{
     fs::{self, File},
     io::{self, ErrorKind, Write},
     path::{Path, PathBuf},
     time::SystemTime,
 };
-
-use fully_pub::fully_pub;
-use glob::glob;
-use log::error;
 use uuid::Uuid;
-
-use crate::{track::load_from_file, Track};
 
 // Duplicates of tracks are not allowed.
 #[fully_pub]

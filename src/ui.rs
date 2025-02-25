@@ -1,5 +1,11 @@
-use std::time::Duration;
-
+use crate::{
+    format_duration_to_hhmmss, format_duration_to_mmss,
+    player::{add_next_to_queue, is_playing, move_track_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
+    playlist::{add_a_track_to_playlist, create, delete, find_mut, rename},
+    read_music_and_playlists_from_directory,
+    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
+    GemPlayer, Track, KEY_COMMANDS,
+};
 use dark_light::Mode;
 use eframe::egui::{
     containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image,
@@ -14,20 +20,10 @@ use fully_pub::fully_pub;
 use function_name::named;
 use log::{error, info, warn};
 use rfd::FileDialog;
+use std::time::Duration;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use uuid::Uuid;
-
-use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss,
-    player::{
-        add_next_to_queue, is_playing, move_track_to_front, play_or_pause, read_music_and_playlists_from_directory, remove_from_queue,
-        shuffle_queue, GemPlayer, PlayerAction, KEY_COMMANDS,
-    },
-    playlist::{add_a_track_to_playlist, create, delete, find_mut, rename},
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
-    Track,
-};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {
@@ -566,7 +562,10 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.player.actions.push(PlayerAction::PlayFromLibrary { track: track.clone() });
+                    gem_player
+                        .player
+                        .actions
+                        .push(PlayerAction::PlayFromLibrary { track: track.clone() });
                 }
             });
         });
@@ -1238,9 +1237,10 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
                 if response.clicked() {
-                    gem_player.player.actions.push(PlayerAction::AddTrackToQueue {
-                        track: track.clone(),
-                    });
+                    gem_player
+                        .player
+                        .actions
+                        .push(PlayerAction::AddTrackToQueue { track: track.clone() });
                     gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
                 }
 
