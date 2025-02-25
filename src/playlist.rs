@@ -20,7 +20,7 @@ pub struct Playlist {
     name: String,
     creation_date_time: SystemTime,
     tracks: Vec<Track>,
-    m3u_path: Option<PathBuf>, // TODO: should this be optional? Is it possible to have a playlist without a path?
+    m3u_path: PathBuf, // TODO: should this be optional? Is it possible to have a playlist without a path?
 }
 
 pub fn find_playlist(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
@@ -83,11 +83,7 @@ pub fn read_playlists_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>>
 }
 
 pub fn save_playlist_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
-    let Some(path) = &playlist.m3u_path else {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "The playlist has no associated file path."));
-    };
-
-    let mut file = File::create(path)?;
+    let mut file = File::create(&playlist.m3u_path)?;
 
     for track in &playlist.tracks {
         let line = track.file_path.to_string_lossy();
@@ -148,7 +144,7 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
         }
     };
 
-    let path = Some(path.to_path_buf());
+    let path = path.to_path_buf();
 
     Ok(Playlist {
         id,
@@ -160,21 +156,17 @@ pub fn get_playlist_from_m3u(path: &Path) -> io::Result<Playlist> {
 }
 
 pub fn rename_playlist(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
-    let Some(old_path) = playlist.m3u_path.as_ref() else {
-        return Err(io::Error::new(ErrorKind::NotFound, "Playlist has no associated file path."));
-    };
-
-    let Some(directory) = old_path.parent() else {
+    let Some(directory) = playlist.m3u_path.parent() else {
         return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist path has no parent directory."));
     };
 
     let new_filename = format!("{}.m3u", new_name);
     let new_path = directory.join(new_filename);
 
-    fs::rename(old_path, &new_path)?;
+    fs::rename(&playlist.m3u_path, &new_path)?;
 
     playlist.name = new_name;
-    playlist.m3u_path = Some(new_path);
+    playlist.m3u_path = new_path;
 
     Ok(())
 }
@@ -188,7 +180,7 @@ pub fn create_a_new_playlist(name: String, directory: &Path) -> io::Result<Playl
         name,
         creation_date_time: SystemTime::now(),
         tracks: Vec::new(),
-        m3u_path: Some(file_path),
+        m3u_path: file_path,
     };
 
     save_playlist_to_m3u(&mut playlist)?;
@@ -204,12 +196,8 @@ pub fn delete_playlist(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Resu
 
     let playlist = playlists.remove(index);
 
-    let Some(path) = playlist.m3u_path.as_ref() else {
-        return Err("The playlist has no associated file path.".to_string());
-    };
-
     // Send the m3u file to the trash!
-    let result = trash::delete(path);
+    let result = trash::delete(playlist.m3u_path);
     if let Err(e) = result {
         return Err(e.to_string());
     }

@@ -28,7 +28,7 @@ pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", 
 pub struct GemPlayer {
     ui_state: UIState,
 
-    library: Vec<Track>,      // All the tracks stored in the user's music directory.
+    library: Vec<Track>, // All the tracks stored in the user's music directory.
     library_directory: Option<PathBuf>, // The directory where music is stored.
     playlists: Vec<Playlist>,
 
