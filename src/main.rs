@@ -11,7 +11,7 @@ use player::{
 use playlist::{find, read_all_from_a_directory, Playlist};
 use rodio::{OutputStream, Sink};
 use std::path::{Path, PathBuf};
-use track::{read_music_from_a_directory, SortBy, SortOrder, Track};
+use track::{read_music, SortBy, SortOrder, Track};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 use uuid::Uuid;
 
@@ -34,8 +34,6 @@ TODO:
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 pub const THEME_STORAGE_KEY: &str = "theme";
-
-pub const SUPPORTED_AUDIO_FILE_TYPES: [&str; 6] = ["mp3", "m4a", "wav", "flac", "ogg", "opus"]; // TODO: is there a way to get this from symphonia?
 
 #[fully_pub]
 pub struct GemPlayer {
@@ -188,7 +186,7 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
     let mut library = Vec::new();
     let mut playlists = Vec::new();
 
-    match read_music_from_a_directory(directory) {
+    match read_music(directory) {
         Ok(found_tracks) => {
             library = found_tracks;
         }

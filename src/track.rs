@@ -1,15 +1,12 @@
-use crate::SUPPORTED_AUDIO_FILE_TYPES;
 use fully_pub::fully_pub;
-use glob::glob;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     tag::ItemKey,
 };
 use log::error;
+use walkdir::WalkDir;
 use std::{
-    io::{self, ErrorKind},
-    path::{Path, PathBuf},
-    time::Duration,
+    fs, io::{self, ErrorKind}, path::{Path, PathBuf}, time::Duration
 };
 use strum_macros::EnumIter;
 
@@ -66,15 +63,15 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
 
-    let result_file = lofty::read_from_path(path);
-    let tagged_file = match result_file {
+    let result = lofty::read_from_path(path);
+    let tagged_file = match result {
         Ok(file) => file,
         Err(e) => {
             return Err(io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)));
         }
     };
 
-    let tag = match tagged_file.primary_tag() {
+    let tag = match tagged_file.primary_tag() { // TODO: can this be reduced?
         Some(tag) => tag,
         None => match tagged_file.first_tag() {
             Some(tag) => tag,
@@ -109,33 +106,31 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
     })
 }
 
-pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Track>> {
-    let patterns = SUPPORTED_AUDIO_FILE_TYPES
-        .iter()
-        .map(|file_type| format!("{}/*.{}", path.to_string_lossy(), file_type))
-        .collect::<Vec<String>>();
-
-    let mut file_paths = Vec::new();
-    for pattern in patterns {
-        let file_paths_result = glob(&pattern);
-        match file_paths_result {
-            Ok(paths) => {
-                for path in paths.filter_map(Result::ok) {
-                    file_paths.push(path);
-                }
-            }
-            Err(e) => {
-                return Err(io::Error::new(io::ErrorKind::Other, format!("Invalid pattern: {}", e)));
-            }
+fn is_audio_file(path: &Path) -> bool {
+    if let Ok(data) = fs::read(path) {
+        if let Some(kind) = infer::get(&data) {
+            return kind.mime_type().starts_with("audio/");
         }
     }
+    
+    false
+}
 
+pub fn read_music(directory: &Path) -> io::Result<Vec<Track>> {
     let mut tracks = Vec::new();
-    for path in file_paths {
-        let result = load_from_file(&path);
+    
+    for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+
+        let what_we_want = path.is_file() && is_audio_file(path);
+        if !what_we_want {
+            continue;
+        }
+
+        let result = load_from_file(path);
         match result {
-            Ok(track) => tracks.push(track),
             Err(e) => error!("{}", e),
+            Ok(track) => tracks.push(track),
         }
     }
 
