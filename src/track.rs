@@ -35,14 +35,18 @@ pub struct Track {
     album: Option<String>,
     duration: Duration,
     artwork: Option<Vec<u8>>,
-    file_path: PathBuf,
+    path: PathBuf,
 }
 
 impl PartialEq for Track {
     #[inline]
     fn eq(&self, other: &Track) -> bool {
-        self.file_path == other.file_path
+        self.path == other.path
     }
+}
+
+pub fn _find<'a>(track_identifier: &Path, tracks: &'a [Track]) -> Option<&'a Track> {
+    tracks.iter().find(|p| p.path == track_identifier)
 }
 
 pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
@@ -107,7 +111,7 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         album,
         duration,
         artwork,
-        file_path,
+        path: file_path,
     })
 }
 
@@ -147,7 +151,7 @@ pub fn calculate_total_duration(tracks: &[Track]) -> Duration {
 }
 
 pub fn open_file_location(track: &Track) -> io::Result<()> {
-    let maybe_folder = track.file_path.as_path().parent();
+    let maybe_folder = track.path.as_path().parent();
     let Some(folder) = maybe_folder else {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "Track has no file path."));
     };

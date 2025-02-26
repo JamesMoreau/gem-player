@@ -1,7 +1,5 @@
 use crate::{
-    play_library_from_track,
-    track::Track,
-    GemPlayer,
+    play_library_from_track, playlist::{find_mut, remove_track}, track::Track, GemPlayer
 };
 use fully_pub::fully_pub;
 use log::error;
@@ -17,7 +15,7 @@ pub enum PlayerAction {
     AddTrackToQueue { track: Track },
     PlayPrevious,
     PlayNext,
-    RemoveTrackFromPlaylist { track: Track, playlist_index: usize },
+    RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf }, // TODO: change to track identifier
     // TODO: Potential Actions
     // PlayNextFromLibraryd
     // PlayNextFromPlaylist
@@ -72,18 +70,17 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
                     gem_player.ui_state.toasts.error("Error playing the next track");
                 }
             }
-            PlayerAction::RemoveTrackFromPlaylist { playlist_index: _, track: _ } => { // Cleanup. Maybe make this playlist.path to ensure correctness.
-                todo!();
-                // let Some(original_playlist) = find_mut(&playlist, &mut gem_player.playlists) else {
-                //     error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
-                //     continue;
-                // };
+            PlayerAction::RemoveTrackFromPlaylist { playlist_identifier, track } => { 
+                let Some(playlist) = find_mut(&playlist_identifier, &mut gem_player.playlists) else {
+                    error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
+                    continue;
+                };
 
-                // let result = remove_track(original_playlist, &track);
-                // if let Err(e) = result {
-                //     error!("{}", e);
-                //     gem_player.ui_state.toasts.error("Error removing track from playlist");
-                // }
+                let result = remove_track(playlist, &track);
+                if let Err(e) = result {
+                    error!("{}", e);
+                    gem_player.ui_state.toasts.error("Error removing track from playlist");
+                }
             }
         }
     }
@@ -175,7 +172,7 @@ pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> {
     player.sink.stop(); // Stop the current track if any.
     player.playing_track = None;
 
-    let file = std::fs::File::open(&track.file_path)?;
+    let file = std::fs::File::open(&track.path)?;
 
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {

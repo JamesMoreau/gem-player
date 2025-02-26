@@ -1,7 +1,7 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{add_next_to_queue, is_playing, move_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
-    playlist::{add_a_track_to_playlist, create, rename},
+    playlist::{add_a_track_to_playlist, create, delete, rename},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
     GemPlayer, Track, KEY_COMMANDS,
@@ -286,7 +286,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
                     if let Some(track) = &gem_player.player.playing_track {
                         if let Some(artwork_bytes) = &track.artwork {
-                            let artwork_uri = format!("bytes://artwork-{}", track.file_path.to_string_lossy());
+                            let artwork_uri = format!("bytes://artwork-{}", track.path.to_string_lossy());
                             artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
                         }
                     }
@@ -799,7 +799,7 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(_playlist_identifier) = &gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open else {
+    let Some(playlist_identifier) = &gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open else {
         return;
     };
 
@@ -829,11 +829,11 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if response.clicked() {
                             confirm_clicked = true;
 
-                            // let result = delete(, &mut gem_player.playlists); 
-                            // if let Err(e) = result {
-                            //     error!("{}", e);
-                            //     return;
-                            // }
+                            let result = delete(playlist_identifier.to_path_buf(), &mut gem_player.playlists); 
+                            if let Err(e) = result {
+                                error!("{}", e);
+                                return;
+                            }
 
                             let message =
                                 "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
@@ -1183,6 +1183,8 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
+    let playlist = &gem_player.playlists[selected];
+
     let Some(track) = &gem_player.ui_state.playlists_view_state.selected_track else {
         error!("{} was called, but there is no selected track id.", function_name!());
         gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
@@ -1205,7 +1207,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.clicked() {
                     gem_player.player.actions.push(PlayerAction::RemoveTrackFromPlaylist {
                         track: track.clone(),
-                        playlist_index: selected,
+                        playlist_identifier: playlist.m3u_path.clone(),
                     });
                     gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
                 }
