@@ -21,12 +21,19 @@ pub struct Playlist {
     m3u_path: PathBuf,
 }
 
+impl PartialEq for Playlist {
+    #[inline]
+    fn eq(&self, other: &Playlist) -> bool {
+        self.m3u_path == other.m3u_path
+    }
+}
+
 pub fn find(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
     playlists.iter().find(|p| p.id == playlist_id)
 }
 
-pub fn find_mut(playlist_id: Uuid, playlists: &mut [Playlist]) -> Option<&mut Playlist> {
-    playlists.iter_mut().find(|p| p.id == playlist_id)
+pub fn find_mut<'a>(selected: &Playlist, playlists: &'a [Playlist]) -> Option<&'a Playlist> { // Cleanup
+    playlists.iter().find(|p| p.m3u_path == selected.m3u_path)
 }
 
 pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {

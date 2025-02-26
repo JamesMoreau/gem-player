@@ -1,6 +1,6 @@
 use crate::{
     play_library_from_track, play_playlist_from_track,
-    playlist::{find_mut, remove_track},
+    playlist::Playlist,
     track::Track,
     GemPlayer,
 };
@@ -20,7 +20,7 @@ pub enum PlayerAction {
     AddTrackToQueue { track: Track },
     PlayPrevious,
     PlayNext,
-    RemoveTrackFromPlaylist { track: Track, playlist_id: Uuid },
+    RemoveTrackFromPlaylist { track: Track, playlist: Playlist },
     // TODO: Potential Actions
     // PlayNextFromLibraryd
     // PlayNextFromPlaylist
@@ -75,17 +75,18 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
                     gem_player.ui_state.toasts.error("Error playing the next track");
                 }
             }
-            PlayerAction::RemoveTrackFromPlaylist { playlist_id, track } => {
-                let Some(playlist) = find_mut(playlist_id, &mut gem_player.playlists) else {
-                    error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
-                    continue;
-                };
+            PlayerAction::RemoveTrackFromPlaylist { playlist, track } => { // Cleanup
+                todo!();
+                // let Some(original_playlist) = find_mut(&playlist, &mut gem_player.playlists) else {
+                //     error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
+                //     continue;
+                // };
 
-                let result = remove_track(playlist, &track);
-                if let Err(e) = result {
-                    error!("{}", e);
-                    gem_player.ui_state.toasts.error("Error removing track from playlist");
-                }
+                // let result = remove_track(original_playlist, &track);
+                // if let Err(e) = result {
+                //     error!("{}", e);
+                //     gem_player.ui_state.toasts.error("Error removing track from playlist");
+                // }
             }
         }
     }

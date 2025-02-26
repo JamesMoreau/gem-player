@@ -1,7 +1,7 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{add_next_to_queue, is_playing, move_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
-    playlist::{add_a_track_to_playlist, create, delete, find_mut, rename},
+    playlist::{add_a_track_to_playlist, create, delete, find_mut, rename, Playlist},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
     GemPlayer, Track, KEY_COMMANDS,
@@ -53,7 +53,7 @@ pub struct LibraryViewState {
 
 #[fully_pub]
 pub struct PlaylistsViewState {
-    selected_playlist: Option<Uuid>,
+    selected_playlist: Option<Playlist>,
     playlist_rename: Option<(Uuid, String)>, // None: no playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name.
     delete_playlist_modal_is_open: Option<Uuid>, // None: the modal is not open. Some: the modal for a specific playlist.
     selected_track: Option<Track>,
@@ -507,7 +507,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .library_view_state
                     .selected_track
                     .as_ref()
-                    .map_or(false, |selected_track| selected_track == track);
+                    .map_or(false, |selected_track| selected_track == track); // Cleanup
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -903,8 +903,8 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(36.0, gem_player.playlists.len(), |mut row| {
                 let playlist = &mut gem_player.playlists[row.index()];
 
-                if let Some(id) = gem_player.ui_state.playlists_view_state.selected_playlist {
-                    let playlist_is_selected = id == playlist.id;
+                if let Some(selected_playlist) = &gem_player.ui_state.playlists_view_state.selected_playlist {
+                    let playlist_is_selected = playlist == selected_playlist;
                     row.set_selected(playlist_is_selected);
                 }
 
@@ -916,7 +916,7 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
                 if response.clicked() {
                     info!("Selected playlist: {}", playlist.name);
-                    gem_player.ui_state.playlists_view_state.selected_playlist = Some(playlist.id);
+                    gem_player.ui_state.playlists_view_state.selected_playlist = Some(playlist.clone());
 
                     // Reset in case we were currently editing.
                     gem_player.ui_state.playlists_view_state.playlist_rename = None;
@@ -937,7 +937,8 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .ui_state
                     .playlists_view_state
                     .selected_playlist
-                    .and_then(|id| find_mut(id, &mut gem_player.playlists));
+                    .as_ref()
+                    .and_then(|selected| gem_player.playlists.iter_mut().find(|p| p.m3u_path == selected.m3u_path)); //TODO: cleanup
 
                 let Some(playlist) = maybe_selected_playlist else {
                     return;
@@ -1032,8 +1033,8 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let maybe_selected_playlist_id = gem_player.ui_state.playlists_view_state.selected_playlist;
-    let Some(playlist_id) = maybe_selected_playlist_id else {
+    let maybe_selected_playlist = &gem_player.ui_state.playlists_view_state.selected_playlist;
+    let Some(playlist) = maybe_selected_playlist else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1045,7 +1046,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let Some(playlist) = find_mut(playlist_id, &mut gem_player.playlists) else {
+    let Some(playlist) = find_mut(playlist, &gem_player.playlists) else {
         return; // If we have an id for a playlist but cannot find it, then there's nothing to do.
     };
 
@@ -1110,7 +1111,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .playlists_view_state
                     .selected_track
                     .as_ref()
-                    .map_or(false, |selected_track| selected_track == track);
+                    .map_or(false, |selected_track| selected_track == track); // Cleanup
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -1185,13 +1186,13 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     };
 
     let playlist = {
-        let Some(playlist_id) = gem_player.ui_state.playlists_view_state.selected_playlist else {
+        let Some(selected_playlist) = &gem_player.ui_state.playlists_view_state.selected_playlist else { //TODO: cleanup
             error!("{} was called, but there is no selected playlist id.", function_name!());
             gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
             return;
         };
 
-        let Some(playlist) = find_mut(playlist_id, &mut gem_player.playlists) else {
+        let Some(playlist) = find_mut(selected_playlist, &gem_player.playlists) else {
             error!("Could not find the playlist associated with the selected playlist id.");
             gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
             return;
@@ -1222,7 +1223,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.clicked() {
                     gem_player.player.actions.push(PlayerAction::RemoveTrackFromPlaylist {
                         track: track.clone(),
-                        playlist_id: playlist.id,
+                        playlist: playlist.clone(),
                     });
                     gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
                 }
