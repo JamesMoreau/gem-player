@@ -1,7 +1,7 @@
 use crate::{track::load_from_file, Track};
 use fully_pub::fully_pub;
-use glob::glob;
 use log::error;
+use walkdir::WalkDir;
 use std::{
     fs::{self, File},
     io::{self, ErrorKind, Write},
@@ -58,29 +58,20 @@ pub fn remove_track(playlist: &mut Playlist, track: &Track) -> io::Result<()> {
     Ok(())
 }
 
-pub fn read_all_from_a_directory(path: &Path) -> io::Result<Vec<Playlist>> {
-    let file_type = "m3u";
-    let pattern = format!("{}/*.{}", path.to_string_lossy(), file_type);
-
-    let mut m3u_paths = Vec::new();
-    let result = glob(&pattern);
-    match result {
-        Ok(paths) => {
-            for path in paths.filter_map(Result::ok) {
-                m3u_paths.push(path);
-            }
-        }
-        Err(e) => {
-            return Err(io::Error::new(ErrorKind::Other, format!("Invalid pattern: {}", e)));
-        }
-    }
-
+pub fn read_all_from_a_directory(directory: &Path) -> io::Result<Vec<Playlist>> {
     let mut playlists = Vec::new();
-    for path in m3u_paths {
-        let result = load_from_m3u(&path);
-        match result {
-            Ok(playlist) => playlists.push(playlist),
+
+    for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+
+        let is_m3u_file = path.is_file() && path.extension().map_or(false, |ext| ext == "m3u");
+        if !is_m3u_file {
+            continue;
+        }
+
+        match load_from_m3u(path) {
             Err(e) => error!("{}", e),
+            Ok(playlist) => playlists.push(playlist),
         }
     }
 
