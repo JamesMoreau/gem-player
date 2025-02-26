@@ -68,19 +68,20 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
 
     let result = lofty::read_from_path(path);
     let tagged_file = match result {
-        Ok(file) => file,
         Err(e) => {
             return Err(io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)));
         }
+        Ok(file) => file,
     };
 
-    let tag = match tagged_file.primary_tag() {
-        // TODO: can this be reduced?
-        Some(tag) => tag,
-        None => match tagged_file.first_tag() {
-            Some(tag) => tag,
-            None => return Err(io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path))),
-        },
+    let tag = {
+        if let Some(tag) = tagged_file.primary_tag() {
+            tag
+        } else if let Some(fallback_tag) = tagged_file.first_tag() {
+            fallback_tag
+        } else {
+            return Err(io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path)));
+        }
     };
 
     let title = tag
