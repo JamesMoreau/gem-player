@@ -4,11 +4,14 @@ use lofty::{
     tag::ItemKey,
 };
 use log::error;
-use walkdir::WalkDir;
 use std::{
-    fs, io::{self, ErrorKind}, path::{Path, PathBuf}, time::Duration
+    fs,
+    io::{self, ErrorKind},
+    path::{Path, PathBuf},
+    time::Duration,
 };
 use strum_macros::EnumIter;
+use walkdir::WalkDir;
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {
@@ -71,7 +74,8 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         }
     };
 
-    let tag = match tagged_file.primary_tag() { // TODO: can this be reduced?
+    let tag = match tagged_file.primary_tag() {
+        // TODO: can this be reduced?
         Some(tag) => tag,
         None => match tagged_file.first_tag() {
             Some(tag) => tag,
@@ -109,16 +113,16 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
 fn is_audio_file(path: &Path) -> bool {
     if let Ok(data) = fs::read(path) {
         if let Some(kind) = infer::get(&data) {
-            return kind.mime_type().starts_with("audio/");
+            return matches!(kind.matcher_type(), infer::MatcherType::Audio | infer::MatcherType::Video);
         }
     }
-    
+
     false
 }
 
 pub fn read_music(directory: &Path) -> io::Result<Vec<Track>> {
     let mut tracks = Vec::new();
-    
+
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
 
