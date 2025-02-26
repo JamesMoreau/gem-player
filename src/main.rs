@@ -8,12 +8,11 @@ use player::{
     adjust_volume_by_percentage, check_for_next_track, load_and_play, mute_or_unmute, play_or_pause, process_actions, Player,
     PlayerAction,
 };
-use playlist::{find, read_all_from_a_directory, Playlist};
+use playlist::{read_all_from_a_directory, Playlist};
 use rodio::{OutputStream, Sink};
 use std::path::{Path, PathBuf};
 use track::{read_music, SortBy, SortOrder, Track};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
-use uuid::Uuid;
 
 mod player;
 mod playlist;
@@ -229,14 +228,9 @@ pub fn play_library_from_track(gem_player: &mut GemPlayer, track: &Track) {
     }
 }
 
-pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, track: &Track) {
+pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist: &Playlist, track: &Track) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
-
-    let Some(playlist) = find(playlist_id, &gem_player.playlists) else {
-        error!("Playlist not found.");
-        return;
-    };
 
     // Add all the other tracks to the queue.
     for t in &playlist.tracks {

@@ -7,14 +7,12 @@ use std::{
     path::{Path, PathBuf},
     time::SystemTime,
 };
-use uuid::Uuid;
 use walkdir::WalkDir;
 
 // Duplicates of tracks are not allowed.
 #[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Playlist {
-    id: Uuid, // TODO: eventually remove this and just use m3u_path as id.
     name: String,
     creation_date_time: SystemTime,
     tracks: Vec<Track>,
@@ -28,12 +26,8 @@ impl PartialEq for Playlist {
     }
 }
 
-pub fn find(playlist_id: Uuid, playlists: &[Playlist]) -> Option<&Playlist> {
-    playlists.iter().find(|p| p.id == playlist_id)
-}
-
-pub fn find_mut<'a>(selected: &Playlist, playlists: &'a [Playlist]) -> Option<&'a Playlist> { // Cleanup
-    playlists.iter().find(|p| p.m3u_path == selected.m3u_path)
+pub fn _find(playlist: PathBuf, playlists: &[Playlist]) -> Option<&Playlist> {
+    playlists.iter().find(|p| p.m3u_path == playlist)
 }
 
 pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
@@ -51,7 +45,7 @@ pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Res
     Ok(())
 }
 
-pub fn remove_track(playlist: &mut Playlist, track: &Track) -> io::Result<()> {
+pub fn _remove_track(playlist: &mut Playlist, track: &Track) -> io::Result<()> {
     let Some(index) = playlist.tracks.iter().position(|x| x == track) else {
         return Err(io::Error::new(
             ErrorKind::NotFound,
@@ -105,8 +99,6 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
         return Err(io::Error::new(ErrorKind::InvalidInput, "The file type is not .m3u"));
     }
 
-    let id: Uuid = Uuid::new_v4();
-
     let mut name = "Unnamed Playlist".to_owned();
     let maybe_stem = path.file_stem();
     if let Some(stem) = maybe_stem {
@@ -150,7 +142,6 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
     let path = path.to_path_buf();
 
     Ok(Playlist {
-        id,
         name,
         creation_date_time,
         tracks,
@@ -179,7 +170,6 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
     let file_path = directory.join(filename);
 
     let mut playlist = Playlist {
-        id: Uuid::new_v4(),
         name,
         creation_date_time: SystemTime::now(),
         tracks: Vec::new(),
@@ -192,8 +182,8 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
 }
 
 // Removes the playlist from the list and deletes the associated m3u file.
-pub fn delete(playlist_id: Uuid, playlists: &mut Vec<Playlist>) -> Result<(), String> {
-    let Some(index) = playlists.iter().position(|p| p.id == playlist_id) else {
+pub fn _delete(playlist_identifier: PathBuf, playlists: &mut Vec<Playlist>) -> Result<(), String> {
+    let Some(index) = playlists.iter().position(|p| p.m3u_path == playlist_identifier) else {
         return Err("Playlist not found in library".to_string());
     };
 

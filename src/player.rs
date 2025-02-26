@@ -1,6 +1,5 @@
 use crate::{
-    play_library_from_track, play_playlist_from_track,
-    playlist::Playlist,
+    play_library_from_track,
     track::Track,
     GemPlayer,
 };
@@ -9,18 +8,16 @@ use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
-    io::{self, BufReader, ErrorKind},
-    time::Duration,
+    io::{self, BufReader, ErrorKind}, path::PathBuf, time::Duration
 };
-use uuid::Uuid;
 
 pub enum PlayerAction {
-    PlayFromPlaylist { playlist_id: Uuid, track: Track },
+    PlayFromPlaylist { playlist_identifier: PathBuf, track: Track },
     PlayFromLibrary { track: Track },
     AddTrackToQueue { track: Track },
     PlayPrevious,
     PlayNext,
-    RemoveTrackFromPlaylist { track: Track, playlist: Playlist },
+    RemoveTrackFromPlaylist { track: Track, playlist_index: usize },
     // TODO: Potential Actions
     // PlayNextFromLibraryd
     // PlayNextFromPlaylist
@@ -64,7 +61,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 pub fn process_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
-            PlayerAction::PlayFromPlaylist { playlist_id, track } => play_playlist_from_track(gem_player, playlist_id, &track),
+            PlayerAction::PlayFromPlaylist { playlist_identifier: _, track: _} => { todo!() },
             PlayerAction::PlayFromLibrary { track } => play_library_from_track(gem_player, &track),
             PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
@@ -75,7 +72,7 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
                     gem_player.ui_state.toasts.error("Error playing the next track");
                 }
             }
-            PlayerAction::RemoveTrackFromPlaylist { playlist, track } => { // Cleanup
+            PlayerAction::RemoveTrackFromPlaylist { playlist_index: _, track: _ } => { // Cleanup. Maybe make this playlist.path to ensure correctness.
                 todo!();
                 // let Some(original_playlist) = find_mut(&playlist, &mut gem_player.playlists) else {
                 //     error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
