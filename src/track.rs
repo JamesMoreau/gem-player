@@ -1,9 +1,4 @@
-use std::{
-    io::{self, ErrorKind},
-    path::{Path, PathBuf},
-    time::Duration,
-};
-
+use crate::SUPPORTED_AUDIO_FILE_TYPES;
 use fully_pub::fully_pub;
 use glob::glob;
 use lofty::{
@@ -11,10 +6,12 @@ use lofty::{
     tag::ItemKey,
 };
 use log::error;
+use std::{
+    io::{self, ErrorKind},
+    path::{Path, PathBuf},
+    time::Duration,
+};
 use strum_macros::EnumIter;
-use uuid::Uuid;
-
-use crate::player::SUPPORTED_AUDIO_FILE_TYPES;
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SortBy {
@@ -33,7 +30,6 @@ pub enum SortOrder {
 #[fully_pub]
 #[derive(Debug, Clone)]
 pub struct Track {
-    id: Uuid, //TODO: perhaps forgo the id and use the file path as the id? Is this infallible? Or maybe create the id using the file path?
     title: Option<String>,
     artist: Option<String>,
     album: Option<String>,
@@ -42,15 +38,14 @@ pub struct Track {
     file_path: PathBuf,
 }
 
-pub fn find_track(track_id: Uuid, tracks: &[Track]) -> Option<&Track> {
-    tracks.iter().find(|p| p.id == track_id)
+impl PartialEq for Track {
+    #[inline]
+    fn eq(&self, other: &Track) -> bool {
+        self.file_path == other.file_path
+    }
 }
 
-pub fn find_track_mut(track_id: Uuid, tracks: &mut [Track]) -> Option<&mut Track> {
-    tracks.iter_mut().find(|p| p.id == track_id)
-}
-
-pub fn sort_tracks(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
+pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     tracks.sort_by(|a, b| {
         let ordering = match sort_by {
             SortBy::Title => a.title.as_deref().unwrap_or("").cmp(b.title.as_deref().unwrap_or("")),
@@ -66,7 +61,7 @@ pub fn sort_tracks(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder)
     });
 }
 
-pub fn get_track_from_file(path: &Path) -> io::Result<Track> {
+pub fn load_from_file(path: &Path) -> io::Result<Track> {
     if !path.is_file() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
@@ -87,8 +82,6 @@ pub fn get_track_from_file(path: &Path) -> io::Result<Track> {
         },
     };
 
-    let id = Uuid::new_v4();
-
     let title = tag
         .get_string(&ItemKey::TrackTitle)
         .map(|t| t.to_owned())
@@ -107,7 +100,6 @@ pub fn get_track_from_file(path: &Path) -> io::Result<Track> {
     let file_path = path.to_path_buf();
 
     Ok(Track {
-        id,
         title,
         artist,
         album,
@@ -140,7 +132,7 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Track>> {
 
     let mut tracks = Vec::new();
     for path in file_paths {
-        let result = get_track_from_file(&path);
+        let result = load_from_file(&path);
         match result {
             Ok(track) => tracks.push(track),
             Err(e) => error!("{}", e),
@@ -150,11 +142,11 @@ pub fn read_music_from_a_directory(path: &Path) -> io::Result<Vec<Track>> {
     Ok(tracks)
 }
 
-pub fn get_duration_of_tracks(tracks: &[Track]) -> Duration {
+pub fn calculate_total_duration(tracks: &[Track]) -> Duration {
     tracks.iter().map(|track| track.duration).sum()
 }
 
-pub fn open_track_file_location(track: &Track) -> io::Result<()> {
+pub fn open_file_location(track: &Track) -> io::Result<()> {
     let maybe_folder = track.file_path.as_path().parent();
     let Some(folder) = maybe_folder else {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "Track has no file path."));
