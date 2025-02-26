@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{
-    adjust_volume_by_percentage, check_for_next_track, load_and_play_track, mute_or_unmute, play_or_pause, process_player_actions, Player,
+    adjust_volume_by_percentage, check_for_next_track, load_and_play, mute_or_unmute, play_or_pause, process_actions, Player,
     PlayerAction,
 };
 use playlist::{find, read_all_from_a_directory, Playlist};
@@ -165,7 +165,7 @@ impl eframe::App for GemPlayer {
         handle_key_commands(ctx, &mut self.player);
 
         check_for_next_track(self);
-        process_player_actions(self);
+        process_actions(self);
 
         ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
         update_theme(self, ctx);
@@ -219,7 +219,7 @@ pub fn play_library_from_track(gem_player: &mut GemPlayer, track: &Track) {
         gem_player.player.queue.push(t.clone());
     }
 
-    let result = load_and_play_track(&mut gem_player.player, track.clone());
+    let result = load_and_play(&mut gem_player.player, track.clone());
     if let Err(e) = result {
         error!("{}", e);
         gem_player
@@ -247,7 +247,7 @@ pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, t
         gem_player.player.queue.push(t.clone());
     }
 
-    let result = load_and_play_track(&mut gem_player.player, track.clone());
+    let result = load_and_play(&mut gem_player.player, track.clone());
     if let Err(e) = result {
         error!("{}", e);
         gem_player

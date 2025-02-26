@@ -1,7 +1,6 @@
 use crate::{track::load_from_file, Track};
 use fully_pub::fully_pub;
 use log::error;
-use walkdir::WalkDir;
 use std::{
     fs::{self, File},
     io::{self, ErrorKind, Write},
@@ -9,6 +8,7 @@ use std::{
     time::SystemTime,
 };
 use uuid::Uuid;
+use walkdir::WalkDir;
 
 // Duplicates of tracks are not allowed.
 #[fully_pub]
@@ -64,7 +64,7 @@ pub fn read_all_from_a_directory(directory: &Path) -> io::Result<Vec<Playlist>> 
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
 
-        let is_m3u_file = path.is_file() && path.extension().map_or(false, |ext| ext == "m3u");
+        let is_m3u_file = path.is_file() && path.extension().map_or(false, |ext| ext.to_ascii_lowercase() == "m3u");
         if !is_m3u_file {
             continue;
         }

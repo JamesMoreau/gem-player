@@ -1,6 +1,6 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
-    player::{add_next_to_queue, is_playing, move_track_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
+    player::{add_next_to_queue, is_playing, move_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
     playlist::{add_a_track_to_playlist, create, delete, find_mut, rename},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
@@ -99,8 +99,8 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
                 });
                 strip.cell(|ui| match gem_player.ui_state.current_view {
                     View::Library => render_library_ui(ui, gem_player),
-                    View::Queue => render_queue_ui(ui, &mut gem_player.player.queue),
-                    View::Playlists => render_playlists_ui(ui, gem_player),
+                    View::Queue => render_queue_view(ui, &mut gem_player.player.queue),
+                    View::Playlists => render_playlists_view(ui, gem_player),
                     View::Settings => render_settings_ui(ui, gem_player),
                 });
                 strip.cell(|ui| {
@@ -131,7 +131,7 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
             rect.max.y = rect.min.y + title_bar_height;
             rect
         };
-        title_bar_ui(ui, title_bar_rect, title);
+        render_title_bar(ui, title_bar_rect, title);
 
         let content_rect = {
             let mut rect = app_rect;
@@ -144,7 +144,7 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
     });
 }
 
-pub fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
+pub fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
     let painter = ui.painter();
 
     let title_bar_response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
@@ -651,7 +651,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Track>) {
+pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
     if queue.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -744,7 +744,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Track>) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        move_track_to_front(queue, index);
+                        move_to_front(queue, index);
                     }
 
                     ui.add_space(8.0);
@@ -758,7 +758,7 @@ pub fn render_queue_ui(ui: &mut Ui, queue: &mut Vec<Track>) {
         });
 }
 
-pub fn render_playlists_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library_directory.is_none() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))

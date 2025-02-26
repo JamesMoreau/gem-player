@@ -61,7 +61,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn process_player_actions(gem_player: &mut GemPlayer) {
+pub fn process_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
             PlayerAction::PlayFromPlaylist { playlist_id, track } => play_playlist_from_track(gem_player, playlist_id, &track),
@@ -106,7 +106,7 @@ pub fn play_or_pause(player: &mut Player) {
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(playing_track) = player.playing_track.clone() {
-            if let Err(e) = load_and_play_track(player, playing_track) {
+            if let Err(e) = load_and_play(player, playing_track) {
                 return Err(e.to_string());
             }
         }
@@ -123,7 +123,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
         player.history.push(playing_track);
     }
 
-    if let Err(e) = load_and_play_track(player, next_track) {
+    if let Err(e) = load_and_play(player, next_track) {
         return Err(e.to_string());
     }
 
@@ -165,7 +165,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
         player.queue.insert(0, playing_track);
     }
 
-    if let Err(e) = load_and_play_track(player, previous_track) {
+    if let Err(e) = load_and_play(player, previous_track) {
         return Err(e.to_string());
     }
 
@@ -173,7 +173,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play_track(player: &mut Player, track: Track) -> io::Result<()> {
+pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> {
     player.sink.stop(); // Stop the current track if any.
     player.playing_track = None;
 
@@ -209,7 +209,7 @@ pub fn shuffle_queue(queue: &mut Vec<Track>) {
     queue.shuffle(&mut rng);
 }
 
-pub fn move_track_to_front(queue: &mut Vec<Track>, index: usize) {
+pub fn move_to_front(queue: &mut Vec<Track>, index: usize) {
     if index == 0 || index >= queue.len() {
         return;
     }
