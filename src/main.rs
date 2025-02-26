@@ -172,14 +172,6 @@ impl eframe::App for GemPlayer {
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
     }
-
-    fn auto_save_interval(&self) -> std::time::Duration {
-        std::time::Duration::from_secs(30)
-    }
-
-    fn raw_input_hook(&mut self, _ctx: &eframe::egui::Context, _raw_input: &mut eframe::egui::RawInput) {}
-
-    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {}
 }
 
 pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
