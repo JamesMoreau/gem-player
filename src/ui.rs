@@ -1,8 +1,8 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{
-        add_next_to_queue, is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, remove_from_queue, shuffle_queue,
-        PlayerAction,
+        add_next_to_queue, add_to_queue, is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, remove_from_queue,
+        shuffle_queue, PlayerAction,
     },
     playlist::{add_a_track_to_playlist, create, delete, remove_track, rename},
     read_music_and_playlists_from_directory,
@@ -933,9 +933,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return; // No playlist selected, do nothing
     };
 
-    let playlist_index = gem_player.playlists.iter().position(|p| &p.m3u_path == selection);
-
-    let Some(index) = playlist_index else {
+    let Some(index) = gem_player.playlists.iter().position(|p| &p.m3u_path == selection) else {
         error!("The selected playlist could not be found.");
         return;
     };
@@ -1233,15 +1231,14 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
             return;
         };
 
-
-        let playlist = & gem_player.playlists[playlist_index];
-        let Some(track_index) = playlist.tracks.iter().position(|t| t.path == *selected_track_identifier) else {
+        let playlist = &gem_player.playlists[playlist_index];
+        let Some(index) = playlist.tracks.iter().position(|t| t.path == *selected_track_identifier) else {
             error!("Selected track not found in playlist.");
             gem_player.ui_state.playlists.track_menu_is_open = false;
             return;
         };
 
-        track_index
+        index
     };
 
     let modal_width = 220.0;
@@ -1252,38 +1249,39 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
             ui.set_width(modal_width);
 
             ui.vertical_centered_justified(|ui| {
-                let playlist = &mut gem_player.playlists[playlist_index];
-                let track = &playlist.tracks[track_index];
-
-                ui.label(RichText::new(track.title.as_deref().unwrap_or("Unknown Title")).strong());
+                let title = gem_player.playlists[playlist_index].tracks[track_index]
+                    .title
+                    .as_deref()
+                    .unwrap_or("Unknown Title");
+                ui.label(RichText::new(title).strong());
 
                 ui.add_space(8.0);
 
                 let response = ui.button(format!("{} Remove from Playlist", icons::ICON_DELETE));
                 if response.clicked() {
-                    todo!()
-                    // let result = remove_track(playlist, &track.path);
-                    // if let Err(e) = result {
-                    //     error!("{}", e);
-                    //     gem_player.ui_state.toasts.error("Error removing track from playlist");
-                    // }
-                    // gem_player.ui_state.playlists.track_menu_is_open = false;
+                    let track_identifier = gem_player.playlists[playlist_index].tracks[track_index].path.clone();
+                    let playlist = &mut gem_player.playlists[playlist_index];
+                    let result = remove_track(playlist, &track_identifier);
+                    if let Err(e) = result {
+                        error!("{}", e);
+                        gem_player.ui_state.toasts.error("Error removing track from playlist");
+                    }
+                    gem_player.ui_state.playlists.track_menu_is_open = false;
                 }
 
                 ui.separator();
 
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
+                    let track = &gem_player.playlists[playlist_index].tracks[track_index];
                     add_next_to_queue(&mut gem_player.player.queue, track.clone());
                     gem_player.ui_state.playlists.track_menu_is_open = false;
                 }
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
                 if response.clicked() {
-                    gem_player
-                        .player
-                        .actions
-                        .push(PlayerAction::AddTrackToQueue { track: track.clone() });
+                    let track = &gem_player.playlists[playlist_index].tracks[track_index];
+                    add_to_queue(&mut gem_player.player.queue, track.clone());
                     gem_player.ui_state.playlists.track_menu_is_open = false;
                 }
 
@@ -1291,7 +1289,8 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Open File Location", icons::ICON_FOLDER));
                 if response.clicked() {
-                    let result = open_file_location(&track);
+                    let track = &gem_player.playlists[playlist_index].tracks[track_index];
+                    let result = open_file_location(track);
                     match result {
                         Err(e) => error!("{}", e),
                         Ok(_) => info!("Opening track location"),
