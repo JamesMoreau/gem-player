@@ -15,11 +15,11 @@ pub enum PlayerAction {
     AddTrackToQueue { track: Track },
     PlayPrevious,
     PlayNext,
-    RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf }, // TODO: change to track identifier
-                                                                            // TODO: Potential Actions
-                                                                            // PlayNextFromLibraryd
-                                                                            // PlayNextFromPlaylist
-                                                                            // RemoveTrackFromQueue { track_id: Uuid }
+    RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf },
+    // TODO: Potential Actions
+    // PlayNextFromLibraryd
+    // PlayNextFromPlaylist
+    // RemoveTrackFromQueue { track_id: Uuid }
 }
 
 #[fully_pub]
