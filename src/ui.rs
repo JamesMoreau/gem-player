@@ -1,6 +1,6 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
-    player::{add_next_to_queue, is_playing, move_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
+    player::{add_next_to_queue, is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
     playlist::{add_a_track_to_playlist, create, delete, rename},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
@@ -249,7 +249,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Previous")
                         .on_disabled_hover_text("No previous track");
                     if response.clicked() {
-                        gem_player.player.actions.push(PlayerAction::PlayPrevious);
+                        maybe_play_previous(gem_player)
                     }
 
                     let play_pause_icon = if is_playing(&mut gem_player.player) {
@@ -275,7 +275,11 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Next")
                         .on_disabled_hover_text("No next track");
                     if response.clicked() {
-                        gem_player.player.actions.push(PlayerAction::PlayNext);
+                        let result = play_next(&mut gem_player.player);
+                        if let Err(e) = result {
+                            error!("{}", e);
+                            gem_player.ui_state.toasts.error("Error playing the next track");
+                        }
                     }
                 });
 

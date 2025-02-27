@@ -5,8 +5,8 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{
-    adjust_volume_by_percentage, check_for_next_track, mute_or_unmute, play_next, play_or_pause, process_actions, Player,
-    PlayerAction,
+    adjust_volume_by_percentage, check_for_next_track, maybe_play_previous, mute_or_unmute, play_next, play_or_pause, process_actions,
+    Player,
 };
 use playlist::{read_all_from_a_directory, Playlist};
 use rodio::{OutputStream, Sink};
@@ -161,7 +161,7 @@ impl eframe::App for GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        handle_key_commands(ctx, &mut self.player);
+        handle_key_commands(ctx, self);
 
         check_for_next_track(self);
         process_actions(self);
@@ -271,7 +271,7 @@ lazy_static! {
     };
 }
 
-pub fn handle_key_commands(ctx: &Context, player: &mut Player) {
+pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
     if ctx.wants_keyboard_input() {
         return;
     }
@@ -293,12 +293,18 @@ pub fn handle_key_commands(ctx: &Context, player: &mut Player) {
                 info!("Key pressed: {}", binding);
 
                 match key {
-                    Key::Space => play_or_pause(player),
-                    Key::ArrowLeft => player.actions.push(PlayerAction::PlayPrevious),
-                    Key::ArrowRight => player.actions.push(PlayerAction::PlayNext),
-                    Key::ArrowUp => adjust_volume_by_percentage(player, 0.1),
-                    Key::ArrowDown => adjust_volume_by_percentage(player, -0.1),
-                    Key::M => mute_or_unmute(player),
+                    Key::Space => play_or_pause(&mut gem_player.player),
+                    Key::ArrowLeft => maybe_play_previous(gem_player),
+                    Key::ArrowRight => {
+                        let result = play_next(&mut gem_player.player);
+                        if let Err(e) = result {
+                            error!("{}", e);
+                            gem_player.ui_state.toasts.error("Error playing the next track");
+                        }
+                    }
+                    Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
+                    Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
+                    Key::M => mute_or_unmute(&mut gem_player.player),
                     _ => {}
                 }
             }

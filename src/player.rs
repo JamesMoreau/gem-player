@@ -13,8 +13,8 @@ pub enum PlayerAction {
     PlayPlaylist { playlist_identifier: PathBuf, starting_track: Option<Track> },
     PlayLibrary { track: Track },
     AddTrackToQueue { track: Track },
-    PlayPrevious,
-    PlayNext,
+    // PlayPrevious,
+    // PlayNext,
     RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf },
     // TODO: Potential Actions
     // PlayNextFromLibraryd
@@ -65,14 +65,6 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
             } => play_playlist(gem_player, &playlist_identifier, track.as_ref()),
             PlayerAction::PlayLibrary { track } => play_library(gem_player, Some(&track)),
             PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
-            PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
-            PlayerAction::PlayNext => {
-                let result = play_next(&mut gem_player.player);
-                if let Err(e) = result {
-                    error!("{}", e);
-                    gem_player.ui_state.toasts.error("Error playing the next track");
-                }
-            }
             PlayerAction::RemoveTrackFromPlaylist {
                 playlist_identifier,
                 track,
