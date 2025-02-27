@@ -1,7 +1,7 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{add_next_to_queue, is_playing, move_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
-    playlist::{add_a_track_to_playlist, create, delete, rename, Playlist},
+    playlist::{add_a_track_to_playlist, create, delete, rename},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
     GemPlayer, Track, KEY_COMMANDS,
@@ -947,6 +947,8 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .size(Size::exact(64.0))
         .size(Size::remainder())
         .vertical(|mut strip| {
+            let playlist = &mut gem_player.playlists[index];
+
             strip.cell(|ui| {
                 Frame::new().fill(ui.visuals().faint_bg_color).show(ui, |ui| {
                     if let Some(name_buffer) = &mut gem_player.ui_state.playlists.playlist_rename {
@@ -985,16 +987,14 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         } else if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
 
-                            if let Some(playlist) = gem_player.playlists.get_mut(index) {
-                                let result = rename(playlist, name_buffer_clone);
-                                match result {
-                                    Err(e) => {
-                                        error!("{}", e);
-                                    }
-                                    Ok(_) => {
-                                        // Update the selected playlist with the new path so that we remain selected.
-                                        gem_player.ui_state.playlists.selected_playlist_identifier = Some(playlist.m3u_path.clone());
-                                    }
+                            let result = rename(playlist, name_buffer_clone);
+                            match result {
+                                Err(e) => {
+                                    error!("{}", e);
+                                }
+                                Ok(_) => {
+                                    // Update the selected playlist with the new path so that we remain selected.
+                                    gem_player.ui_state.playlists.selected_playlist_identifier = Some(playlist.m3u_path.clone());
                                 }
                             }
 
@@ -1009,9 +1009,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             |ui| {
                                 ui.add_space(16.0);
 
-                                if let Some(playlist) = gem_player.playlists.get(index) {
-                                    ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
-                                }
+                                ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
 
                                 if strip_contains_pointer {
                                     ui.add_space(16.0);
@@ -1019,13 +1017,10 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let play = Button::new(icons::ICON_PLAY_ARROW);
                                     let response = ui.add(play);
                                     if response.clicked() {
-                                        todo!() // TODO maybe just split up this function?
-                                        // if let Some(playlist) = gem_player.playlists.get_mut(index) {
-                                        //     gem_player.player.actions.push(PlayerAction::PlayPlaylist {
-                                        //         playlist_identifier: playlist.m3u_path.clone(),
-                                        //         starting_track: None,
-                                        //     });
-                                        // }
+                                        gem_player.player.actions.push(PlayerAction::PlayPlaylist {
+                                            playlist_identifier: playlist.m3u_path.clone(),
+                                            starting_track: None,
+                                        });
                                     }
                                 }
                             },
@@ -1048,10 +1043,8 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 let edit_name_button = Button::new(icons::ICON_EDIT);
                                 let response = ui.add(edit_name_button).on_hover_text("Edit name");
                                 if response.clicked() {
-                                    if let Some(playlist) = gem_player.playlists.get(index) {
-                                        info!("Editing playlist name: {}", playlist.name);
-                                        gem_player.ui_state.playlists.playlist_rename = Some(playlist.name.clone());
-                                    }
+                                    info!("Editing playlist name: {}", playlist.name);
+                                    gem_player.ui_state.playlists.playlist_rename = Some(playlist.name.clone());
                                 }
                             },
                         );
