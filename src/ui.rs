@@ -1,7 +1,7 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss,
     player::{add_next_to_queue, is_playing, move_to_front, play_or_pause, remove_from_queue, shuffle_queue, PlayerAction},
-    playlist::{add_a_track_to_playlist, create, delete, rename},
+    playlist::{add_a_track_to_playlist, create, delete, rename, Playlist},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
     GemPlayer, Track, KEY_COMMANDS,
@@ -785,7 +785,7 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .size(Size::remainder())
         .horizontal(|mut strip| {
             strip.cell(|ui| {
-                render_playlists_list(ui, gem_player);
+                render_playlists_list(ui, gem_player); // TODO: maybe inline this.
             });
 
             strip.cell(|ui| {
@@ -1013,10 +1013,9 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
                                 }
 
-
                                 if strip_contains_pointer {
                                     ui.add_space(16.0);
-    
+
                                     let play = Button::new(icons::ICON_PLAY_ARROW);
                                     let response = ui.add(play);
                                     if response.clicked() {

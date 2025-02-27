@@ -29,7 +29,7 @@ TODO:
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
 * profile app.
 * Fullscreen?
-* UI + aestethics
+* UI + aestethics. Scrolling song info could be cool (maybe only applies when the string is too big?)
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
