@@ -52,9 +52,9 @@ pub struct LibraryViewState {
 
 #[fully_pub]
 pub struct PlaylistsViewState {
-    selected_playlist: Option<usize>,
+    selected_playlist_identifier: Option<PathBuf>,
     playlist_rename: Option<(PathBuf, String)>, // None: no playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name. // TODO: this should probably just use the selected_playlist
-    delete_playlist_modal_is_open: Option<PathBuf>, // None: the modal is not open. Some: the modal for a specific playlist. //TODO: this should probably just use the selected_playlist
+    delete_playlist_modal_is_open: bool,        // The track for which the menu is open is PlaylistsViewState.selected_track .
     selected_track: Option<Track>,
     track_menu_is_open: bool, // The track for which the menu is open is PlaylistsViewState.selected_track .
 }
@@ -770,9 +770,7 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    if gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open.is_some() {
-        render_delete_playlist_modal(ui, gem_player);
-    }
+    render_delete_playlist_modal(ui, gem_player);
 
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
@@ -799,9 +797,9 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(playlist_identifier) = &gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open else {
+    if !gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open {
         return;
-    };
+    }
 
     let mut cancel_clicked = false;
     let mut confirm_clicked = false;
@@ -829,7 +827,12 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if response.clicked() {
                             confirm_clicked = true;
 
-                            let result = delete(playlist_identifier, &mut gem_player.playlists); 
+                            let Some(selection) = &gem_player.ui_state.playlists_view_state.selected_playlist_identifier else {
+                                error!("The delete playlist is open but no playlist is selected.");
+                                return;
+                            };
+
+                            let result = delete(selection, &mut gem_player.playlists);
                             if let Err(e) = result {
                                 error!("{}", e);
                                 return;
@@ -839,7 +842,7 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
                             info!("{}", message);
                             gem_player.ui_state.toasts.success(message);
-                            gem_player.ui_state.playlists_view_state.selected_playlist = None;
+                            gem_player.ui_state.playlists_view_state.selected_playlist_identifier = None;
                         }
                     },
                 );
@@ -847,7 +850,7 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 
     if confirm_clicked || cancel_clicked || modal.should_close() {
-        gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open = None;
+        gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open = false;
     }
 }
 
@@ -902,8 +905,8 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(36.0, gem_player.playlists.len(), |mut row| {
                 let playlist = &mut gem_player.playlists[row.index()];
 
-                if let Some(selected_playlist) = gem_player.ui_state.playlists_view_state.selected_playlist {
-                    let playlist_is_selected = row.index() == selected_playlist;
+                if let Some(selected_playlist) = &gem_player.ui_state.playlists_view_state.selected_playlist_identifier {
+                    let playlist_is_selected = playlist.m3u_path == *selected_playlist;
                     row.set_selected(playlist_is_selected);
                 }
 
@@ -915,7 +918,7 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
                 if response.clicked() {
                     info!("Selected playlist: {}", playlist.name);
-                    gem_player.ui_state.playlists_view_state.selected_playlist = Some(row.index());
+                    gem_player.ui_state.playlists_view_state.selected_playlist_identifier = Some(playlist.m3u_path.clone());
 
                     // Reset in case we were currently editing.
                     gem_player.ui_state.playlists_view_state.playlist_rename = None;
@@ -925,22 +928,27 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(selection) = gem_player.ui_state.playlists_view_state.selected_playlist else {
-        return; // show nothing.
+    let Some(selection) = &gem_player.ui_state.playlists_view_state.selected_playlist_identifier else {
+        return; // No playlist selected, do nothing
     };
-    
+
+    let playlist_index = gem_player.playlists.iter().position(|p| &p.m3u_path == selection);
+
+    let Some(index) = playlist_index else {
+        error!("The selected playlist could not be found.");
+        return;
+    };
+
     render_playlist_track_menu(ui, gem_player);
-    
+
     StripBuilder::new(ui)
         .size(Size::exact(64.0))
         .size(Size::remainder())
         .vertical(|mut strip| {
             strip.cell(|ui| {
-                let playlist = &mut gem_player.playlists[selection];
-
                 Frame::new().fill(ui.visuals().faint_bg_color).show(ui, |ui| {
                     if let Some((_, name_buffer)) = &mut gem_player.ui_state.playlists_view_state.playlist_rename {
-                        // In edit mode
+                        // In edit mode.
                         let mut discard_clicked = false;
                         let mut save_clicked = false;
 
@@ -974,49 +982,57 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.ui_state.playlists_view_state.playlist_rename = None;
                         } else if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
-                            let result = rename(playlist, name_buffer_clone);
-                            if let Err(e) = result {
-                                error!("{}", e);
+
+                            if let Some(playlist) = gem_player.playlists.get_mut(index) {
+                                let result = rename(playlist, name_buffer_clone);
+                                if let Err(e) = result {
+                                    error!("{}", e);
+                                }
                             }
 
                             gem_player.ui_state.playlists_view_state.playlist_rename = None;
                         }
+                    } else {
+                        // Not edit mode.
+                        let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
 
-                        return;
+                        containers::Sides::new().height(ui.available_height()).show(
+                            ui,
+                            |ui| {
+                                ui.add_space(16.0);
+
+                                if let Some(playlist) = gem_player.playlists.get(index) {
+                                    ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
+                                }
+                            },
+                            |ui| {
+                                if !strip_contains_pointer {
+                                    return;
+                                }
+
+                                ui.add_space(16.0);
+
+                                let delete_button = Button::new(icons::ICON_DELETE);
+                                let response = ui.add(delete_button).on_hover_text("Delete");
+                                if response.clicked() {
+                                    info!("Opening delete playlist modal");
+                                    gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open = true;
+                                }
+
+                                ui.add_space(8.0);
+
+                                let edit_name_button = Button::new(icons::ICON_EDIT);
+                                let response = ui.add(edit_name_button).on_hover_text("Edit name");
+                                if response.clicked() {
+                                    if let Some(playlist) = gem_player.playlists.get(index) {
+                                        info!("Editing playlist name: {}", playlist.name);
+                                        gem_player.ui_state.playlists_view_state.playlist_rename =
+                                            Some((playlist.m3u_path.clone(), playlist.name.clone()));
+                                    }
+                                }
+                            },
+                        );
                     }
-
-                    // Not in edit mode
-                    let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                    containers::Sides::new().height(ui.available_height()).show(
-                        ui,
-                        |ui| {
-                            ui.add_space(16.0);
-                            ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
-                        },
-                        |ui| {
-                            if !strip_contains_pointer {
-                                return;
-                            }
-
-                            ui.add_space(16.0);
-
-                            let delete_button = Button::new(icons::ICON_DELETE);
-                            let response = ui.add(delete_button).on_hover_text("Delete");
-                            if response.clicked() {
-                                info!("Opening delete playlist modal: {}", playlist.name);
-                                gem_player.ui_state.playlists_view_state.delete_playlist_modal_is_open = Some(playlist.m3u_path.clone());
-                            }
-
-                            ui.add_space(8.0);
-
-                            let edit_name_button = Button::new(icons::ICON_EDIT);
-                            let response = ui.add(edit_name_button).on_hover_text("Edit name");
-                            if response.clicked() {
-                                info!("Editing playlist name: {}", playlist.name);
-                                gem_player.ui_state.playlists_view_state.playlist_rename = Some((playlist.m3u_path.clone(), playlist.name.clone()));
-                            }
-                        },
-                    );
                 });
             });
 
@@ -1027,7 +1043,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(selected) = gem_player.ui_state.playlists_view_state.selected_playlist else {
+    let Some(selection) = &gem_player.ui_state.playlists_view_state.selected_playlist_identifier else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1039,7 +1055,12 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let playlist = &gem_player.playlists[selected];
+    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *selection) else {
+        error!("Could not find the selected playlist.");
+        return;
+    };
+
+    let playlist = &gem_player.playlists[playlist_index];
 
     if playlist.tracks.is_empty() {
         Frame::new()
@@ -1176,13 +1197,19 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let Some(selected) = gem_player.ui_state.playlists_view_state.selected_playlist else {
+    let Some(selection) = &gem_player.ui_state.playlists_view_state.selected_playlist_identifier else {
         error!("{} was called, but there is no selected playlist.", function_name!());
         gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
         return;
     };
 
-    let playlist = &gem_player.playlists[selected];
+    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *selection) else {
+        error!("Could not find the selected playlist.");
+        gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
+        return;
+    };
+
+    let playlist = &mut gem_player.playlists[playlist_index]; // ✅ Mutable reference to playlist
 
     let Some(track) = &gem_player.ui_state.playlists_view_state.selected_track else {
         error!("{} was called, but there is no selected track id.", function_name!());
@@ -1432,7 +1459,8 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     format!("{} tracks / {}", tracks.len(), duration_string)
 }
 
-fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) { //TODO: rename to filter?
+fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    //TODO: rename to filter?
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
     let popup_id = ui.make_persistent_id("filter_popup");
     if response.clicked() {

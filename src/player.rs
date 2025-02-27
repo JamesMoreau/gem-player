@@ -1,5 +1,5 @@
 use crate::{
-    play_library, play_playlist, playlist::{_find, find_mut, remove_track}, track::Track, GemPlayer
+    play_library, playlist::{_find, find_mut, remove_track}, track::Track, GemPlayer
 };
 use fully_pub::fully_pub;
 use log::error;
