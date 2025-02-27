@@ -78,6 +78,8 @@ pub fn read_all_from_a_directory(directory: &Path) -> io::Result<Vec<Playlist>> 
         }
     }
 
+    playlists.sort_by(|a, b| a.creation_date_time.cmp(&b.creation_date_time));
+    
     Ok(playlists)
 }
 
@@ -184,7 +186,7 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
 }
 
 // Removes the playlist from the list and deletes the associated m3u file.
-pub fn delete(playlist_identifier: PathBuf, playlists: &mut Vec<Playlist>) -> Result<(), String> {
+pub fn delete(playlist_identifier: &Path, playlists: &mut Vec<Playlist>) -> Result<(), String> {
     let Some(index) = playlists.iter().position(|p| p.m3u_path == playlist_identifier) else {
         return Err("Playlist not found in library".to_string());
     };

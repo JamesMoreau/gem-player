@@ -1,5 +1,5 @@
 use crate::{
-    play_library_from_track, playlist::{find_mut, remove_track}, track::Track, GemPlayer
+    play_library, play_playlist, playlist::{_find, find_mut, remove_track}, track::Track, GemPlayer
 };
 use fully_pub::fully_pub;
 use log::error;
@@ -59,8 +59,15 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 pub fn process_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
-            PlayerAction::PlayFromPlaylist { playlist_identifier: _, track: _} => { todo!() },
-            PlayerAction::PlayFromLibrary { track } => play_library_from_track(gem_player, &track),
+            PlayerAction::PlayFromPlaylist { playlist_identifier, track} => { 
+                let Some(playlist) = _find(&playlist_identifier, &gem_player.playlists) else {
+                    error!("Unable to find playlist for PlayFromPlaylist action.");
+                    continue;
+                };
+                todo!();
+                // play_playlist(gem_player, playlist, Some(&track));
+            },
+            PlayerAction::PlayFromLibrary { track } => play_library(gem_player, Some(&track)),
             PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
             PlayerAction::PlayNext => {

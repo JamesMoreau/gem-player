@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{
-    adjust_volume_by_percentage, check_for_next_track, load_and_play, mute_or_unmute, play_or_pause, process_actions, Player,
+    adjust_volume_by_percentage, check_for_next_track, mute_or_unmute, play_next, play_or_pause, process_actions, Player,
     PlayerAction,
 };
 use playlist::{read_all_from_a_directory, Playlist};
@@ -21,6 +21,7 @@ mod ui;
 
 /*
 TODO:
+* have a play button next to the playlist name in the playlist view.
 * library track menu: when a song is added to playlist then the menu closes, then another track menu is opened, the add to playlist dropdown is still open.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
@@ -205,49 +206,47 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
     (library, playlists)
 }
 
-pub fn play_library_from_track(gem_player: &mut GemPlayer, track: &Track) {
+pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    // Add all the other tracks to the queue.
+    if let Some(track) = starting_track {
+        gem_player.player.queue.push(track.clone());
+    }
+
     for t in &gem_player.library {
-        if track == t {
+        if Some(t) == starting_track {
             continue;
         }
 
         gem_player.player.queue.push(t.clone());
     }
 
-    let result = load_and_play(&mut gem_player.player, track.clone());
-    if let Err(e) = result {
+    if let Err(e) = play_next(&mut gem_player.player) {
         error!("{}", e);
-        gem_player
-            .ui_state
-            .toasts
-            .error(format!("Error playing {}", track.title.as_deref().unwrap_or("Unknown")));
+        gem_player.ui_state.toasts.error("Error playing from library");
     }
 }
 
-pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist: &Playlist, track: &Track) {
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist: &Playlist, starting_track: Option<&Track>) { // perhaps take identifier instead of the playlist object.
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    // Add all the other tracks to the queue.
+    if let Some(track) = starting_track {
+        gem_player.player.queue.push(track.clone());
+    }
+
     for t in &playlist.tracks {
-        if track == t {
+        if Some(t) == starting_track {
             continue;
         }
 
         gem_player.player.queue.push(t.clone());
     }
 
-    let result = load_and_play(&mut gem_player.player, track.clone());
-    if let Err(e) = result {
+    if let Err(e) = play_next(&mut gem_player.player) {
         error!("{}", e);
-        gem_player
-            .ui_state
-            .toasts
-            .error(format!("Error playing {}", track.title.as_deref().unwrap_or("Unknown")));
+        gem_player.ui_state.toasts.error("Error playing from playlist");
     }
 }
 

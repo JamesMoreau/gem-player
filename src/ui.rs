@@ -53,7 +53,7 @@ pub struct LibraryViewState {
 #[fully_pub]
 pub struct PlaylistsViewState {
     selected_playlist: Option<usize>,
-    playlist_rename: Option<(PathBuf, String)>, // None: no playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name. // TODO: this should p
+    playlist_rename: Option<(PathBuf, String)>, // None: no playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name. // TODO: this should probably just use the selected_playlist
     delete_playlist_modal_is_open: Option<PathBuf>, // None: the modal is not open. Some: the modal for a specific playlist. //TODO: this should probably just use the selected_playlist
     selected_track: Option<Track>,
     track_menu_is_open: bool, // The track for which the menu is open is PlaylistsViewState.selected_track .
@@ -829,7 +829,7 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if response.clicked() {
                             confirm_clicked = true;
 
-                            let result = delete(playlist_identifier.to_path_buf(), &mut gem_player.playlists); 
+                            let result = delete(playlist_identifier, &mut gem_player.playlists); 
                             if let Err(e) = result {
                                 error!("{}", e);
                                 return;
@@ -840,7 +840,6 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             info!("{}", message);
                             gem_player.ui_state.toasts.success(message);
                             gem_player.ui_state.playlists_view_state.selected_playlist = None;
-                            todo!();
                         }
                     },
                 );
