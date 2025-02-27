@@ -53,10 +53,10 @@ pub struct LibraryViewState {
 #[fully_pub]
 pub struct PlaylistsViewState {
     selected_playlist_identifier: Option<PathBuf>, // None: no playlist is selected. Some: the path of the selected playlist.
+    selected_track_identifier: Option<PathBuf>,
     playlist_rename: Option<String>, // None: no playlist is being edited. Some: The playlist pointed to by PlaylistsViewState.selected_track's name is being edited and athe buffer for the new name.
     delete_playlist_modal_is_open: bool, // The track for which the menu is open is PlaylistsViewState.selected_track .
-    selected_track_identifier: Option<PathBuf>,
-    track_menu_is_open: bool, // The track for which the menu is open is PlaylistsViewState.selected_track .
+    track_menu_is_open: bool,        // The track for which the menu is open is PlaylistsViewState.selected_track .
 }
 
 pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
@@ -258,7 +258,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         icons::ICON_PLAY_ARROW
                     };
                     let tooltip = if is_playing(&mut gem_player.player) { "Pause" } else { "Play" };
-                    let play_pause_button = Button::new(RichText::new(play_pause_icon));
+                    let play_pause_button = Button::new(play_pause_icon);
                     let track_is_playing = gem_player.player.playing_track.is_some();
                     let response = ui
                         .add_enabled(track_is_playing, play_pause_button)
@@ -561,10 +561,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player
-                        .player
-                        .actions
-                        .push(PlayerAction::PlayFromLibrary { track: track.clone() });
+                    gem_player.player.actions.push(PlayerAction::PlayLibrary { track: track.clone() });
                 }
             });
         });
@@ -933,6 +930,8 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    render_playlist_track_menu(ui, gem_player);
+
     let Some(selection) = &gem_player.ui_state.playlists.selected_playlist_identifier else {
         return; // No playlist selected, do nothing
     };
@@ -944,8 +943,6 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    render_playlist_track_menu(ui, gem_player);
-
     StripBuilder::new(ui)
         .size(Size::exact(64.0))
         .size(Size::remainder())
@@ -953,7 +950,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
             strip.cell(|ui| {
                 Frame::new().fill(ui.visuals().faint_bg_color).show(ui, |ui| {
                     if let Some(name_buffer) = &mut gem_player.ui_state.playlists.playlist_rename {
-                        // In edit mode.
+                        // Editing mode
                         let mut discard_clicked = false;
                         let mut save_clicked = false;
 
@@ -1004,7 +1001,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.ui_state.playlists.playlist_rename = None;
                         }
                     } else {
-                        // Not edit mode.
+                        // Not edit mode
                         let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
 
                         containers::Sides::new().height(ui.available_height()).show(
@@ -1014,6 +1011,23 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                                 if let Some(playlist) = gem_player.playlists.get(index) {
                                     ui.add(unselectable_label(RichText::new(&playlist.name).heading().strong()));
+                                }
+
+
+                                if strip_contains_pointer {
+                                    ui.add_space(16.0);
+    
+                                    let play = Button::new(icons::ICON_PLAY_ARROW);
+                                    let response = ui.add(play);
+                                    if response.clicked() {
+                                        todo!() // TODO maybe just split up this function?
+                                        // if let Some(playlist) = gem_player.playlists.get_mut(index) {
+                                        //     gem_player.player.actions.push(PlayerAction::PlayPlaylist {
+                                        //         playlist_identifier: playlist.m3u_path.clone(),
+                                        //         starting_track: None,
+                                        //     });
+                                        // }
+                                    }
                                 }
                             },
                             |ui| {
@@ -1192,9 +1206,9 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    gem_player.player.actions.push(PlayerAction::PlayFromPlaylist {
+                    gem_player.player.actions.push(PlayerAction::PlayPlaylist {
                         playlist_identifier: playlist.m3u_path.clone(),
-                        track: track.clone(),
+                        starting_track: Some(track.clone()),
                     });
                 }
             });

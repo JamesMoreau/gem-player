@@ -10,8 +10,8 @@ use std::{
 };
 
 pub enum PlayerAction {
-    PlayFromPlaylist { playlist_identifier: PathBuf, track: Track },
-    PlayFromLibrary { track: Track },
+    PlayPlaylist { playlist_identifier: PathBuf, starting_track: Option<Track> },
+    PlayLibrary { track: Track },
     AddTrackToQueue { track: Track },
     PlayPrevious,
     PlayNext,
@@ -59,11 +59,11 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 pub fn process_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
-            PlayerAction::PlayFromPlaylist {
+            PlayerAction::PlayPlaylist {
                 playlist_identifier,
-                track,
-            } => play_playlist(gem_player, &playlist_identifier, Some(&track)),
-            PlayerAction::PlayFromLibrary { track } => play_library(gem_player, Some(&track)),
+                starting_track: track,
+            } => play_playlist(gem_player, &playlist_identifier, track.as_ref()),
+            PlayerAction::PlayLibrary { track } => play_library(gem_player, Some(&track)),
             PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
             PlayerAction::PlayNext => {
