@@ -96,18 +96,18 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         ui_state: UIState {
             current_view: ui::View::Library,
             theme_preference,
-            library_view_state: LibraryViewState {
+            library: LibraryViewState {
                 search_text: String::new(),
                 selected_track: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
                 track_menu_is_open: false,
             },
-            playlists_view_state: PlaylistsViewState {
+            playlists: PlaylistsViewState {
                 selected_playlist_identifier: None,
                 playlist_rename: None,
                 delete_playlist_modal_is_open: false,
-                selected_track: None,
+                selected_track_identifier: None,
                 track_menu_is_open: false,
             },
             toasts: Toasts::default()
