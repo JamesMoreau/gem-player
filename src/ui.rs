@@ -585,7 +585,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let modal_width = 220.0;
 
-    let modal = containers::Modal::new(Id::new("library_track_menu_modal"))
+    let modal = containers::Modal::new(Id::new("library_track_menu"))
         .backdrop_color(Color32::TRANSPARENT)
         .show(ui.ctx(), |ui| {
             ui.set_width(modal_width);
@@ -609,6 +609,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         error!("{}", e);
                                         gem_player.ui_state.toasts.error(format!("{}", e));
                                     }
+                                    ui.close_menu();
                                     gem_player.ui_state.library.track_menu_is_open = false;
                                 }
                             }
@@ -785,7 +786,76 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .size(Size::remainder())
         .horizontal(|mut strip| {
             strip.cell(|ui| {
-                render_playlists_list(ui, gem_player); // TODO: maybe inline this.
+                let width = ui.available_width();
+                TableBuilder::new(ui)
+                    .striped(true)
+                    .sense(Sense::click())
+                    .cell_layout(Layout::left_to_right(Align::Center))
+                    .column(egui_extras::Column::exact(width))
+                    .header(36.0, |mut header| {
+                        header.col(|ui| {
+                            containers::Sides::new().height(ui.available_height()).show(
+                                ui,
+                                |ui| {
+                                    ui.add_space(8.0);
+                                    ui.add(unselectable_label(RichText::new("Playlists").heading().strong()));
+                                },
+                                |ui| {
+                                    ui.add_space(8.0);
+
+                                    let add_button = Button::new(icons::ICON_ADD);
+                                    let response = ui.add(add_button).on_hover_text("Add playlist");
+                                    if response.clicked() {
+                                        let maybe_library_directory = &gem_player.library_directory;
+                                        match maybe_library_directory {
+                                            Some(directory) => {
+                                                let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
+                                                let result = create(new_playlist_name, directory);
+                                                match result {
+                                                    Err(e) => {
+                                                        let error_message = format!("Failed to create: {}.", e);
+                                                        error!("{}", &error_message);
+                                                        gem_player.ui_state.toasts.error(&error_message);
+                                                    }
+                                                    Ok(new_playlist) => {
+                                                        info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
+                                                        gem_player.playlists.push(new_playlist);
+                                                    }
+                                                }
+                                            }
+                                            None => {
+                                                error!("This should be unreachable state. We checked library directory is Some earlier!");
+                                            }
+                                        }
+                                    }
+                                },
+                            );
+                        });
+                    })
+                    .body(|body| {
+                        body.rows(36.0, gem_player.playlists.len(), |mut row| {
+                            let playlist = &mut gem_player.playlists[row.index()];
+
+                            if let Some(selected_playlist) = &gem_player.ui_state.playlists.selected_playlist_identifier {
+                                let playlist_is_selected = playlist.m3u_path == *selected_playlist;
+                                row.set_selected(playlist_is_selected);
+                            }
+
+                            row.col(|ui| {
+                                ui.add_space(8.0);
+                                ui.add(unselectable_label(&playlist.name));
+                            });
+
+                            let response = row.response();
+                            if response.clicked() {
+                                info!("Selected playlist: {}", playlist.name);
+                                gem_player.ui_state.playlists.selected_playlist_identifier = Some(playlist.m3u_path.clone());
+
+                                // Reset in case we were currently editing.
+                                gem_player.ui_state.playlists.playlist_rename = None;
+                            }
+                        });
+                    });
             });
 
             strip.cell(|ui| {
@@ -854,79 +924,6 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if confirm_clicked || cancel_clicked || modal.should_close() {
         gem_player.ui_state.playlists.delete_playlist_modal_is_open = false;
     }
-}
-
-pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let width = ui.available_width();
-    TableBuilder::new(ui)
-        .striped(true)
-        .sense(Sense::click())
-        .cell_layout(Layout::left_to_right(Align::Center))
-        .column(egui_extras::Column::exact(width))
-        .header(36.0, |mut header| {
-            header.col(|ui| {
-                containers::Sides::new().height(ui.available_height()).show(
-                    ui,
-                    |ui| {
-                        ui.add_space(8.0);
-                        ui.add(unselectable_label(RichText::new("Playlists").heading().strong()));
-                    },
-                    |ui| {
-                        ui.add_space(8.0);
-
-                        let add_button = Button::new(icons::ICON_ADD);
-                        let response = ui.add(add_button).on_hover_text("Add playlist");
-                        if response.clicked() {
-                            let maybe_library_directory = &gem_player.library_directory;
-                            match maybe_library_directory {
-                                Some(directory) => {
-                                    let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
-                                    let result = create(new_playlist_name, directory);
-                                    match result {
-                                        Err(e) => {
-                                            let error_message = format!("Failed to create: {}.", e);
-                                            error!("{}", &error_message);
-                                            gem_player.ui_state.toasts.error(&error_message);
-                                        }
-                                        Ok(new_playlist) => {
-                                            info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
-                                            gem_player.playlists.push(new_playlist);
-                                        }
-                                    }
-                                }
-                                None => {
-                                    error!("This should be unreachable state. We checked library directory is Some earlier!");
-                                }
-                            }
-                        }
-                    },
-                );
-            });
-        })
-        .body(|body| {
-            body.rows(36.0, gem_player.playlists.len(), |mut row| {
-                let playlist = &mut gem_player.playlists[row.index()];
-
-                if let Some(selected_playlist) = &gem_player.ui_state.playlists.selected_playlist_identifier {
-                    let playlist_is_selected = playlist.m3u_path == *selected_playlist;
-                    row.set_selected(playlist_is_selected);
-                }
-
-                row.col(|ui| {
-                    ui.add_space(8.0);
-                    ui.add(unselectable_label(&playlist.name));
-                });
-
-                let response = row.response();
-                if response.clicked() {
-                    info!("Selected playlist: {}", playlist.name);
-                    gem_player.ui_state.playlists.selected_playlist_identifier = Some(playlist.m3u_path.clone());
-
-                    // Reset in case we were currently editing.
-                    gem_player.ui_state.playlists.playlist_rename = None;
-                }
-            });
-        });
 }
 
 pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
