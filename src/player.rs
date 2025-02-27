@@ -169,7 +169,7 @@ pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> {
     Ok(())
 }
 
-pub fn add_to_queue(queue: &mut Vec<Track>, track: Track) {
+pub fn add_to_queue(queue: &mut Vec<Track>, track: Track) { //TODO: maybe just get rid of this. maybe the others as well...
     queue.push(track);
 }
 

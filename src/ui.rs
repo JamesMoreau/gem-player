@@ -643,7 +643,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_QUEUE_MUSIC));
                 if response.clicked() {
                     let track = gem_player.library[track_index].clone();
-                    add_to_queue(&mut gem_player.library, track);
+                    add_to_queue(&mut gem_player.player.queue, track);
                     gem_player.ui_state.library.track_menu_is_open = false;
                 }
 
