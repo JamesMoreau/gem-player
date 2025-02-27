@@ -98,7 +98,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             theme_preference,
             library: LibraryViewState {
                 search_text: String::new(),
-                selected_track: None,
+                selected_track_identifier: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
                 track_menu_is_open: false,
