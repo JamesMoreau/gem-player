@@ -45,10 +45,6 @@ impl PartialEq for Track {
     }
 }
 
-pub fn _find<'a>(track_identifier: &Path, tracks: &'a [Track]) -> Option<&'a Track> {
-    tracks.iter().find(|p| p.path == track_identifier)
-}
-
 pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     tracks.sort_by(|a, b| {
         let ordering = match sort_by {
@@ -115,7 +111,7 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
     })
 }
 
-fn is_audio_file(path: &Path) -> bool {
+fn is_relevant_media_file(path: &Path) -> bool {
     if let Ok(data) = fs::read(path) {
         if let Some(kind) = infer::get(&data) {
             return matches!(kind.matcher_type(), infer::MatcherType::Audio | infer::MatcherType::Video);
@@ -131,7 +127,7 @@ pub fn read_music(directory: &Path) -> io::Result<Vec<Track>> {
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
 
-        let what_we_want = path.is_file() && is_audio_file(path);
+        let what_we_want = path.is_file() && is_relevant_media_file(path);
         if !what_we_want {
             continue;
         }
