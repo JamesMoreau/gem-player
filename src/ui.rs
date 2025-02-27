@@ -806,25 +806,18 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let add_button = Button::new(icons::ICON_ADD);
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
-                                        let maybe_library_directory = &gem_player.library_directory;
-                                        match maybe_library_directory {
-                                            Some(directory) => {
-                                                let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
-                                                let result = create(new_playlist_name, directory);
-                                                match result {
-                                                    Err(e) => {
-                                                        let error_message = format!("Failed to create: {}.", e);
-                                                        error!("{}", &error_message);
-                                                        gem_player.ui_state.toasts.error(&error_message);
-                                                    }
-                                                    Ok(new_playlist) => {
-                                                        info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
-                                                        gem_player.playlists.push(new_playlist);
-                                                    }
-                                                }
+                                        let directory = gem_player.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
+                                        let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
+                                        let result = create(new_playlist_name, directory);
+                                        match result {
+                                            Err(e) => {
+                                                let error_message = format!("Failed to create: {}.", e);
+                                                error!("{}", &error_message);
+                                                gem_player.ui_state.toasts.error(&error_message);
                                             }
-                                            None => {
-                                                error!("This should be unreachable state. We checked library directory is Some earlier!");
+                                            Ok(new_playlist) => {
+                                                info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
+                                                gem_player.playlists.push(new_playlist);
                                             }
                                         }
                                     }
