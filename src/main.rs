@@ -228,7 +228,14 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
     }
 }
 
-pub fn play_playlist(gem_player: &mut GemPlayer, playlist: &Playlist, starting_track: Option<&Track>) { // perhaps take identifier instead of the playlist object.
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist_identifier: &PathBuf, starting_track: Option<&Track>) {
+    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *playlist_identifier) else {
+        error!("Unable to find playlist for PlayFromPlaylist action.");
+        return;
+    };
+
+    let playlist = &gem_player.playlists[playlist_index];
+
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
