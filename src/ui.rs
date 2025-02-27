@@ -1210,54 +1210,64 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let Some(playlist_selection) = &gem_player.ui_state.playlists.selected_playlist_identifier else {
-        error!("{} was called, but there is no selected playlist.", function_name!());
-        gem_player.ui_state.playlists.track_menu_is_open = false;
-        return;
+    let playlist_index = {
+        let Some(playlist_selection) = &gem_player.ui_state.playlists.selected_playlist_identifier else {
+            error!("{} was called, but there is no selected playlist.", function_name!());
+            gem_player.ui_state.playlists.track_menu_is_open = false;
+            return;
+        };
+
+        let Some(index) = gem_player.playlists.iter().position(|p| p.m3u_path == *playlist_selection) else {
+            error!("Could not find the selected playlist.");
+            gem_player.ui_state.playlists.track_menu_is_open = false;
+            return;
+        };
+
+        index
     };
 
-    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *playlist_selection) else {
-        error!("Could not find the selected playlist.");
-        gem_player.ui_state.playlists.track_menu_is_open = false;
-        return;
+    let track_index = {
+        let Some(selected_track_identifier) = &gem_player.ui_state.playlists.selected_track_identifier else {
+            error!("{} was called, but there is no selected track id.", function_name!());
+            gem_player.ui_state.playlists.track_menu_is_open = false;
+            return;
+        };
+
+
+        let playlist = & gem_player.playlists[playlist_index];
+        let Some(track_index) = playlist.tracks.iter().position(|t| t.path == *selected_track_identifier) else {
+            error!("Selected track not found in playlist.");
+            gem_player.ui_state.playlists.track_menu_is_open = false;
+            return;
+        };
+
+        track_index
     };
-
-    let playlist = &mut gem_player.playlists[playlist_index];
-
-    let Some(selected_track_identifier) = &gem_player.ui_state.playlists.selected_track_identifier else {
-        error!("{} was called, but there is no selected track id.", function_name!());
-        gem_player.ui_state.playlists.track_menu_is_open = false;
-        return;
-    };
-
-    let Some(track_index) = playlist.tracks.iter().position(|t| t.path == *selected_track_identifier) else {
-        error!("Selected track not found in playlist.");
-        gem_player.ui_state.playlists.track_menu_is_open = false;
-        return;
-    };
-
-    let track = playlist.tracks[track_index].clone(); //TODO: move this inside closure?
 
     let modal_width = 220.0;
 
-    let modal = containers::Modal::new(Id::new("library_track_menu_modal"))
+    let modal = containers::Modal::new(Id::new("library_track_menu"))
         .backdrop_color(Color32::TRANSPARENT)
         .show(ui.ctx(), |ui| {
             ui.set_width(modal_width);
 
             ui.vertical_centered_justified(|ui| {
+                let playlist = &mut gem_player.playlists[playlist_index];
+                let track = &playlist.tracks[track_index];
+
                 ui.label(RichText::new(track.title.as_deref().unwrap_or("Unknown Title")).strong());
 
                 ui.add_space(8.0);
 
                 let response = ui.button(format!("{} Remove from Playlist", icons::ICON_DELETE));
                 if response.clicked() {
-                    let result = remove_track(playlist, &track);
-                    if let Err(e) = result {
-                        error!("{}", e);
-                        gem_player.ui_state.toasts.error("Error removing track from playlist");
-                    }
-                    gem_player.ui_state.playlists.track_menu_is_open = false;
+                    todo!()
+                    // let result = remove_track(playlist, &track.path);
+                    // if let Err(e) = result {
+                    //     error!("{}", e);
+                    //     gem_player.ui_state.toasts.error("Error removing track from playlist");
+                    // }
+                    // gem_player.ui_state.playlists.track_menu_is_open = false;
                 }
 
                 ui.separator();
