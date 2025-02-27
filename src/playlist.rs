@@ -25,14 +25,6 @@ impl PartialEq for Playlist {
     }
 }
 
-pub fn _find<'a>(playlist_identifier: &Path, playlists: &'a [Playlist]) -> Option<&'a Playlist> {
-    playlists.iter().find(|p| p.m3u_path == playlist_identifier)
-}
-
-pub fn find_mut<'a>(playlist_identifier: &Path, playlists: &'a mut [Playlist]) -> Option<&'a mut Playlist> {
-    playlists.iter_mut().find(|p| p.m3u_path == playlist_identifier)
-}
-
 pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
     if playlist.tracks.iter().any(|s| *s == track) {
         return Err(io::Error::new(
@@ -79,7 +71,7 @@ pub fn read_all_from_a_directory(directory: &Path) -> io::Result<Vec<Playlist>> 
     }
 
     playlists.sort_by(|a, b| a.creation_date_time.cmp(&b.creation_date_time));
-    
+
     Ok(playlists)
 }
 

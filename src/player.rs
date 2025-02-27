@@ -1,9 +1,4 @@
-use crate::{
-    play_library, play_playlist,
-    playlist::{_find, find_mut, remove_track},
-    track::Track,
-    GemPlayer,
-};
+use crate::{play_library, play_playlist, playlist::remove_track, track::Track, GemPlayer};
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
@@ -82,7 +77,7 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
                 playlist_identifier,
                 track,
             } => {
-                let Some(playlist) = find_mut(&playlist_identifier, &mut gem_player.playlists) else {
+                let Some(playlist) = gem_player.playlists.iter_mut().find(|p| p.m3u_path == playlist_identifier) else {
                     error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
                     continue;
                 };
