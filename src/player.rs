@@ -1,4 +1,4 @@
-use crate::{play_library, play_playlist, playlist::remove_track, track::Track, GemPlayer};
+use crate::{play_library, play_playlist, track::Track, GemPlayer};
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
@@ -15,7 +15,7 @@ pub enum PlayerAction {
     AddTrackToQueue { track: Track },
     // PlayPrevious,
     // PlayNext,
-    RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf },
+    // RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf },
     // TODO: Potential Actions
     // PlayNextFromLibraryd
     // PlayNextFromPlaylist
@@ -65,21 +65,12 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
             } => play_playlist(gem_player, &playlist_identifier, track.as_ref()),
             PlayerAction::PlayLibrary { track } => play_library(gem_player, Some(&track)),
             PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
-            PlayerAction::RemoveTrackFromPlaylist {
-                playlist_identifier,
-                track,
-            } => {
-                let Some(playlist) = gem_player.playlists.iter_mut().find(|p| p.m3u_path == playlist_identifier) else {
-                    error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
-                    continue;
-                };
+            // PlayerAction::RemoveTrackFromPlaylist {
+            //     playlist_identifier,
+            //     track,
+            // } => {
 
-                let result = remove_track(playlist, &track);
-                if let Err(e) = result {
-                    error!("{}", e);
-                    gem_player.ui_state.toasts.error("Error removing track from playlist");
-                }
-            }
+            // }
         }
     }
 }
