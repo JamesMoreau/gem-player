@@ -1488,9 +1488,8 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
 }
 
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    //TODO: rename to filter?
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
-    let popup_id = ui.make_persistent_id("filter_popup");
+    let popup_id = ui.make_persistent_id("sort_by_popup");
     if response.clicked() {
         ui.memory_mut(|mem| mem.toggle_popup(popup_id));
     }
