@@ -21,6 +21,7 @@ mod ui;
 
 /*
 TODO:
+* basically we want a vec[] operator that takes a pathbuf (playlist/song identifer) and returns the object, otherwise panic (no option<Object>)
 * have a play button next to the playlist name in the playlist view.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!

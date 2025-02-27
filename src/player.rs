@@ -12,7 +12,7 @@ use std::{
 pub enum PlayerAction {
     PlayPlaylist { playlist_identifier: PathBuf, starting_track: Option<Track> },
     PlayLibrary { track: Track },
-    AddTrackToQueue { track: Track },
+    // AddTrackToQueue { track: Track },
     // PlayPrevious,
     // PlayNext,
     // RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf },
@@ -64,13 +64,6 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
                 starting_track: track,
             } => play_playlist(gem_player, &playlist_identifier, track.as_ref()),
             PlayerAction::PlayLibrary { track } => play_library(gem_player, Some(&track)),
-            PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
-            // PlayerAction::RemoveTrackFromPlaylist {
-            //     playlist_identifier,
-            //     track,
-            // } => {
-
-            // }
         }
     }
 }
