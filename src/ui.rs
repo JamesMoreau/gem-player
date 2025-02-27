@@ -53,8 +53,8 @@ pub struct LibraryViewState {
 #[fully_pub]
 pub struct PlaylistsViewState {
     selected_playlist_identifier: Option<PathBuf>,
-    playlist_rename: Option<(PathBuf, String)>, // None: no playlist is being edited. Some: the id of the playlist being edited and a buffer for the new name. // TODO: this should probably just use the selected_playlist
-    delete_playlist_modal_is_open: bool,        // The track for which the menu is open is PlaylistsViewState.selected_track .
+    playlist_rename: Option<String>, // None: no playlist is being edited. Some: The playlist pointed to by PlaylistsViewState.selected_track's name is being edited and athe buffer for the new name.
+    delete_playlist_modal_is_open: bool, // The track for which the menu is open is PlaylistsViewState.selected_track .
     selected_track: Option<Track>,
     track_menu_is_open: bool, // The track for which the menu is open is PlaylistsViewState.selected_track .
 }
@@ -637,8 +637,8 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.clicked() {
                     let result = open_file_location(track);
                     match result {
-                        Ok(_) => info!("Opening track location"),
                         Err(e) => error!("{}", e),
+                        Ok(_) => info!("Opening track location"),
                     }
                     gem_player.ui_state.library_view_state.track_menu_is_open = false;
                 }
@@ -881,14 +881,14 @@ pub fn render_playlists_list(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
                                     let result = create(new_playlist_name, directory);
                                     match result {
-                                        Ok(new_playlist) => {
-                                            info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
-                                            gem_player.playlists.push(new_playlist);
-                                        }
                                         Err(e) => {
                                             let error_message = format!("Failed to create: {}.", e);
                                             error!("{}", &error_message);
                                             gem_player.ui_state.toasts.error(&error_message);
+                                        }
+                                        Ok(new_playlist) => {
+                                            info!("Created and saved {} to {:?}.", &new_playlist.name, &new_playlist.m3u_path);
+                                            gem_player.playlists.push(new_playlist);
                                         }
                                     }
                                 }
@@ -947,7 +947,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .vertical(|mut strip| {
             strip.cell(|ui| {
                 Frame::new().fill(ui.visuals().faint_bg_color).show(ui, |ui| {
-                    if let Some((_, name_buffer)) = &mut gem_player.ui_state.playlists_view_state.playlist_rename {
+                    if let Some(name_buffer) = &mut gem_player.ui_state.playlists_view_state.playlist_rename {
                         // In edit mode.
                         let mut discard_clicked = false;
                         let mut save_clicked = false;
@@ -985,8 +985,15 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             if let Some(playlist) = gem_player.playlists.get_mut(index) {
                                 let result = rename(playlist, name_buffer_clone);
-                                if let Err(e) = result {
-                                    error!("{}", e);
+                                match result {
+                                    Err(e) => {
+                                        error!("{}", e);
+                                    }
+                                    Ok(_) => {
+                                        // Update the selected playlist with the new path so that we remain selected.
+                                        gem_player.ui_state.playlists_view_state.selected_playlist_identifier =
+                                            Some(playlist.m3u_path.clone());
+                                    }
                                 }
                             }
 
@@ -1026,8 +1033,7 @@ pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 if response.clicked() {
                                     if let Some(playlist) = gem_player.playlists.get(index) {
                                         info!("Editing playlist name: {}", playlist.name);
-                                        gem_player.ui_state.playlists_view_state.playlist_rename =
-                                            Some((playlist.m3u_path.clone(), playlist.name.clone()));
+                                        gem_player.ui_state.playlists_view_state.playlist_rename = Some(playlist.name.clone());
                                     }
                                 }
                             },
@@ -1261,8 +1267,8 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.clicked() {
                     let result = open_file_location(track);
                     match result {
-                        Ok(_) => info!("Opening track location"),
                         Err(e) => error!("{}", e),
+                        Ok(_) => info!("Opening track location"),
                     }
                     gem_player.ui_state.playlists_view_state.track_menu_is_open = false;
                 }
