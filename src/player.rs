@@ -1,26 +1,21 @@
-use crate::{
-    play_library_from_track, play_playlist_from_track,
-    playlist::{find_mut, remove_track},
-    track::Track,
-    GemPlayer,
-};
+use crate::{play_library, play_playlist, playlist::remove_track, track::Track, GemPlayer};
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     io::{self, BufReader, ErrorKind},
+    path::PathBuf,
     time::Duration,
 };
-use uuid::Uuid;
 
 pub enum PlayerAction {
-    PlayFromPlaylist { playlist_id: Uuid, track: Track },
-    PlayFromLibrary { track: Track },
+    PlayPlaylist { playlist_identifier: PathBuf, starting_track: Option<Track> },
+    PlayLibrary { track: Track },
     AddTrackToQueue { track: Track },
     PlayPrevious,
     PlayNext,
-    RemoveTrackFromPlaylist { track: Track, playlist_id: Uuid },
+    RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf },
     // TODO: Potential Actions
     // PlayNextFromLibraryd
     // PlayNextFromPlaylist
@@ -64,8 +59,11 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 pub fn process_actions(gem_player: &mut GemPlayer) {
     while let Some(action) = gem_player.player.actions.pop() {
         match action {
-            PlayerAction::PlayFromPlaylist { playlist_id, track } => play_playlist_from_track(gem_player, playlist_id, &track),
-            PlayerAction::PlayFromLibrary { track } => play_library_from_track(gem_player, &track),
+            PlayerAction::PlayPlaylist {
+                playlist_identifier,
+                starting_track: track,
+            } => play_playlist(gem_player, &playlist_identifier, track.as_ref()),
+            PlayerAction::PlayLibrary { track } => play_library(gem_player, Some(&track)),
             PlayerAction::AddTrackToQueue { track } => add_to_queue(&mut gem_player.player.queue, track),
             PlayerAction::PlayPrevious => maybe_play_previous(gem_player),
             PlayerAction::PlayNext => {
@@ -75,8 +73,11 @@ pub fn process_actions(gem_player: &mut GemPlayer) {
                     gem_player.ui_state.toasts.error("Error playing the next track");
                 }
             }
-            PlayerAction::RemoveTrackFromPlaylist { playlist_id, track } => {
-                let Some(playlist) = find_mut(playlist_id, &mut gem_player.playlists) else {
+            PlayerAction::RemoveTrackFromPlaylist {
+                playlist_identifier,
+                track,
+            } => {
+                let Some(playlist) = gem_player.playlists.iter_mut().find(|p| p.m3u_path == playlist_identifier) else {
                     error!("Unable to find playlist for RemoveTrackFromPlaylist action.");
                     continue;
                 };
@@ -177,7 +178,7 @@ pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> {
     player.sink.stop(); // Stop the current track if any.
     player.playing_track = None;
 
-    let file = std::fs::File::open(&track.file_path)?;
+    let file = std::fs::File::open(&track.path)?;
 
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {

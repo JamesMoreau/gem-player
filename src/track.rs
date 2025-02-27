@@ -35,13 +35,13 @@ pub struct Track {
     album: Option<String>,
     duration: Duration,
     artwork: Option<Vec<u8>>,
-    file_path: PathBuf,
+    path: PathBuf,
 }
 
 impl PartialEq for Track {
     #[inline]
     fn eq(&self, other: &Track) -> bool {
-        self.file_path == other.file_path
+        self.path == other.path
     }
 }
 
@@ -107,11 +107,11 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         album,
         duration,
         artwork,
-        file_path,
+        path: file_path,
     })
 }
 
-fn is_audio_file(path: &Path) -> bool {
+fn is_relevant_media_file(path: &Path) -> bool {
     if let Ok(data) = fs::read(path) {
         if let Some(kind) = infer::get(&data) {
             return matches!(kind.matcher_type(), infer::MatcherType::Audio | infer::MatcherType::Video);
@@ -127,7 +127,7 @@ pub fn read_music(directory: &Path) -> io::Result<Vec<Track>> {
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
 
-        let what_we_want = path.is_file() && is_audio_file(path);
+        let what_we_want = path.is_file() && is_relevant_media_file(path);
         if !what_we_want {
             continue;
         }
@@ -147,7 +147,7 @@ pub fn calculate_total_duration(tracks: &[Track]) -> Duration {
 }
 
 pub fn open_file_location(track: &Track) -> io::Result<()> {
-    let maybe_folder = track.file_path.as_path().parent();
+    let maybe_folder = track.path.as_path().parent();
     let Some(folder) = maybe_folder else {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "Track has no file path."));
     };

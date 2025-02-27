@@ -5,15 +5,14 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{
-    adjust_volume_by_percentage, check_for_next_track, load_and_play, mute_or_unmute, play_or_pause, process_actions, Player,
+    adjust_volume_by_percentage, check_for_next_track, mute_or_unmute, play_next, play_or_pause, process_actions, Player,
     PlayerAction,
 };
-use playlist::{find, read_all_from_a_directory, Playlist};
+use playlist::{read_all_from_a_directory, Playlist};
 use rodio::{OutputStream, Sink};
 use std::path::{Path, PathBuf};
 use track::{read_music, SortBy, SortOrder, Track};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
-use uuid::Uuid;
 
 mod player;
 mod playlist;
@@ -22,14 +21,14 @@ mod ui;
 
 /*
 TODO:
-* library track menu: when a song is added to playlist then the menu closes, then another track menu is opened, the add to playlist dropdown is still open.
+* have a play button next to the playlist name in the playlist view.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
 * profile app.
 * Fullscreen?
-* UI + aestethics
+* UI + aestethics. Scrolling song info could be cool (maybe only applies when the string is too big?)
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -96,18 +95,18 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         ui_state: UIState {
             current_view: ui::View::Library,
             theme_preference,
-            library_view_state: LibraryViewState {
+            library: LibraryViewState {
                 search_text: String::new(),
-                selected_track: None,
+                selected_track_identifier: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
                 track_menu_is_open: false,
             },
-            playlists_view_state: PlaylistsViewState {
-                selected_playlist: None,
+            playlists: PlaylistsViewState {
+                selected_playlist_identifier: None,
                 playlist_rename: None,
-                delete_playlist_modal_is_open: None,
-                selected_track: None,
+                delete_playlist_modal_is_open: false,
+                selected_track_identifier: None,
                 track_menu_is_open: false,
             },
             toasts: Toasts::default()
@@ -206,54 +205,54 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
     (library, playlists)
 }
 
-pub fn play_library_from_track(gem_player: &mut GemPlayer, track: &Track) {
+pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    // Add all the other tracks to the queue.
+    if let Some(track) = starting_track {
+        gem_player.player.queue.push(track.clone());
+    }
+
     for t in &gem_player.library {
-        if track == t {
+        if Some(t) == starting_track {
             continue;
         }
 
         gem_player.player.queue.push(t.clone());
     }
 
-    let result = load_and_play(&mut gem_player.player, track.clone());
-    if let Err(e) = result {
+    if let Err(e) = play_next(&mut gem_player.player) {
         error!("{}", e);
-        gem_player
-            .ui_state
-            .toasts
-            .error(format!("Error playing {}", track.title.as_deref().unwrap_or("Unknown")));
+        gem_player.ui_state.toasts.error("Error playing from library");
     }
 }
 
-pub fn play_playlist_from_track(gem_player: &mut GemPlayer, playlist_id: Uuid, track: &Track) {
-    gem_player.player.history.clear();
-    gem_player.player.queue.clear();
-
-    let Some(playlist) = find(playlist_id, &gem_player.playlists) else {
-        error!("Playlist not found.");
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist_identifier: &PathBuf, starting_track: Option<&Track>) {
+    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *playlist_identifier) else {
+        error!("Unable to find playlist for PlayFromPlaylist action.");
         return;
     };
 
-    // Add all the other tracks to the queue.
+    let playlist = &gem_player.playlists[playlist_index];
+
+    gem_player.player.history.clear();
+    gem_player.player.queue.clear();
+
+    if let Some(track) = starting_track {
+        gem_player.player.queue.push(track.clone());
+    }
+
     for t in &playlist.tracks {
-        if track == t {
+        if Some(t) == starting_track {
             continue;
         }
 
         gem_player.player.queue.push(t.clone());
     }
 
-    let result = load_and_play(&mut gem_player.player, track.clone());
-    if let Err(e) = result {
+    if let Err(e) = play_next(&mut gem_player.player) {
         error!("{}", e);
-        gem_player
-            .ui_state
-            .toasts
-            .error(format!("Error playing {}", track.title.as_deref().unwrap_or("Unknown")));
+        gem_player.ui_state.toasts.error("Error playing from playlist");
     }
 }
 
