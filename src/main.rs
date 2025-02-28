@@ -5,8 +5,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{
-    adjust_volume_by_percentage, check_for_next_track, maybe_play_previous, mute_or_unmute, play_next, play_or_pause,
-    Player,
+    adjust_volume_by_percentage, check_for_next_track, maybe_play_next, maybe_play_previous, mute_or_unmute, play_next, play_or_pause, Player
 };
 use playlist::{read_all_from_a_directory, Playlist};
 use rodio::{OutputStream, Sink};
@@ -293,13 +292,7 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
                 match key {
                     Key::Space => play_or_pause(&mut gem_player.player),
                     Key::ArrowLeft => maybe_play_previous(gem_player),
-                    Key::ArrowRight => {
-                        let result = play_next(&mut gem_player.player);
-                        if let Err(e) = result {
-                            error!("{}", e);
-                            gem_player.ui_state.toasts.error("Error playing the next track");
-                        }
-                    }
+                    Key::ArrowRight => maybe_play_next(gem_player),
                     Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
                     Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
                     Key::M => mute_or_unmute(&mut gem_player.player),

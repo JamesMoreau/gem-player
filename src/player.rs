@@ -53,6 +53,14 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
+pub fn maybe_play_next(gem_player: &mut GemPlayer) {
+    let result = play_next(&mut gem_player.player);
+    if let Err(e) = result {
+        error!("{}", e);
+        gem_player.ui_state.toasts.error("Error playing the next track");
+    }
+}
+
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(playing_track) = player.playing_track.clone() {
