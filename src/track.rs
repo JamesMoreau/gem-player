@@ -45,13 +45,6 @@ impl PartialEq for Track {
     }
 }
 
-pub fn get<'a>(playlists: &'a [Track], track_identifier: &Path) -> &'a Track {
-    playlists
-        .iter()
-        .find(|p| p.path == track_identifier)
-        .expect("Playlist not found.")
-}
-
 pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     tracks.sort_by(|a, b| {
         let ordering = match sort_by {

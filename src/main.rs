@@ -102,10 +102,10 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 track_menu_is_open: false,
             },
             playlists: PlaylistsViewState {
-                selected_playlist_identifier: None,
+                selected_playlist_path: None,
                 playlist_rename: None,
                 delete_playlist_modal_is_open: false,
-                selected_track_identifier: None,
+                selected_track: None,
                 track_menu_is_open: false,
             },
             toasts: Toasts::default()

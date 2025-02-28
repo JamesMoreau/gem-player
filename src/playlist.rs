@@ -2,7 +2,10 @@ use crate::{track::load_from_file, Track};
 use fully_pub::fully_pub;
 use log::error;
 use std::{
-    fs::{self, File}, io::{self, ErrorKind, Write}, path::{Path, PathBuf}, time::SystemTime
+    fs::{self, File},
+    io::{self, ErrorKind, Write},
+    path::{Path, PathBuf},
+    time::SystemTime,
 };
 use walkdir::WalkDir;
 
@@ -22,19 +25,20 @@ impl PartialEq for Playlist {
     }
 }
 
-pub fn get<'a>(playlists: &'a [Playlist], playlist_identifier: &Path) -> &'a Playlist {
-    playlists
-        .iter()
-        .find(|p| p.m3u_path == playlist_identifier)
-        .expect("Playlist not found.")
+pub trait PlaylistRetrieval {
+    fn get_by_path(&self, path: &Path) -> &Playlist;
+    fn get_by_path_mut(&mut self, path: &Path) -> &mut Playlist;
 }
 
-// pub fn find_mut<'a>(playlists: &'a mut [Playlist], playlist_identifier: &Path) -> &'a mut Playlist {
-//     playlists
-//         .iter_mut()
-//         .find(|p| &p.m3u_path == playlist_identifier)
-//         .expect("Playlist not found")
-// }
+impl PlaylistRetrieval for Vec<Playlist> {
+    fn get_by_path(&self, path: &Path) -> &Playlist {
+        self.iter().find(|p| p.m3u_path == path).expect("Playlist not found")
+    }
+
+    fn get_by_path_mut(&mut self, path: &Path) -> &mut Playlist {
+        self.iter_mut().find(|p| p.m3u_path == path).expect("Playlist not found")
+    }
+}
 
 pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
     if playlist.tracks.iter().any(|s| *s == track) {
