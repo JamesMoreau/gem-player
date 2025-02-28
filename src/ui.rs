@@ -1,8 +1,10 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, play_library, play_playlist, player::{
-        add_next_to_queue, add_to_queue, is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, remove_from_queue,
-        shuffle_queue,
-    }, playlist::{add_a_track_to_playlist, create, delete, remove_track, rename}, read_music_and_playlists_from_directory, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder}, GemPlayer, Track, KEY_COMMANDS
+    format_duration_to_hhmmss, format_duration_to_mmss, play_library, play_playlist,
+    player::{is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, shuffle_queue},
+    playlist::{add_a_track_to_playlist, create, delete, remove_track, rename},
+    read_music_and_playlists_from_directory,
+    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
+    GemPlayer, Track, KEY_COMMANDS,
 };
 use dark_light::Mode;
 use eframe::egui::{
@@ -636,14 +638,14 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
                     let track = &gem_player.library[track_index];
-                    add_next_to_queue(&mut gem_player.player.queue, track.clone());
+                    gem_player.player.queue.insert(0, track.clone());
                     gem_player.ui_state.library.track_menu_is_open = false;
                 }
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_QUEUE_MUSIC));
                 if response.clicked() {
                     let track = gem_player.library[track_index].clone();
-                    add_to_queue(&mut gem_player.player.queue, track);
+                    gem_player.player.queue.push(track);
                     gem_player.ui_state.library.track_menu_is_open = false;
                 }
 
@@ -767,7 +769,7 @@ pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
-                        remove_from_queue(queue, index);
+                        queue.remove(index);
                     }
                 });
             });
@@ -986,7 +988,7 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.ui_state.playlists.playlist_rename = None;
                         } else if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
-                            
+
                             let playlist = &mut gem_player.playlists[index];
                             let result = rename(playlist, name_buffer_clone);
                             match result {
@@ -1292,14 +1294,14 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
                     let track = &gem_player.playlists[playlist_index].tracks[track_index];
-                    add_next_to_queue(&mut gem_player.player.queue, track.clone());
+                    gem_player.player.queue.insert(0, track.clone());
                     gem_player.ui_state.playlists.track_menu_is_open = false;
                 }
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
                 if response.clicked() {
                     let track = &gem_player.playlists[playlist_index].tracks[track_index];
-                    add_to_queue(&mut gem_player.player.queue, track.clone());
+                    gem_player.player.queue.push(track.clone());
                     gem_player.ui_state.playlists.track_menu_is_open = false;
                 }
 

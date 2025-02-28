@@ -142,18 +142,6 @@ pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> {
     Ok(())
 }
 
-pub fn add_to_queue(queue: &mut Vec<Track>, track: Track) { //TODO: maybe just get rid of this. maybe the others as well...
-    queue.push(track);
-}
-
-pub fn add_next_to_queue(queue: &mut Vec<Track>, track: Track) {
-    queue.insert(0, track);
-}
-
-pub fn remove_from_queue(queue: &mut Vec<Track>, index: usize) {
-    queue.remove(index);
-}
-
 pub fn shuffle_queue(queue: &mut Vec<Track>) {
     let mut rng = rand::rng();
     queue.shuffle(&mut rng);
