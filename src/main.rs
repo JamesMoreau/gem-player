@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{
-    adjust_volume_by_percentage, check_for_next_track, maybe_play_previous, mute_or_unmute, play_next, play_or_pause, process_actions,
+    adjust_volume_by_percentage, check_for_next_track, maybe_play_previous, mute_or_unmute, play_next, play_or_pause,
     Player,
 };
 use playlist::{read_all_from_a_directory, Playlist};
@@ -22,7 +22,6 @@ mod ui;
 /*
 TODO:
 * basically we want a vec[] operator that takes a pathbuf (playlist/song identifer) and returns the object, otherwise panic (no option<Object>)
-* have a play button next to the playlist name in the playlist view.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
@@ -125,7 +124,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists,
 
         player: Player {
-            actions: Vec::new(),
             playing_track: None,
 
             queue: Vec::new(),
@@ -165,7 +163,6 @@ impl eframe::App for GemPlayer {
         handle_key_commands(ctx, self);
 
         check_for_next_track(self);
-        process_actions(self);
 
         ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
         update_theme(self, ctx);

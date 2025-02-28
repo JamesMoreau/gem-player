@@ -1,31 +1,16 @@
-use crate::{play_library, play_playlist, track::Track, GemPlayer};
+use crate::{track::Track, GemPlayer};
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     io::{self, BufReader, ErrorKind},
-    path::PathBuf,
     time::Duration,
 };
-
-pub enum PlayerAction {
-    PlayPlaylist { playlist_identifier: PathBuf, starting_track: Option<Track> },
-    PlayLibrary { track: Track },
-    // AddTrackToQueue { track: Track },
-    // PlayPrevious,
-    // PlayNext,
-    // RemoveTrackFromPlaylist { track: Track, playlist_identifier: PathBuf },
-    // TODO: Potential Actions
-    // PlayNextFromLibraryd
-    // PlayNextFromPlaylist
-    // RemoveTrackFromQueue { track_id: Uuid }
-}
 
 #[fully_pub]
 pub struct Player {
     playing_track: Option<Track>,
-    actions: Vec<PlayerAction>, // Actions get immedietly processed every frame.
 
     queue: Vec<Track>,
     history: Vec<Track>,
@@ -53,18 +38,6 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     let nothing_left_to_play = gem_player.player.sink.empty() && gem_player.player.queue.is_empty();
     if nothing_left_to_play {
         gem_player.player.playing_track = None;
-    }
-}
-
-pub fn process_actions(gem_player: &mut GemPlayer) {
-    while let Some(action) = gem_player.player.actions.pop() {
-        match action {
-            PlayerAction::PlayPlaylist {
-                playlist_identifier,
-                starting_track: track,
-            } => play_playlist(gem_player, &playlist_identifier, track.as_ref()),
-            PlayerAction::PlayLibrary { track } => play_library(gem_player, Some(&track)),
-        }
     }
 }
 
