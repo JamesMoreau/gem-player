@@ -2,10 +2,7 @@ use crate::{track::load_from_file, Track};
 use fully_pub::fully_pub;
 use log::error;
 use std::{
-    fs::{self, File},
-    io::{self, ErrorKind, Write},
-    path::{Path, PathBuf},
-    time::SystemTime,
+    fs::{self, File}, io::{self, ErrorKind, Write}, path::{Path, PathBuf}, time::SystemTime
 };
 use walkdir::WalkDir;
 
@@ -24,6 +21,20 @@ impl PartialEq for Playlist {
         self.m3u_path == other.m3u_path
     }
 }
+
+pub fn get<'a>(playlists: &'a [Playlist], playlist_identifier: &Path) -> &'a Playlist {
+    playlists
+        .iter()
+        .find(|p| p.m3u_path == playlist_identifier)
+        .expect("Playlist not found.")
+}
+
+// pub fn find_mut<'a>(playlists: &'a mut [Playlist], playlist_identifier: &Path) -> &'a mut Playlist {
+//     playlists
+//         .iter_mut()
+//         .find(|p| &p.m3u_path == playlist_identifier)
+//         .expect("Playlist not found")
+// }
 
 pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
     if playlist.tracks.iter().any(|s| *s == track) {

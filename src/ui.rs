@@ -1,7 +1,7 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, play_library, play_playlist,
     player::{is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, shuffle_queue},
-    playlist::{add_a_track_to_playlist, create, delete, remove_track, rename},
+    playlist::{add_a_track_to_playlist, create, delete, get, remove_track, rename},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder},
     GemPlayer, Track, KEY_COMMANDS,
@@ -1071,7 +1071,7 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(selection) = &gem_player.ui_state.playlists.selected_playlist_identifier else {
+    let Some(playlist_selection) = gem_player.ui_state.playlists.selected_playlist_identifier.clone() else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1083,12 +1083,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *selection) else {
-        error!("Could not find the selected playlist.");
-        return;
-    };
-
-    let playlist_length = gem_player.playlists[playlist_index].tracks.len();
+    let playlist_length = get(&gem_player.playlists, &playlist_selection).tracks.len();
     if playlist_length == 0 {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1143,7 +1138,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .body(|body| {
             body.rows(26.0, playlist_length, |mut row| {
                 let index = row.index();
-                let track = &gem_player.playlists[playlist_index].tracks[index];
+                let track = &get(&gem_player.playlists, &playlist_selection).tracks[index];
 
                 let row_is_selected = gem_player
                     .ui_state
@@ -1214,9 +1209,9 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    let path = gem_player.playlists[playlist_index].m3u_path.clone();
+                    let path = &get(&gem_player.playlists, &playlist_selection).m3u_path.clone();
                     let starting_track = track.clone();
-                    play_playlist(gem_player, &path, Some(&starting_track));
+                    play_playlist(gem_player, path, Some(&starting_track));
                 }
             });
         });
