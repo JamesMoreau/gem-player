@@ -562,6 +562,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     gem_player.ui_state.library.selected_track_identifier = Some(track.path.clone());
                 }
 
+                if response.secondary_clicked() {
+                    gem_player.ui_state.library.selected_track_identifier = Some(track.path.clone());
+                    gem_player.ui_state.library.track_menu_is_open = true;
+                }
+
                 if response.double_clicked() {
                     play_library(gem_player, Some(track))
                 }
@@ -865,7 +870,7 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                render_playlist_content(ui, gem_player);
+                render_playlist(ui, gem_player);
             });
         });
 }
@@ -928,7 +933,7 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_playlist_content(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
     render_playlist_track_menu(ui, gem_player);
 
     let Some(selection) = &gem_player.ui_state.playlists.selected_playlist_identifier else {
@@ -1199,6 +1204,11 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 if response.clicked() {
                     gem_player.ui_state.playlists.selected_track_identifier = Some(track.path.clone());
+                }
+
+                if response.secondary_clicked() {
+                    gem_player.ui_state.playlists.selected_track_identifier = Some(track.path.clone());
+                    gem_player.ui_state.playlists.track_menu_is_open = true;
                 }
 
                 if response.double_clicked() {
