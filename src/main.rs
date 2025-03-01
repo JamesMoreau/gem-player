@@ -4,13 +4,14 @@ use fully_pub::fully_pub;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
-use player::{
-    adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, Player
-};
-use playlist::{read_all_from_a_directory, Playlist};
+use player::{adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
+use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
-use std::{path::{Path, PathBuf}, time::Duration};
-use track::{read_music, SortBy, SortOrder, Track};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
+use track::{read_music, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 
 mod player;
@@ -274,24 +275,24 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
     }
 }
 
-pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &PathBuf, starting_track: Option<&Track>) {
-    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *playlist_key) else {
-        error!("Unable to find playlist for PlayFromPlaylist action.");
-        return;
-    };
-
-    let playlist = &gem_player.playlists[playlist_index];
-
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) {
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
-    if let Some(track) = starting_track {
-        gem_player.player.queue.push(track.clone());
+    let playlist = gem_player.playlists.get_by_path(playlist_key);
+
+    let mut starting_track = None;
+    if let Some(key) = starting_track_key {
+        let t = playlist.tracks.get_by_path(key);
+        starting_track = Some(t);
+        gem_player.player.queue.push(t.clone());
     }
 
     for t in &playlist.tracks {
-        if Some(t) == starting_track {
-            continue;
+        if let Some(s) = starting_track {
+            if *t == *s {
+                continue;
+            }
         }
 
         gem_player.player.queue.push(t.clone());

@@ -935,7 +935,6 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
     render_playlist_track_menu(ui, gem_player);
 
     let Some(playlist_key) = gem_player.ui_state.playlists.selected_playlist_key.clone() else {
-        //TODO: cleanup
         return; // No playlist selected, do nothing
     };
 
@@ -1206,8 +1205,8 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 if response.double_clicked() {
                     let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path.clone();
-                    let starting_track = track.clone();
-                    play_playlist(gem_player, path, Some(&starting_track));
+                    let starting_track_key = track.path.clone();
+                    play_playlist(gem_player, path, Some(&starting_track_key));
                 }
             });
         });
