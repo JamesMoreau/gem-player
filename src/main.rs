@@ -20,8 +20,6 @@ mod ui;
 
 /*
 TODO:
-* Two playlists cannot have the same name. we should prevent the user from doing this.
-* basically we want a vec[] operator that takes a pathbuf (playlist/song identifer) and returns the object, otherwise panic (no option<Object>)
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
