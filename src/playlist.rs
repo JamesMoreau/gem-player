@@ -185,12 +185,27 @@ pub fn rename(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
     Ok(())
 }
 
-pub fn create(name: String, directory: &Path) -> io::Result<Playlist> { // TODO: should this do any file checks?
-    let filename = format!("{}.m3u", name);
-    let file_path = directory.join(filename);
+pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
+    let sanitized_name = sanitize_filename::sanitize(name.trim());
+    if sanitized_name.is_empty() {
+        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist name cannot be empty."));
+    }
+
+    if !directory.exists() {
+        return Err(io::Error::new(ErrorKind::NotFound, "The specified directory does not exist."));
+    }
+
+    let filename = format!("{}.m3u", sanitized_name);
+    let file_path = directory.join(&filename);
+
+    if file_path.exists() {
+        return Err(io::Error::new(ErrorKind::AlreadyExists, "A playlist with this name already exists."));
+    }
+
+    fs::File::create(&file_path)?;
 
     let mut playlist = Playlist {
-        name,
+        name: sanitized_name,
         creation_date_time: SystemTime::now(),
         tracks: Vec::new(),
         m3u_path: file_path,
@@ -203,10 +218,7 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> { // TODO:
 
 // Removes the playlist from the list and deletes the associated m3u file.
 pub fn delete(playlist_key: &Path, playlists: &mut Vec<Playlist>) -> Result<(), String> {
-    let Some(index) = playlists.iter().position(|p| p.m3u_path == playlist_key) else {
-        return Err("Playlist not found in library".to_string());
-    };
-
+    let index = playlists.iter().position(|p| p.m3u_path == playlist_key).expect("Playlist not found in library");
     let playlist = playlists.remove(index);
 
     // Send the m3u file to the trash!
