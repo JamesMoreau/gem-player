@@ -40,7 +40,7 @@ impl PlaylistRetrieval for Vec<Playlist> {
     }
 }
 
-pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
+pub fn add_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
     if playlist.tracks.iter().any(|s| *s == track) {
         return Err(io::Error::new(
             ErrorKind::Other,
@@ -54,7 +54,7 @@ pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Res
     Ok(())
 }
 
-pub fn remove_track(playlist: &mut Playlist, track_key: &Path) -> io::Result<()> {
+pub fn remove_from_playlist(playlist: &mut Playlist, track_key: &Path) -> io::Result<()> {
     let Some(index) = playlist.tracks.iter().position(|t: &Track| t.path == track_key) else {
         return Err(io::Error::new(
             ErrorKind::NotFound,
@@ -165,18 +165,27 @@ pub fn rename(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
         return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist path has no parent directory."));
     };
 
-    let new_filename = format!("{}.m3u", new_name);
+    let sanitized_name = sanitize_filename::sanitize(new_name.trim());
+    if sanitized_name.is_empty() {
+        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist name cannot be empty."));
+    }
+
+    let new_filename = format!("{}.m3u", sanitized_name);
     let new_path = directory.join(new_filename);
+
+    if new_path.exists() {
+        return Err(io::Error::new(ErrorKind::AlreadyExists, "A playlist with this name already exists."));
+    }
 
     fs::rename(&playlist.m3u_path, &new_path)?;
 
-    playlist.name = new_name;
+    playlist.name = sanitized_name;
     playlist.m3u_path = new_path;
 
     Ok(())
 }
 
-pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
+pub fn create(name: String, directory: &Path) -> io::Result<Playlist> { // TODO: should this do any file checks?
     let filename = format!("{}.m3u", name);
     let file_path = directory.join(filename);
 

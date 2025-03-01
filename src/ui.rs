@@ -1,7 +1,7 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, play_library, play_playlist,
     player::{is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, shuffle_queue},
-    playlist::{add_a_track_to_playlist, create, delete, remove_track, rename, PlaylistRetrieval},
+    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
@@ -615,7 +615,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 let response = ui.button(&playlist.name);
                                 if response.clicked() {
                                     let track = gem_player.library.get_by_path(track_key);
-                                    let result = add_a_track_to_playlist(playlist, track.clone());
+                                    let result = add_to_playlist(playlist, track.clone());
                                     if let Err(e) = result {
                                         error!("{}", e);
                                         gem_player.ui_state.toasts.error(format!("{}", e));
@@ -688,7 +688,7 @@ pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
 
     let available_width = ui.available_width();
     let position_width = 64.0;
-    let time_width = 80.0;
+    let time_width = 64.0;
     let actions_width = 80.0;
     let remaining_width = available_width - position_width - time_width - actions_width;
     let title_width = remaining_width * (2.0 / 4.0);
@@ -1097,7 +1097,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     let available_width = ui.available_width();
     let position_width = 64.0;
-    let time_width = 80.0;
+    let time_width = 64.0;
     let more_width = 48.0;
     let remaining_width = available_width - position_width - time_width - more_width;
     let title_width = remaining_width * (2.0 / 4.0);
@@ -1250,7 +1250,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 if response.clicked() {
                     let playlist = gem_player.playlists.get_by_path_mut(playlist_key);
                     let track_key = playlist.tracks.get_by_path(track_key).path.clone();
-                    let result = remove_track(playlist, &track_key);
+                    let result = remove_from_playlist(playlist, &track_key);
                     if let Err(e) = result {
                         error!("{}", e);
                         gem_player.ui_state.toasts.error("Error removing track from playlist");
