@@ -5,11 +5,11 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{
-    adjust_volume_by_percentage, check_for_next_track, maybe_play_next, maybe_play_previous, mute_or_unmute, play_next, play_or_pause, Player
+    adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, Player
 };
 use playlist::{read_all_from_a_directory, Playlist};
 use rodio::{OutputStream, Sink};
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, time::Duration};
 use track::{read_music, SortBy, SortOrder, Track};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 
@@ -199,6 +199,57 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
     );
 
     (library, playlists)
+}
+
+pub fn check_for_next_track(gem_player: &mut GemPlayer) {
+    if !gem_player.player.sink.empty() {
+        return; // If a track is still playing, do nothing
+    }
+
+    let result = play_next(&mut gem_player.player);
+    if let Err(e) = result {
+        error!("{}", e);
+        gem_player.ui_state.toasts.error("Error playing the next track");
+    }
+
+    let nothing_left_to_play = gem_player.player.sink.empty() && gem_player.player.queue.is_empty();
+    if nothing_left_to_play {
+        gem_player.player.playing_track = None;
+    }
+}
+
+pub fn maybe_play_next(gem_player: &mut GemPlayer) {
+    let result = play_next(&mut gem_player.player);
+    if let Err(e) = result {
+        error!("{}", e);
+        gem_player.ui_state.toasts.error("Error playing the next track");
+    }
+}
+
+// If we are near the beginning of the track, we go to the previously played track.
+// Otherwise, we seek to the beginning.
+// This is what actually gets called by the UI and key command.
+pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
+    let playback_position = gem_player.player.sink.get_pos().as_secs_f32();
+    let rewind_threshold = 5.0;
+
+    if playback_position < rewind_threshold {
+        if gem_player.player.history.is_empty() {
+            // No previous track to play, just restart the current track
+            if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
+                error!("Error rewinding track: {:?}", e);
+            }
+            gem_player.player.sink.play();
+        } else if let Err(e) = play_previous(&mut gem_player.player) {
+            error!("{}", e);
+            gem_player.ui_state.toasts.error("Error playing the previous track");
+        }
+    } else {
+        if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
+            error!("Error rewinding track: {:?}", e);
+        }
+        gem_player.player.sink.play();
+    }
 }
 
 pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) {

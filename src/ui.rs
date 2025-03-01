@@ -1,6 +1,6 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, play_library, play_playlist,
-    player::{is_playing, maybe_play_previous, move_to_front, play_next, play_or_pause, shuffle_queue},
+    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_previous, play_library, play_playlist,
+    player::{is_playing, move_to_front, play_next, play_or_pause, shuffle_queue},
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
