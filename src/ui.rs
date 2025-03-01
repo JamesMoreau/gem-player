@@ -1411,10 +1411,17 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     View::Queue => {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.player.queue);
                         ui.add(unselectable_label(tracks_count_and_duration));
-
-                        ui.add_space(8.0);
                     }
-                    View::Playlists => {}
+                    View::Playlists => {
+                        let Some(playlist_key) = &gem_player.ui_state.playlists.selected_playlist_key else {
+                            return;
+                        };
+
+                        let playlist = gem_player.playlists.get_by_path(playlist_key);
+                        
+                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&playlist.tracks);
+                        ui.add(unselectable_label(tracks_count_and_duration));
+                    }
                     View::Settings => {}
                 });
 
@@ -1470,7 +1477,9 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             gem_player.player.queue.clear();
                         }
                     }
-                    View::Playlists => {}
+                    View::Playlists => {
+                        render_sort_by_and_search(ui, gem_player);
+                    }
                     View::Settings => {}
                 });
             });
@@ -1483,7 +1492,7 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     format!("{} tracks / {}", tracks.len(), duration_string)
 }
 
-fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: need this to work for both libary AND playlist view
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
     let popup_id = ui.make_persistent_id("sort_by_popup");
     if response.clicked() {
