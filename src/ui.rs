@@ -757,7 +757,8 @@ pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        move_to_front(queue, index);
+                        let t = queue[index].clone();
+                        move_to_front(queue, &t);
                     }
 
                     ui.add_space(8.0);

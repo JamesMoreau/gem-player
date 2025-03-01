@@ -100,7 +100,8 @@ pub fn shuffle_queue(queue: &mut Vec<Track>) {
     queue.shuffle(&mut rng);
 }
 
-pub fn move_to_front(queue: &mut Vec<Track>, index: usize) {
+pub fn move_to_front(queue: &mut Vec<Track>, track: &Track) {
+    let index = queue.iter().position(|t| *t == *track).expect("Track not found in queue");
     if index == 0 || index >= queue.len() {
         return;
     }
