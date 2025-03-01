@@ -984,7 +984,9 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let result = rename(playlist, name_buffer_clone);
                             match result {
                                 Err(e) => {
-                                    error!("{}", e);
+                                    let message = format!("Error renaming playlist: {}", e);
+                                    error!("{}", message);
+                                    gem_player.ui_state.toasts.error(message);
                                 }
                                 Ok(_) => {
                                     // Update the selected playlist with the new path so that we remain selected.
