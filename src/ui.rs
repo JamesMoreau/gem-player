@@ -1039,6 +1039,8 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             },
                         );
 
+                        // We have to do this pattern since we want to access gem_player across 
+                        // the two captures used by containers::Sides.
                         if play_clicked {
                             let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path;
                             play_playlist(gem_player, &path.clone(), None)
