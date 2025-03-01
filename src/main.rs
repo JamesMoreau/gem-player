@@ -95,7 +95,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             current_view: ui::View::Library,
             theme_preference,
             library: LibraryViewState {
-                search_text: String::new(),
+                search_string: String::new(),
                 selected_track_key: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
@@ -107,6 +107,9 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 delete_playlist_modal_is_open: false,
                 selected_track_key: None,
                 track_menu_is_open: false,
+                search_string: String::new(),
+                sort_by: SortBy::Title,
+                sort_order: SortOrder::Ascending,
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)

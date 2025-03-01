@@ -47,7 +47,7 @@ pub struct LibraryViewState {
     track_menu_is_open: bool, // The menu is open for selected_track .
     sort_by: SortBy,
     sort_order: SortOrder,
-    search_text: String,
+    search_string: String,
 }
 
 #[fully_pub]
@@ -57,6 +57,9 @@ pub struct PlaylistsViewState {
     playlist_rename: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_playlist_modal_is_open: bool, // The menu is open for selected_playlist_path.
     track_menu_is_open: bool,        // The menu is open for selected_playlist_path.
+    sort_by: SortBy,
+    sort_order: SortOrder,
+    search_string: String,
 }
 
 pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
@@ -447,7 +450,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .library
         .iter()
         .filter(|track| {
-            let search_lower = gem_player.ui_state.library.search_text.to_lowercase();
+            let search_lower = gem_player.ui_state.library.search_string.to_lowercase();
 
             let matches_search = |field: &Option<String>| {
                 field
@@ -1038,7 +1041,7 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             },
                         );
 
-                        // We have to do this pattern since we want to access gem_player across 
+                        // We have to do this pattern since we want to access gem_player across
                         // the two captures used by containers::Sides.
                         if play_clicked {
                             let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path;
@@ -1403,7 +1406,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 });
 
-                flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
+                flex.add_ui(item(), |ui| match gem_player.ui_state.current_view { // TODO: figure out how to alway have this in the middle.
                     View::Library => {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.library);
                         ui.add(unselectable_label(tracks_count_and_duration));
@@ -1418,7 +1421,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         };
 
                         let playlist = gem_player.playlists.get_by_path(playlist_key);
-                        
+
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&playlist.tracks);
                         ui.add(unselectable_label(tracks_count_and_duration));
                     }
@@ -1492,9 +1495,18 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     format!("{} tracks / {}", tracks.len(), duration_string)
 }
 
-fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO: need this to work for both libary AND playlist view
-    let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
+#[named]
+fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    match gem_player.ui_state.current_view {
+        View::Library | View::Playlists => {}
+        _ => {
+            error!("{} was called for an invalid view.", function_name!());
+            return;
+        }
+    }
+
     let popup_id = ui.make_persistent_id("sort_by_popup");
+    let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
     if response.clicked() {
         ui.memory_mut(|mem| mem.toggle_popup(popup_id));
     }
@@ -1504,29 +1516,46 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) { // TODO:
     popup::popup_above_or_below_widget(ui, popup_id, &response, below, close_on_click_outside, |ui| {
         ui.set_min_width(100.0);
 
-        for sort_by in SortBy::iter() {
-            ui.radio_value(&mut gem_player.ui_state.library.sort_by, sort_by, format!("{:?}", sort_by));
+        let (sort_by, sort_order) = match gem_player.ui_state.current_view {
+            View::Library => (
+                &mut gem_player.ui_state.library.sort_by,
+                &mut gem_player.ui_state.library.sort_order,
+            ),
+            View::Playlists => (
+                &mut gem_player.ui_state.playlists.sort_by,
+                &mut gem_player.ui_state.playlists.sort_order,
+            ),
+            _ => unreachable!(), // We already checked above
+        };
+
+        for sb in SortBy::iter() {
+            ui.radio_value(sort_by, sb, format!("{:?}", sb));
         }
-
         ui.separator();
-
-        for sort_order in SortOrder::iter() {
-            ui.radio_value(&mut gem_player.ui_state.library.sort_order, sort_order, format!("{:?}", sort_order));
+        for so in SortOrder::iter() {
+            ui.radio_value(sort_order, so, format!("{:?}", so));
         }
     });
 
-    let search_bar = TextEdit::singleline(&mut gem_player.ui_state.library.search_text)
+    let search_text = match gem_player.ui_state.current_view {
+        View::Library => &mut gem_player.ui_state.library.search_string,
+        View::Playlists => &mut gem_player.ui_state.playlists.search_string,
+        _ => unreachable!(),
+    };
+
+    let search_bar = TextEdit::singleline(search_text)
         .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
         .desired_width(140.0)
         .char_limit(20);
     ui.add(search_bar);
 
-    let clear_button_is_visible = !gem_player.ui_state.library.search_text.is_empty();
+    let clear_button_is_visible = !search_text.is_empty();
     let response = ui
         .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
         .on_hover_text("Clear search");
+
     if response.clicked() {
-        gem_player.ui_state.library.search_text.clear();
+        search_text.clear();
     }
 }
 
