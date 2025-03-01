@@ -45,6 +45,16 @@ impl PartialEq for Track {
     }
 }
 
+pub trait TrackRetrieval {
+    fn get_by_path(&self, path: &Path) -> &Track;
+}
+
+impl TrackRetrieval for Vec<Track> {
+    fn get_by_path(&self, path: &Path) -> &Track {
+        self.iter().find(|t| t.path == path).expect("Track not found")
+    }
+}
+
 pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     tracks.sort_by(|a, b| {
         let ordering = match sort_by {

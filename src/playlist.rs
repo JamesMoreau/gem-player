@@ -54,8 +54,8 @@ pub fn add_a_track_to_playlist(playlist: &mut Playlist, track: Track) -> io::Res
     Ok(())
 }
 
-pub fn remove_track(playlist: &mut Playlist, track_identifier: &Path) -> io::Result<()> {
-    let Some(index) = playlist.tracks.iter().position(|x| x.path == track_identifier) else {
+pub fn remove_track(playlist: &mut Playlist, track_key: &Path) -> io::Result<()> {
+    let Some(index) = playlist.tracks.iter().position(|t: &Track| t.path == track_key) else {
         return Err(io::Error::new(
             ErrorKind::NotFound,
             "The track to be removed was not found in the playlist.",
@@ -193,8 +193,8 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
 }
 
 // Removes the playlist from the list and deletes the associated m3u file.
-pub fn delete(playlist_identifier: &Path, playlists: &mut Vec<Playlist>) -> Result<(), String> {
-    let Some(index) = playlists.iter().position(|p| p.m3u_path == playlist_identifier) else {
+pub fn delete(playlist_key: &Path, playlists: &mut Vec<Playlist>) -> Result<(), String> {
+    let Some(index) = playlists.iter().position(|p| p.m3u_path == playlist_key) else {
         return Err("Playlist not found in library".to_string());
     };
 

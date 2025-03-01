@@ -97,16 +97,16 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             theme_preference,
             library: LibraryViewState {
                 search_text: String::new(),
-                selected_track_identifier: None,
+                selected_track_key: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
                 track_menu_is_open: false,
             },
             playlists: PlaylistsViewState {
-                selected_playlist_path: None,
+                selected_playlist_key: None,
                 playlist_rename: None,
                 delete_playlist_modal_is_open: false,
-                selected_track: None,
+                selected_track_key: None,
                 track_menu_is_open: false,
             },
             toasts: Toasts::default()
@@ -225,8 +225,8 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
     }
 }
 
-pub fn play_playlist(gem_player: &mut GemPlayer, playlist_identifier: &PathBuf, starting_track: Option<&Track>) {
-    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *playlist_identifier) else {
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &PathBuf, starting_track: Option<&Track>) {
+    let Some(playlist_index) = gem_player.playlists.iter().position(|p| p.m3u_path == *playlist_key) else {
         error!("Unable to find playlist for PlayFromPlaylist action.");
         return;
     };
