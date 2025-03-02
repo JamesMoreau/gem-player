@@ -1094,6 +1094,32 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
+    let mut tracks_copy: Vec<Track> = gem_player
+        .playlists
+        .get_by_path(&playlist_key)
+        .tracks
+        .iter()
+        .filter(|track| {
+            let search_lower = gem_player.ui_state.playlists.search_string.to_lowercase();
+
+            let matches_search = |field: &Option<String>| {
+                field
+                    .as_ref()
+                    .map(|text| text.to_lowercase().contains(&search_lower))
+                    .unwrap_or(false)
+            };
+
+            matches_search(&track.title) || matches_search(&track.artist) || matches_search(&track.album)
+        })
+        .cloned()
+        .collect();
+
+    sort(
+        &mut tracks_copy,
+        gem_player.ui_state.playlists.sort_by,
+        gem_player.ui_state.playlists.sort_order,
+    );
+
     let header_labels = [
         icons::ICON_TAG,
         icons::ICON_MUSIC_NOTE,
@@ -1134,9 +1160,9 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, playlist_length, |mut row| {
+            body.rows(26.0, tracks_copy.len(), |mut row| {
                 let index = row.index();
-                let track = &gem_player.playlists.get_by_path(&playlist_key).tracks[index];
+                let track = &tracks_copy[index];
 
                 let row_is_selected = gem_player
                     .ui_state
@@ -1208,8 +1234,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 if response.double_clicked() {
                     let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path.clone();
-                    let starting_track_key = track.path.clone();
-                    play_playlist(gem_player, path, Some(&starting_track_key));
+                    play_playlist(gem_player, path, Some(&track.path));
                 }
             });
         });
@@ -1406,7 +1431,8 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 });
 
-                flex.add_ui(item(), |ui| match gem_player.ui_state.current_view { // TODO: figure out how to alway have this in the middle.
+                flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
+                    // TODO: figure out how to alway have this in the middle.
                     View::Library => {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.library);
                         ui.add(unselectable_label(tracks_count_and_duration));
@@ -1499,7 +1525,7 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let view = &gem_player.ui_state.current_view;
     let view_is_library_or_playlists = matches!(view, View::Library | View::Playlists);
-    if !view_is_library_or_playlists{
+    if !view_is_library_or_playlists {
         error!("{} was called for an invalid view.", function_name!());
         return;
     }
