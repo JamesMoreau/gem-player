@@ -1403,8 +1403,8 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
-        ui.columns_const(|[col_1, col_2, col_3]| {
-            col_1.with_layout(Layout::left_to_right(Align::Center), |ui| {
+        ui.columns_const(|[left, center, right]| {
+            left.with_layout(Layout::left_to_right(Align::Center), |ui| {
                 let get_icon_and_tooltip = |view: &View| match view {
                     View::Library => icons::ICON_LIBRARY_MUSIC,
                     View::Queue => icons::ICON_QUEUE_MUSIC,
@@ -1425,7 +1425,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            col_2.with_layout(Layout::top_down_justified(Align::Center), |ui| {
+            center.with_layout(Layout::top_down_justified(Align::Center), |ui| {
                 match gem_player.ui_state.current_view {
                     View::Library => {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.library);
@@ -1449,7 +1449,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            col_3.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
+            right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
                     let refresh_button = Button::new(icons::ICON_REFRESH);
                     let response = ui.add(refresh_button).on_hover_text("Refresh library");
@@ -1504,7 +1504,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Playlists => {
                     render_sort_by_and_search(ui, gem_player);
                 }
-                View::Settings => {}
+                _ => {}
             });
         });
     });
