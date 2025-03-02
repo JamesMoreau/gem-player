@@ -928,7 +928,8 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
         });
 
-    if confirm_clicked || cancel_clicked || modal.should_close() { // maybe just handle event inside completely or outside completely.
+    if confirm_clicked || cancel_clicked || modal.should_close() {
+        // maybe just handle event inside completely or outside completely.
         gem_player.ui_state.playlists.delete_playlist_modal_is_open = false;
     }
 }
@@ -972,7 +973,7 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 save_clicked = response.clicked();
                             },
                         );
-                        
+
                         if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
 
@@ -1402,34 +1403,30 @@ pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
-        Flex::horizontal()
-            .h_full()
-            .w_full()
-            .justify(FlexJustify::SpaceBetween)
-            .show(ui, |flex| {
-                flex.add_ui(item(), |ui| {
-                    let get_icon_and_tooltip = |view: &View| match view {
-                        View::Library => icons::ICON_LIBRARY_MUSIC,
-                        View::Queue => icons::ICON_QUEUE_MUSIC,
-                        View::Playlists => icons::ICON_STAR,
-                        View::Settings => icons::ICON_SETTINGS,
-                    };
+        ui.columns_const(|[col_1, col_2, col_3]| {
+            col_1.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                let get_icon_and_tooltip = |view: &View| match view {
+                    View::Library => icons::ICON_LIBRARY_MUSIC,
+                    View::Queue => icons::ICON_QUEUE_MUSIC,
+                    View::Playlists => icons::ICON_STAR,
+                    View::Settings => icons::ICON_SETTINGS,
+                };
 
-                    for view in View::iter() {
-                        let icon = get_icon_and_tooltip(&view);
-                        let response = ui
-                            .selectable_label(gem_player.ui_state.current_view == view, format!("  {icon}  "))
-                            .on_hover_text(format!("{:?}", view));
-                        if response.clicked() {
-                            switch_view(&mut gem_player.ui_state, view);
-                        }
-
-                        ui.add_space(4.0);
+                for view in View::iter() {
+                    let icon = get_icon_and_tooltip(&view);
+                    let response = ui
+                        .selectable_label(gem_player.ui_state.current_view == view, format!("  {icon}  "))
+                        .on_hover_text(format!("{:?}", view));
+                    if response.clicked() {
+                        switch_view(&mut gem_player.ui_state, view);
                     }
-                });
 
-                flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
-                    // TODO: figure out how to alway have this in the middle.
+                    ui.add_space(4.0);
+                }
+            });
+
+            col_2.with_layout(Layout::top_down_justified(Align::Center), |ui| {
+                match gem_player.ui_state.current_view {
                     View::Library => {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.library);
                         ui.add(unselectable_label(tracks_count_and_duration));
@@ -1448,67 +1445,68 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&playlist.tracks);
                         ui.add(unselectable_label(tracks_count_and_duration));
                     }
-                    View::Settings => {}
-                });
-
-                flex.add_ui(item(), |ui| match gem_player.ui_state.current_view {
-                    View::Library => {
-                        let refresh_button = Button::new(icons::ICON_REFRESH);
-                        let response = ui.add(refresh_button).on_hover_text("Refresh library");
-                        if response.clicked() {
-                            match &gem_player.library_directory {
-                                Some(directory) => {
-                                    let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
-                                    gem_player.library = found_music;
-                                    gem_player.playlists = found_playlists;
-                                }
-                                None => warn!("Cannot refresh library, as there is no library path."),
-                            }
-                        }
-
-                        ui.add_space(16.0);
-
-                        render_sort_by_and_search(ui, gem_player)
-                    }
-                    View::Queue => {
-                        let queue_is_not_empty = !gem_player.player.queue.is_empty();
-                        let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
-                        let response = ui
-                            .add_enabled(queue_is_not_empty, shuffle_button)
-                            .on_hover_text("Shuffle")
-                            .on_disabled_hover_text("Queue is empty");
-                        if response.clicked() {
-                            shuffle_queue(&mut gem_player.player.queue);
-                        }
-
-                        let repeat_button_color = if gem_player.player.repeat {
-                            ui.visuals().selection.bg_fill
-                        } else {
-                            ui.visuals().text_color()
-                        };
-                        let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
-                        let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
-                        if clicked {
-                            gem_player.player.repeat = !gem_player.player.repeat;
-                        }
-
-                        ui.add_space(16.0);
-
-                        let clear_button = Button::new(icons::ICON_CLEAR_ALL);
-                        let response = ui
-                            .add_enabled(queue_is_not_empty, clear_button)
-                            .on_hover_text("Clear")
-                            .on_disabled_hover_text("Queue is empty");
-                        if response.clicked() {
-                            gem_player.player.queue.clear();
-                        }
-                    }
-                    View::Playlists => {
-                        render_sort_by_and_search(ui, gem_player);
-                    }
-                    View::Settings => {}
-                });
+                    _ => {}
+                }
             });
+
+            col_3.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
+                View::Library => {
+                    let refresh_button = Button::new(icons::ICON_REFRESH);
+                    let response = ui.add(refresh_button).on_hover_text("Refresh library");
+                    if response.clicked() {
+                        match &gem_player.library_directory {
+                            Some(directory) => {
+                                let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
+                                gem_player.library = found_music;
+                                gem_player.playlists = found_playlists;
+                            }
+                            None => warn!("Cannot refresh library, as there is no library path."),
+                        }
+                    }
+
+                    ui.add_space(16.0);
+
+                    render_sort_by_and_search(ui, gem_player)
+                }
+                View::Queue => {
+                    let queue_is_not_empty = !gem_player.player.queue.is_empty();
+                    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
+                    let response = ui
+                        .add_enabled(queue_is_not_empty, shuffle_button)
+                        .on_hover_text("Shuffle")
+                        .on_disabled_hover_text("Queue is empty");
+                    if response.clicked() {
+                        shuffle_queue(&mut gem_player.player.queue);
+                    }
+
+                    let repeat_button_color = if gem_player.player.repeat {
+                        ui.visuals().selection.bg_fill
+                    } else {
+                        ui.visuals().text_color()
+                    };
+                    let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
+                    let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
+                    if clicked {
+                        gem_player.player.repeat = !gem_player.player.repeat;
+                    }
+
+                    ui.add_space(16.0);
+
+                    let clear_button = Button::new(icons::ICON_CLEAR_ALL);
+                    let response = ui
+                        .add_enabled(queue_is_not_empty, clear_button)
+                        .on_hover_text("Clear")
+                        .on_disabled_hover_text("Queue is empty");
+                    if response.clicked() {
+                        gem_player.player.queue.clear();
+                    }
+                }
+                View::Playlists => {
+                    render_sort_by_and_search(ui, gem_player);
+                }
+                View::Settings => {}
+            });
+        });
     });
 }
 
