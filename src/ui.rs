@@ -1497,12 +1497,11 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
 
 #[named]
 fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    match gem_player.ui_state.current_view {
-        View::Library | View::Playlists => {}
-        _ => {
-            error!("{} was called for an invalid view.", function_name!());
-            return;
-        }
+    let view = &gem_player.ui_state.current_view;
+    let view_is_library_or_playlists = matches!(view, View::Library | View::Playlists);
+    if !view_is_library_or_playlists{
+        error!("{} was called for an invalid view.", function_name!());
+        return;
     }
 
     let popup_id = ui.make_persistent_id("sort_by_popup");
@@ -1516,7 +1515,7 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
     popup::popup_above_or_below_widget(ui, popup_id, &response, below, close_on_click_outside, |ui| {
         ui.set_min_width(100.0);
 
-        let (sort_by, sort_order) = match gem_player.ui_state.current_view {
+        let (sort_by, sort_order) = match view {
             View::Library => (
                 &mut gem_player.ui_state.library.sort_by,
                 &mut gem_player.ui_state.library.sort_order,
@@ -1537,7 +1536,7 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
         }
     });
 
-    let search_text = match gem_player.ui_state.current_view {
+    let search_text = match view {
         View::Library => &mut gem_player.ui_state.library.search_string,
         View::Playlists => &mut gem_player.ui_state.playlists.search_string,
         _ => unreachable!(),
