@@ -1002,7 +1002,7 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     } else {
                         // Not edit mode
                         let strip_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                        let mut play_clicked = false; //TODO: maybe cleanup
+                        let mut play_clicked = false;
                         let mut delete_clicked = false;
                         let mut edit_clicked = false;
 
