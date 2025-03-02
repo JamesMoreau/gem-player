@@ -964,17 +964,13 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                                 let cancel_button = Button::new(icons::ICON_CANCEL);
                                 let response = ui.add(cancel_button).on_hover_text("Discard");
-                                if response.clicked() {
-                                    discard_clicked = true;
-                                }
+                                discard_clicked = response.clicked();
 
                                 ui.add_space(8.0);
 
                                 let confirm_button = Button::new(icons::ICON_SAVE);
                                 let response = ui.add(confirm_button).on_hover_text("Save");
-                                if response.clicked() {
-                                    save_clicked = true;
-                                }
+                                save_clicked = response.clicked();
                             },
                         );
 
