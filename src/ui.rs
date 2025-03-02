@@ -8,9 +8,7 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, FontId, Frame, Id, Image,
-    Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -1425,7 +1423,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             });
 
-            center.with_layout(Layout::top_down_justified(Align::Center), |ui| {
+            center.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
                 match gem_player.ui_state.current_view {
                     View::Library => {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.library);
@@ -1470,14 +1468,17 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
                 View::Queue => {
                     let queue_is_not_empty = !gem_player.player.queue.is_empty();
-                    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
+
+                    let clear_button = Button::new(icons::ICON_CLEAR_ALL);
                     let response = ui
-                        .add_enabled(queue_is_not_empty, shuffle_button)
-                        .on_hover_text("Shuffle")
+                        .add_enabled(queue_is_not_empty, clear_button)
+                        .on_hover_text("Clear")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        shuffle_queue(&mut gem_player.player.queue);
+                        gem_player.player.queue.clear();
                     }
+
+                    ui.add_space(16.0);
 
                     let repeat_button_color = if gem_player.player.repeat {
                         ui.visuals().selection.bg_fill
@@ -1490,19 +1491,17 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         gem_player.player.repeat = !gem_player.player.repeat;
                     }
 
-                    ui.add_space(16.0);
-
-                    let clear_button = Button::new(icons::ICON_CLEAR_ALL);
+                    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
                     let response = ui
-                        .add_enabled(queue_is_not_empty, clear_button)
-                        .on_hover_text("Clear")
+                        .add_enabled(queue_is_not_empty, shuffle_button)
+                        .on_hover_text("Shuffle")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        gem_player.player.queue.clear();
+                        shuffle_queue(&mut gem_player.player.queue);
                     }
                 }
                 View::Playlists => {
-                    render_sort_by_and_search(ui, gem_player);
+                    render_sort_by_and_search(ui, gem_player); // TODO: the contents of this are now backwards. fix!
                 }
                 _ => {}
             });
