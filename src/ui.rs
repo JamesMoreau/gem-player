@@ -915,21 +915,20 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let result = delete(&playlist_key, &mut gem_player.playlists);
                             if let Err(e) = result {
                                 error!("{}", e);
-                                return;
+                            } else {
+                                let message =
+                                    "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
+                                info!("{}", message);
+                                gem_player.ui_state.toasts.success(message);
+                                gem_player.ui_state.playlists.selected_playlist_key = None;
                             }
-
-                            let message =
-                                "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
-                            info!("{}", message);
-                            gem_player.ui_state.toasts.success(message);
-                            gem_player.ui_state.playlists.selected_playlist_key = None;
                         }
                     },
                 );
             });
         });
 
-    if confirm_clicked || cancel_clicked || modal.should_close() {
+    if confirm_clicked || cancel_clicked || modal.should_close() { // maybe just handle event inside completely or outside completely.
         gem_player.ui_state.playlists.delete_playlist_modal_is_open = false;
     }
 }
