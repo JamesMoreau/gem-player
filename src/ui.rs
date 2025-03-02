@@ -972,10 +972,8 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 save_clicked = response.clicked();
                             },
                         );
-
-                        if discard_clicked {
-                            gem_player.ui_state.playlists.playlist_rename = None;
-                        } else if save_clicked {
+                        
+                        if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
 
                             let playlist = &mut gem_player.playlists.get_by_path_mut(&playlist_key);
@@ -992,6 +990,10 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 }
                             }
 
+                            gem_player.ui_state.playlists.playlist_rename = None;
+                        }
+
+                        if discard_clicked {
                             gem_player.ui_state.playlists.playlist_rename = None;
                         }
                     } else {
