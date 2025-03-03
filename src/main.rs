@@ -21,13 +21,13 @@ mod ui;
 
 /*
 TODO:
+* profile app.
 * could use egui_inbox for library updating with watcher.
 * should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
-* profile app.
-* Fullscreen?
 * UI + aestethics. Scrolling track info could be cool (maybe only applies when the string is too big?)
+* Fullscreen?
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
