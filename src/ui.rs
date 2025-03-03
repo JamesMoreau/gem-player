@@ -8,7 +8,9 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
+    Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat,
+    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_flex::{item, Flex, FlexJustify};
@@ -1449,6 +1451,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
+                    render_sort_by_and_search(ui, gem_player);
+
+                    ui.add_space(16.0);
+
                     let refresh_button = Button::new(icons::ICON_REFRESH);
                     let response = ui.add(refresh_button).on_hover_text("Refresh library");
                     if response.clicked() {
@@ -1461,10 +1467,6 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             None => warn!("Cannot refresh library, as there is no library path."),
                         }
                     }
-
-                    ui.add_space(16.0);
-
-                    render_sort_by_and_search(ui, gem_player)
                 }
                 View::Queue => {
                     let queue_is_not_empty = !gem_player.player.queue.is_empty();
@@ -1501,7 +1503,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 }
                 View::Playlists => {
-                    render_sort_by_and_search(ui, gem_player); // TODO: the contents of this are now backwards. fix!
+                    render_sort_by_and_search(ui, gem_player);
                 }
                 _ => {}
             });
@@ -1520,9 +1522,28 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let view = &gem_player.ui_state.current_view;
     let view_is_library_or_playlists = matches!(view, View::Library | View::Playlists);
     if !view_is_library_or_playlists {
-        error!("{} was called for an invalid view.", function_name!());
-        return;
+        unreachable!("{} was called for an invalid view.", function_name!());
     }
+
+    let search_text = match view {
+        View::Library => &mut gem_player.ui_state.library.search_string,
+        View::Playlists => &mut gem_player.ui_state.playlists.search_string,
+        _ => unreachable!(),
+    };
+
+    let clear_button_is_visible = !search_text.is_empty();
+    let response = ui
+        .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
+        .on_hover_text("Clear search");
+    if response.clicked() {
+        search_text.clear();
+    }
+
+    let search_bar = TextEdit::singleline(search_text)
+        .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
+        .desired_width(140.0)
+        .char_limit(20);
+    ui.add(search_bar);
 
     let popup_id = ui.make_persistent_id("sort_by_popup");
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
@@ -1530,9 +1551,8 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
         ui.memory_mut(|mem| mem.toggle_popup(popup_id));
     }
 
-    let below = AboveOrBelow::Above;
     let close_on_click_outside = popup::PopupCloseBehavior::CloseOnClickOutside;
-    popup::popup_above_or_below_widget(ui, popup_id, &response, below, close_on_click_outside, |ui| {
+    popup::popup_above_or_below_widget(ui, popup_id, &response, AboveOrBelow::Above, close_on_click_outside, |ui| {
         ui.set_min_width(100.0);
 
         let (sort_by, sort_order) = match view {
@@ -1555,27 +1575,6 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
             ui.radio_value(sort_order, so, format!("{:?}", so));
         }
     });
-
-    let search_text = match view {
-        View::Library => &mut gem_player.ui_state.library.search_string,
-        View::Playlists => &mut gem_player.ui_state.playlists.search_string,
-        _ => unreachable!(),
-    };
-
-    let search_bar = TextEdit::singleline(search_text)
-        .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
-        .desired_width(140.0)
-        .char_limit(20);
-    ui.add(search_bar);
-
-    let clear_button_is_visible = !search_text.is_empty();
-    let response = ui
-        .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
-        .on_hover_text("Clear search");
-
-    if response.clicked() {
-        search_text.clear();
-    }
 }
 
 fn unselectable_label(text: impl Into<RichText>) -> Label {
