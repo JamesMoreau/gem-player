@@ -84,7 +84,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists = found_playlists;
     }
 
-    let (_stream, handle) = OutputStream::try_default().unwrap();
+    let (stream, handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&handle).unwrap();
     sink.pause();
     let initial_volume = 0.6;
@@ -136,7 +136,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             volume_before_mute: None,
             paused_before_scrubbing: None,
 
-            _stream,
+            stream,
             sink,
         },
     }

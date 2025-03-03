@@ -16,7 +16,7 @@ pub struct Player {
     volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
-    _stream: OutputStream, // Holds the OutputStream to keep it alive
+    stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,            // Controls playback (play, pause, stop, etc.)
 }
 
