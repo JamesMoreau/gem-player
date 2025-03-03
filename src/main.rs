@@ -263,7 +263,7 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
 
     let mut start_index = 0;
     if let Some(track) = starting_track {
-        start_index = gem_player.library.iter().position(|t| t == track).unwrap_or(0);
+        start_index = gem_player.library.get_position_by_path(&track.path);
     }
 
     // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
@@ -286,21 +286,17 @@ pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_t
 
     let playlist = gem_player.playlists.get_by_path(playlist_key);
 
-    let mut starting_track = None;
+    let mut start_index = 0;
     if let Some(key) = starting_track_key {
-        let t = playlist.tracks.get_by_path(key);
-        starting_track = Some(t);
-        gem_player.player.queue.push(t.clone());
+        start_index = playlist.tracks.get_position_by_path(key);
     }
 
-    for t in &playlist.tracks {
-        if let Some(s) = starting_track {
-            if *t == *s {
-                continue;
-            }
-        }
-
-        gem_player.player.queue.push(t.clone());
+    // Add tracks from the starting index to the end, then from the beginning up to the starting index.
+    for i in start_index..playlist.tracks.len() {
+        gem_player.player.queue.push(playlist.tracks[i].clone());
+    }
+    for i in 0..start_index {
+        gem_player.player.queue.push(playlist.tracks[i].clone());
     }
 
     if let Err(e) = play_next(&mut gem_player.player) {
