@@ -22,7 +22,6 @@ mod ui;
 /*
 TODO:
 * maybe go back to shuffle and repeat in the control ui. maybe play next randomly selects the next song from the queue?
-* play from library and play from playlist should put all track that come after the selected track!
 * perfomance improvements. cache or don't sort and filter songs every frame?
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
