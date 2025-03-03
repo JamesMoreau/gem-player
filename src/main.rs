@@ -21,9 +21,10 @@ mod ui;
 
 /*
 TODO:
-* profile app.
-* could use egui_inbox for library updating with watcher.
-* should expensive operations such as opening a file use an async system? research this!
+* maybe go back to shuffle and repeat in the control ui. maybe play next randomly selects the next song from the queue?
+* play from library and play from playlist should put all track that come after the selected track!
+* perfomance improvements. cache or don't sort and filter songs every frame?
+* could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
 * UI + aestethics. Scrolling track info could be cool (maybe only applies when the string is too big?)
@@ -260,16 +261,17 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
     gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
+    let mut start_index = 0;
     if let Some(track) = starting_track {
-        gem_player.player.queue.push(track.clone());
+        start_index = gem_player.library.iter().position(|t| t == track).unwrap_or(0);
     }
 
-    for t in &gem_player.library {
-        if Some(t) == starting_track {
-            continue;
-        }
-
-        gem_player.player.queue.push(t.clone());
+    // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
+    for i in start_index..gem_player.library.len() {
+        gem_player.player.queue.push(gem_player.library[i].clone());
+    }
+    for i in 0..start_index {
+        gem_player.player.queue.push(gem_player.library[i].clone());
     }
 
     if let Err(e) = play_next(&mut gem_player.player) {
