@@ -97,8 +97,8 @@ pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
 
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {
-        Ok(source) => source,
         Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
+        Ok(source) => source,
     };
 
     sink.append(source);
