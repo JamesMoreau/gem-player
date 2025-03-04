@@ -92,7 +92,6 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> { // maybe change to &Track once playling_track is removed.
     player.sink.stop(); // Stop the current track if any.
-    player.queue_cursor = None;
 
     let file = std::fs::File::open(&track.path)?;
 
