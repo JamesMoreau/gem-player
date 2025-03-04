@@ -262,7 +262,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     };
                     let tooltip = if is_playing(&mut gem_player.player) { "Pause" } else { "Play" };
                     let play_pause_button = Button::new(play_pause_icon);
-                    let track_is_playing = gem_player.player.playing_track.is_some();
+                    let track_is_playing = gem_player.player.queue_cursor.is_some();
                     let response = ui
                         .add_enabled(track_is_playing, play_pause_button)
                         .on_hover_text(tooltip)
@@ -291,7 +291,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_size = Vec2::splat(ui.available_height());
 
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                    if let Some(track) = &gem_player.player.playing_track {
+                    if let Some(queue_cursor) = gem_player.player.queue_cursor {
+                        let track = &gem_player.player.queue[queue_cursor];
                         if let Some(artwork_bytes) = &track.artwork {
                             let artwork_uri = format!("bytes://artwork-{}", track.path.to_string_lossy());
                             artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
@@ -314,7 +315,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut position_as_secs = 0.0;
                             let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                            if let Some(playing_track) = &gem_player.player.playing_track {
+                            if let Some(queue_cursor) = gem_player.player.queue_cursor {
+                                let playing_track = &gem_player.player.queue[queue_cursor];
                                 title = playing_track.title.as_deref().unwrap_or("Unknown Title");
                                 artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
                                 album = playing_track.album.as_deref().unwrap_or("Unknown Album");
@@ -328,7 +330,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
-                            let track_is_playing = gem_player.player.playing_track.is_some();
+                            let track_is_playing = gem_player.player.queue_cursor.is_some();
                             let response = ui.add_enabled(track_is_playing, playback_progress_slider);
 
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
@@ -446,7 +448,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     render_library_track_menu(ui, gem_player);
 
-    let mut library_copy: Vec<Track> = gem_player
+    let library_copy: Vec<Track> = gem_player
         .library
         .iter()
         .filter(|track| {
@@ -464,11 +466,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    sort(
-        &mut library_copy,
-        gem_player.ui_state.library.sort_by,
-        gem_player.ui_state.library.sort_order,
-    );
+    // sort( TODO: put back
+    //     &mut library_copy,
+    //     gem_player.ui_state.library.sort_by,
+    //     gem_player.ui_state.library.sort_order,
+    // );
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 

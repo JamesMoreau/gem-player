@@ -126,8 +126,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists,
 
         player: Player {
-            playing_track: None,
-
             queue: Vec::new(),
             queue_cursor: None,
 
@@ -218,7 +216,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 
     let nothing_left_to_play = gem_player.player.sink.empty() && gem_player.player.queue.is_empty();
     if nothing_left_to_play {
-        gem_player.player.playing_track = None;
+        gem_player.player.queue_cursor = None;
     }
 }
 

@@ -6,8 +6,6 @@ use std::io::{self, BufReader, ErrorKind};
 
 #[fully_pub]
 pub struct Player {
-    playing_track: Option<Track>, // TODO: get rid of this and use qeuue_cursor instead.
-
     queue: Vec<Track>,
     queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue. TODO: should this be a usize or a PathBuf (key)?
 
@@ -94,7 +92,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> { // maybe change to &Track once playling_track is removed.
     player.sink.stop(); // Stop the current track if any.
-    player.playing_track = None;
+    player.queue_cursor = None;
 
     let file = std::fs::File::open(&track.path)?;
 
@@ -104,7 +102,6 @@ pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> { // m
         Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
     };
 
-    player.playing_track = Some(track);
     player.sink.append(source);
     player.sink.play();
 
