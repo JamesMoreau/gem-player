@@ -254,6 +254,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 
 pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) {
     gem_player.player.queue.clear();
+    gem_player.player.queue_cursor = None;
 
     let mut start_index = 0;
     if let Some(track) = starting_track {
