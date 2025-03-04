@@ -112,16 +112,6 @@ pub fn shuffle_queue(queue: &mut Vec<Track>) {
     queue.shuffle(&mut rng);
 }
 
-pub fn move_to_front(queue: &mut Vec<Track>, track: &Track) {
-    let index = queue.iter().position(|t| *t == *track).expect("Track not found in queue");
-    if index == 0 || index >= queue.len() {
-        return;
-    }
-
-    let track = queue.remove(index);
-    queue.insert(0, track);
-}
-
 pub fn mute_or_unmute(player: &mut Player) {
     let mut volume = player.sink.volume();
 

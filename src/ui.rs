@@ -1,6 +1,6 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_previous, play_library, play_playlist,
-    player::{is_playing, move_to_front, play_next, play_or_pause, shuffle_queue},
+    player::{is_playing, play_next, play_or_pause, shuffle_queue, Player},
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
@@ -100,10 +100,10 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| match gem_player.ui_state.current_view {
-                    View::Library => render_library_ui(ui, gem_player),
-                    View::Queue => render_queue_view(ui, &mut gem_player.player.queue),
+                    View::Library => render_library_view(ui, gem_player),
+                    View::Queue => render_queue_view(ui, &mut gem_player.player),
                     View::Playlists => render_playlists_view(ui, gem_player),
-                    View::Settings => render_settings_ui(ui, gem_player),
+                    View::Settings => render_settings_view(ui, gem_player),
                 });
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
@@ -431,7 +431,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -669,8 +669,8 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
-    if queue.is_empty() {
+pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
+    if player.queue.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -723,9 +723,12 @@ pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
             }
         })
         .body(|body| {
-            body.rows(26.0, queue.len(), |mut row| {
-                let index = row.index();
-                let track = &queue[index];
+            let queue_cursor = player.queue_cursor.expect("The queue cursor should be Some if queue is not empty.");
+            let starting_index = queue_cursor + 1; // Exclude the playing track.
+
+            body.rows(26.0, player.queue.len() - starting_index, |mut row| {
+                let index = starting_index + row.index();
+                let track = &player.queue[index];
 
                 row.col(|ui| {
                     ui.add_space(16.0);
@@ -762,15 +765,15 @@ pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        let t = queue[index].clone();
-                        move_to_front(queue, &t);
+                        let track = player.queue.remove(index);
+                        player.queue.insert(queue_cursor + 1, track);
                     }
 
                     ui.add_space(8.0);
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
-                        queue.remove(index);
+                        player.queue.remove(index);
                     }
                 });
             });
@@ -1326,7 +1329,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new()
         .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
         .show(ui, |ui| {
