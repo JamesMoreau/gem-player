@@ -86,6 +86,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
         return Err(e.to_string());
     }
 
+    player.queue_cursor = Some(previous_index);
     Ok(())
 }
 
