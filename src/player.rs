@@ -30,7 +30,7 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
-pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: Should this only be called when there is an available next track?
+pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         // If repeat is enabled, reload the current track (no need to move the cursor).
         if let Some(current_index) = player.queue_cursor {
