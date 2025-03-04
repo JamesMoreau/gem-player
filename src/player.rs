@@ -51,7 +51,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: Should th
         }
 
         if queue_cursor >= player.queue.len() - 1 {
-            return Err("Already at the end of the queue.".to_string());
+            return Ok(()); // Already at the end of the queue.
         }
 
         queue_cursor + 1
