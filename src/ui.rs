@@ -1483,6 +1483,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
                         gem_player.player.queue.clear();
+                        gem_player.player.queue_cursor = None;
                     }
 
                     ui.add_space(16.0);
