@@ -7,7 +7,7 @@ use std::io::{self, BufReader, ErrorKind};
 #[fully_pub]
 pub struct Player {
     queue: Vec<Track>,
-    queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue. TODO: should this be a usize or a PathBuf (key)?
+    queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue.
 
     repeat: bool,
     muted: bool,
