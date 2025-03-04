@@ -129,7 +129,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             playing_track: None,
 
             queue: Vec::new(),
-            history: Vec::new(),
+            queue_cursor: None,
 
             repeat: false,
             muted: false,
@@ -237,14 +237,12 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     let playback_position = gem_player.player.sink.get_pos().as_secs_f32();
     let rewind_threshold = 5.0;
 
-    if playback_position < rewind_threshold {
-        if gem_player.player.history.is_empty() {
-            // No previous track to play, just restart the current track
-            if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
-                error!("Error rewinding track: {:?}", e);
-            }
-            gem_player.player.sink.play();
-        } else if let Err(e) = play_previous(&mut gem_player.player) {
+    let under_threshold = playback_position < rewind_threshold;
+    let previous_track_exists = gem_player.player.queue_cursor.map_or(false, |cursor| cursor > 0);
+
+    let can_go_previous = under_threshold && previous_track_exists;
+    if can_go_previous {
+        if let Err(e) = play_previous(&mut gem_player.player) {
             error!("{}", e);
             gem_player.ui_state.toasts.error("Error playing the previous track");
         }
@@ -257,7 +255,6 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) {
-    gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
     let mut start_index = 0;
@@ -280,7 +277,6 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
 }
 
 pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) {
-    gem_player.player.history.clear();
     gem_player.player.queue.clear();
 
     let playlist = gem_player.playlists.get_by_path(playlist_key);

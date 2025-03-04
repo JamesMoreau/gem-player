@@ -245,7 +245,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .show(ui, |flex| {
                 flex.add_ui(item(), |ui| {
                     let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                    let is_previous_enabled = gem_player.player.playing_track.is_some() || !gem_player.player.history.is_empty();
+                    let is_previous_enabled = gem_player.player.queue_cursor.is_some() || gem_player.player.queue_cursor.unwrap_or_default() > 0; // TODO: check if this works correctly.
 
                     let response = ui
                         .add_enabled(is_previous_enabled, previous_button)

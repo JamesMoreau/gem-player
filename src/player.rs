@@ -6,10 +6,10 @@ use std::io::{self, BufReader, ErrorKind};
 
 #[fully_pub]
 pub struct Player {
-    playing_track: Option<Track>,
+    playing_track: Option<Track>, // TODO: get rid of this and use qeuue_cursor instead.
 
     queue: Vec<Track>,
-    history: Vec<Track>,
+    queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue. TODO: should this be a usize or a PathBuf (key)?
 
     repeat: bool,
     muted: bool,
@@ -17,7 +17,7 @@ pub struct Player {
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
     stream: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink,            // Controls playback (play, pause, stop, etc.)
+    sink: Sink, // Controls playback (play, pause, stop, etc.)
 }
 
 pub fn is_playing(player: &mut Player) -> bool {
@@ -32,43 +32,59 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
-pub fn play_next(player: &mut Player) -> Result<(), String> {
+pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: Should this only be called when there is an available next track?
     if player.repeat {
-        if let Some(playing_track) = player.playing_track.clone() {
-            if let Err(e) = load_and_play(player, playing_track) {
+        // If repeat is enabled, reload the current track (no need to move the cursor).
+        if let Some(current_index) = player.queue_cursor {
+            let track = &player.queue[current_index];
+            if let Err(e) = load_and_play(player, track.clone()) {
                 return Err(e.to_string());
             }
         }
-        return Ok(()); // If we are in repeat mode but there is no current track, do nothing!
+        return Ok(());
     }
 
-    let next_track = if player.queue.is_empty() {
-        return Ok(()); // Queue is empty, nothing to play
-    } else {
-        player.queue.remove(0)
+    let queue_cursor = player.queue_cursor.unwrap_or(0);
+    let next_index = {
+        if player.queue.is_empty() {
+            return Ok(()); // Nothing to play.
+        }
+
+        if queue_cursor >= player.queue.len() - 1 {
+            return Err("Already at the end of the queue.".to_string());
+        }
+
+        queue_cursor + 1
     };
 
-    if let Some(playing_track) = player.playing_track.take() {
-        player.history.push(playing_track);
-    }
-
-    if let Err(e) = load_and_play(player, next_track) {
+    let next_track = &player.queue[next_index];
+    if let Err(e) = load_and_play(player, next_track.clone()) {
         return Err(e.to_string());
     }
 
+    player.queue_cursor = Some(next_index);
     Ok(())
 }
 
 pub fn play_previous(player: &mut Player) -> Result<(), String> {
-    let Some(previous_track) = player.history.pop() else {
-        return Ok(()); // No previous track? Do nothing.
+    let Some(queue_cursor) = player.queue_cursor else {
+        return Err("No track is playing".to_string());
     };
 
-    if let Some(playing_track) = player.playing_track.take() {
-        player.queue.insert(0, playing_track);
-    }
+    let previous_index = {
+        if player.queue.is_empty() {
+            return Err("The queue is empty.".to_string());
+        }
 
-    if let Err(e) = load_and_play(player, previous_track) {
+        if queue_cursor == 0 {
+            return Err("Already at the beginning of the queue.".to_string());
+        }
+
+        queue_cursor - 1
+    };
+    
+    let previous_track = &player.queue[previous_index];
+    if let Err(e) = load_and_play(player, previous_track.clone()) {
         return Err(e.to_string());
     }
 
@@ -76,7 +92,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> {
+pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> { // maybe change to &Track once playling_track is removed.
     player.sink.stop(); // Stop the current track if any.
     player.playing_track = None;
 
