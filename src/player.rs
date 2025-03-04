@@ -42,17 +42,17 @@ pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: Should th
         return Ok(());
     }
 
-    let queue_cursor = player.queue_cursor.unwrap_or(0);
-    let next_index = {
-        if player.queue.is_empty() {
-            return Ok(()); // Nothing to play.
-        }
+    if player.queue.is_empty() {
+        return Ok(()); // Nothing to play.
+    }
 
-        if queue_cursor >= player.queue.len() - 1 {
+    let next_index = if let Some(cursor) = player.queue_cursor {
+        if cursor >= player.queue.len() - 1 {
             return Ok(()); // Already at the end of the queue.
         }
-
-        queue_cursor + 1
+        cursor + 1
+    } else {
+        0 // If no track is currently playing, start with the first track.
     };
 
     let next_track = &player.queue[next_index];
