@@ -35,7 +35,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: Should th
         // If repeat is enabled, reload the current track (no need to move the cursor).
         if let Some(current_index) = player.queue_cursor {
             let track = &player.queue[current_index];
-            if let Err(e) = load_and_play(player, track.clone()) {
+            if let Err(e) = load_and_play(&mut player.sink, track) {
                 return Err(e.to_string());
             }
         }
@@ -56,7 +56,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: Should th
     };
 
     let next_track = &player.queue[next_index];
-    if let Err(e) = load_and_play(player, next_track.clone()) {
+    if let Err(e) = load_and_play(&mut player.sink, next_track) {
         return Err(e.to_string());
     }
 
@@ -82,7 +82,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
     };
     
     let previous_track = &player.queue[previous_index];
-    if let Err(e) = load_and_play(player, previous_track.clone()) {
+    if let Err(e) = load_and_play(&mut player.sink, previous_track) {
         return Err(e.to_string());
     }
 
@@ -90,8 +90,8 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> { // maybe change to &Track once playling_track is removed.
-    player.sink.stop(); // Stop the current track if any.
+pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
+    sink.stop(); // Stop the current track if any.
 
     let file = std::fs::File::open(&track.path)?;
 
@@ -101,8 +101,8 @@ pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> { // m
         Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
     };
 
-    player.sink.append(source);
-    player.sink.play();
+    sink.append(source);
+    sink.play();
 
     Ok(())
 }
