@@ -6,18 +6,17 @@ use std::io::{self, BufReader, ErrorKind};
 
 #[fully_pub]
 pub struct Player {
-    playing_track: Option<Track>,
-
+    queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue.
     queue: Vec<Track>,
-    history: Vec<Track>,
-
+    
     repeat: bool,
+    shuffle: Option<Vec<Track>>, // Used to restore the queue after shuffling. The tracks are what was in front of the cursor.
     muted: bool,
     volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
     stream: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink,            // Controls playback (play, pause, stop, etc.)
+    sink: Sink, // Controls playback (play, pause, stop, etc.)
 }
 
 pub fn is_playing(player: &mut Player) -> bool {
@@ -34,80 +33,105 @@ pub fn play_or_pause(player: &mut Player) {
 
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
-        if let Some(playing_track) = player.playing_track.clone() {
-            if let Err(e) = load_and_play(player, playing_track) {
+        // If repeat is enabled, reload the current track (no need to move the cursor).
+        if let Some(current_index) = player.queue_cursor {
+            let track = &player.queue[current_index];
+            if let Err(e) = load_and_play(&mut player.sink, track) {
                 return Err(e.to_string());
             }
         }
-        return Ok(()); // If we are in repeat mode but there is no current track, do nothing!
+        return Ok(());
     }
 
-    let next_track = if player.queue.is_empty() {
-        return Ok(()); // Queue is empty, nothing to play
+    if player.queue.is_empty() {
+        return Ok(()); // Nothing to play.
+    }
+
+    let next_index = if let Some(cursor) = player.queue_cursor {
+        if cursor >= player.queue.len() - 1 {
+            return Ok(()); // Already at the end of the queue.
+        }
+        cursor + 1
     } else {
-        player.queue.remove(0)
+        0 // If no track is currently playing, start with the first track.
     };
 
-    if let Some(playing_track) = player.playing_track.take() {
-        player.history.push(playing_track);
-    }
-
-    if let Err(e) = load_and_play(player, next_track) {
+    let next_track = &player.queue[next_index];
+    if let Err(e) = load_and_play(&mut player.sink, next_track) {
         return Err(e.to_string());
     }
 
+    player.queue_cursor = Some(next_index);
     Ok(())
 }
 
 pub fn play_previous(player: &mut Player) -> Result<(), String> {
-    let Some(previous_track) = player.history.pop() else {
-        return Ok(()); // No previous track? Do nothing.
+    let Some(queue_cursor) = player.queue_cursor else {
+        return Err("No track is playing".to_string());
     };
 
-    if let Some(playing_track) = player.playing_track.take() {
-        player.queue.insert(0, playing_track);
-    }
+    let previous_index = {
+        if player.queue.is_empty() {
+            return Err("The queue is empty.".to_string());
+        }
 
-    if let Err(e) = load_and_play(player, previous_track) {
+        if queue_cursor == 0 {
+            return Err("Already at the beginning of the queue.".to_string());
+        }
+
+        queue_cursor - 1
+    };
+    
+    let previous_track = &player.queue[previous_index];
+    if let Err(e) = load_and_play(&mut player.sink, previous_track) {
         return Err(e.to_string());
     }
 
+    player.queue_cursor = Some(previous_index);
     Ok(())
 }
 
 // TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
-pub fn load_and_play(player: &mut Player, track: Track) -> io::Result<()> {
-    player.sink.stop(); // Stop the current track if any.
-    player.playing_track = None;
+pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
+    sink.stop(); // Stop the current track if any.
 
     let file = std::fs::File::open(&track.path)?;
 
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {
-        Ok(source) => source,
         Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
+        Ok(source) => source,
     };
 
-    player.playing_track = Some(track);
-    player.sink.append(source);
-    player.sink.play();
+    sink.append(source);
+    sink.play();
 
     Ok(())
 }
 
-pub fn shuffle_queue(queue: &mut Vec<Track>) {
+pub fn toggle_shuffle(player: &mut Player) {
+    let start_index = player.queue_cursor.unwrap() + 1;
+    match player.shuffle.take() {
+        Some(unshuffled_queue) => {
+            // Restore the queue to its original order.
+            player.queue.splice(start_index.., unshuffled_queue);
+            player.shuffle = None;
+        },
+        None => {
+            player.shuffle = Some(player.queue[start_index..].to_vec());
+            shuffle(&mut player.queue[start_index..]);
+        },
+    }
+}
+
+pub fn shuffle(queue: &mut [Track]) {
     let mut rng = rand::rng();
     queue.shuffle(&mut rng);
 }
 
-pub fn move_to_front(queue: &mut Vec<Track>, track: &Track) {
-    let index = queue.iter().position(|t| *t == *track).expect("Track not found in queue");
-    if index == 0 || index >= queue.len() {
-        return;
-    }
-
-    let track = queue.remove(index);
-    queue.insert(0, track);
+pub fn clear_the_queue(player: &mut Player) {
+    player.queue.clear();
+    player.queue_cursor = None;
 }
 
 pub fn mute_or_unmute(player: &mut Player) {

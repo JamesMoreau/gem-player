@@ -1,10 +1,5 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_previous, play_library, play_playlist,
-    player::{is_playing, move_to_front, play_next, play_or_pause, shuffle_queue},
-    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
-    read_music_and_playlists_from_directory,
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    GemPlayer, Track, KEY_COMMANDS,
+    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{clear_the_queue, is_playing, mute_or_unmute, play_or_pause, toggle_shuffle, Player}, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval}, read_music_and_playlists_from_directory, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
 };
 use dark_light::Mode;
 use eframe::egui::{
@@ -100,10 +95,10 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| match gem_player.ui_state.current_view {
-                    View::Library => render_library_ui(ui, gem_player),
-                    View::Queue => render_queue_view(ui, &mut gem_player.player.queue),
+                    View::Library => render_library_view(ui, gem_player),
+                    View::Queue => render_queue_view(ui, &mut gem_player.player),
                     View::Playlists => render_playlists_view(ui, gem_player),
-                    View::Settings => render_settings_ui(ui, gem_player),
+                    View::Settings => render_settings_view(ui, gem_player),
                 });
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
@@ -245,7 +240,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .show(ui, |flex| {
                 flex.add_ui(item(), |ui| {
                     let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                    let is_previous_enabled = gem_player.player.playing_track.is_some() || !gem_player.player.history.is_empty();
+                    let previous_track_exists = gem_player.player.queue_cursor.map_or(false, |cursor| cursor > 0);
+                    let is_previous_enabled = gem_player.player.queue_cursor.is_some() || previous_track_exists;
 
                     let response = ui
                         .add_enabled(is_previous_enabled, previous_button)
@@ -262,7 +258,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     };
                     let tooltip = if is_playing(&mut gem_player.player) { "Pause" } else { "Play" };
                     let play_pause_button = Button::new(play_pause_icon);
-                    let track_is_playing = gem_player.player.playing_track.is_some();
+                    let track_is_playing = gem_player.player.queue_cursor.is_some();
                     let response = ui
                         .add_enabled(track_is_playing, play_pause_button)
                         .on_hover_text(tooltip)
@@ -278,20 +274,45 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Next")
                         .on_disabled_hover_text("No next track");
                     if response.clicked() {
-                        let result = play_next(&mut gem_player.player);
-                        if let Err(e) = result {
-                            error!("{}", e);
-                            gem_player.ui_state.toasts.error("Error playing the next track");
-                        }
+                        maybe_play_next(gem_player);
                     }
                 });
 
                 flex.add_ui(item(), |ui| {
+                    Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
+                        flex.add_ui(item(), |ui| {
+                            let button_color = |is_enabled: bool| {
+                                if is_enabled {
+                                    ui.visuals().selection.bg_fill
+                                } else {
+                                    ui.visuals().text_color()
+                                }
+                            };
+                            let color = button_color(gem_player.player.repeat);
+                            let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
+                            let response = ui.add(repeat_button).on_hover_text("Repeat");
+                            if response.clicked() {
+                                gem_player.player.repeat = !gem_player.player.repeat;
+                            }
+
+                            let queue_is_not_empty = !gem_player.player.queue.is_empty();
+                            let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
+                            let response = ui
+                                .add_enabled(queue_is_not_empty, shuffle_button)
+                                .on_hover_text("Shuffle")
+                                .on_disabled_hover_text("Queue is empty");
+                            if response.clicked() {
+                                toggle_shuffle(&mut gem_player.player);
+                            }
+                        });
+                    });
+
                     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
                     let artwork_size = Vec2::splat(ui.available_height());
 
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                    if let Some(track) = &gem_player.player.playing_track {
+                    if let Some(queue_cursor) = gem_player.player.queue_cursor {
+                        let track = &gem_player.player.queue[queue_cursor];
                         if let Some(artwork_bytes) = &track.artwork {
                             let artwork_uri = format!("bytes://artwork-{}", track.path.to_string_lossy());
                             artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
@@ -314,7 +335,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut position_as_secs = 0.0;
                             let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                            if let Some(playing_track) = &gem_player.player.playing_track {
+                            if let Some(queue_cursor) = gem_player.player.queue_cursor {
+                                let playing_track = &gem_player.player.queue[queue_cursor];
                                 title = playing_track.title.as_deref().unwrap_or("Unknown Title");
                                 artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
                                 album = playing_track.album.as_deref().unwrap_or("Unknown Album");
@@ -328,7 +350,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
-                            let track_is_playing = gem_player.player.playing_track.is_some();
+                            let track_is_playing = gem_player.player.queue_cursor.is_some();
                             let response = ui.add_enabled(track_is_playing, playback_progress_slider);
 
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
@@ -397,9 +419,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 flex.add_ui(item(), |ui| {
-                    let mut volume = gem_player.player.sink.volume();
-
-                    let volume_icon = match volume {
+                    let volume_icon = match gem_player.player.sink.volume() {
                         v if v == 0.0 => icons::ICON_VOLUME_OFF,
                         v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
                         _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
@@ -407,29 +427,23 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let tooltip = if gem_player.player.muted { "Unmute" } else { "Mute" };
                     let response = ui.button(volume_icon).on_hover_text(tooltip);
                     if response.clicked() {
-                        gem_player.player.muted = !gem_player.player.muted;
-                        if gem_player.player.muted {
-                            gem_player.player.volume_before_mute = Some(volume);
-                            volume = 0.0;
-                        } else if let Some(v) = gem_player.player.volume_before_mute {
-                            volume = v;
-                        }
+                        mute_or_unmute(&mut gem_player.player);
                     }
 
+                    let mut volume = gem_player.player.sink.volume();
                     let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
                     let changed = ui.add(volume_slider).changed();
                     if changed {
                         gem_player.player.muted = false;
                         gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
                     }
-
                     gem_player.player.sink.set_volume(volume);
                 });
             });
     });
 }
 
-pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -446,7 +460,7 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     render_library_track_menu(ui, gem_player);
 
-    let mut library_copy: Vec<Track> = gem_player
+    let library_copy: Vec<Track> = gem_player
         .library
         .iter()
         .filter(|track| {
@@ -464,11 +478,11 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    sort(
-        &mut library_copy,
-        gem_player.ui_state.library.sort_by,
-        gem_player.ui_state.library.sort_order,
-    );
+    // sort( TODO: put back
+    //     &mut library_copy,
+    //     gem_player.ui_state.library.sort_by,
+    //     gem_player.ui_state.library.sort_order,
+    // );
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
@@ -573,7 +587,10 @@ pub fn render_library_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    play_library(gem_player, Some(track))
+                    if let Err(e) = play_library(gem_player, Some(track)) {
+                        error!("{}", e);
+                        gem_player.ui_state.toasts.error("Error playing from playlist");
+                    }
                 }
             });
         });
@@ -667,8 +684,8 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
-    if queue.is_empty() {
+pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
+    if player.queue.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -721,13 +738,17 @@ pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
             }
         })
         .body(|body| {
-            body.rows(26.0, queue.len(), |mut row| {
-                let index = row.index();
-                let track = &queue[index];
+            let queue_cursor = player.queue_cursor.expect("The queue cursor should be Some if queue is not empty.");
+            let starting_index = queue_cursor + 1; // Exclude the playing track.
+
+            body.rows(26.0, player.queue.len() - starting_index, |mut row| {
+                let row_index = row.index();
+                let index = starting_index + row_index;
+                let track = &player.queue[index];
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(format!("{}", index + 1)));
+                    ui.add(unselectable_label(format!("{}", row_index + 1)));
                 });
 
                 row.col(|ui| {
@@ -760,15 +781,15 @@ pub fn render_queue_view(ui: &mut Ui, queue: &mut Vec<Track>) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        let t = queue[index].clone();
-                        move_to_front(queue, &t);
+                        let track = player.queue.remove(index);
+                        player.queue.insert(queue_cursor + 1, track);
                     }
 
                     ui.add_space(8.0);
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
-                        queue.remove(index);
+                        player.queue.remove(index);
                     }
                 });
             });
@@ -1043,7 +1064,10 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         // the two captures used by containers::Sides.
                         if play_clicked {
                             let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path;
-                            play_playlist(gem_player, &path.clone(), None)
+                            if let Err(e) = play_playlist(gem_player, &path.clone(), None) {
+                                error!("{}", e);
+                                gem_player.ui_state.toasts.error("Error playing from playlist");
+                            }
                         }
 
                         if delete_clicked {
@@ -1232,7 +1256,10 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 if response.double_clicked() {
                     let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path.clone();
-                    play_playlist(gem_player, path, Some(&track.path));
+                    if let Err(e) = play_playlist(gem_player, path, Some(&track.path)) {
+                        error!("{}", e);
+                        gem_player.ui_state.toasts.error("Error playing from playlist");
+                    }
                 }
             });
         });
@@ -1324,7 +1351,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_settings_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+pub fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new()
         .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
         .show(ui, |ui| {
@@ -1477,29 +1504,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Clear")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        gem_player.player.queue.clear();
-                    }
-
-                    ui.add_space(16.0);
-
-                    let repeat_button_color = if gem_player.player.repeat {
-                        ui.visuals().selection.bg_fill
-                    } else {
-                        ui.visuals().text_color()
-                    };
-                    let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
-                    let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
-                    if clicked {
-                        gem_player.player.repeat = !gem_player.player.repeat;
-                    }
-
-                    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
-                    let response = ui
-                        .add_enabled(queue_is_not_empty, shuffle_button)
-                        .on_hover_text("Shuffle")
-                        .on_disabled_hover_text("Queue is empty");
-                    if response.clicked() {
-                        shuffle_queue(&mut gem_player.player.queue);
+                        clear_the_queue(&mut gem_player.player);
                     }
                 }
                 View::Playlists => {

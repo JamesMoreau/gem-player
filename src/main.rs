@@ -21,6 +21,7 @@ mod ui;
 
 /*
 TODO:
+* maybe extract control ui manipulations to player.rs
 * maybe go back to shuffle and repeat in the control ui. maybe play next randomly selects the next song from the queue?
 * perfomance improvements. cache or don't sort and filter songs every frame?
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
@@ -126,12 +127,11 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists,
 
         player: Player {
-            playing_track: None,
-
             queue: Vec::new(),
-            history: Vec::new(),
+            queue_cursor: None,
 
             repeat: false,
+            shuffle: None,
             muted: false,
             volume_before_mute: None,
             paused_before_scrubbing: None,
@@ -218,7 +218,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 
     let nothing_left_to_play = gem_player.player.sink.empty() && gem_player.player.queue.is_empty();
     if nothing_left_to_play {
-        gem_player.player.playing_track = None;
+        gem_player.player.queue_cursor = None;
     }
 }
 
@@ -237,14 +237,12 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     let playback_position = gem_player.player.sink.get_pos().as_secs_f32();
     let rewind_threshold = 5.0;
 
-    if playback_position < rewind_threshold {
-        if gem_player.player.history.is_empty() {
-            // No previous track to play, just restart the current track
-            if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
-                error!("Error rewinding track: {:?}", e);
-            }
-            gem_player.player.sink.play();
-        } else if let Err(e) = play_previous(&mut gem_player.player) {
+    let under_threshold = playback_position < rewind_threshold;
+    let previous_track_exists = gem_player.player.queue_cursor.map_or(false, |cursor| cursor > 0);
+
+    let can_go_previous = under_threshold && previous_track_exists;
+    if can_go_previous {
+        if let Err(e) = play_previous(&mut gem_player.player) {
             error!("{}", e);
             gem_player.ui_state.toasts.error("Error playing the previous track");
         }
@@ -256,9 +254,11 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) {
-    gem_player.player.history.clear();
+pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
     gem_player.player.queue.clear();
+    gem_player.player.queue_cursor = None;
+    gem_player.player.shuffle = None;
+    gem_player.player.repeat = false;
 
     let mut start_index = 0;
     if let Some(track) = starting_track {
@@ -273,15 +273,16 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
         gem_player.player.queue.push(gem_player.library[i].clone());
     }
 
-    if let Err(e) = play_next(&mut gem_player.player) {
-        error!("{}", e);
-        gem_player.ui_state.toasts.error("Error playing from library");
-    }
+    play_next(&mut gem_player.player)?;
+
+    Ok(())
 }
 
-pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) {
-    gem_player.player.history.clear();
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
     gem_player.player.queue.clear();
+    gem_player.player.queue_cursor = None;
+    gem_player.player.shuffle = None;
+    gem_player.player.repeat = false;
 
     let playlist = gem_player.playlists.get_by_path(playlist_key);
 
@@ -298,10 +299,9 @@ pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_t
         gem_player.player.queue.push(playlist.tracks[i].clone());
     }
 
-    if let Err(e) = play_next(&mut gem_player.player) {
-        error!("{}", e);
-        gem_player.ui_state.toasts.error("Error playing from playlist");
-    }
+    play_next(&mut gem_player.player)?;
+
+    Ok(())
 }
 
 lazy_static! {
