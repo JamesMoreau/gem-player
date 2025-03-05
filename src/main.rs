@@ -254,9 +254,11 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) {
+pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
     gem_player.player.queue.clear();
     gem_player.player.queue_cursor = None;
+    gem_player.player.shuffle = None;
+    gem_player.player.repeat = false;
 
     let mut start_index = 0;
     if let Some(track) = starting_track {
@@ -271,15 +273,16 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
         gem_player.player.queue.push(gem_player.library[i].clone());
     }
 
-    if let Err(e) = play_next(&mut gem_player.player) {
-        error!("{}", e);
-        gem_player.ui_state.toasts.error("Error playing from library");
-    }
+    play_next(&mut gem_player.player)?;
+
+    Ok(())
 }
 
-pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) {
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
     gem_player.player.queue.clear();
     gem_player.player.queue_cursor = None;
+    gem_player.player.shuffle = None;
+    gem_player.player.repeat = false;
 
     let playlist = gem_player.playlists.get_by_path(playlist_key);
 
@@ -296,10 +299,9 @@ pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_t
         gem_player.player.queue.push(playlist.tracks[i].clone());
     }
 
-    if let Err(e) = play_next(&mut gem_player.player) {
-        error!("{}", e);
-        gem_player.ui_state.toasts.error("Error playing from playlist");
-    }
+    play_next(&mut gem_player.player)?;
+
+    Ok(())
 }
 
 lazy_static! {

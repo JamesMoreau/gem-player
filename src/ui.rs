@@ -1,10 +1,5 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_previous, play_library, play_playlist,
-    player::{is_playing, mute_or_unmute, play_next, play_or_pause, toggle_shuffle, Player},
-    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
-    read_music_and_playlists_from_directory,
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    GemPlayer, Track, KEY_COMMANDS,
+    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{clear_the_queue, is_playing, mute_or_unmute, play_or_pause, toggle_shuffle, Player}, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval}, read_music_and_playlists_from_directory, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
 };
 use dark_light::Mode;
 use eframe::egui::{
@@ -279,11 +274,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Next")
                         .on_disabled_hover_text("No next track");
                     if response.clicked() {
-                        let result = play_next(&mut gem_player.player);
-                        if let Err(e) = result {
-                            error!("{}", e);
-                            gem_player.ui_state.toasts.error("Error playing the next track");
-                        }
+                        maybe_play_next(gem_player);
                     }
                 });
 
@@ -596,7 +587,10 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    play_library(gem_player, Some(track))
+                    if let Err(e) = play_library(gem_player, Some(track)) {
+                        error!("{}", e);
+                        gem_player.ui_state.toasts.error("Error playing from playlist");
+                    }
                 }
             });
         });
@@ -1070,7 +1064,10 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         // the two captures used by containers::Sides.
                         if play_clicked {
                             let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path;
-                            play_playlist(gem_player, &path.clone(), None)
+                            if let Err(e) = play_playlist(gem_player, &path.clone(), None) {
+                                error!("{}", e);
+                                gem_player.ui_state.toasts.error("Error playing from playlist");
+                            }
                         }
 
                         if delete_clicked {
@@ -1259,7 +1256,10 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 if response.double_clicked() {
                     let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path.clone();
-                    play_playlist(gem_player, path, Some(&track.path));
+                    if let Err(e) = play_playlist(gem_player, path, Some(&track.path)) {
+                        error!("{}", e);
+                        gem_player.ui_state.toasts.error("Error playing from playlist");
+                    }
                 }
             });
         });
@@ -1504,8 +1504,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Clear")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        gem_player.player.queue.clear();
-                        gem_player.player.queue_cursor = None;
+                        clear_the_queue(&mut gem_player.player);
                     }
                 }
                 View::Playlists => {

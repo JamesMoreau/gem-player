@@ -129,6 +129,11 @@ pub fn shuffle(queue: &mut [Track]) {
     queue.shuffle(&mut rng);
 }
 
+pub fn clear_the_queue(player: &mut Player) {
+    player.queue.clear();
+    player.queue_cursor = None;
+}
+
 pub fn mute_or_unmute(player: &mut Player) {
     let mut volume = player.sink.volume();
 
