@@ -1,6 +1,6 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_previous, play_library, play_playlist,
-    player::{is_playing, play_next, play_or_pause, shuffle, Player},
+    player::{is_playing, play_next, play_or_pause, toggle_shuffle, Player},
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
@@ -311,18 +311,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 .on_hover_text("Shuffle")
                                 .on_disabled_hover_text("Queue is empty");
                             if response.clicked() {
-                                let start_index = gem_player.player.queue_cursor.unwrap() + 1;
-                                match gem_player.player.shuffle.take() {
-                                    Some(unshuffled_queue) => {
-                                        // Restore the queue to its original order.
-                                        gem_player.player.queue.splice(start_index.., unshuffled_queue);
-                                        gem_player.player.shuffle = None;
-                                    },
-                                    None => {
-                                        gem_player.player.shuffle = Some(gem_player.player.queue[start_index..].to_vec());
-                                        shuffle(&mut gem_player.player.queue[start_index..]);
-                                    },
-                                }
+                                toggle_shuffle(&mut gem_player.player);
                             }
                         });
                     });

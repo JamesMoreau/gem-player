@@ -109,6 +109,21 @@ pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
     Ok(())
 }
 
+pub fn toggle_shuffle(player: &mut Player) {
+    let start_index = player.queue_cursor.unwrap() + 1;
+    match player.shuffle.take() {
+        Some(unshuffled_queue) => {
+            // Restore the queue to its original order.
+            player.queue.splice(start_index.., unshuffled_queue);
+            player.shuffle = None;
+        },
+        None => {
+            player.shuffle = Some(player.queue[start_index..].to_vec());
+            shuffle(&mut player.queue[start_index..]);
+        },
+    }
+}
+
 pub fn shuffle(queue: &mut [Track]) {
     let mut rng = rand::rng();
     queue.shuffle(&mut rng);
