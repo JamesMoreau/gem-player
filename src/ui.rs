@@ -460,7 +460,7 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     render_library_track_menu(ui, gem_player);
 
-    let library_copy: Vec<Track> = gem_player
+    let mut library_copy: Vec<Track> = gem_player
         .library
         .iter()
         .filter(|track| {
@@ -478,11 +478,11 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .cloned()
         .collect();
 
-    // sort( TODO: put back
-    //     &mut library_copy,
-    //     gem_player.ui_state.library.sort_by,
-    //     gem_player.ui_state.library.sort_order,
-    // );
+    sort(
+        &mut library_copy,
+        gem_player.ui_state.library.sort_by,
+        gem_player.ui_state.library.sort_order,
+    );
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
