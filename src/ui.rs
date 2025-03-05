@@ -273,7 +273,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
-                    let next_track_exists = !gem_player.player.queue.is_empty();
+                    let next_track_exists = gem_player.player.queue_cursor.map_or(false, |cursor| cursor < gem_player.player.queue.len() - 1);
                     let response = ui
                         .add_enabled(next_track_exists, next_button)
                         .on_hover_text("Next")
