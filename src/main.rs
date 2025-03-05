@@ -130,6 +130,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             queue_cursor: None,
 
             repeat: false,
+            shuffle: None,
             muted: false,
             volume_before_mute: None,
             paused_before_scrubbing: None,

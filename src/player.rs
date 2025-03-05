@@ -6,10 +6,11 @@ use std::io::{self, BufReader, ErrorKind};
 
 #[fully_pub]
 pub struct Player {
-    queue: Vec<Track>,
     queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue.
-
+    queue: Vec<Track>,
+    
     repeat: bool,
+    shuffle: Option<Vec<Track>>, // Used to restore the queue after shuffling. The tracks are what was in front of the cursor.
     muted: bool,
     volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
@@ -108,7 +109,7 @@ pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
     Ok(())
 }
 
-pub fn shuffle_queue(queue: &mut Vec<Track>) {
+pub fn shuffle(queue: &mut [Track]) {
     let mut rng = rand::rng();
     queue.shuffle(&mut rng);
 }

@@ -1,6 +1,6 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_previous, play_library, play_playlist,
-    player::{is_playing, play_next, play_or_pause, shuffle_queue, Player},
+    player::{is_playing, play_next, play_or_pause, shuffle, Player},
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
@@ -290,14 +290,17 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 flex.add_ui(item(), |ui| {
                     Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
                         flex.add_ui(item(), |ui| {
-                            let repeat_button_color = if gem_player.player.repeat {
-                                ui.visuals().selection.bg_fill
-                            } else {
-                                ui.visuals().text_color()
+                            let button_color = |is_enabled: bool| {
+                                if is_enabled {
+                                    ui.visuals().selection.bg_fill
+                                } else {
+                                    ui.visuals().text_color()
+                                }
                             };
-                            let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(repeat_button_color));
-                            let clicked = ui.add(repeat_button).on_hover_text("Repeat").clicked();
-                            if clicked {
+                            let color = button_color(gem_player.player.repeat);
+                            let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
+                            let response = ui.add(repeat_button).on_hover_text("Repeat");
+                            if response.clicked() {
                                 gem_player.player.repeat = !gem_player.player.repeat;
                             }
 
@@ -308,7 +311,18 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 .on_hover_text("Shuffle")
                                 .on_disabled_hover_text("Queue is empty");
                             if response.clicked() {
-                                shuffle_queue(&mut gem_player.player.queue);
+                                let start_index = gem_player.player.queue_cursor.unwrap() + 1;
+                                match gem_player.player.shuffle.take() {
+                                    Some(unshuffled_queue) => {
+                                        // Restore the queue to its original order.
+                                        gem_player.player.queue.splice(start_index.., unshuffled_queue);
+                                        gem_player.player.shuffle = None;
+                                    },
+                                    None => {
+                                        gem_player.player.shuffle = Some(gem_player.player.queue[start_index..].to_vec());
+                                        shuffle(&mut gem_player.player.queue[start_index..]);
+                                    },
+                                }
                             }
                         });
                     });
@@ -753,12 +767,13 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
             let starting_index = queue_cursor + 1; // Exclude the playing track.
 
             body.rows(26.0, player.queue.len() - starting_index, |mut row| {
-                let index = starting_index + row.index();
+                let row_index = row.index();
+                let index = starting_index + row_index;
                 let track = &player.queue[index];
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(format!("{}", index + 1)));
+                    ui.add(unselectable_label(format!("{}", row_index + 1)));
                 });
 
                 row.col(|ui| {
