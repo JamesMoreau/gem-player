@@ -428,9 +428,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 flex.add_ui(item(), |ui| {
-                    let mut volume = gem_player.player.sink.volume();
-
-                    let volume_icon = match volume {
+                    let volume_icon = match gem_player.player.sink.volume() {
                         v if v == 0.0 => icons::ICON_VOLUME_OFF,
                         v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
                         _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
@@ -439,16 +437,15 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let response = ui.button(volume_icon).on_hover_text(tooltip);
                     if response.clicked() {
                         mute_or_unmute(&mut gem_player.player);
-                        volume = gem_player.player.sink.volume();
                     }
 
+                    let mut volume = gem_player.player.sink.volume();
                     let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
                     let changed = ui.add(volume_slider).changed();
                     if changed {
                         gem_player.player.muted = false;
                         gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
                     }
-
                     gem_player.player.sink.set_volume(volume);
                 });
             });
