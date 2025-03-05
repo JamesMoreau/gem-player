@@ -1,6 +1,6 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist,
-    player::{clear_the_queue, is_playing, mute_or_unmute, play_or_pause, toggle_shuffle, Player},
+    player::{clear_the_queue, is_playing, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player},
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
@@ -659,14 +659,14 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
-                    let track = gem_player.library.get_by_path(track_key);
+                    let track = gem_player.library.get_by_path(track_key); // TODO: extract
                     gem_player.player.queue.insert(0, track.clone());
                     gem_player.ui_state.library.track_menu_is_open = false;
                 }
 
                 let response = ui.button(format!("{} Add to Queue", icons::ICON_QUEUE_MUSIC));
                 if response.clicked() {
-                    let track = gem_player.library.get_by_path(track_key).clone();
+                    let track = gem_player.library.get_by_path(track_key).clone(); // TODO: extract
                     gem_player.player.queue.push(track);
                     gem_player.ui_state.library.track_menu_is_open = false;
                 }
@@ -723,6 +723,9 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
     let album_width = remaining_width * (1.0 / 4.0);
 
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
+
+    let mut to_be_removed = None; // We don't want to remove from the queue while iterating over it.
+    let mut to_be_moved = None;
 
     TableBuilder::new(ui)
         .striped(true)
@@ -788,19 +791,26 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        let track = player.queue.remove(index);
-                        player.queue.insert(queue_cursor + 1, track);
+                        to_be_moved = Some((index, queue_cursor + 1));
                     }
 
                     ui.add_space(8.0);
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
                     if response.clicked() {
-                        player.queue.remove(index);
+                        to_be_removed = Some(index);
                     }
                 });
             });
         });
+
+    if let Some(index) = to_be_removed {
+        remove_from_queue(player, index);
+    }
+
+    if let Some((from, to)) = to_be_moved {
+        move_to_position(player, from, to);
+    }
 }
 
 pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
@@ -1326,12 +1336,12 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
                 if response.clicked() {
-                    let track = gem_player.playlists.get_by_path(&playlist_key).tracks.get_by_path(&track_key);
+                    let track = gem_player.playlists.get_by_path(&playlist_key).tracks.get_by_path(&track_key); // TODO: extract
                     gem_player.player.queue.insert(0, track.clone());
                     gem_player.ui_state.playlists.track_menu_is_open = false;
                 }
 
-                let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
+                let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD)); // TODO: extract
                 if response.clicked() {
                     let track = gem_player.playlists.get_by_path(&playlist_key).tracks.get_by_path(&track_key);
                     gem_player.player.queue.push(track.clone());
