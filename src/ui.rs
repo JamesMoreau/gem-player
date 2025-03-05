@@ -1,6 +1,6 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_previous, play_library, play_playlist,
-    player::{is_playing, play_next, play_or_pause, toggle_shuffle, Player},
+    player::{is_playing, mute_or_unmute, play_next, play_or_pause, toggle_shuffle, Player},
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
@@ -438,13 +438,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let tooltip = if gem_player.player.muted { "Unmute" } else { "Mute" };
                     let response = ui.button(volume_icon).on_hover_text(tooltip);
                     if response.clicked() {
-                        gem_player.player.muted = !gem_player.player.muted;
-                        if gem_player.player.muted {
-                            gem_player.player.volume_before_mute = Some(volume);
-                            volume = 0.0;
-                        } else if let Some(v) = gem_player.player.volume_before_mute {
-                            volume = v;
-                        }
+                        mute_or_unmute(&mut gem_player.player);
+                        volume = gem_player.player.sink.volume();
                     }
 
                     let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
