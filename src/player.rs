@@ -6,7 +6,7 @@ use std::io::{self, BufReader, ErrorKind};
 
 #[fully_pub]
 pub struct Player {
-    queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue.
+    queue_cursor: Option<usize>, // Points to the currently playing track in the queue.
     queue: Vec<Track>,
 
     repeat: bool,
@@ -17,6 +17,13 @@ pub struct Player {
 
     stream: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,           // Controls playback (play, pause, stop, etc.)
+}
+
+pub fn reset_queue(player: &mut Player) {
+    player.queue_cursor = None;
+    player.queue.clear();
+    player.shuffle = None;
+    player.repeat = false;
 }
 
 pub fn is_playing(player: &mut Player) -> bool {

@@ -4,7 +4,7 @@ use fully_pub::fully_pub;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
-use player::{adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
+use player::{adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, reset_queue, Player};
 use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
@@ -253,10 +253,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
-    gem_player.player.queue.clear();
-    gem_player.player.queue_cursor = None;
-    gem_player.player.shuffle = None;
-    gem_player.player.repeat = false;
+    reset_queue(&mut gem_player.player);
 
     let mut start_index = 0;
     if let Some(track) = starting_track {
@@ -277,10 +274,7 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
 }
 
 pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
-    gem_player.player.queue.clear();
-    gem_player.player.queue_cursor = None;
-    gem_player.player.shuffle = None;
-    gem_player.player.repeat = false;
+    reset_queue(&mut gem_player.player);
 
     let playlist = gem_player.playlists.get_by_path(playlist_key);
 
