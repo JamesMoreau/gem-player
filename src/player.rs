@@ -8,7 +8,7 @@ use std::io::{self, BufReader, ErrorKind};
 pub struct Player {
     queue_cursor: Option<usize>, // None: no currently playing track. Some: currently playing track's position in the queue.
     queue: Vec<Track>,
-    
+
     repeat: bool,
     shuffle: Option<Vec<Track>>, // Used to restore the queue after shuffling. The tracks are what was in front of the cursor.
     muted: bool,
@@ -16,7 +16,7 @@ pub struct Player {
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
     stream: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink, // Controls playback (play, pause, stop, etc.)
+    sink: Sink,           // Controls playback (play, pause, stop, etc.)
 }
 
 pub fn is_playing(player: &mut Player) -> bool {
@@ -81,7 +81,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 
         queue_cursor - 1
     };
-    
+
     let previous_track = &player.queue[previous_index];
     if let Err(e) = load_and_play(&mut player.sink, previous_track) {
         return Err(e.to_string());
@@ -116,11 +116,11 @@ pub fn toggle_shuffle(player: &mut Player) {
             // Restore the queue to its original order.
             player.queue.splice(start_index.., unshuffled_queue);
             player.shuffle = None;
-        },
+        }
         None => {
             player.shuffle = Some(player.queue[start_index..].to_vec());
             shuffle(&mut player.queue[start_index..]);
-        },
+        }
     }
 }
 

@@ -174,7 +174,10 @@ pub fn rename(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
     let new_path = directory.join(new_filename);
 
     if new_path.exists() {
-        return Err(io::Error::new(ErrorKind::AlreadyExists, "A playlist with this name already exists."));
+        return Err(io::Error::new(
+            ErrorKind::AlreadyExists,
+            "A playlist with this name already exists.",
+        ));
     }
 
     fs::rename(&playlist.m3u_path, &new_path)?;
@@ -199,7 +202,10 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
     let file_path = directory.join(&filename);
 
     if file_path.exists() {
-        return Err(io::Error::new(ErrorKind::AlreadyExists, "A playlist with this name already exists."));
+        return Err(io::Error::new(
+            ErrorKind::AlreadyExists,
+            "A playlist with this name already exists.",
+        ));
     }
 
     fs::File::create(&file_path)?;
@@ -218,7 +224,10 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
 
 // Removes the playlist from the list and deletes the associated m3u file.
 pub fn delete(playlist_key: &Path, playlists: &mut Vec<Playlist>) -> Result<(), String> {
-    let index = playlists.iter().position(|p| p.m3u_path == playlist_key).expect("Playlist not found in library");
+    let index = playlists
+        .iter()
+        .position(|p| p.m3u_path == playlist_key)
+        .expect("Playlist not found in library");
     let playlist = playlists.remove(index);
 
     // Send the m3u file to the trash!

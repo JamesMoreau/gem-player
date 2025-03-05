@@ -1,5 +1,10 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{clear_the_queue, is_playing, mute_or_unmute, play_or_pause, toggle_shuffle, Player}, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval}, read_music_and_playlists_from_directory, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
+    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist,
+    player::{clear_the_queue, is_playing, mute_or_unmute, play_or_pause, toggle_shuffle, Player},
+    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
+    read_music_and_playlists_from_directory,
+    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
+    GemPlayer, Track, KEY_COMMANDS,
 };
 use dark_light::Mode;
 use eframe::egui::{
@@ -281,22 +286,24 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 flex.add_ui(item(), |ui| {
                     Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
                         flex.add_ui(item(), |ui| {
-                            let button_color = |is_enabled: bool| {
+                            let get_button_color = |ui: &Ui, is_enabled: bool| {
                                 if is_enabled {
                                     ui.visuals().selection.bg_fill
                                 } else {
                                     ui.visuals().text_color()
                                 }
                             };
-                            let color = button_color(gem_player.player.repeat);
+
+                            let color = get_button_color(ui, gem_player.player.repeat);
                             let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
                             let response = ui.add(repeat_button).on_hover_text("Repeat");
                             if response.clicked() {
                                 gem_player.player.repeat = !gem_player.player.repeat;
                             }
 
+                            let color = get_button_color(ui, gem_player.player.shuffle.is_some());
+                            let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color));
                             let queue_is_not_empty = !gem_player.player.queue.is_empty();
-                            let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE));
                             let response = ui
                                 .add_enabled(queue_is_not_empty, shuffle_button)
                                 .on_hover_text("Shuffle")
