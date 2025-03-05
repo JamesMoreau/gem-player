@@ -1,8 +1,8 @@
-use crate::track::Track;
+use crate::{playlist::PlaylistRetrieval, track::{Track, TrackRetrieval}, GemPlayer};
 use fully_pub::fully_pub;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-use std::io::{self, BufReader, ErrorKind};
+use std::{io::{self, BufReader, ErrorKind}, path::Path};
 
 #[fully_pub]
 pub struct Player {
@@ -157,4 +157,54 @@ pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
 
     let new_volume = (current_volume + percentage).clamp(min_volume, max_volume);
     player.sink.set_volume(new_volume);
+}
+
+pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
+    gem_player.player.queue.clear();
+    gem_player.player.queue_cursor = None;
+    gem_player.player.shuffle = None;
+    gem_player.player.repeat = false;
+
+    let mut start_index = 0;
+    if let Some(track) = starting_track {
+        start_index = gem_player.library.get_position_by_path(&track.path);
+    }
+
+    // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
+    for i in start_index..gem_player.library.len() {
+        gem_player.player.queue.push(gem_player.library[i].clone());
+    }
+    for i in 0..start_index {
+        gem_player.player.queue.push(gem_player.library[i].clone());
+    }
+
+    play_next(&mut gem_player.player)?;
+
+    Ok(())
+}
+
+pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
+    gem_player.player.queue.clear();
+    gem_player.player.queue_cursor = None;
+    gem_player.player.shuffle = None;
+    gem_player.player.repeat = false;
+
+    let playlist = gem_player.playlists.get_by_path(playlist_key);
+
+    let mut start_index = 0;
+    if let Some(key) = starting_track_key {
+        start_index = playlist.tracks.get_position_by_path(key);
+    }
+
+    // Add tracks from the starting index to the end, then from the beginning up to the starting index.
+    for i in start_index..playlist.tracks.len() {
+        gem_player.player.queue.push(playlist.tracks[i].clone());
+    }
+    for i in 0..start_index {
+        gem_player.player.queue.push(playlist.tracks[i].clone());
+    }
+
+    play_next(&mut gem_player.player)?;
+
+    Ok(())
 }

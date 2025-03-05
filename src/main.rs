@@ -5,13 +5,13 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
 use player::{adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
-use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
+use playlist::{read_all_from_a_directory, Playlist};
 use rodio::{OutputStream, Sink};
 use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
-use track::{read_music, SortBy, SortOrder, Track, TrackRetrieval};
+use track::{read_music, SortBy, SortOrder, Track};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 
 mod player;
@@ -252,56 +252,6 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
         }
         gem_player.player.sink.play();
     }
-}
-
-pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
-    gem_player.player.queue.clear();
-    gem_player.player.queue_cursor = None;
-    gem_player.player.shuffle = None;
-    gem_player.player.repeat = false;
-
-    let mut start_index = 0;
-    if let Some(track) = starting_track {
-        start_index = gem_player.library.get_position_by_path(&track.path);
-    }
-
-    // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
-    for i in start_index..gem_player.library.len() {
-        gem_player.player.queue.push(gem_player.library[i].clone());
-    }
-    for i in 0..start_index {
-        gem_player.player.queue.push(gem_player.library[i].clone());
-    }
-
-    play_next(&mut gem_player.player)?;
-
-    Ok(())
-}
-
-pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
-    gem_player.player.queue.clear();
-    gem_player.player.queue_cursor = None;
-    gem_player.player.shuffle = None;
-    gem_player.player.repeat = false;
-
-    let playlist = gem_player.playlists.get_by_path(playlist_key);
-
-    let mut start_index = 0;
-    if let Some(key) = starting_track_key {
-        start_index = playlist.tracks.get_position_by_path(key);
-    }
-
-    // Add tracks from the starting index to the end, then from the beginning up to the starting index.
-    for i in start_index..playlist.tracks.len() {
-        gem_player.player.queue.push(playlist.tracks[i].clone());
-    }
-    for i in 0..start_index {
-        gem_player.player.queue.push(playlist.tracks[i].clone());
-    }
-
-    play_next(&mut gem_player.player)?;
-
-    Ok(())
 }
 
 lazy_static! {
