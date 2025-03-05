@@ -244,9 +244,11 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .justify(FlexJustify::SpaceBetween)
             .show(ui, |flex| {
                 flex.add_ui(item(), |ui| {
+                    let track_is_playing=  gem_player.player.playing.is_some();
+
                     let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
-                    let previous_track_exists = gem_player.player.queue_cursor.map_or(false, |cursor| cursor > 0);
-                    let is_previous_enabled = gem_player.player.queue_cursor.is_some() || previous_track_exists;
+                    let previous_track_exists = !gem_player.player.history.is_empty();
+                    let is_previous_enabled = track_is_playing || previous_track_exists;
 
                     let response = ui
                         .add_enabled(is_previous_enabled, previous_button)
@@ -261,9 +263,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     } else {
                         icons::ICON_PLAY_ARROW
                     };
-                    let tooltip = if is_playing(&mut gem_player.player) { "Pause" } else { "Play" };
+                    let tooltip = if track_is_playing { "Pause" } else { "Play" };
                     let play_pause_button = Button::new(play_pause_icon);
-                    let track_is_playing = gem_player.player.queue_cursor.is_some();
                     let response = ui
                         .add_enabled(track_is_playing, play_pause_button)
                         .on_hover_text(tooltip)
@@ -273,7 +274,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT));
-                    let next_track_exists = gem_player.player.queue_cursor.map_or(false, |cursor| cursor < gem_player.player.queue.len() - 1);
+                    let next_track_exists = !gem_player.player.queue.is_empty();
                     let response = ui
                         .add_enabled(next_track_exists, next_button)
                         .on_hover_text("Next")
@@ -318,10 +319,9 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     let artwork_size = Vec2::splat(ui.available_height());
 
                     let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                    if let Some(queue_cursor) = gem_player.player.queue_cursor {
-                        let track = &gem_player.player.queue[queue_cursor];
-                        if let Some(artwork_bytes) = &track.artwork {
-                            let artwork_uri = format!("bytes://artwork-{}", track.path.to_string_lossy());
+                    if let Some(playing_track) = &gem_player.player.playing {
+                        if let Some(artwork_bytes) = &playing_track.artwork {
+                            let artwork_uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
                             artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
                         }
                     }
@@ -342,8 +342,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let mut position_as_secs = 0.0;
                             let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                            if let Some(queue_cursor) = gem_player.player.queue_cursor {
-                                let playing_track = &gem_player.player.queue[queue_cursor];
+                            if let Some(playing_track) = &gem_player.player.playing {
                                 title = playing_track.title.as_deref().unwrap_or("Unknown Title");
                                 artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
                                 album = playing_track.album.as_deref().unwrap_or("Unknown Album");
@@ -357,7 +356,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
-                            let track_is_playing = gem_player.player.queue_cursor.is_some();
+                            let track_is_playing = gem_player.player.playing.is_some();
                             let response = ui.add_enabled(track_is_playing, playback_progress_slider);
 
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
@@ -724,8 +723,9 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
 
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
 
-    let mut to_be_removed = None; // We don't want to remove from the queue while iterating over it.
-    let mut to_be_moved = None;
+    // We only operate on the queue after we are done iterating over it.
+    let mut to_be_removed = None; 
+    let mut to_be_moved_to_front = None;
 
     TableBuilder::new(ui)
         .striped(true)
@@ -748,17 +748,13 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
             }
         })
         .body(|body| {
-            let queue_cursor = player.queue_cursor.expect("The queue cursor should be Some if queue is not empty.");
-            let starting_index = queue_cursor + 1; // Exclude the playing track.
-
-            body.rows(26.0, player.queue.len() - starting_index, |mut row| {
-                let row_index = row.index();
-                let index = starting_index + row_index;
+            body.rows(26.0, player.queue.len(), |mut row| {
+                let index = row.index();
                 let track = &player.queue[index];
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(format!("{}", row_index + 1)));
+                    ui.add(unselectable_label(format!("{}", index + 1)));
                 });
 
                 row.col(|ui| {
@@ -791,7 +787,7 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
 
                     let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
                     if response.clicked() {
-                        to_be_moved = Some((index, queue_cursor + 1));
+                        to_be_moved_to_front = Some(index);
                     }
 
                     ui.add_space(8.0);
@@ -808,8 +804,8 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
         remove_from_queue(player, index);
     }
 
-    if let Some((from, to)) = to_be_moved {
-        move_to_position(player, from, to);
+    if let Some(index) = to_be_moved_to_front {
+        move_to_position(player, index, 0);
     }
 }
 

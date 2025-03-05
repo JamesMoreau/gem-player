@@ -6,7 +6,8 @@ use std::io::{self, BufReader, ErrorKind};
 
 #[fully_pub]
 pub struct Player {
-    queue_cursor: Option<usize>, // Points to the currently playing track in the queue.
+    history: Vec<Track>,
+    playing: Option<Track>,
     queue: Vec<Track>,
 
     repeat: bool,
@@ -19,14 +20,14 @@ pub struct Player {
     sink: Sink,           // Controls playback (play, pause, stop, etc.)
 }
 
-pub fn reset_queue(player: &mut Player) {
-    player.queue_cursor = None;
+pub fn clear_the_queue(player: &mut Player) {
+    player.history.clear();
     player.queue.clear();
     player.shuffle = None;
     player.repeat = false;
 }
 
-pub fn is_playing(player: &mut Player) -> bool {
+pub fn is_playing(player: &mut Player) -> bool { // TODO: should we rely on .playing or use this instead?
     !player.sink.is_paused()
 }
 
@@ -38,63 +39,42 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
-pub fn play_next(player: &mut Player) -> Result<(), String> {
+pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: should this error if ther is nothing left to play?
     if player.repeat {
-        // If repeat is enabled, reload the current track (no need to move the cursor).
-        if let Some(current_index) = player.queue_cursor {
-            let track = &player.queue[current_index];
-            if let Err(e) = load_and_play(&mut player.sink, track) {
-                return Err(e.to_string());
-            }
+        if let Some(ref playing) = player.playing {
+            // If repeat is enabled, just restart the current track.
+            if let Err(e) = load_and_play(&mut player.sink, playing) {
+                return Err(e.to_string())
+            };
+            return Ok(());
         }
-        return Ok(());
     }
-
-    if player.queue.is_empty() {
-        return Ok(()); // Nothing to play.
+    
+    if let Some(current) = player.playing.take() {
+        player.history.push(current);
     }
-
-    let next_index = if let Some(cursor) = player.queue_cursor {
-        if cursor >= player.queue.len() - 1 {
-            return Ok(()); // Already at the end of the queue.
+    
+    if let Some(next_track) = player.queue.first().cloned() {
+        player.queue.remove(0);
+        if let Err(e) = load_and_play(&mut player.sink, &next_track) {
+            return Err(e.to_string());
         }
-        cursor + 1
-    } else {
-        0 // If no track is currently playing, start with the first track.
-    };
-
-    let next_track = &player.queue[next_index];
-    if let Err(e) = load_and_play(&mut player.sink, next_track) {
-        return Err(e.to_string());
+        player.playing = Some(next_track);
     }
-
-    player.queue_cursor = Some(next_index);
+    
     Ok(())
 }
 
 pub fn play_previous(player: &mut Player) -> Result<(), String> {
-    let Some(queue_cursor) = player.queue_cursor else {
-        return Err("No track is playing".to_string());
+    let Some(previous) = player.history.pop() else { // TODO: should history start from the beginning or end?
+        return Err("There is no previous track to play.".to_owned());
     };
 
-    let previous_index = {
-        if player.queue.is_empty() {
-            return Err("The queue is empty.".to_string());
-        }
-
-        if queue_cursor == 0 {
-            return Err("Already at the beginning of the queue.".to_string());
-        }
-
-        queue_cursor - 1
-    };
-
-    let previous_track = &player.queue[previous_index];
-    if let Err(e) = load_and_play(&mut player.sink, previous_track) {
+    if let Err(e) = load_and_play(&mut player.sink, &previous) {
         return Err(e.to_string());
     }
 
-    player.queue_cursor = Some(previous_index);
+    player.playing = Some(previous);
     Ok(())
 }
 
@@ -117,20 +97,13 @@ pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
 }
 
 pub fn toggle_shuffle(player: &mut Player) {
-    let Some(queue_cursor) = player.queue_cursor else {
-        return;
-    };
-    let start_index = queue_cursor + 1;
-
     match player.shuffle.take() {
         Some(unshuffled_queue) => {
-            // Restore the queue to its original order.
-            player.queue.splice(start_index.., unshuffled_queue);
-            player.shuffle = None;
+            player.queue = unshuffled_queue; // Restore the queue to its original order.
         }
         None => {
-            player.shuffle = Some(player.queue[start_index..].to_vec());
-            shuffle(&mut player.queue[start_index..]);
+            player.shuffle = Some(player.queue.clone()); // Save the original queue.
+            shuffle(&mut player.queue);
         }
     }
 }
@@ -139,30 +112,18 @@ pub fn remove_from_queue(player: &mut Player, index: usize) {
     player.queue.remove(index);
 }
 
-pub fn move_to_position(player: &mut Player, from_index: usize, to_index: usize) {
-    let track = player.queue.remove(from_index);
-    player.queue.insert(to_index, track);
+pub fn move_to_position(player: &mut Player, from: usize, to: usize) {
+    let track = player.queue.remove(from);
+    player.queue.insert(to, track);
 }
 
-pub fn add_next_to_queue(player: &mut Player, track: Track) {
-    if let Some(cursor) = player.queue_cursor {
-        player.queue.insert(cursor + 1, track);
-    } else {
-        // The queue is empty (i.e. no current track).
-        // Push the track and set it as the current track.
-        player.queue.push(track);
-        player.queue_cursor = Some(0);
-    }
+pub fn add_next(player: &mut Player, track: Track) {
+    player.queue.insert(0, track);
 }
 
 pub fn shuffle(queue: &mut [Track]) {
     let mut rng = rand::rng();
     queue.shuffle(&mut rng);
-}
-
-pub fn clear_the_queue(player: &mut Player) {
-    player.queue.clear();
-    player.queue_cursor = None;
 }
 
 pub fn mute_or_unmute(player: &mut Player) {
