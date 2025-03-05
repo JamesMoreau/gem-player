@@ -144,6 +144,17 @@ pub fn move_to_position(player: &mut Player, from_index: usize, to_index: usize)
     player.queue.insert(to_index, track);
 }
 
+pub fn add_next_to_queue(player: &mut Player, track: Track) {
+    if let Some(cursor) = player.queue_cursor {
+        player.queue.insert(cursor + 1, track);
+    } else {
+        // The queue is empty (i.e. no current track).
+        // Push the track and set it as the current track.
+        player.queue.push(track);
+        player.queue_cursor = Some(0);
+    }
+}
+
 pub fn shuffle(queue: &mut [Track]) {
     let mut rng = rand::rng();
     queue.shuffle(&mut rng);
