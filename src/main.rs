@@ -215,11 +215,6 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) { // TODO maybe this sho
         error!("{}", e);
         gem_player.ui_state.toasts.error("Error playing the next track");
     }
-
-    let nothing_left_to_play = gem_player.player.sink.empty() && gem_player.player.queue.is_empty();
-    if nothing_left_to_play {
-        gem_player.player.playing = None;
-    }
 }
 
 pub fn maybe_play_next(gem_player: &mut GemPlayer) {
