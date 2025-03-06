@@ -27,10 +27,6 @@ pub fn clear_the_queue(player: &mut Player) {
     player.repeat = false;
 }
 
-pub fn is_playing(player: &mut Player) -> bool { // TODO: should we rely on .playing or use this instead?
-    !player.sink.is_paused()
-}
-
 pub fn play_or_pause(player: &mut Player) {
     if player.sink.is_paused() {
         player.sink.play()
@@ -117,8 +113,12 @@ pub fn move_to_position(player: &mut Player, from: usize, to: usize) {
     player.queue.insert(to, track);
 }
 
-pub fn add_next(player: &mut Player, track: Track) {
+pub fn enqueue_next(player: &mut Player, track: Track) {
     player.queue.insert(0, track);
+}
+
+pub fn enqueue(player: &mut Player, track: Track) {
+    player.queue.push(track);
 }
 
 pub fn shuffle(queue: &mut [Track]) {
