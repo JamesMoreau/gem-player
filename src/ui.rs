@@ -1455,7 +1455,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 for view in View::iter() {
                     let icon = get_icon_and_tooltip(&view);
                     let response = ui
-                        .selectable_label(gem_player.ui_state.current_view == view, format!("  {icon}  "))
+                        .selectable_label(gem_player.ui_state.current_view == view, format!("\t{icon}\t"))
                         .on_hover_text(format!("{:?}", view));
                     if response.clicked() {
                         switch_view(&mut gem_player.ui_state, view);
