@@ -6,9 +6,9 @@ use std::io::{self, BufReader, ErrorKind};
 
 #[fully_pub]
 pub struct Player {
-    history: Vec<Track>,
+    history: Vec<Track>, // In chronological order. The most recently played track is at the end.
     playing: Option<Track>,
-    queue: Vec<Track>,
+    queue: Vec<Track>, // In the order the tracks will be played.
 
     repeat: bool,
     shuffle: Option<Vec<Track>>, // Used to restore the queue after shuffling. The tracks are what was in front of the cursor.
@@ -62,7 +62,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: should th
 }
 
 pub fn play_previous(player: &mut Player) -> Result<(), String> {
-    let Some(previous) = player.history.pop() else { // TODO: should history start from the beginning or end?
+    let Some(previous) = player.history.pop() else {
         return Err("There is no previous track to play.".to_owned());
     };
 
