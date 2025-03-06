@@ -4,7 +4,7 @@ use fully_pub::fully_pub;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
-use player::{adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, reset_queue, Player};
+use player::{adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, clear_the_queue, Player};
 use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
@@ -125,8 +125,9 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists,
 
         player: Player {
+            history: Vec::new(),
+            playing: None,
             queue: Vec::new(),
-            queue_cursor: None,
 
             repeat: false,
             shuffle: None,
@@ -213,14 +214,9 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
         error!("{}", e);
         gem_player.ui_state.toasts.error("Error playing the next track");
     }
-
-    let nothing_left_to_play = gem_player.player.sink.empty() && gem_player.player.queue.is_empty();
-    if nothing_left_to_play {
-        gem_player.player.queue_cursor = None;
-    }
 }
 
-pub fn maybe_play_next(gem_player: &mut GemPlayer) {
+pub fn maybe_play_next(gem_player: &mut GemPlayer) { // maybe just remove this.
     let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);
@@ -236,7 +232,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     let rewind_threshold = 5.0;
 
     let under_threshold = playback_position < rewind_threshold;
-    let previous_track_exists = gem_player.player.queue_cursor.map_or(false, |cursor| cursor > 0);
+    let previous_track_exists = !gem_player.player.history.is_empty();
 
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
@@ -253,7 +249,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
 }
 
 pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
-    reset_queue(&mut gem_player.player);
+    clear_the_queue(&mut gem_player.player);
 
     let mut start_index = 0;
     if let Some(track) = starting_track {
@@ -274,7 +270,7 @@ pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) 
 }
 
 pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
-    reset_queue(&mut gem_player.player);
+    clear_the_queue(&mut gem_player.player);
 
     let playlist = gem_player.playlists.get_by_path(playlist_key);
 
