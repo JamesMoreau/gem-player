@@ -2,7 +2,7 @@ use crate::track::Track;
 use fully_pub::fully_pub;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-use std::io::{self, BufReader, ErrorKind};
+use std::{fs, io::{self, BufReader, ErrorKind}};
 
 #[fully_pub]
 pub struct Player {
@@ -78,7 +78,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
     sink.stop(); // Stop the current track if any.
 
-    let file = std::fs::File::open(&track.path)?;
+    let file = fs::File::open(&track.path)?;
 
     let source_result = Decoder::new(BufReader::new(file));
     let source = match source_result {
