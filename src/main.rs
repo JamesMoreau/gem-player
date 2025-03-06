@@ -205,7 +205,7 @@ pub fn read_music_and_playlists_from_directory(directory: &Path) -> (Vec<Track>,
     (library, playlists)
 }
 
-pub fn check_for_next_track(gem_player: &mut GemPlayer) { // TODO maybe this should check for repeat instead of play_next()?
+pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     if !gem_player.player.sink.empty() {
         return; // If a track is still playing, do nothing
     }

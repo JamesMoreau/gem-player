@@ -35,7 +35,7 @@ pub fn play_or_pause(player: &mut Player) {
     }
 }
 
-pub fn play_next(player: &mut Player) -> Result<(), String> { // TODO: should this error if ther is nothing left to play?
+pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(ref playing) = player.playing {
             // If repeat is enabled, just restart the current track.
