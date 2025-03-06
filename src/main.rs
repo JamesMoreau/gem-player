@@ -21,7 +21,6 @@ mod ui;
 
 /*
 TODO:
-* repeat doesn't work if the queue is empty. maybe refactor where repeat is checked?
 * perfomance improvements. cache or don't sort and filter songs every frame?
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
