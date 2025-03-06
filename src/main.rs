@@ -216,7 +216,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn maybe_play_next(gem_player: &mut GemPlayer) {
+pub fn maybe_play_next(gem_player: &mut GemPlayer) { // maybe just remove this.
     let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);

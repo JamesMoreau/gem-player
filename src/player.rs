@@ -45,6 +45,10 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
             return Ok(());
         }
     }
+
+    if player.queue.is_empty() {
+        return Ok(()); // Nothing to play 
+    }
     
     if let Some(current) = player.playing.take() {
         player.history.push(current);
