@@ -266,7 +266,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     } else {
                         icons::ICON_PAUSE
                     };
-                    let tooltip = if sink_is_paused { "Play" } else { "Pause"  };
+                    let tooltip = if sink_is_paused { "Play" } else { "Pause" };
                     let play_pause_button = Button::new(RichText::new(play_pause_icon).size(24.0));
                     let response = ui
                         .add_enabled(track_is_playing, play_pause_button)
@@ -386,41 +386,47 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
                             // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-                            Flex::horizontal()
-                                .justify(FlexJustify::SpaceBetween)
-                                .width(playback_progress_slider_width)
-                                .show(ui, |flex| {
-                                    flex.add_ui(item().basis(playback_progress_slider_width * (4.0 / 5.0)), |ui| {
-                                        let leading_space = 0.0;
-                                        let style = ui.style();
-                                        let text_color = ui.visuals().text_color();
-                                        let divider_color = ui.visuals().weak_text_color();
-
-                                        let get_text_format =
-                                            |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
-
-                                        let mut job = text::LayoutJob::default();
-                                        job.append(title, leading_space, get_text_format(style, text_color));
-                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                        job.append(artist, leading_space, get_text_format(style, text_color));
-                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                        job.append(album, leading_space, get_text_format(style, text_color));
-
-                                        let track_label = Label::new(job).selectable(false).truncate();
-                                        ui.add(track_label);
+                            let track_info_width = playback_progress_slider_width * (4.0 / 5.0);
+                            let time_info_width = playback_progress_slider_width * (1.0 / 5.0);
+                            StripBuilder::new(ui)
+                                .size(Size::exact(track_info_width))
+                                .size(Size::exact(time_info_width))
+                                .horizontal(|mut strip| {
+                                    strip.cell(|ui| {
+                                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                            let leading_space = 0.0;
+                                            let style = ui.style();
+                                            let text_color = ui.visuals().text_color();
+                                            let divider_color = ui.visuals().weak_text_color();
+    
+                                            let get_text_format =
+                                                |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+    
+                                            let mut job = text::LayoutJob::default();
+                                            job.append(title, leading_space, get_text_format(style, text_color));
+                                            job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                            job.append(artist, leading_space, get_text_format(style, text_color));
+                                            job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                            job.append(album, leading_space, get_text_format(style, text_color));
+    
+                                            let track_label = Label::new(job).selectable(false).truncate();
+                                            ui.add(track_label);
+                                        });
                                     });
 
-                                    flex.add_ui(item(), |ui| {
-                                        let position = Duration::from_secs_f32(position_as_secs);
-                                        let track_duration = Duration::from_secs_f32(track_duration_as_secs);
-                                        let time_label_text = format!(
-                                            "{} / {}",
-                                            format_duration_to_mmss(position),
-                                            format_duration_to_mmss(track_duration)
-                                        );
-
-                                        let time_label = unselectable_label(time_label_text);
-                                        ui.add(time_label);
+                                    strip.cell(|ui| {
+                                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                            let position = Duration::from_secs_f32(position_as_secs);
+                                            let track_duration = Duration::from_secs_f32(track_duration_as_secs);
+                                            let time_label_text = format!(
+                                                "{} / {}",
+                                                format_duration_to_mmss(position),
+                                                format_duration_to_mmss(track_duration)
+                                            );
+    
+                                            let time_label = unselectable_label(time_label_text);
+                                            ui.add(time_label);
+                                        });
                                     });
                                 });
                         });
