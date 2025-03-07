@@ -244,7 +244,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .justify(FlexJustify::SpaceBetween)
             .show(ui, |flex| {
                 flex.add_ui(item(), |ui| {
-                    let track_is_playing=  gem_player.player.playing.is_some();
+                    let track_is_playing = gem_player.player.playing.is_some();
 
                     let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS));
                     let previous_track_exists = !gem_player.player.history.is_empty();
@@ -258,12 +258,13 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         maybe_play_previous(gem_player)
                     }
 
-                    let play_pause_icon = if gem_player.player.playing.is_some() {
+                    let sink_is_paused = gem_player.player.sink.is_paused();
+                    let play_pause_icon = if sink_is_paused {
                         icons::ICON_PAUSE
                     } else {
                         icons::ICON_PLAY_ARROW
                     };
-                    let tooltip = if track_is_playing { "Pause" } else { "Play" };
+                    let tooltip = if sink_is_paused { "Pause" } else { "Play" };
                     let play_pause_button = Button::new(play_pause_icon);
                     let response = ui
                         .add_enabled(track_is_playing, play_pause_button)
