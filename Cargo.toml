@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = { version = "0.31.0", features = ["default", "persistence"] }
-egui_extras = { version = "0.31.0", features = ["all_loaders"] }
+eframe = { version = "0.31.1", features = ["default", "persistence"] }
+egui_extras = { version = "0.31.1", features = ["all_loaders"] }
 egui_flex = "0.3.0"
 egui_material_icons = "0.3.0"
 env_logger = { version = "0.11.6", default-features = false, features = ["auto-color", "humantime"] }
