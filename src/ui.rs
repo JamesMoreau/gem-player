@@ -1,6 +1,8 @@
 use crate::{
     format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist,
-    player::{clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player},
+    player::{
+        clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
+    },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     read_music_and_playlists_from_directory,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
@@ -260,11 +262,11 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     let sink_is_paused = gem_player.player.sink.is_paused();
                     let play_pause_icon = if sink_is_paused {
-                        icons::ICON_PAUSE
-                    } else {
                         icons::ICON_PLAY_ARROW
+                    } else {
+                        icons::ICON_PAUSE
                     };
-                    let tooltip = if sink_is_paused { "Pause" } else { "Play" };
+                    let tooltip = if sink_is_paused { "Play" } else { "Pause"  };
                     let play_pause_button = Button::new(play_pause_icon);
                     let response = ui
                         .add_enabled(track_is_playing, play_pause_button)
@@ -725,7 +727,7 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
 
     // We only operate on the queue after we are done iterating over it.
-    let mut to_be_removed = None; 
+    let mut to_be_removed = None;
     let mut to_be_moved_to_front = None;
 
     TableBuilder::new(ui)
