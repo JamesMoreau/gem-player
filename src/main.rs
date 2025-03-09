@@ -21,6 +21,7 @@ mod ui;
 
 /*
 TODO:
+* new plan: define the widths of the center widgets in the control ui before-hand. then use StripBuilder api to lay them out. Use Strip builder for left, center, and right groups as well.
 * perfomance improvements. cache or don't sort and filter songs every frame?
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
@@ -165,6 +166,7 @@ impl eframe::App for GemPlayer {
 
         check_for_next_track(self);
 
+        ctx.style_mut(|style| style.debug.debug_on_hover = true);
         ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
         update_theme(self, ctx);
         render_gem_player(self, ctx);
