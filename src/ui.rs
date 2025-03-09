@@ -292,151 +292,153 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 strip.cell(|ui| {
-                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                        // ui.spacing_mut().item_spacing.x = 0.0;
-                        Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
-                            flex.add_ui(item(), |ui| {
-                                let get_button_color = |ui: &Ui, is_enabled: bool| {
-                                    if is_enabled {
-                                        ui.visuals().selection.bg_fill
-                                    } else {
-                                        ui.visuals().text_color()
+                    Frame::new().fill(Color32::LIGHT_BLUE).show(ui, |ui| {
+                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                            // ui.spacing_mut().item_spacing.x = 0.0;
+                            Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
+                                flex.add_ui(item(), |ui| {
+                                    let get_button_color = |ui: &Ui, is_enabled: bool| {
+                                        if is_enabled {
+                                            ui.visuals().selection.bg_fill
+                                        } else {
+                                            ui.visuals().text_color()
+                                        }
+                                    };
+
+                                    let color = get_button_color(ui, gem_player.player.repeat);
+                                    let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
+                                    let response = ui.add(repeat_button).on_hover_text("Repeat");
+                                    if response.clicked() {
+                                        gem_player.player.repeat = !gem_player.player.repeat;
                                     }
-                                };
 
-                                let color = get_button_color(ui, gem_player.player.repeat);
-                                let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
-                                let response = ui.add(repeat_button).on_hover_text("Repeat");
-                                if response.clicked() {
-                                    gem_player.player.repeat = !gem_player.player.repeat;
-                                }
-
-                                let color = get_button_color(ui, gem_player.player.shuffle.is_some());
-                                let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color));
-                                let queue_is_not_empty = !gem_player.player.queue.is_empty();
-                                let response = ui
-                                    .add_enabled(queue_is_not_empty, shuffle_button)
-                                    .on_hover_text("Shuffle")
-                                    .on_disabled_hover_text("Queue is empty");
-                                if response.clicked() {
-                                    toggle_shuffle(&mut gem_player.player);
-                                }
+                                    let color = get_button_color(ui, gem_player.player.shuffle.is_some());
+                                    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color));
+                                    let queue_is_not_empty = !gem_player.player.queue.is_empty();
+                                    let response = ui
+                                        .add_enabled(queue_is_not_empty, shuffle_button)
+                                        .on_hover_text("Shuffle")
+                                        .on_disabled_hover_text("Queue is empty");
+                                    if response.clicked() {
+                                        toggle_shuffle(&mut gem_player.player);
+                                    }
+                                });
                             });
-                        });
 
-                        let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-                        let artwork_size = Vec2::splat(ui.available_height());
+                            let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
+                            let artwork_size = Vec2::splat(ui.available_height());
 
-                        let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
-                        if let Some(playing_track) = &gem_player.player.playing {
-                            if let Some(artwork_bytes) = &playing_track.artwork {
-                                let artwork_uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
-                                artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                            let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
+                            if let Some(playing_track) = &gem_player.player.playing {
+                                if let Some(artwork_bytes) = &playing_track.artwork {
+                                    let artwork_uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
+                                    artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone())
+                                }
                             }
-                        }
 
-                        ui.add(
-                            artwork
-                                .texture_options(artwork_texture_options)
-                                .fit_to_exact_size(artwork_size)
-                                .maintain_aspect_ratio(false)
-                                .corner_radius(2.0),
-                        );
+                            ui.add(
+                                artwork
+                                    .texture_options(artwork_texture_options)
+                                    .fit_to_exact_size(artwork_size)
+                                    .maintain_aspect_ratio(false)
+                                    .corner_radius(2.0),
+                            );
 
-                        Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
-                            flex.add_ui(item(), |ui| {
-                                let mut title = "None";
-                                let mut artist = "None";
-                                let mut album = "None";
-                                let mut position_as_secs = 0.0;
-                                let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
+                            Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
+                                flex.add_ui(item(), |ui| {
+                                    let mut title = "None";
+                                    let mut artist = "None";
+                                    let mut album = "None";
+                                    let mut position_as_secs = 0.0;
+                                    let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                                if let Some(playing_track) = &gem_player.player.playing {
-                                    title = playing_track.title.as_deref().unwrap_or("Unknown Title");
-                                    artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
-                                    album = playing_track.album.as_deref().unwrap_or("Unknown Album");
-                                    position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
-                                    track_duration_as_secs = playing_track.duration.as_secs_f32();
-                                }
-
-                                let playback_progress_slider_width = 500.0;
-                                ui.style_mut().spacing.slider_width = playback_progress_slider_width;
-                                let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
-                                    .trailing_fill(true)
-                                    .show_value(false)
-                                    .step_by(1.0); // Step by 1 second.
-                                let track_is_playing = gem_player.player.playing.is_some();
-                                let response = ui.add_enabled(track_is_playing, playback_progress_slider);
-
-                                if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
-                                    gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
-                                    gem_player.player.sink.pause(); // Pause playback during scrubbing
-                                }
-
-                                if response.drag_stopped() {
-                                    let new_position = Duration::from_secs_f32(position_as_secs);
-                                    info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
-                                    if let Err(e) = gem_player.player.sink.try_seek(new_position) {
-                                        error!("Error seeking to new position: {:?}", e);
+                                    if let Some(playing_track) = &gem_player.player.playing {
+                                        title = playing_track.title.as_deref().unwrap_or("Unknown Title");
+                                        artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
+                                        album = playing_track.album.as_deref().unwrap_or("Unknown Album");
+                                        position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
+                                        track_duration_as_secs = playing_track.duration.as_secs_f32();
                                     }
 
-                                    // Resume playback if the player was not paused before scrubbing
-                                    if gem_player.player.paused_before_scrubbing == Some(false) {
-                                        gem_player.player.sink.play();
+                                    let playback_progress_slider_width = 500.0;
+                                    ui.style_mut().spacing.slider_width = playback_progress_slider_width;
+                                    let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
+                                        .trailing_fill(true)
+                                        .show_value(false)
+                                        .step_by(1.0); // Step by 1 second.
+                                    let track_is_playing = gem_player.player.playing.is_some();
+                                    let response = ui.add_enabled(track_is_playing, playback_progress_slider);
+
+                                    if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
+                                        gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
+                                        gem_player.player.sink.pause(); // Pause playback during scrubbing
                                     }
 
-                                    gem_player.player.paused_before_scrubbing = None;
-                                }
+                                    if response.drag_stopped() {
+                                        let new_position = Duration::from_secs_f32(position_as_secs);
+                                        info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
+                                        if let Err(e) = gem_player.player.sink.try_seek(new_position) {
+                                            error!("Error seeking to new position: {:?}", e);
+                                        }
 
-                                ui.add_space(8.0);
+                                        // Resume playback if the player was not paused before scrubbing
+                                        if gem_player.player.paused_before_scrubbing == Some(false) {
+                                            gem_player.player.sink.play();
+                                        }
 
-                                // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
-                                // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-                                let track_info_width = playback_progress_slider_width * (4.0 / 5.0);
-                                let time_info_width = playback_progress_slider_width * (1.0 / 5.0);
-                                ui.spacing_mut().item_spacing.x = 0.0;
-                                StripBuilder::new(ui)
-                                    .size(Size::exact(track_info_width))
-                                    .size(Size::exact(time_info_width))
-                                    .horizontal(|mut strip| {
-                                        strip.cell(|ui| {
-                                            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                                let leading_space = 0.0;
-                                                let style = ui.style();
-                                                let text_color = ui.visuals().text_color();
-                                                let divider_color = ui.visuals().weak_text_color();
+                                        gem_player.player.paused_before_scrubbing = None;
+                                    }
 
-                                                let get_text_format = |style: &Style, color: Color32| {
-                                                    TextFormat::simple(TextStyle::Body.resolve(style), color)
-                                                };
+                                    ui.add_space(8.0);
 
-                                                let mut job = text::LayoutJob::default();
-                                                job.append(title, leading_space, get_text_format(style, text_color));
-                                                job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                                job.append(artist, leading_space, get_text_format(style, text_color));
-                                                job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                                job.append(album, leading_space, get_text_format(style, text_color));
+                                    // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
+                                    // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
+                                    let track_info_width = playback_progress_slider_width * (4.0 / 5.0);
+                                    let time_info_width = playback_progress_slider_width * (1.0 / 5.0);
+                                    ui.spacing_mut().item_spacing.x = 0.0;
+                                    StripBuilder::new(ui)
+                                        .size(Size::exact(track_info_width))
+                                        .size(Size::exact(time_info_width))
+                                        .horizontal(|mut strip| {
+                                            strip.cell(|ui| {
+                                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                                    let leading_space = 0.0;
+                                                    let style = ui.style();
+                                                    let text_color = ui.visuals().text_color();
+                                                    let divider_color = ui.visuals().weak_text_color();
 
-                                                let track_label = Label::new(job).selectable(false).truncate();
-                                                ui.add(track_label);
+                                                    let get_text_format = |style: &Style, color: Color32| {
+                                                        TextFormat::simple(TextStyle::Body.resolve(style), color)
+                                                    };
+
+                                                    let mut job = text::LayoutJob::default();
+                                                    job.append(title, leading_space, get_text_format(style, text_color));
+                                                    job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                                    job.append(artist, leading_space, get_text_format(style, text_color));
+                                                    job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                                    job.append(album, leading_space, get_text_format(style, text_color));
+
+                                                    let track_label = Label::new(job).selectable(false).truncate();
+                                                    ui.add(track_label);
+                                                });
+                                            });
+
+                                            strip.cell(|ui| {
+                                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                                    let position = Duration::from_secs_f32(position_as_secs);
+                                                    let track_duration = Duration::from_secs_f32(track_duration_as_secs);
+                                                    let time_label_text = format!(
+                                                        "{} / {}",
+                                                        format_duration_to_mmss(position),
+                                                        format_duration_to_mmss(track_duration)
+                                                    );
+
+                                                    let time_label = unselectable_label(time_label_text);
+                                                    ui.add(time_label);
+                                                });
                                             });
                                         });
-
-                                        strip.cell(|ui| {
-                                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                                let position = Duration::from_secs_f32(position_as_secs);
-                                                let track_duration = Duration::from_secs_f32(track_duration_as_secs);
-                                                let time_label_text = format!(
-                                                    "{} / {}",
-                                                    format_duration_to_mmss(position),
-                                                    format_duration_to_mmss(track_duration)
-                                                );
-
-                                                let time_label = unselectable_label(time_label_text);
-                                                ui.add(time_label);
-                                            });
-                                        });
-                                    });
+                                });
                             });
                         });
                     });
