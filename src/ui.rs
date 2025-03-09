@@ -246,45 +246,48 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .justify(FlexJustify::SpaceBetween)
             .show(ui, |flex| {
                 flex.add_ui(item(), |ui| {
-                    let track_is_playing = gem_player.player.playing.is_some();
-
-                    let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS).size(18.0));
-                    let previous_track_exists = !gem_player.player.history.is_empty();
-                    let is_previous_enabled = track_is_playing || previous_track_exists;
-
-                    let response = ui
-                        .add_enabled(is_previous_enabled, previous_button)
-                        .on_hover_text("Previous")
-                        .on_disabled_hover_text("No previous track");
-                    if response.clicked() {
-                        maybe_play_previous(gem_player)
-                    }
-
-                    let sink_is_paused = gem_player.player.sink.is_paused();
-                    let play_pause_icon = if sink_is_paused {
-                        icons::ICON_PLAY_ARROW
-                    } else {
-                        icons::ICON_PAUSE
-                    };
-                    let tooltip = if sink_is_paused { "Play" } else { "Pause"  };
-                    let play_pause_button = Button::new(RichText::new(play_pause_icon).size(24.0));
-                    let response = ui
-                        .add_enabled(track_is_playing, play_pause_button)
-                        .on_hover_text(tooltip)
-                        .on_disabled_hover_text("No current track");
-                    if response.clicked() {
-                        play_or_pause(&mut gem_player.player);
-                    }
-
-                    let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
-                    let next_track_exists = !gem_player.player.queue.is_empty();
-                    let response = ui
-                        .add_enabled(next_track_exists, next_button)
-                        .on_hover_text("Next")
-                        .on_disabled_hover_text("No next track");
-                    if response.clicked() {
-                        maybe_play_next(gem_player);
-                    }
+                    // This allows us to align the playback buttons along the cross-axis.
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                        let track_is_playing = gem_player.player.playing.is_some();
+    
+                        let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS).size(18.0));
+                        let previous_track_exists = !gem_player.player.history.is_empty();
+                        let is_previous_enabled = track_is_playing || previous_track_exists;
+    
+                        let response = ui
+                            .add_enabled(is_previous_enabled, previous_button)
+                            .on_hover_text("Previous")
+                            .on_disabled_hover_text("No previous track");
+                        if response.clicked() {
+                            maybe_play_previous(gem_player)
+                        }
+    
+                        let sink_is_paused = gem_player.player.sink.is_paused();
+                        let play_pause_icon = if sink_is_paused {
+                            icons::ICON_PLAY_ARROW
+                        } else {
+                            icons::ICON_PAUSE
+                        };
+                        let tooltip = if sink_is_paused { "Play" } else { "Pause"  };
+                        let play_pause_button = Button::new(RichText::new(play_pause_icon).size(24.0));
+                        let response = ui
+                            .add_enabled(track_is_playing, play_pause_button)
+                            .on_hover_text(tooltip)
+                            .on_disabled_hover_text("No current track");
+                        if response.clicked() {
+                            play_or_pause(&mut gem_player.player);
+                        }
+    
+                        let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
+                        let next_track_exists = !gem_player.player.queue.is_empty();
+                        let response = ui
+                            .add_enabled(next_track_exists, next_button)
+                            .on_hover_text("Next")
+                            .on_disabled_hover_text("No next track");
+                        if response.clicked() {
+                            maybe_play_next(gem_player);
+                        }
+                    });
                 });
 
                 flex.add_ui(item(), |ui| {
