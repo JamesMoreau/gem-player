@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
-use track::{read_music, SortBy, SortOrder, Track, TrackRetrieval};
+use track::{read_music, sort, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
 
 mod player;
@@ -74,12 +74,17 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         }
     }
 
+    let sort_by = SortBy::Title;
+    let sort_order = SortOrder::Ascending;
+
     let mut library = Vec::new();
     let mut playlists = Vec::new();
     if let Some(directory) = &library_directory {
-        let (found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
+        let (mut found_music, found_playlists) = read_music_and_playlists_from_directory(directory);
 
+        sort(&mut found_music, sort_by, sort_order);
         library = found_music;
+
         playlists = found_playlists;
     }
 
@@ -96,8 +101,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             library: LibraryViewState {
                 search_string: String::new(),
                 selected_track_key: None,
-                sort_by: SortBy::Title,
-                sort_order: SortOrder::Ascending,
+                sort_by,
+                sort_order,
                 track_menu_is_open: false,
             },
             playlists: PlaylistsViewState {
