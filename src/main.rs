@@ -107,8 +107,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 selected_track_key: None,
                 track_menu_is_open: false,
                 search_string: String::new(),
-                sort_by: SortBy::Title,
-                sort_order: SortOrder::Ascending,
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)

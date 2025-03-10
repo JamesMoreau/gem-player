@@ -59,8 +59,6 @@ pub struct PlaylistsViewState {
     playlist_rename: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_playlist_modal_is_open: bool, // The menu is open for selected_playlist_path.
     track_menu_is_open: bool,        // The menu is open for selected_playlist_path.
-    sort_by: SortBy,
-    sort_order: SortOrder,
     search_string: String,
 }
 
@@ -475,7 +473,7 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     render_library_track_menu(ui, gem_player);
 
-    let mut library_copy: Vec<Track> = gem_player
+    let library_copy: Vec<Track> = gem_player //TODO: can this be a slice?
         .library
         .iter()
         .filter(|track| {
@@ -492,12 +490,6 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .cloned()
         .collect();
-
-    sort(
-        &mut library_copy,
-        gem_player.ui_state.library.sort_by,
-        gem_player.ui_state.library.sort_order,
-    );
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
@@ -1138,7 +1130,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let mut tracks_copy: Vec<Track> = gem_player
+    let tracks_copy: Vec<Track> = gem_player // TODO: can this be just a slice, that is, not a clone?
         .playlists
         .get_by_path(&playlist_key)
         .tracks
@@ -1157,12 +1149,6 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
         })
         .cloned()
         .collect();
-
-    sort(
-        &mut tracks_copy,
-        gem_player.ui_state.playlists.sort_by,
-        gem_player.ui_state.playlists.sort_order,
-    );
 
     let header_labels = [
         icons::ICON_TAG,
@@ -1501,7 +1487,18 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
                     render_search(ui, &mut gem_player.ui_state.library.search_string);
-                    render_sort_and_order_by(ui, gem_player);
+                    let changed = render_sort_and_order_by(
+                        ui,
+                        &mut gem_player.ui_state.library.sort_by,
+                        &mut gem_player.ui_state.library.sort_order,
+                    );
+                    if changed {
+                        sort(
+                            &mut gem_player.library,
+                            gem_player.ui_state.library.sort_by,
+                            gem_player.ui_state.library.sort_order,
+                        );
+                    }
 
                     ui.add_space(16.0);
 
@@ -1545,44 +1542,30 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     format!("{} tracks / {}", tracks.len(), duration_string)
 }
 
-#[named]
-fn render_sort_and_order_by(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let view = &gem_player.ui_state.current_view;
-    let view_is_library_or_playlists = matches!(view, View::Library | View::Playlists);
-    if !view_is_library_or_playlists {
-        unreachable!("{} was called for an invalid view.", function_name!());
-    }
-
+fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
     let popup_id = ui.make_persistent_id("sort_by_popup");
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
     if response.clicked() {
         ui.memory_mut(|mem| mem.toggle_popup(popup_id));
     }
 
+    let mut sort_by_changed = false;
+    let mut sort_order_changed = false;
+
     let close_on_click_outside = popup::PopupCloseBehavior::CloseOnClickOutside;
     popup::popup_above_or_below_widget(ui, popup_id, &response, AboveOrBelow::Above, close_on_click_outside, |ui| {
         ui.set_min_width(100.0);
 
-        let (sort_by, sort_order) = match view {
-            View::Library => (
-                &mut gem_player.ui_state.library.sort_by,
-                &mut gem_player.ui_state.library.sort_order,
-            ),
-            View::Playlists => (
-                &mut gem_player.ui_state.playlists.sort_by,
-                &mut gem_player.ui_state.playlists.sort_order,
-            ),
-            _ => unreachable!(), // We already checked above
-        };
-
         for sb in SortBy::iter() {
-            ui.radio_value(sort_by, sb, format!("{:?}", sb));
+            sort_by_changed = ui.radio_value(sort_by, sb, format!("{:?}", sb)).changed();
         }
         ui.separator();
         for so in SortOrder::iter() {
-            ui.radio_value(sort_order, so, format!("{:?}", so));
+            sort_order_changed = ui.radio_value(sort_order, so, format!("{:?}", so)).changed();
         }
     });
+
+    sort_by_changed || sort_order_changed
 }
 
 pub fn render_search(ui: &mut Ui, search_text: &mut String) {
