@@ -1500,7 +1500,8 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
-                    render_sort_by_and_search(ui, gem_player);
+                    render_search(ui, &mut gem_player.ui_state.library.search_string);
+                    render_sort_and_order_by(ui, gem_player);
 
                     ui.add_space(16.0);
 
@@ -1530,7 +1531,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 }
                 View::Playlists => {
-                    render_sort_by_and_search(ui, gem_player);
+                    render_search(ui, &mut gem_player.ui_state.playlists.search_string);
                 }
                 _ => {}
             });
@@ -1545,32 +1546,12 @@ pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
 }
 
 #[named]
-fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_sort_and_order_by(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let view = &gem_player.ui_state.current_view;
     let view_is_library_or_playlists = matches!(view, View::Library | View::Playlists);
     if !view_is_library_or_playlists {
         unreachable!("{} was called for an invalid view.", function_name!());
     }
-
-    let search_text = match view {
-        View::Library => &mut gem_player.ui_state.library.search_string,
-        View::Playlists => &mut gem_player.ui_state.playlists.search_string,
-        _ => unreachable!(),
-    };
-
-    let clear_button_is_visible = !search_text.is_empty();
-    let response = ui
-        .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
-        .on_hover_text("Clear search");
-    if response.clicked() {
-        search_text.clear();
-    }
-
-    let search_bar = TextEdit::singleline(search_text)
-        .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
-        .desired_width(140.0)
-        .char_limit(20);
-    ui.add(search_bar);
 
     let popup_id = ui.make_persistent_id("sort_by_popup");
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
@@ -1602,6 +1583,22 @@ fn render_sort_by_and_search(ui: &mut Ui, gem_player: &mut GemPlayer) {
             ui.radio_value(sort_order, so, format!("{:?}", so));
         }
     });
+}
+
+pub fn render_search(ui: &mut Ui, search_text: &mut String) {
+    let clear_button_is_visible = !search_text.is_empty();
+    let response = ui
+        .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
+        .on_hover_text("Clear search");
+    if response.clicked() {
+        search_text.clear();
+    }
+
+    let search_bar = TextEdit::singleline(search_text)
+        .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
+        .desired_width(140.0)
+        .char_limit(20);
+    ui.add(search_bar);
 }
 
 fn unselectable_label(text: impl Into<RichText>) -> Label {
