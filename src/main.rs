@@ -99,6 +99,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             current_view: ui::View::Library,
             theme_preference,
             library: LibraryViewState {
+                cached_library: Vec::new(),
+                cache_dirty: true,
                 search_string: String::new(),
                 selected_track_key: None,
                 sort_by,

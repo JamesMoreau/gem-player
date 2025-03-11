@@ -45,6 +45,8 @@ pub struct UIState {
 
 #[fully_pub]
 pub struct LibraryViewState {
+    cached_library: Vec<Track>,
+    cache_dirty: bool,
     selected_track_key: Option<PathBuf>,
     track_menu_is_open: bool, // The menu is open for selected_track .
     sort_by: SortBy,
@@ -473,23 +475,33 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     render_library_track_menu(ui, gem_player);
 
-    let library_copy: Vec<Track> = gem_player //TODO: can this be a slice?
-        .library
-        .iter()
-        .filter(|track| {
-            let search_lower = gem_player.ui_state.library.search_string.to_lowercase();
+    if gem_player.ui_state.library.cache_dirty {
+        gem_player.ui_state.library.cached_library = gem_player
+            .library
+            .iter()
+            .filter(|track| {
+                let search_lower = gem_player.ui_state.library.search_string.to_lowercase();
 
-            let matches_search = |field: &Option<String>| {
-                field
-                    .as_ref()
-                    .map(|text| text.to_lowercase().contains(&search_lower))
-                    .unwrap_or(false)
-            };
+                let matches_search = |field: &Option<String>| {
+                    field
+                        .as_ref()
+                        .map(|text| text.to_lowercase().contains(&search_lower))
+                        .unwrap_or(false)
+                };
 
-            matches_search(&track.title) || matches_search(&track.artist) || matches_search(&track.album)
-        })
-        .cloned()
-        .collect();
+                matches_search(&track.title) || matches_search(&track.artist) || matches_search(&track.album)
+            })
+            .cloned()
+            .collect();
+
+        sort(
+            &mut gem_player.ui_state.library.cached_library,
+            gem_player.ui_state.library.sort_by,
+            gem_player.ui_state.library.sort_order,
+        );
+
+        gem_player.ui_state.library.cache_dirty = false;
+    }
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
@@ -526,8 +538,8 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, library_copy.len(), |mut row| {
-                let track = &library_copy[row.index()];
+            body.rows(26.0, gem_player.ui_state.library.cached_library.len(), |mut row| {
+                let track = &gem_player.ui_state.library.cached_library[row.index()];
 
                 let row_is_selected = gem_player
                     .ui_state
@@ -594,10 +606,10 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    if let Err(e) = play_library(gem_player, Some(track)) {
-                        error!("{}", e);
-                        gem_player.ui_state.toasts.error("Error playing from playlist");
-                    }
+                    // if let Err(e) = play_library(gem_player, Some(track)) { TODO: put back
+                    //     error!("{}", e);
+                    //     gem_player.ui_state.toasts.error("Error playing from playlist");
+                    // }
                 }
             });
         });
@@ -1486,23 +1498,23 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
-                    render_search(ui, &mut gem_player.ui_state.library.search_string);
-                    let changed = render_sort_and_order_by(
+                    let search_changed = render_search(ui, &mut gem_player.ui_state.library.search_string);
+                    if search_changed {
+                        gem_player.ui_state.library.cache_dirty = true;
+                    }
+
+                    let sort_changed = render_sort_and_order_by(
                         ui,
                         &mut gem_player.ui_state.library.sort_by,
                         &mut gem_player.ui_state.library.sort_order,
                     );
-                    if changed {
-                        sort(
-                            &mut gem_player.library,
-                            gem_player.ui_state.library.sort_by,
-                            gem_player.ui_state.library.sort_order,
-                        );
+                    if sort_changed {
+                        gem_player.ui_state.library.cache_dirty = true;
                     }
 
                     ui.add_space(16.0);
 
-                    let refresh_button = Button::new(icons::ICON_REFRESH);
+                    let refresh_button = Button::new(icons::ICON_REFRESH); // TODO: move this to settings.
                     let response = ui.add(refresh_button).on_hover_text("Refresh library");
                     if response.clicked() {
                         match &gem_player.library_directory {
@@ -1528,7 +1540,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 }
                 View::Playlists => {
-                    render_search(ui, &mut gem_player.ui_state.playlists.search_string);
+                    let search_changed = render_search(ui, &mut gem_player.ui_state.playlists.search_string);
+                    if search_changed {
+                        gem_player.ui_state.library.cache_dirty = true;
+                    }
                 }
                 _ => {}
             });
@@ -1568,20 +1583,28 @@ fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut 
     sort_by_changed || sort_order_changed
 }
 
-pub fn render_search(ui: &mut Ui, search_text: &mut String) {
+pub fn render_search(ui: &mut Ui, search_text: &mut String) -> bool {
+    let mut changed = false;
     let clear_button_is_visible = !search_text.is_empty();
     let response = ui
         .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
         .on_hover_text("Clear search");
     if response.clicked() {
         search_text.clear();
+        changed = true;
     }
 
     let search_bar = TextEdit::singleline(search_text)
         .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
         .desired_width(140.0)
         .char_limit(20);
-    ui.add(search_bar);
+
+    let response = ui.add(search_bar);
+    if response.changed() {
+        changed = true;
+    }
+
+    changed
 }
 
 fn unselectable_label(text: impl Into<RichText>) -> Label {
