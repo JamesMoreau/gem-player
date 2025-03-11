@@ -38,7 +38,7 @@ pub enum View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
-    theme_dirty_flag: bool,
+    theme_dirty: bool,
     library: LibraryViewState,
     playlists: PlaylistsViewState,
     toasts: Toasts,
@@ -68,7 +68,7 @@ pub struct PlaylistsViewState {
 }
 
 pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
-    if !gem_player.ui_state.theme_dirty_flag {
+    if !gem_player.ui_state.theme_dirty {
         return; // We don't need to update the theme if it has not been changed.
     }
 
@@ -1480,7 +1480,7 @@ pub fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let theme_was_changed = before != after;
                 if theme_was_changed {
-                    gem_player.ui_state.theme_dirty_flag = true;
+                    gem_player.ui_state.theme_dirty = true;
                 }
 
                 ui.add(Separator::default().spacing(32.0));

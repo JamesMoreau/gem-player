@@ -96,7 +96,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         ui_state: UIState {
             current_view: ui::View::Library,
             theme_preference,
-            theme_dirty_flag: true,
+            theme_dirty: true,
             library: LibraryViewState {
                 cached_library: Vec::new(),
                 cache_dirty: true,
