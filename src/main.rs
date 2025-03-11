@@ -109,6 +109,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
+                cached_playlist_tracks: Vec::new(),
+                cache_dirty: true,
                 playlist_rename: None,
                 delete_playlist_modal_is_open: false,
                 selected_track_key: None,
