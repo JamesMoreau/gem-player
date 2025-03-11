@@ -38,6 +38,7 @@ pub enum View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
+    theme_dirty_flag: bool,
     library: LibraryViewState,
     playlists: PlaylistsViewState,
     toasts: Toasts,
@@ -67,6 +68,10 @@ pub struct PlaylistsViewState {
 }
 
 pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
+    if !gem_player.ui_state.theme_dirty_flag {
+        return; // We don't need to update the theme if it has not been changed.
+    }
+
     match gem_player.ui_state.theme_preference {
         ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
         ThemePreference::Light => ctx.set_visuals(Visuals::light()),
@@ -1469,7 +1474,14 @@ pub fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
 
+                let before = gem_player.ui_state.theme_preference;
                 ThemePreference::radio_buttons(&mut gem_player.ui_state.theme_preference, ui);
+                let after = gem_player.ui_state.theme_preference;
+
+                let theme_was_changed = before != after;
+                if theme_was_changed {
+                    gem_player.ui_state.theme_dirty_flag = true;
+                }
 
                 ui.add(Separator::default().spacing(32.0));
 
