@@ -136,7 +136,7 @@ fn is_relevant_media_file(path: &Path) -> bool {
     false
 }
 
-pub fn read_music(directory: &Path) -> io::Result<Vec<Track>> {
+pub fn read_in_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
     let mut tracks = Vec::new();
 
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
