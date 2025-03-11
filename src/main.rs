@@ -4,7 +4,7 @@ use fully_pub::fully_pub;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use log::{error, info};
-use player::{adjust_volume_by_percentage, mute_or_unmute, play_next, play_or_pause, play_previous, clear_the_queue, Player};
+use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
 use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
@@ -12,7 +12,7 @@ use std::{
     time::Duration,
 };
 use track::{read_in_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
-use ui::{render_gem_player, update_theme, LibraryViewState, PlaylistsViewState, UIState};
+use ui::{maybe_update_theme, render_gem_player, LibraryViewState, PlaylistsViewState, UIState};
 
 mod player;
 mod playlist;
@@ -21,11 +21,10 @@ mod ui;
 
 /*
 TODO:
-* perfomance improvements. cache or don't sort and filter songs every frame?
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
-* UI + aestethics. Scrolling track info could be cool (maybe only applies when the string is too big?)
+* UI + aestethics. Scrolling track info could be cool (maybe only applies when the string is too big?). Font of course
 * Fullscreen?
 */
 
@@ -172,7 +171,7 @@ impl eframe::App for GemPlayer {
         check_for_next_track(self);
 
         ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
-        update_theme(self, ctx);
+        maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
     }
@@ -222,7 +221,8 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn maybe_play_next(gem_player: &mut GemPlayer) { // maybe just remove this.
+pub fn maybe_play_next(gem_player: &mut GemPlayer) {
+    // maybe just remove this.
     let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);

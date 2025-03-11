@@ -67,7 +67,7 @@ pub struct PlaylistsViewState {
     search_string: String,
 }
 
-pub fn update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn maybe_update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
     if !gem_player.ui_state.theme_dirty {
         return; // We don't need to update the theme if it has not been changed.
     }
