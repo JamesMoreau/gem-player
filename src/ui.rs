@@ -518,6 +518,10 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // causing the right side of the table to be cut off by the window.
     ui.spacing_mut().item_spacing.x = 0.0;
 
+    let mut should_open_track_menu = None;
+    let mut should_select_track = None;
+    let mut should_play_library = None;
+
     TableBuilder::new(ui)
         .striped(true)
         .sense(Sense::click())
@@ -587,8 +591,7 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
                             let response = ui.add(more_button).on_hover_text("More");
                             if response.clicked() {
-                                gem_player.ui_state.library.selected_track_key = Some(track.path.clone());
-                                gem_player.ui_state.library.track_menu_is_open = true;
+                                should_open_track_menu = Some(track.path.clone());
                             }
                         },
                     );
@@ -597,22 +600,34 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
 
                 if response.clicked() {
-                    gem_player.ui_state.library.selected_track_key = Some(track.path.clone());
+                    should_select_track = Some(track.path.clone());
                 }
 
                 if response.secondary_clicked() {
-                    gem_player.ui_state.library.selected_track_key = Some(track.path.clone());
-                    gem_player.ui_state.library.track_menu_is_open = true;
+                    should_open_track_menu = Some(track.path.clone());
                 }
 
                 if response.double_clicked() {
-                    // if let Err(e) = play_library(gem_player, Some(track)) { TODO: put back
-                    //     error!("{}", e);
-                    //     gem_player.ui_state.toasts.error("Error playing from playlist");
-                    // }
+                    should_play_library = Some(track.clone());
                 }
             });
         });
+
+    if let Some(track_identifier) = should_open_track_menu {
+        gem_player.ui_state.library.selected_track_key = Some(track_identifier);
+        gem_player.ui_state.library.track_menu_is_open = true;
+    }
+
+    if let Some(track_identifier) = should_select_track {
+        gem_player.ui_state.library.selected_track_key = Some(track_identifier);
+    }
+
+    if let Some(track) = should_play_library {
+        if let Err(e) = play_library(gem_player, Some(&track)) {
+            error!("{}", e);
+            gem_player.ui_state.toasts.error("Error playing from playlist");
+        }
+    }
 }
 
 #[named]
