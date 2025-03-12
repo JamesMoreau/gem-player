@@ -361,6 +361,10 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 album = playing_track.album.as_deref().unwrap_or("Unknown Album");
                                 position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
                                 track_duration_as_secs = playing_track.duration.as_secs_f32();
+
+                                // Necessary to keep UI up-to-date with the current state of the sink/player.
+                                // We only need to call this if there is a currently playing track.
+                                ui.ctx().request_repaint_after_secs(1.0); 
                             }
 
                             let playback_progress_slider_width = 500.0;

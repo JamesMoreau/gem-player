@@ -170,7 +170,6 @@ impl eframe::App for GemPlayer {
 
         check_for_next_track(self);
 
-        ctx.request_repaint_after_secs(1.0); // Necessary to keep UI up-to-date with the current state of the sink/player.
         maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
