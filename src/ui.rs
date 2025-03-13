@@ -349,6 +349,8 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
                         flex.add_ui(item(), |ui| {
+                            ui.spacing_mut().item_spacing.x = 0.0;
+
                             let mut title = "None";
                             let mut artist = "None";
                             let mut album = "None";
@@ -364,7 +366,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                                 // Necessary to keep UI up-to-date with the current state of the sink/player.
                                 // We only need to call this if there is a currently playing track.
-                                ui.ctx().request_repaint_after_secs(1.0); 
+                                ui.ctx().request_repaint_after_secs(1.0);
                             }
 
                             let playback_progress_slider_width = 500.0;
@@ -400,41 +402,45 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
                             // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-                            Flex::horizontal()
-                                .justify(FlexJustify::SpaceBetween)
-                                .width(playback_progress_slider_width)
-                                .show(ui, |flex| {
-                                    flex.add_ui(item().basis(playback_progress_slider_width * (4.0 / 5.0)), |ui| {
-                                        let leading_space = 0.0;
-                                        let style = ui.style();
-                                        let text_color = ui.visuals().text_color();
-                                        let divider_color = ui.visuals().weak_text_color();
+                            StripBuilder::new(ui)
+                                .size(Size::exact(playback_progress_slider_width * (4.0 / 5.0)))
+                                .size(Size::exact(playback_progress_slider_width * (1.0 / 5.0)))
+                                .horizontal(|mut hstrip| {
+                                    hstrip.cell(|ui| {
+                                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                            let leading_space = 0.0;
+                                            let style = ui.style();
+                                            let text_color = ui.visuals().text_color();
+                                            let divider_color = ui.visuals().weak_text_color();
 
-                                        let get_text_format =
-                                            |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+                                            let get_text_format =
+                                                |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
 
-                                        let mut job = text::LayoutJob::default();
-                                        job.append(title, leading_space, get_text_format(style, text_color));
-                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                        job.append(artist, leading_space, get_text_format(style, text_color));
-                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                        job.append(album, leading_space, get_text_format(style, text_color));
+                                            let mut job = text::LayoutJob::default();
+                                            job.append(title, leading_space, get_text_format(style, text_color));
+                                            job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                            job.append(artist, leading_space, get_text_format(style, text_color));
+                                            job.append(" / ", leading_space, get_text_format(style, divider_color));
+                                            job.append(album, leading_space, get_text_format(style, text_color));
 
-                                        let track_label = Label::new(job).selectable(false).truncate();
-                                        ui.add(track_label);
+                                            let track_label = Label::new(job).selectable(false).truncate();
+                                            ui.add(track_label);
+                                        });
                                     });
 
-                                    flex.add_ui(item(), |ui| {
-                                        let position = Duration::from_secs_f32(position_as_secs);
-                                        let track_duration = Duration::from_secs_f32(track_duration_as_secs);
-                                        let time_label_text = format!(
-                                            "{} / {}",
-                                            format_duration_to_mmss(position),
-                                            format_duration_to_mmss(track_duration)
-                                        );
+                                    hstrip.cell(|ui| {
+                                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                            let position = Duration::from_secs_f32(position_as_secs);
+                                            let track_duration = Duration::from_secs_f32(track_duration_as_secs);
+                                            let time_label_text = format!(
+                                                "{} / {}",
+                                                format_duration_to_mmss(position),
+                                                format_duration_to_mmss(track_duration)
+                                            );
 
-                                        let time_label = unselectable_label(time_label_text);
-                                        ui.add(time_label);
+                                            let time_label = unselectable_label(time_label_text);
+                                            ui.add(time_label);
+                                        });
                                     });
                                 });
                         });

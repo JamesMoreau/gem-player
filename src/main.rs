@@ -170,6 +170,8 @@ impl eframe::App for GemPlayer {
 
         check_for_next_track(self);
 
+        ctx.set_debug_on_hover(true);
+
         maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
