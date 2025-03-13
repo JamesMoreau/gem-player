@@ -347,7 +347,7 @@ pub fn render_control_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             .corner_radius(2.0),
                     );
 
-                    Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
+                    Flex::vertical().justify(FlexJustify::Center).show(ui, |flex| {
                         flex.add_ui(item(), |ui| {
                             ui.spacing_mut().item_spacing.x = 0.0;
 
