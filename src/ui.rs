@@ -321,7 +321,9 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: 
 
     StripBuilder::new(ui)
         .size(Size::exact(button_width))
+        .size(Size::exact(gap))
         .size(Size::exact(artwork_width))
+        .size(Size::exact(gap))
         .size(Size::exact(slider_width))
         .horizontal(|mut strip| {
             strip.cell(|ui| {
@@ -357,9 +359,11 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: 
                     toggle_shuffle(&mut gem_player.player);
                 }
             });
+            strip.empty();
             strip.cell(|ui| {
                 render_artwork(ui, gem_player, artwork_width);
             });
+            strip.empty();
             strip.cell(|ui| {
                 Flex::vertical().justify(FlexJustify::Center).show(ui, |flex| {
                     flex.add_ui(item(), |ui| {
