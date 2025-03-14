@@ -248,11 +248,12 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let artwork_width = 64.0;
     let slider_width = 500.0;
+    let button_width = ui.spacing().interact_size.x;
 
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         StripBuilder::new(ui)
             .size(Size::remainder())
-            .size(Size::exact(artwork_width + slider_width))
+            .size(Size::exact(button_width + artwork_width + slider_width))
             .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
@@ -318,35 +319,36 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width:
     ui.spacing_mut().item_spacing.x = 0.0;
 
     ui.horizontal(|ui| {
-        /*Flex::vertical().h_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
-            flex.add_ui(item(), |ui| {
-                let get_button_color = |ui: &Ui, is_enabled: bool| {
-                    if is_enabled {
-                        ui.visuals().selection.bg_fill
-                    } else {
-                        ui.visuals().text_color()
-                    }
-                };
+        ui.vertical(|ui| {
+            let starting_point = ui.available_height() - ui.spacing().interact_size.y;
+            ui.add_space(starting_point);
 
-                let color = get_button_color(ui, gem_player.player.repeat);
-                let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
-                let response = ui.add(repeat_button).on_hover_text("Repeat");
-                if response.clicked() {
-                    gem_player.player.repeat = !gem_player.player.repeat;
+            let get_button_color = |ui: &Ui, is_enabled: bool| {
+                if is_enabled {
+                    ui.visuals().selection.bg_fill
+                } else {
+                    ui.visuals().text_color()
                 }
+            };
 
-                let color = get_button_color(ui, gem_player.player.shuffle.is_some());
-                let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color));
-                let queue_is_not_empty = !gem_player.player.queue.is_empty();
-                let response = ui
-                    .add_enabled(queue_is_not_empty, shuffle_button)
-                    .on_hover_text("Shuffle")
-                    .on_disabled_hover_text("Queue is empty");
-                if response.clicked() {
-                    toggle_shuffle(&mut gem_player.player);
-                }
-            });
-        });*/
+            let color = get_button_color(ui, gem_player.player.repeat);
+            let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
+            let response = ui.add(repeat_button).on_hover_text("Repeat");
+            if response.clicked() {
+                gem_player.player.repeat = !gem_player.player.repeat;
+            }
+
+            let color = get_button_color(ui, gem_player.player.shuffle.is_some());
+            let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color));
+            let queue_is_not_empty = !gem_player.player.queue.is_empty();
+            let response = ui
+                .add_enabled(queue_is_not_empty, shuffle_button)
+                .on_hover_text("Shuffle")
+                .on_disabled_hover_text("Queue is empty");
+            if response.clicked() {
+                toggle_shuffle(&mut gem_player.player);
+            }
+        });
 
         render_artwork(ui, gem_player, artwork_width);
 
