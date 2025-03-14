@@ -248,20 +248,21 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let artwork_width = 64.0;
     let slider_width = 500.0;
-    let track_info_width = artwork_width + slider_width + 100.0;
 
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         StripBuilder::new(ui)
-            .size(Size::remainder()) // Left: Playback controls (expand)
-            .size(Size::exact(track_info_width)) // Center: Artwork + track info + slider (fixed)
-            .size(Size::remainder()) // Right: Volume controls (expand)
+            .size(Size::remainder())
+            .size(Size::exact(artwork_width + slider_width))
+            .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
                     render_playback_controls(ui, gem_player);
                 });
+
                 strip.cell(|ui| {
                     render_track_info(ui, gem_player, artwork_width, slider_width);
                 });
+
                 strip.cell(|ui| {
                     render_volume_controls(ui, gem_player);
                 });
@@ -314,8 +315,10 @@ pub fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32, slider_width: f32) {
+    ui.spacing_mut().item_spacing.x = 0.0;
+
     ui.horizontal(|ui| {
-        Flex::vertical().h_full().justify(FlexJustify::Center).show(ui, |flex| {
+        /*Flex::vertical().h_full().justify(FlexJustify::SpaceBetween).show(ui, |flex| {
             flex.add_ui(item(), |ui| {
                 let get_button_color = |ui: &Ui, is_enabled: bool| {
                     if is_enabled {
@@ -343,14 +346,12 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width:
                     toggle_shuffle(&mut gem_player.player);
                 }
             });
-        });
+        });*/
 
         render_artwork(ui, gem_player, artwork_width);
 
         Flex::vertical().justify(FlexJustify::Center).show(ui, |flex| {
             flex.add_ui(item(), |ui| {
-                ui.spacing_mut().item_spacing.x = 0.0;
-
                 let mut title = "None";
                 let mut artist = "None";
                 let mut album = "None";
@@ -368,6 +369,8 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width:
                     // We only need to call this if there is a currently playing track.
                     ui.ctx().request_repaint_after_secs(1.0);
                 }
+
+                ui.add_space(8.0);
 
                 ui.style_mut().spacing.slider_width = slider_width;
                 let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
@@ -396,8 +399,6 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width:
 
                     gem_player.player.paused_before_scrubbing = None;
                 }
-
-                ui.add_space(8.0);
 
                 // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
                 // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
