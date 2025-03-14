@@ -246,10 +246,10 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 }
 
 pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let button_width = 20.0; // TODO: this is pretty hacky. we should find a way to determine the dimensions of the repeat, shuffle buttons before-hand.
+    let button_width = 20.0;
     let gap = 10.0;
     let artwork_width = 64.0;
-    let slider_width = 500.0; // TODO: maybe this should be shorter? also could make the window smaller.
+    let slider_width = 420.0;
 
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         StripBuilder::new(ui)
