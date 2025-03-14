@@ -316,19 +316,19 @@ pub fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing.x = 0.0;
 
     StripBuilder::new(ui)
-        .size(Size::exact(button_width))
+        .size(Size::exact(button_size))
         .size(Size::exact(gap))
         .size(Size::exact(artwork_width))
         .size(Size::exact(gap))
         .size(Size::exact(slider_width))
         .horizontal(|mut strip| {
             strip.cell(|ui| {
-                ui.spacing_mut().item_spacing.y = 0.0;
-                let starting_point = (ui.available_height() / 2.0) - 18.0;
+                ui.spacing_mut().item_spacing = Vec2::splat(0.0);
+                let starting_point = (ui.available_height() / 2.0) - button_size; // this is how we align the buttons vertically center.
                 ui.add_space(starting_point);
 
                 let get_button_color = |ui: &Ui, is_enabled: bool| {
@@ -340,7 +340,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: 
                 };
 
                 let color = get_button_color(ui, gem_player.player.repeat);
-                let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_width));
+                let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
                 let response = ui.add(repeat_button).on_hover_text("Repeat");
                 if response.clicked() {
                     gem_player.player.repeat = !gem_player.player.repeat;
@@ -349,7 +349,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: 
                 ui.add_space(4.0);
 
                 let color = get_button_color(ui, gem_player.player.shuffle.is_some());
-                let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_width));
+                let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
                 let queue_is_not_empty = !gem_player.player.queue.is_empty();
                 let response = ui
                     .add_enabled(queue_is_not_empty, shuffle_button)

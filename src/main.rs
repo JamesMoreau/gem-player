@@ -49,7 +49,7 @@ fn main() -> eframe::Result {
 
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default()
-            .with_min_inner_size(Vec2::new(1000.0, 500.0))
+            .with_min_inner_size(Vec2::new(900.0, 500.0))
             .with_decorations(false)
             .with_transparent(true),
         ..Default::default()
