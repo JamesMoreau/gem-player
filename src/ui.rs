@@ -246,14 +246,15 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 }
 
 pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let button_width = 20.5; // TODO: this is pretty hacky. we should find a way to determine the dimensions of the repeat, shuffle buttons before-hand.
+    let gap = 10.0;
     let artwork_width = 64.0;
-    let slider_width = 500.0;
-    let button_width = 20.5;
+    let slider_width = 500.0; // TODO: maybe this should be shorter? also could make the window smaller.
 
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         StripBuilder::new(ui)
             .size(Size::remainder())
-            .size(Size::exact(button_width + artwork_width + slider_width))
+            .size(Size::exact(button_width + gap + artwork_width + gap + slider_width))
             .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
@@ -261,7 +262,7 @@ pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 strip.cell(|ui| {
-                    render_track_info(ui, gem_player, button_width, artwork_width, slider_width);
+                    render_track_info(ui, gem_player, button_width, gap, artwork_width, slider_width);
                 });
 
                 strip.cell(|ui| {
@@ -315,7 +316,7 @@ pub fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: f32, artwork_width: f32, slider_width: f32) {
+pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing.x = 0.0;
 
     StripBuilder::new(ui)
