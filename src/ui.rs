@@ -246,7 +246,7 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 }
 
 pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let button_width = 20.5; // TODO: this is pretty hacky. we should find a way to determine the dimensions of the repeat, shuffle buttons before-hand.
+    let button_width = 20.0; // TODO: this is pretty hacky. we should find a way to determine the dimensions of the repeat, shuffle buttons before-hand.
     let gap = 10.0;
     let artwork_width = 64.0;
     let slider_width = 500.0; // TODO: maybe this should be shorter? also could make the window smaller.
@@ -340,7 +340,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: 
                 };
 
                 let color = get_button_color(ui, gem_player.player.repeat);
-                let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color));
+                let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_width));
                 let response = ui.add(repeat_button).on_hover_text("Repeat");
                 if response.clicked() {
                     gem_player.player.repeat = !gem_player.player.repeat;
@@ -349,7 +349,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_width: 
                 ui.add_space(4.0);
 
                 let color = get_button_color(ui, gem_player.player.shuffle.is_some());
-                let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color));
+                let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_width));
                 let queue_is_not_empty = !gem_player.player.queue.is_empty();
                 let response = ui
                     .add_enabled(queue_is_not_empty, shuffle_button)
