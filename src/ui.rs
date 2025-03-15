@@ -381,7 +381,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
 
                     // Necessary to keep UI up-to-date with the current state of the sink/player.
                     // We only need to call this if there is a currently playing track.
-                    // ui.ctx().request_repaint_after_secs(1.0); TODO put back
+                    // ui.ctx().request_repaint_after_secs(1.0);
                 }
 
                 builder.sizes(Size::exact(available_height / 2.0), 2).vertical(|mut strip| {

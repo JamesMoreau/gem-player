@@ -21,6 +21,7 @@ mod ui;
 
 /*
 TODO:
+* remove uuid, egui_flex.
 * sorting is not actually working!
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
