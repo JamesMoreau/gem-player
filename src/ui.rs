@@ -317,7 +317,7 @@ pub fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
-    ui.spacing_mut().item_spacing.x = 0.0;
+    ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let available_height = ui.available_height();
 
     StripBuilder::new(ui)
@@ -386,7 +386,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
 
                 builder.sizes(Size::exact(available_height / 2.0), 2).vertical(|mut strip| {
                     strip.cell(|ui| {
-                        ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                             ui.style_mut().spacing.slider_width = slider_width;
                             let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
                                 .trailing_fill(true)
