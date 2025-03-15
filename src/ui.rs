@@ -246,9 +246,10 @@ pub fn switch_view(ui_state: &mut UIState, view: View) {
 }
 
 pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
     let button_width = 20.0;
     let gap = 10.0;
-    let artwork_width = 64.0;
+    let artwork_width = ui.available_height();
     let slider_width = 420.0;
 
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
