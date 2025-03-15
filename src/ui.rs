@@ -15,7 +15,6 @@ use eframe::egui::{
     TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
-use egui_flex::{item, Flex, FlexJustify};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
@@ -319,6 +318,7 @@ pub fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
 pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing.x = 0.0;
+    let available_height = ui.available_height();
 
     StripBuilder::new(ui)
         .size(Size::exact(button_size))
@@ -365,60 +365,61 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                 render_artwork(ui, gem_player, artwork_width);
             });
             strip.empty();
-            strip.cell(|ui| {
-                Flex::vertical().justify(FlexJustify::Center).show(ui, |flex| {
-                    flex.add_ui(item(), |ui| {
-                        let mut title = "None";
-                        let mut artist = "None";
-                        let mut album = "None";
-                        let mut position_as_secs = 0.0;
-                        let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
+            strip.strip(|builder| {
+                let mut title = "None";
+                let mut artist = "None";
+                let mut album = "None";
+                let mut position_as_secs = 0.0;
+                let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                        if let Some(playing_track) = &gem_player.player.playing {
-                            title = playing_track.title.as_deref().unwrap_or("Unknown Title");
-                            artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
-                            album = playing_track.album.as_deref().unwrap_or("Unknown Album");
-                            position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
-                            track_duration_as_secs = playing_track.duration.as_secs_f32();
+                if let Some(playing_track) = &gem_player.player.playing {
+                    title = playing_track.title.as_deref().unwrap_or("Unknown Title");
+                    artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
+                    album = playing_track.album.as_deref().unwrap_or("Unknown Album");
+                    position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
+                    track_duration_as_secs = playing_track.duration.as_secs_f32();
 
-                            // Necessary to keep UI up-to-date with the current state of the sink/player.
-                            // We only need to call this if there is a currently playing track.
-                            ui.ctx().request_repaint_after_secs(1.0);
-                        }
+                    // Necessary to keep UI up-to-date with the current state of the sink/player.
+                    // We only need to call this if there is a currently playing track.
+                    // ui.ctx().request_repaint_after_secs(1.0); TODO put back
+                }
 
-                        ui.add_space(8.0);
-
-                        ui.style_mut().spacing.slider_width = slider_width;
-                        let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
-                            .trailing_fill(true)
-                            .show_value(false)
-                            .step_by(1.0); // Step by 1 second.
-                        let track_is_playing = gem_player.player.playing.is_some();
-                        let response = ui.add_enabled(track_is_playing, playback_progress_slider);
-
-                        if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
-                            gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
-                            gem_player.player.sink.pause(); // Pause playback during scrubbing
-                        }
-
-                        if response.drag_stopped() {
-                            let new_position = Duration::from_secs_f32(position_as_secs);
-                            info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
-                            if let Err(e) = gem_player.player.sink.try_seek(new_position) {
-                                error!("Error seeking to new position: {:?}", e);
+                builder.sizes(Size::exact(available_height / 2.0), 2).vertical(|mut strip| {
+                    strip.cell(|ui| {
+                        ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                            ui.style_mut().spacing.slider_width = slider_width;
+                            let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
+                                .trailing_fill(true)
+                                .show_value(false)
+                                .step_by(1.0); // Step by 1 second.
+                            let track_is_playing = gem_player.player.playing.is_some();
+                            let response = ui.add_enabled(track_is_playing, playback_progress_slider);
+    
+                            if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
+                                gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
+                                gem_player.player.sink.pause(); // Pause playback during scrubbing
                             }
-
-                            // Resume playback if the player was not paused before scrubbing
-                            if gem_player.player.paused_before_scrubbing == Some(false) {
-                                gem_player.player.sink.play();
+    
+                            if response.drag_stopped() {
+                                let new_position = Duration::from_secs_f32(position_as_secs);
+                                info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
+                                if let Err(e) = gem_player.player.sink.try_seek(new_position) {
+                                    error!("Error seeking to new position: {:?}", e);
+                                }
+    
+                                // Resume playback if the player was not paused before scrubbing
+                                if gem_player.player.paused_before_scrubbing == Some(false) {
+                                    gem_player.player.sink.play();
+                                }
+    
+                                gem_player.player.paused_before_scrubbing = None;
                             }
-
-                            gem_player.player.paused_before_scrubbing = None;
-                        }
-
+                        });
+                    });
+                    strip.strip(|builder| {
                         // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
                         // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-                        StripBuilder::new(ui)
+                        builder
                             .size(Size::exact(slider_width * (4.0 / 5.0)))
                             .size(Size::exact(slider_width * (1.0 / 5.0)))
                             .horizontal(|mut hstrip| {
