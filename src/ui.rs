@@ -492,6 +492,15 @@ fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
 
 fn render_volume_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+        let mut volume = gem_player.player.sink.volume();
+        let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+        let changed = ui.add(volume_slider).changed();
+        if changed {
+            gem_player.player.muted = false;
+            gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+        }
+        gem_player.player.sink.set_volume(volume);
+
         let volume_icon = match gem_player.player.sink.volume() {
             v if v == 0.0 => icons::ICON_VOLUME_OFF,
             v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
@@ -503,15 +512,6 @@ fn render_volume_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
         if response.clicked() {
             mute_or_unmute(&mut gem_player.player);
         }
-
-        let mut volume = gem_player.player.sink.volume();
-        let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-        let changed = ui.add(volume_slider).changed();
-        if changed {
-            gem_player.player.muted = false;
-            gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-        }
-        gem_player.player.sink.set_volume(volume);
     });
 }
 
