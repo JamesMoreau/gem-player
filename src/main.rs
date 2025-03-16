@@ -24,6 +24,7 @@ mod ui;
 
 /*
 TODO:
+* App icon needed.
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
 */
