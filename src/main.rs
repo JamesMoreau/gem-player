@@ -1,4 +1,6 @@
-use eframe::egui::{Color32, Context, Event, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals};
+use eframe::egui::{
+    Color32, Context, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals,
+};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use indexmap::IndexMap;
@@ -9,6 +11,7 @@ use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
     path::{Path, PathBuf},
+    sync::Arc,
     time::Duration,
 };
 use track::{read_in_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
@@ -61,6 +64,23 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     egui_extras::install_image_loaders(&cc.egui_ctx);
 
     egui_material_icons::initialize(&cc.egui_ctx);
+
+    let mut fonts = FontDefinitions::default();
+
+    fonts.font_data.insert(
+        "inconsolata".to_owned(),
+        Arc::new(FontData::from_static(include_bytes!(
+            "../assets/Inconsolata-VariableFont_wdth,wght.ttf"
+        ))),
+    );
+
+    fonts
+        .families
+        .entry(FontFamily::Proportional)
+        .or_default()
+        .insert(0, "inconsolata".to_owned());
+
+    cc.egui_ctx.set_fonts(fonts);
 
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
