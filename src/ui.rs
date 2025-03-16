@@ -1556,7 +1556,7 @@ pub fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
                 let version = env!("CARGO_PKG_VERSION");
                 ui.add(unselectable_label(format!("Version: {version}")));
-                ui.add(unselectable_label("Gem Player is a lightweight and minimalist music player."));
+                ui.add(unselectable_label("Gem Player is a lightweight music player."));
 
                 ui.add(Separator::default().spacing(32.0));
 
