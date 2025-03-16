@@ -26,7 +26,6 @@ mod ui;
 TODO:
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
-* Fullscreen?
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";

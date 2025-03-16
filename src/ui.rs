@@ -198,30 +198,30 @@ pub fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title
             let button_height = 12.0;
 
             let close_button = |ui: &mut Ui| {
-                let close_response = ui
+                let response = ui
                     .add(Button::new(RichText::new(icons::ICON_CLOSE).size(button_height)))
                     .on_hover_text("Close the window");
-                if close_response.clicked() {
+                if response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Close);
                 }
             };
 
-            let maximize_button = |ui: &mut Ui| {
-                let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
-                let tooltip = if is_maximized { "Restore window" } else { "Maximize window" };
-                let maximize_response = ui
+            let fullscreen_button = |ui: &mut Ui| {
+                let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
+                let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
+                let response = ui
                     .add(Button::new(RichText::new(icons::ICON_SQUARE).size(button_height)))
                     .on_hover_text(tooltip);
-                if maximize_response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
+                if response.clicked() {
+                    ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
                 }
             };
 
             let minimize_button = |ui: &mut Ui| {
-                let minimize_response = ui
+                let response = ui
                     .add(Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_height)))
                     .on_hover_text("Minimize the window");
-                if minimize_response.clicked() {
+                if response.clicked() {
                     ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
                 }
             };
@@ -229,10 +229,10 @@ pub fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title
             if cfg!(target_os = "macos") {
                 close_button(ui);
                 minimize_button(ui);
-                maximize_button(ui);
+                fullscreen_button(ui);
             } else {
                 minimize_button(ui);
-                maximize_button(ui);
+                fullscreen_button(ui);
                 close_button(ui);
             }
         },
