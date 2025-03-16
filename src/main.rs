@@ -24,7 +24,6 @@ mod ui;
 
 /*
 TODO:
-* App icon needed.
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
 */
@@ -47,11 +46,14 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if run with `RUST_LOG=debug`).
     info!("Starting up Gem Player.");
 
+    let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("Could not load icon.");
+
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default()
             .with_min_inner_size(Vec2::new(900.0, 500.0))
             .with_decorations(false)
-            .with_transparent(true),
+            .with_transparent(true)
+            .with_icon(icon_data),
         ..Default::default()
     };
     eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
