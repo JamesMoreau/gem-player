@@ -1472,7 +1472,7 @@ pub fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
                 ui.add_space(8.0);
-                ui.add(unselectable_label("Playlists are also stored here as .m3u files."));
+                ui.add(unselectable_label("Playlists are also stored here as m3u files."));
                 ui.horizontal(|ui| {
                     let path = gem_player
                         .library_directory
@@ -1629,7 +1629,6 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         &mut gem_player.ui_state.library.sort_order,
                     );
                     if sort_changed {
-                        println!("cache marked as dirty.");
                         gem_player.ui_state.library.cache_dirty = true;
                     }
                 }
