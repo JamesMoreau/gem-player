@@ -21,6 +21,7 @@ mod ui;
 
 /*
 TODO:
+* sorting is not actually working!
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 * Music Visualizer.
 * maybe make volume slider hover. Could make a new fat enum like muted, unmuted(volume)?
@@ -170,8 +171,7 @@ impl eframe::App for GemPlayer {
 
         check_for_next_track(self);
 
-        ctx.set_debug_on_hover(true);
-
+        // ctx.set_debug_on_hover(true);
         maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
