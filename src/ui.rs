@@ -1629,6 +1629,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         &mut gem_player.ui_state.library.sort_order,
                     );
                     if sort_changed {
+                        println!("cache marked as dirty.");
                         gem_player.ui_state.library.cache_dirty = true;
                     }
                 }
@@ -1677,11 +1678,11 @@ fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut 
         ui.set_min_width(100.0);
 
         for sb in SortBy::iter() {
-            sort_by_changed = ui.radio_value(sort_by, sb, format!("{:?}", sb)).changed();
+            sort_by_changed |= ui.radio_value(sort_by, sb, format!("{:?}", sb)).changed();
         }
         ui.separator();
         for so in SortOrder::iter() {
-            sort_order_changed = ui.radio_value(sort_order, so, format!("{:?}", so)).changed();
+            sort_order_changed |= ui.radio_value(sort_order, so, format!("{:?}", so)).changed();
         }
     });
 
