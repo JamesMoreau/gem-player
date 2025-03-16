@@ -320,6 +320,12 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let available_height = ui.available_height();
 
+    if gem_player.player.playing.is_some() {
+        // Necessary to keep UI up-to-date with the current state of the sink/player.
+        // We only need to call this if there is a currently playing track.
+        ui.ctx().request_repaint_after_secs(1.0);
+    }
+
     StripBuilder::new(ui)
         .size(Size::exact(button_size))
         .size(Size::exact(gap))
@@ -378,10 +384,6 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                     album = playing_track.album.as_deref().unwrap_or("Unknown Album");
                     position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
                     track_duration_as_secs = playing_track.duration.as_secs_f32();
-
-                    // Necessary to keep UI up-to-date with the current state of the sink/player.
-                    // We only need to call this if there is a currently playing track.
-                    // ui.ctx().request_repaint_after_secs(1.0);
                 }
 
                 builder.sizes(Size::exact(available_height / 2.0), 2).vertical(|mut strip| {
