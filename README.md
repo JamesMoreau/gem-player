@@ -1,7 +1,18 @@
-Example showing some UI controls like `Label`, `TextEdit`, `Slider`, `Button`.
+# Gem Player
 
-```sh
-cargo run -p hello_world
-```
+A lightweight music player built in Rust using [egui](https://github.com/emilk/egui) and [rodio](https://github.com/RustAudio/rodio).
 
-![](screenshot.png)
+![Screenshot](assets/screenshot.png)
+
+# Features
+
+- Audio formats such as mp3, m4a, wav, flac, ogg, etc.
+- Playlisting. Stored as m3u files.
+- Sorting and filtering.
+- Queue system. Shuffle and repeating.
+- Dark and light mode.
+- Cross-platform.
+
+# Installation
+
+Download the latest release from the [releases page]()
