@@ -30,6 +30,7 @@ jobs:
           create-dmg \
             --overwrite \
             --dmg-title="Gem Player" \
+            --no-sign \
             "target/release/bundle/osx/Gem Player.app" \
             target/release/bundle/osx/
 
