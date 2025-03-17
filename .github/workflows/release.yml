@@ -28,6 +28,16 @@ jobs:
       - name: Apply Ad-Hoc Code Signing
         run: |
           codesign --force --deep --sign - "target/release/bundle/osx/Gem Player.app"
+          codesign --verify --verbose "target/release/bundle/osx/Gem Player.app"
+
+      - name: Create a DMG
+        run: |
+          create-dmg \
+            --overwrite \
+            --dmg-title="Gem Player" \
+            "target/release/bundle/osx/Gem Player.app" \
+            target/release/bundle/osx/
+
 
       - name: Create a DMG
         run: |
