@@ -25,14 +25,18 @@ jobs:
       - name: Build macOS App
         run: cargo bundle --release
 
+      - name: Apply Ad-Hoc Code Signing
+        run: |
+          codesign --force --deep --sign - "target/release/bundle/osx/Gem Player.app"
+
       - name: Create a DMG
         run: |
           create-dmg \
             --overwrite \
             --dmg-title="Gem Player" \
-            --no-sign \
             "target/release/bundle/osx/Gem Player.app" \
             target/release/bundle/osx/
+
 
       - name: Upload DMG to GitHub Release
         uses: softprops/action-gh-release@v2
