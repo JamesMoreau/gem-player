@@ -2,11 +2,6 @@ name: Release Build
 
 on: [workflow_dispatch]
 
-# on:
-#   push:
-#     tags:
-#       - "v*.*.*"  # Runs when you push a tag like "v1.0.0"
-
 jobs:
   release:
     runs-on: macos-latest
@@ -20,36 +15,17 @@ jobs:
       - name: Install Dependencies
         run: |
           cargo install cargo-bundle
-          npm install -g create-dmg
 
       - name: Build macOS App
         run: cargo bundle --release
 
-      - name: Apply Ad-Hoc Code Signing
+      - name: Zip the App Bundle
         run: |
-          codesign --force --deep --sign - "target/release/bundle/osx/Gem Player.app"
-          codesign --verify --verbose "target/release/bundle/osx/Gem Player.app"
+          cd target/release/bundle/osx
+          zip -r "Gem Player.zip" "Gem Player.app"
 
-      - name: Create a DMG
-        run: |
-          create-dmg \
-            --overwrite \
-            --dmg-title="Gem Player" \
-            "target/release/bundle/osx/Gem Player.app" \
-            target/release/bundle/osx/
-
-
-      - name: Create a DMG
-        run: |
-          create-dmg \
-            --overwrite \
-            --dmg-title="Gem Player" \
-            "target/release/bundle/osx/Gem Player.app" \
-            target/release/bundle/osx/
-
-
-      - name: Upload DMG to GitHub Release
+      - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          files: target/release/bundle/osx/Gem Player.dmg
+          files: target/release/bundle/osx/Gem Player.zip
           token: ${{ secrets.GITHUB_TOKEN }}
