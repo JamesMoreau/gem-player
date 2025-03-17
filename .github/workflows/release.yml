@@ -1,9 +1,11 @@
 name: Release Build
 
-on:
-  push:
-    tags:
-      - "v*.*.*"  # Runs when you push a tag like "v1.0.0"
+on: [workflow_dispatch]
+
+# on:
+#   push:
+#     tags:
+#       - "v*.*.*"  # Runs when you push a tag like "v1.0.0"
 
 jobs:
   release:
