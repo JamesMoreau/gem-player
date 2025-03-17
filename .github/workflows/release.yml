@@ -29,3 +29,5 @@ jobs:
         with:
           files: target/release/bundle/osx/Gem Player.zip
           token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: latest
+          
