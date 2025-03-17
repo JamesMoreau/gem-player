@@ -24,10 +24,10 @@ jobs:
         run: cargo bundle --release
 
       - name: Zip App Bundle
-        run: zip -r YourMusicPlayer.zip target/release/bundle/osx/YourMusicPlayer.app
+        run: zip -r YourMusicPlayer.zip target/release/bundle/osx/Gem Player.app
 
       - name: Create GitHub Release & Upload Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: target/release/bundle/osx/YourMusicPlayer.zip
+          files: target/release/bundle/osx/Gem Player.zip
           token: ${{ secrets.GITHUB_TOKEN }}
