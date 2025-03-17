@@ -1,0 +1,33 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - "v*.*.*"  # Runs when you push a tag like "v1.0.0"
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Dependencies
+        run: |
+          cargo install cargo-bundle
+          npm install -g create-dmg
+
+      - name: Build macOS App
+        run: cargo bundle --release
+
+      - name: Zip App Bundle
+        run: zip -r YourMusicPlayer.zip target/release/bundle/osx/YourMusicPlayer.app
+
+      - name: Create GitHub Release & Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/release/bundle/osx/YourMusicPlayer.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
