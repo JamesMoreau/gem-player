@@ -46,14 +46,11 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if run with `RUST_LOG=debug`).
     info!("Starting up Gem Player.");
 
-    let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("Could not load icon.");
-
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default()
             .with_min_inner_size(Vec2::new(900.0, 500.0))
             .with_decorations(false)
-            .with_transparent(true)
-            .with_icon(icon_data),
+            .with_transparent(true),
         ..Default::default()
     };
     eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
