@@ -30,7 +30,7 @@ jobs:
           create-dmg \
             --overwrite \
             --dmg-title="Gem Player" \
-            target/release/bundle/osx/Gem Player.app \
+            "target/release/bundle/osx/Gem Player.app" \
             target/release/bundle/osx/
 
       - name: Upload DMG to GitHub Release
