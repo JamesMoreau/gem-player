@@ -29,12 +29,12 @@ jobs:
         run: |
           create-dmg \
             --overwrite \
-            --dmg-title="YourMusicPlayer" \
-            target/release/bundle/osx/YourMusicPlayer.app \
+            --dmg-title="Gem Player" \
+            target/release/bundle/osx/Gem Player.app \
             target/release/bundle/osx/
 
       - name: Upload DMG to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: target/release/bundle/osx/YourMusicPlayer.dmg
+          files: target/release/bundle/osx/Gem Player.dmg
           token: ${{ secrets.GITHUB_TOKEN }}
