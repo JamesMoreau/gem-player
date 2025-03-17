@@ -24,7 +24,7 @@ jobs:
         run: cargo bundle --release
 
       - name: Zip App Bundle
-        run: zip -r YourMusicPlayer.zip target/release/bundle/osx/Gem Player.app
+        run: zip -r Gem Player.zip target/release/bundle/osx/Gem Player.app
 
       - name: Create GitHub Release & Upload Asset
         uses: softprops/action-gh-release@v2
