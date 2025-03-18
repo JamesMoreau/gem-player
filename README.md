@@ -12,6 +12,7 @@ A lightweight music player built in Rust using [egui](https://github.com/emilk/e
 - Queue management. Shuffle and repeat.
 - Dark and light mode.
 - Cross-platform.
+- Key controls.
 
 # Installation
 
