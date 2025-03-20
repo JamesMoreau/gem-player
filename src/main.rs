@@ -24,7 +24,6 @@ mod ui;
 
 /*
 TODO:
-* when a song is added to playlist, we need to mark the playlist ui state as dirty. same with any other changes.
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */

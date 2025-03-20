@@ -38,17 +38,21 @@ pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
     theme_dirty: bool,
+
     library: LibraryViewState,
     playlists: PlaylistsViewState,
+
     toasts: Toasts,
 }
 
 #[fully_pub]
 pub struct LibraryViewState {
+    selected_track_key: Option<PathBuf>,
+    track_menu_is_open: bool, // The menu is open for selected_track
+    
     cached_library: Vec<Track>,
     cache_dirty: bool,
-    selected_track_key: Option<PathBuf>,
-    track_menu_is_open: bool, // The menu is open for selected_track .
+
     sort_by: SortBy,
     sort_order: SortOrder,
     search_string: String,
@@ -58,11 +62,13 @@ pub struct LibraryViewState {
 pub struct PlaylistsViewState {
     selected_playlist_key: Option<PathBuf>, // None: no playlist is selected. Some: the path of the selected playlist.
     selected_track_key: Option<PathBuf>,
+
     cached_playlist_tracks: Vec<Track>,
     cache_dirty: bool,
+
     playlist_rename: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_playlist_modal_is_open: bool, // The menu is open for selected_playlist_path.
-    track_menu_is_open: bool,        // The menu is open for selected_playlist_path.
+    track_menu_is_open: bool, // The menu is open for selected_playlist_path.
     search_string: String,
 }
 
@@ -733,6 +739,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     }
                                     ui.close_menu();
                                     gem_player.ui_state.library.track_menu_is_open = false;
+                                    gem_player.ui_state.playlists.cache_dirty = true;
                                 }
                             }
                         });
@@ -1427,6 +1434,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         gem_player.ui_state.toasts.error("Error removing track from playlist");
                     }
                     gem_player.ui_state.playlists.track_menu_is_open = false;
+                    gem_player.ui_state.playlists.cache_dirty = true;
                 }
 
                 ui.separator();
