@@ -92,10 +92,18 @@ pub fn read_all_from_a_directory(directory: &Path) -> io::Result<Vec<Playlist>> 
 
 pub fn save_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
     let mut file = File::create(&playlist.m3u_path)?;
+    let directory = playlist.m3u_path.parent().unwrap_or_else(|| Path::new(""));
 
     for track in &playlist.tracks {
-        let line = track.path.to_string_lossy();
-        writeln!(file, "{}", line)?;
+        let relative_path = match track.path.strip_prefix(directory) {
+            Ok(path) => path.to_string_lossy().into_owned(),
+            Err(_) => {
+                error!("Failed to strip prefix from path: {}", track.path.display());
+                track.path.to_string_lossy().into_owned() // If we can't strip the prefix, just use the full path.
+            }
+        };
+
+        writeln!(file, "{}", relative_path)?;
     }
 
     Ok(())
@@ -111,52 +119,45 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
     }
 
     let mut name = "Unnamed Playlist".to_owned();
-    let maybe_stem = path.file_stem();
-    if let Some(stem) = maybe_stem {
+    if let Some(stem) = path.file_stem() {
         name = stem.to_string_lossy().to_string();
     }
 
+    let directory = path.parent().unwrap_or_else(|| Path::new(""));
     let file_contents = fs::read_to_string(path)?;
     let mut tracks = Vec::new();
     for line in file_contents.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("#") {
+        let trimmed_line = line.trim();
+        if trimmed_line.is_empty() || trimmed_line.starts_with("#") {
             continue;
         }
 
-        let path = PathBuf::from(trimmed);
-        let maybe_track = load_from_file(&path);
+        let relative_path = Path::new(trimmed_line);
+        let full_path = if relative_path.is_absolute() {
+            relative_path.to_path_buf()
+        } else {
+            directory.join(relative_path)
+        };
+
+        let maybe_track = load_from_file(&full_path);
         match maybe_track {
             Ok(track) => tracks.push(track),
             Err(err) => {
-                error!("{}", err);
+                error!("Failed to load track '{}': {}", full_path.to_string_lossy(), err);
                 continue;
             }
         }
     }
 
-    let mut creation_date_time = SystemTime::now();
-    let metadata_result = fs::metadata(path);
-    match metadata_result {
-        Err(err) => error!("{}", err),
-        Ok(metadata) => {
-            let created_result = metadata.created();
-            match created_result {
-                Err(err) => error!("{}", &err),
-                Ok(created) => {
-                    creation_date_time = created;
-                }
-            }
-        }
-    };
-
-    let path = path.to_path_buf();
+    let creation_date_time = fs::metadata(path)
+        .and_then(|metadata| metadata.created())
+        .unwrap_or_else(|_| SystemTime::now());
 
     Ok(Playlist {
         name,
         creation_date_time,
         tracks,
-        m3u_path: path,
+        m3u_path: path.to_path_buf(),
     })
 }
 
