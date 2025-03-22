@@ -531,7 +531,10 @@ pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut Ma
         if let Some(paused_until) = marquee.paused_until {
             if Instant::now() < paused_until {
                 ui.ctx().request_repaint_after(pause_duration);
-                let job = format_colored_marquee_text(&text);
+        
+                let display_text: String = text.chars().take(max_characters).collect();
+                let job = format_colored_marquee_text(&display_text);
+        
                 ui.add(Label::new(job).selectable(false).truncate());
                 return;
             } else {
