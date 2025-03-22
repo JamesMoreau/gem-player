@@ -490,8 +490,8 @@ pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &st
 
     // Update the marquee state.
     let marquee_speed: f32 = 5.0; // Characters per second
-    let time_per_char = 1.0 / marquee_speed;
-    ui.ctx().request_repaint(); // Keep the ui updated to see every character.
+    let time_per_char = marquee_speed.recip();
+    ui.ctx().request_repaint_after_secs(time_per_char); // Keep the ui updated to see every character.
 
     let elapsed = marquee.last_update.elapsed().as_secs_f32();
     if elapsed >= time_per_char {
