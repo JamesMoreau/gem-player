@@ -21,7 +21,10 @@ use fully_pub::fully_pub;
 use function_name::named;
 use log::{error, info, warn};
 use rfd::FileDialog;
-use std::{path::PathBuf, time::{Duration, Instant}};
+use std::{
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -496,12 +499,12 @@ pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &st
         marquee.position += steps;
         marquee.last_update = Instant::now();
     }
-    
+
     // Reset position when it loops completely.
     if marquee.position >= character_count {
         marquee.position = 0;
     }
-    
+
     // Wrap-around the text.
     let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
 
