@@ -491,11 +491,11 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
 
     // Update the marquee state.
     let marquee_speed: f32 = 5.0; // Characters per second
-    let time_per_char = marquee_speed.recip();
+    let seconds_per_character = marquee_speed.recip();
 
     let elapsed = marquee.last_update.elapsed().as_secs_f32();
-    if elapsed >= time_per_char {
-        let steps = (elapsed / time_per_char).floor() as usize;
+    if elapsed >= seconds_per_character {
+        let steps = (elapsed / seconds_per_character).floor() as usize;
         marquee.position += steps;
         marquee.last_update = Instant::now();
     }
@@ -504,7 +504,7 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
         marquee.position = 0;
     }
 
-    ui.ctx().request_repaint_after_secs(time_per_char); // Keep the ui updated to see every character change.
+    ui.ctx().request_repaint_after_secs(seconds_per_character); // Keep the ui updated to see every character change.
 
     let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
     let job = color_track_marquee_text_job(ui, &display_text);
