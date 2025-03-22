@@ -54,6 +54,7 @@ pub struct MarqueeState {
     position: usize,
     last_update: Instant,
     track_identifier: Option<PathBuf>, // So we know if the current track has changed.
+    paused_until: Option<Instant>, // We pause at the beginning of the marquee.
 }
 
 #[fully_pub]
@@ -515,28 +516,41 @@ pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut Ma
             return;
         }
 
-        // Update the marquee state.
         let marquee_speed: f32 = 5.0;
         let seconds_per_character = marquee_speed.recip();
+        let pause_duration = Duration::from_secs(2);
 
-        let elapsed = marquee.last_update.elapsed().as_secs_f32();
-        if elapsed >= seconds_per_character {
-            let steps = (elapsed / seconds_per_character).floor() as usize;
-            marquee.position += steps;
-            marquee.last_update = Instant::now();
-        }
-
-        // If the playing track has changed, reset the marquee position.
+        // If the playing track has changed, reset the marquee position and pause scrolling.
         if marquee.track_identifier != track_identifier {
             marquee.position = 0;
             marquee.track_identifier = track_identifier.clone();
+            marquee.paused_until = Some(Instant::now() + pause_duration);
+            marquee.last_update = Instant::now(); // Reset last_update to prevent skipping
+        }
+
+        if let Some(paused_until) = marquee.paused_until {
+            if Instant::now() < paused_until {
+                ui.ctx().request_repaint_after(pause_duration);
+                let job = format_colored_marquee_text(&text);
+                ui.add(Label::new(job).selectable(false).truncate());
+                return;
+            } else {
+                marquee.paused_until = None;
+                marquee.last_update = Instant::now(); // Reset last_update when pause ends
+            }
+        }
+
+        let elapsed = marquee.last_update.elapsed().as_secs_f32();
+        if elapsed >= seconds_per_character {
+            marquee.position += 1;
+            marquee.last_update = Instant::now(); // Reset time tracking normally
         }
 
         if marquee.position >= character_count {
             marquee.position = 0;
         }
 
-        ui.ctx().request_repaint_after_secs(seconds_per_character); // Keep the ui updated to see every character change.
+        ui.ctx().request_repaint_after_secs(seconds_per_character);
 
         let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
         let job = format_colored_marquee_text(&display_text);

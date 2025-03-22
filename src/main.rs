@@ -147,6 +147,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 position: 0,
                 last_update: Instant::now(),
                 track_identifier: None,
+                paused_until: None,
             },
         },
 
