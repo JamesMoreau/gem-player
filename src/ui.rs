@@ -54,7 +54,7 @@ pub struct MarqueeState {
     position: usize,
     last_update: Instant,
     track_identifier: Option<PathBuf>, // So we know if the current track has changed.
-    paused_until: Option<Instant>, // We pause at the beginning of the marquee.
+    paused_until: Option<Instant>,     // We pause at the beginning of the marquee.
 }
 
 #[fully_pub]
@@ -512,7 +512,7 @@ pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut Ma
         // If the text fits, no scrolling is needed.
         if character_count <= max_characters {
             let job = format_colored_marquee_text(&text);
-            ui.add(Label::new(job).selectable(false).truncate());
+            ui.add(Label::new(job).selectable(false));
             return;
         }
 
@@ -520,37 +520,36 @@ pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut Ma
         let seconds_per_character = marquee_speed.recip();
         let pause_duration = Duration::from_secs(2);
 
-        // If the playing track has changed, reset the marquee position and pause scrolling.
         if marquee.track_identifier != track_identifier {
             marquee.position = 0;
             marquee.track_identifier = track_identifier.clone();
             marquee.paused_until = Some(Instant::now() + pause_duration);
-            marquee.last_update = Instant::now(); // Reset last_update to prevent skipping
+            marquee.last_update = Instant::now();
         }
 
         if let Some(paused_until) = marquee.paused_until {
             if Instant::now() < paused_until {
                 ui.ctx().request_repaint_after(pause_duration);
-        
                 let display_text: String = text.chars().take(max_characters).collect();
                 let job = format_colored_marquee_text(&display_text);
-        
                 ui.add(Label::new(job).selectable(false).truncate());
                 return;
             } else {
                 marquee.paused_until = None;
-                marquee.last_update = Instant::now(); // Reset last_update when pause ends
+                marquee.last_update = Instant::now();
             }
         }
 
         let elapsed = marquee.last_update.elapsed().as_secs_f32();
         if elapsed >= seconds_per_character {
             marquee.position += 1;
-            marquee.last_update = Instant::now(); // Reset time tracking normally
+            marquee.last_update = Instant::now();
         }
 
         if marquee.position >= character_count {
             marquee.position = 0;
+            marquee.paused_until = Some(Instant::now() + pause_duration);
+            marquee.last_update = Instant::now();
         }
 
         ui.ctx().request_repaint_after_secs(seconds_per_character);
