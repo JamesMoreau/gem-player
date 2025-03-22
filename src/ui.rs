@@ -462,14 +462,14 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
         });
 }
 
-pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut MarqueeState) {
+pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         let mut title = "None";
         let mut artist = "None";
         let mut album = "None";
         let mut track_identifier = None;
 
-        if let Some(playing_track) = track {
+        if let Some(playing_track) = maybe_track {
             title = playing_track.title.as_deref().unwrap_or("Unknown Title");
             artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
             album = playing_track.album.as_deref().unwrap_or("Unknown Album");
