@@ -10,7 +10,7 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -484,9 +484,25 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
     let divider_color = ui.visuals().weak_text_color();
     let style = ui.style();
 
+    let format_colored_marquee_text = |text: &str| {
+        let leading_space = 0.0;
+        let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+
+        let mut job = text::LayoutJob::default();
+        let parts: Vec<&str> = text.split(" / ").collect();
+        for (i, part) in parts.iter().enumerate() {
+            if i > 0 {
+                job.append(" / ", leading_space, get_text_format(divider_color));
+            }
+            job.append(part, leading_space, get_text_format(text_color));
+        }
+
+        job
+    };
+
     // If the text fits, no scrolling is needed.
     if character_count <= max_characters {
-        let job = format_colored_marquee_text(&text, style, text_color, divider_color);
+        let job = format_colored_marquee_text(&text);
         ui.add(Label::new(job).selectable(false).truncate());
         return;
     }
@@ -509,24 +525,8 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
     ui.ctx().request_repaint_after_secs(seconds_per_character); // Keep the ui updated to see every character change.
 
     let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
-    let job = format_colored_marquee_text(&display_text, style, text_color, divider_color);
+    let job = format_colored_marquee_text(&display_text);
     ui.add(Label::new(job).selectable(false).truncate());
-}
-
-fn format_colored_marquee_text(text: &str, style: &Style, text_color: Color32, divider_color: Color32) -> text::LayoutJob {
-    let leading_space = 0.0;
-    let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
-
-    let mut job = text::LayoutJob::default();
-    let parts: Vec<&str> = text.split(" / ").collect();
-    for (i, part) in parts.iter().enumerate() {
-        if i > 0 {
-            job.append(" / ", leading_space, get_text_format(divider_color));
-        }
-        job.append(part, leading_space, get_text_format(text_color));
-    }
-
-    job
 }
 
 fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
