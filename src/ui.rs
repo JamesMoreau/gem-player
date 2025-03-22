@@ -466,7 +466,8 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
 }
 
 pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &str, album: &str, marquee: &mut MarqueeState) {
-    let text = format!("{} / {} / {}", title, artist, album);
+    let padding = "    ";
+    let text = format!("{} / {} / {}{}", title, artist, album, padding);
     let text_galley = ui
         .painter()
         .layout_no_wrap(text.clone(), TextStyle::Body.resolve(ui.style()), ui.visuals().text_color());
@@ -495,14 +496,14 @@ pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &st
         marquee.position += steps;
         marquee.last_update = Instant::now();
     }
-
-    // Wrap-around the text.
-    let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
-
+    
     // Reset position when it loops completely.
     if marquee.position >= character_count {
         marquee.position = 0;
     }
+    
+    // Wrap-around the text.
+    let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
 
     ui.add(unselectable_label(display_text));
 }

@@ -24,6 +24,8 @@ mod ui;
 
 /*
 TODO:
+* get app notorized.
+* app icon isn't showing when running.
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */
@@ -188,7 +190,7 @@ impl eframe::App for GemPlayer {
 
         check_for_next_track(self);
 
-        // ctx.set_debug_on_hover(true);
+        ctx.set_debug_on_hover(true);
         maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
