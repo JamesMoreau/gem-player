@@ -10,9 +10,7 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id,
-    Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextStyle, TextureFilter,
-    TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -484,7 +482,8 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
 
     // If the text fits, no scrolling is needed.
     if character_count <= max_characters {
-        ui.add(unselectable_label(text));
+        let job = color_track_marquee_text_job(ui, &text);
+        ui.add(Label::new(job).selectable(false).truncate());
         return;
     }
 
@@ -506,7 +505,29 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
     ui.ctx().request_repaint_after_secs(time_per_char); // Keep the ui updated to see every character change.
 
     let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
-    ui.add(unselectable_label(display_text));
+    let job = color_track_marquee_text_job(ui, &display_text);
+    ui.add(Label::new(job).selectable(false).truncate());
+}
+
+fn color_track_marquee_text_job(ui: &mut Ui, text: &str) -> text::LayoutJob {
+    let leading_space = 0.0;
+    let style = ui.style();
+    let text_color = ui.visuals().text_color();
+    let divider_color = ui.visuals().weak_text_color();
+
+    let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+
+    let mut job = text::LayoutJob::default();
+    let mut is_divider = false;
+    for part in text.split(" / ") {
+        if is_divider {
+            job.append(" / ", leading_space, get_text_format(divider_color));
+        }
+        job.append(part, leading_space, get_text_format(text_color));
+        is_divider = true;
+    }
+
+    job
 }
 
 fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
