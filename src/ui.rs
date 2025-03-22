@@ -443,7 +443,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                             .horizontal(|mut hstrip| {
                                 hstrip.cell(|ui| {
                                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                        render_track_title_artist_and_album(ui, title, artist, album, &mut gem_player.ui_state.marquee);
+                                        render_track_marquee(ui, title, artist, album, &mut gem_player.ui_state.marquee);
                                     });
                                 });
 
@@ -468,7 +468,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
         });
 }
 
-pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &str, album: &str, marquee: &mut MarqueeState) {
+pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str, marquee: &mut MarqueeState) {
     let padding = "        ";
     let text = format!("{} / {} / {}{}", title, artist, album, padding);
     let text_galley = ui
@@ -491,7 +491,6 @@ pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &st
     // Update the marquee state.
     let marquee_speed: f32 = 5.0; // Characters per second
     let time_per_char = marquee_speed.recip();
-    ui.ctx().request_repaint_after_secs(time_per_char); // Keep the ui updated to see every character.
 
     let elapsed = marquee.last_update.elapsed().as_secs_f32();
     if elapsed >= time_per_char {
@@ -500,14 +499,13 @@ pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &st
         marquee.last_update = Instant::now();
     }
 
-    // Reset position when it loops completely.
     if marquee.position >= character_count {
         marquee.position = 0;
     }
 
-    // Wrap-around the text.
-    let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
+    ui.ctx().request_repaint_after_secs(time_per_char); // Keep the ui updated to see every character.
 
+    let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
     ui.add(unselectable_label(display_text));
 }
 
