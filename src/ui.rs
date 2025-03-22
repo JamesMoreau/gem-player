@@ -10,7 +10,9 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
+    Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -518,13 +520,12 @@ fn color_track_marquee_text_job(ui: &mut Ui, text: &str) -> text::LayoutJob {
     let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
 
     let mut job = text::LayoutJob::default();
-    let mut is_divider = false;
-    for part in text.split(" / ") {
-        if is_divider {
+    let parts: Vec<&str> = text.split(" / ").collect();
+    for (i, part) in parts.iter().enumerate() {
+        if i > 0 {
             job.append(" / ", leading_space, get_text_format(divider_color));
         }
         job.append(part, leading_space, get_text_format(text_color));
-        is_divider = true;
     }
 
     job
