@@ -389,18 +389,10 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
             });
             strip.empty();
             strip.strip(|builder| {
-                let mut title = "None";
-                let mut artist = "None";
-                let mut album = "None";
-                let mut track_identifier = None;
                 let mut position_as_secs = 0.0;
                 let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
                 if let Some(playing_track) = &gem_player.player.playing {
-                    title = playing_track.title.as_deref().unwrap_or("Unknown Title");
-                    artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
-                    album = playing_track.album.as_deref().unwrap_or("Unknown Album");
-                    track_identifier = Some(playing_track.path.clone());
                     position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
                     track_duration_as_secs = playing_track.duration.as_secs_f32();
                 }
@@ -423,7 +415,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
 
                             if response.drag_stopped() {
                                 let new_position = Duration::from_secs_f32(position_as_secs);
-                                info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
+                                info!("Seeking to {}", format_duration_to_mmss(new_position));
                                 if let Err(e) = gem_player.player.sink.try_seek(new_position) {
                                     error!("Error seeking to new position: {:?}", e);
                                 }
@@ -446,7 +438,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                             .horizontal(|mut hstrip| {
                                 hstrip.cell(|ui| {
                                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                        render_track_marquee(ui, title, artist, album, track_identifier, &mut gem_player.ui_state.marquee);
+                                        render_track_marquee(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui_state.marquee);
                                     });
                                 });
 
@@ -471,7 +463,19 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
         });
 }
 
-pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str, track_identifier: Option<PathBuf>, marquee: &mut MarqueeState) {
+pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut MarqueeState) {
+    let mut title = "None";
+    let mut artist = "None";
+    let mut album = "None";
+    let mut track_identifier = None;
+
+    if let Some(playing_track) = track {
+        title = playing_track.title.as_deref().unwrap_or("Unknown Title");
+        artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
+        album = playing_track.album.as_deref().unwrap_or("Unknown Album");
+        track_identifier = Some(playing_track.path.clone());
+    }
+
     let padding = "        ";
     let text = format!("{} / {} / {}{}", title, artist, album, padding);
     let text_galley = ui
