@@ -12,7 +12,7 @@ use rodio::{OutputStream, Sink};
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use track::{read_in_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{maybe_update_theme, render_gem_player, LibraryViewState, PlaylistsViewState, UIState};
@@ -140,7 +140,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                     spread: 1,
                     color: Color32::BLACK,
                 }),
-            marquee: ui::MarqueeState { position: 0, accumulator: 0.0 },
+            marquee: ui::MarqueeState { position: 0, last_update: Instant::now() },
         },
 
         library,

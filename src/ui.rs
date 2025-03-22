@@ -21,7 +21,7 @@ use fully_pub::fully_pub;
 use function_name::named;
 use log::{error, info, warn};
 use rfd::FileDialog;
-use std::{path::PathBuf, time::Duration};
+use std::{path::PathBuf, time::{Duration, Instant}};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -48,8 +48,8 @@ pub struct UIState {
 
 #[fully_pub]
 pub struct MarqueeState {
-    pub position: usize,
-    pub accumulator: f32,
+    position: usize,
+    last_update: Instant,
 }
 
 #[fully_pub]
@@ -486,18 +486,17 @@ pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &st
 
     // Update the marquee state.
     let marquee_speed: f32 = 5.0; // Characters per second
-    let dt = ui.input(|i| i.stable_dt);
     let time_per_char = 1.0 / marquee_speed;
-    ui.ctx().request_repaint_after_secs(marquee_speed.recip()); // Keep the ui updated to see every character.
+    ui.ctx().request_repaint(); // Keep the ui updated to see every character.
 
-    marquee.accumulator += dt;
-    if marquee.accumulator >= time_per_char {
-        let steps = (marquee.accumulator / time_per_char).floor() as usize;
+    let elapsed = marquee.last_update.elapsed().as_secs_f32();
+    if elapsed >= time_per_char {
+        let steps = (elapsed / time_per_char).floor() as usize;
         marquee.position += steps;
-        marquee.accumulator -= steps as f32 * time_per_char;
+        marquee.last_update = Instant::now();
     }
 
-    // Wraparound the text.
+    // Wrap-around the text.
     let mut display_text: String = text.chars().skip(marquee.position).take(max_characters).collect();
     if display_text.chars().count() < max_characters {
         let remaining_chars = max_characters - display_text.chars().count();
