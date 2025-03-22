@@ -53,7 +53,7 @@ pub struct UIState {
 pub struct MarqueeState {
     position: usize,
     last_update: Instant,
-    track_identifier: Option<PathBuf> // So we know if the current track has changed.
+    track_identifier: Option<PathBuf>, // So we know if the current track has changed.
 }
 
 #[fully_pub]
@@ -481,11 +481,10 @@ pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut Ma
     let text_galley = ui
         .painter()
         .layout_no_wrap(text.clone(), TextStyle::Body.resolve(ui.style()), ui.visuals().text_color());
-    let text_width = text_galley.size().x;
 
+    let text_width = text_galley.size().x;
     let character_count = text.chars().count();
     let average_character_width = text_width / character_count as f32;
-
     let available_width = ui.available_width();
     let max_characters = (available_width / average_character_width).floor() as usize;
 
