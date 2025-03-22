@@ -469,7 +469,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
 }
 
 pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &str, album: &str, marquee: &mut MarqueeState) {
-    let padding = "    ";
+    let padding = "        ";
     let text = format!("{} / {} / {}{}", title, artist, album, padding);
     let text_galley = ui
         .painter()
