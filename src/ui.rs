@@ -497,11 +497,7 @@ pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &st
     }
 
     // Wrap-around the text.
-    let mut display_text: String = text.chars().skip(marquee.position).take(max_characters).collect();
-    if display_text.chars().count() < max_characters {
-        let remaining_chars = max_characters - display_text.chars().count();
-        display_text.push_str(&text.chars().take(remaining_chars).collect::<String>());
-    }
+    let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
 
     // Reset position when it loops completely.
     if marquee.position >= character_count {
