@@ -490,7 +490,7 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
     }
 
     // Update the marquee state.
-    let marquee_speed: f32 = 5.0; // Characters per second
+    let marquee_speed: f32 = 5.0;
     let seconds_per_character = marquee_speed.recip();
 
     let elapsed = marquee.last_update.elapsed().as_secs_f32();
