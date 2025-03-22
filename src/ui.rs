@@ -478,48 +478,40 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
 
         let padding = "        ";
         let text = format!("{} / {} / {}{}", title, artist, album, padding);
-        let text_galley = ui
-            .painter()
-            .layout_no_wrap(text.clone(), TextStyle::Body.resolve(ui.style()), ui.visuals().text_color());
-
-        let text_width = text_galley.size().x;
-        let character_count = text.chars().count();
-        let average_character_width = text_width / character_count as f32;
-        let available_width = ui.available_width();
-        let max_characters = (available_width / average_character_width).floor() as usize;
-
         let text_color = ui.visuals().text_color();
         let divider_color = ui.visuals().weak_text_color();
         let style = ui.style();
 
-        let format_colored_marquee_text = |text: &str| {
-            let leading_space = 0.0;
-            let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
-
+        let format_colored_marquee_text = |s: &str| {
             let mut job = text::LayoutJob::default();
-            let parts: Vec<&str> = text.split(" / ").collect();
-            for (i, part) in parts.iter().enumerate() {
+            for (i, part) in s.split(" / ").enumerate() {
                 if i > 0 {
-                    job.append(" / ", leading_space, get_text_format(divider_color));
+                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(style), divider_color));
                 }
-
-                job.append(part, leading_space, get_text_format(text_color));
+                job.append(part, 0.0, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
             }
-
             job
         };
 
-        // If the text fits, no scrolling is needed.
-        if character_count <= max_characters {
-            let job = format_colored_marquee_text(&text);
-            ui.add(Label::new(job).selectable(false));
+        let text_galley = ui
+            .painter()
+            .layout_no_wrap(text.clone(), TextStyle::Body.resolve(style), text_color);
+        let text_width = text_galley.size().x;
+        let character_count = text.chars().count();
+        let avg_char_width = text_width / character_count as f32;
+        let max_chars = (ui.available_width() / avg_char_width).floor() as usize;
+
+        // If the text fits, render without scrolling.
+        if character_count <= max_chars {
+            ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false));
             return;
         }
 
-        let marquee_speed: f32 = 5.0;
-        let seconds_per_character = marquee_speed.recip();
+        let marquee_speed: f32 = 5.0; // chars per second
+        let seconds_per_char = marquee_speed.recip();
         let pause_duration = Duration::from_secs(2);
 
+        // If track changed, reset marquee and pause.
         if marquee.track_identifier != track_identifier {
             marquee.position = 0;
             marquee.track_identifier = track_identifier.clone();
@@ -527,12 +519,12 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             marquee.last_update = Instant::now();
         }
 
+        // Handle pause.
         if let Some(paused_until) = marquee.paused_until {
             if Instant::now() < paused_until {
                 ui.ctx().request_repaint_after(pause_duration);
-                let display_text: String = text.chars().take(max_characters).collect();
-                let job = format_colored_marquee_text(&display_text);
-                ui.add(Label::new(job).selectable(false).truncate());
+                let display_text: String = text.chars().take(max_chars).collect();
+                ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
                 return;
             } else {
                 marquee.paused_until = None;
@@ -540,23 +532,22 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             }
         }
 
-        let elapsed = marquee.last_update.elapsed().as_secs_f32();
-        if elapsed >= seconds_per_character {
+        // Update marquee position.
+        if marquee.last_update.elapsed().as_secs_f32() >= seconds_per_char {
             marquee.position += 1;
             marquee.last_update = Instant::now();
         }
 
+        // Wrap-around and trigger pause at beginning.
         if marquee.position >= character_count {
             marquee.position = 0;
             marquee.paused_until = Some(Instant::now() + pause_duration);
             marquee.last_update = Instant::now();
         }
 
-        ui.ctx().request_repaint_after_secs(seconds_per_character);
-
-        let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
-        let job = format_colored_marquee_text(&display_text);
-        ui.add(Label::new(job).selectable(false).truncate());
+        ui.ctx().request_repaint_after_secs(seconds_per_char);
+        let display_text: String = text.chars().cycle().skip(marquee.position).take(max_chars).collect();
+        ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
     });
 }
 
