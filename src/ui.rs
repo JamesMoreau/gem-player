@@ -527,6 +527,7 @@ pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut Ma
         marquee.last_update = Instant::now();
     }
 
+    // If the playing track has changed, reset the marquee position.
     if marquee.track_identifier != track_identifier {
         marquee.position = 0;
         marquee.track_identifier = track_identifier.clone();
