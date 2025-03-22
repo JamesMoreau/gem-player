@@ -437,9 +437,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                             .size(Size::exact(slider_width * (1.0 / 5.0)))
                             .horizontal(|mut hstrip| {
                                 hstrip.cell(|ui| {
-                                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                        render_track_marquee(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui_state.marquee);
-                                    });
+                                    render_track_marquee(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui_state.marquee);
                                 });
 
                                 hstrip.cell(|ui| {
@@ -464,84 +462,86 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
 }
 
 pub fn render_track_marquee(ui: &mut Ui, track: Option<&Track>, marquee: &mut MarqueeState) {
-    let mut title = "None";
-    let mut artist = "None";
-    let mut album = "None";
-    let mut track_identifier = None;
+    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+        let mut title = "None";
+        let mut artist = "None";
+        let mut album = "None";
+        let mut track_identifier = None;
 
-    if let Some(playing_track) = track {
-        title = playing_track.title.as_deref().unwrap_or("Unknown Title");
-        artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
-        album = playing_track.album.as_deref().unwrap_or("Unknown Album");
-        track_identifier = Some(playing_track.path.clone());
-    }
-
-    let padding = "        ";
-    let text = format!("{} / {} / {}{}", title, artist, album, padding);
-    let text_galley = ui
-        .painter()
-        .layout_no_wrap(text.clone(), TextStyle::Body.resolve(ui.style()), ui.visuals().text_color());
-
-    let text_width = text_galley.size().x;
-    let character_count = text.chars().count();
-    let average_character_width = text_width / character_count as f32;
-    let available_width = ui.available_width();
-    let max_characters = (available_width / average_character_width).floor() as usize;
-
-    let text_color = ui.visuals().text_color();
-    let divider_color = ui.visuals().weak_text_color();
-    let style = ui.style();
-
-    let format_colored_marquee_text = |text: &str| {
-        let leading_space = 0.0;
-        let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
-
-        let mut job = text::LayoutJob::default();
-        let parts: Vec<&str> = text.split(" / ").collect();
-        for (i, part) in parts.iter().enumerate() {
-            if i > 0 {
-                job.append(" / ", leading_space, get_text_format(divider_color));
-            }
-
-            job.append(part, leading_space, get_text_format(text_color));
+        if let Some(playing_track) = track {
+            title = playing_track.title.as_deref().unwrap_or("Unknown Title");
+            artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
+            album = playing_track.album.as_deref().unwrap_or("Unknown Album");
+            track_identifier = Some(playing_track.path.clone());
         }
 
-        job
-    };
+        let padding = "        ";
+        let text = format!("{} / {} / {}{}", title, artist, album, padding);
+        let text_galley = ui
+            .painter()
+            .layout_no_wrap(text.clone(), TextStyle::Body.resolve(ui.style()), ui.visuals().text_color());
 
-    // If the text fits, no scrolling is needed.
-    if character_count <= max_characters {
-        let job = format_colored_marquee_text(&text);
+        let text_width = text_galley.size().x;
+        let character_count = text.chars().count();
+        let average_character_width = text_width / character_count as f32;
+        let available_width = ui.available_width();
+        let max_characters = (available_width / average_character_width).floor() as usize;
+
+        let text_color = ui.visuals().text_color();
+        let divider_color = ui.visuals().weak_text_color();
+        let style = ui.style();
+
+        let format_colored_marquee_text = |text: &str| {
+            let leading_space = 0.0;
+            let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+
+            let mut job = text::LayoutJob::default();
+            let parts: Vec<&str> = text.split(" / ").collect();
+            for (i, part) in parts.iter().enumerate() {
+                if i > 0 {
+                    job.append(" / ", leading_space, get_text_format(divider_color));
+                }
+
+                job.append(part, leading_space, get_text_format(text_color));
+            }
+
+            job
+        };
+
+        // If the text fits, no scrolling is needed.
+        if character_count <= max_characters {
+            let job = format_colored_marquee_text(&text);
+            ui.add(Label::new(job).selectable(false).truncate());
+            return;
+        }
+
+        // Update the marquee state.
+        let marquee_speed: f32 = 5.0;
+        let seconds_per_character = marquee_speed.recip();
+
+        let elapsed = marquee.last_update.elapsed().as_secs_f32();
+        if elapsed >= seconds_per_character {
+            let steps = (elapsed / seconds_per_character).floor() as usize;
+            marquee.position += steps;
+            marquee.last_update = Instant::now();
+        }
+
+        // If the playing track has changed, reset the marquee position.
+        if marquee.track_identifier != track_identifier {
+            marquee.position = 0;
+            marquee.track_identifier = track_identifier.clone();
+        }
+
+        if marquee.position >= character_count {
+            marquee.position = 0;
+        }
+
+        ui.ctx().request_repaint_after_secs(seconds_per_character); // Keep the ui updated to see every character change.
+
+        let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
+        let job = format_colored_marquee_text(&display_text);
         ui.add(Label::new(job).selectable(false).truncate());
-        return;
-    }
-
-    // Update the marquee state.
-    let marquee_speed: f32 = 5.0;
-    let seconds_per_character = marquee_speed.recip();
-
-    let elapsed = marquee.last_update.elapsed().as_secs_f32();
-    if elapsed >= seconds_per_character {
-        let steps = (elapsed / seconds_per_character).floor() as usize;
-        marquee.position += steps;
-        marquee.last_update = Instant::now();
-    }
-
-    // If the playing track has changed, reset the marquee position.
-    if marquee.track_identifier != track_identifier {
-        marquee.position = 0;
-        marquee.track_identifier = track_identifier.clone();
-    }
-
-    if marquee.position >= character_count {
-        marquee.position = 0;
-    }
-
-    ui.ctx().request_repaint_after_secs(seconds_per_character); // Keep the ui updated to see every character change.
-
-    let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
-    let job = format_colored_marquee_text(&display_text);
-    ui.add(Label::new(job).selectable(false).truncate());
+    });
 }
 
 fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
