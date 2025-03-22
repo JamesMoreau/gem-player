@@ -496,6 +496,7 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
             if i > 0 {
                 job.append(" / ", leading_space, get_text_format(divider_color));
             }
+
             job.append(part, leading_space, get_text_format(text_color));
         }
 
