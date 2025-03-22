@@ -10,9 +10,7 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
-    Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -482,9 +480,13 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
     let available_width = ui.available_width();
     let max_characters = (available_width / average_character_width).floor() as usize;
 
+    let text_color = ui.visuals().text_color();
+    let divider_color = ui.visuals().weak_text_color();
+    let style = ui.style();
+
     // If the text fits, no scrolling is needed.
     if character_count <= max_characters {
-        let job = color_track_marquee_text_job(ui, &text);
+        let job = format_colored_marquee_text(&text, style, text_color, divider_color);
         ui.add(Label::new(job).selectable(false).truncate());
         return;
     }
@@ -507,16 +509,12 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
     ui.ctx().request_repaint_after_secs(seconds_per_character); // Keep the ui updated to see every character change.
 
     let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
-    let job = color_track_marquee_text_job(ui, &display_text);
+    let job = format_colored_marquee_text(&display_text, style, text_color, divider_color);
     ui.add(Label::new(job).selectable(false).truncate());
 }
 
-fn color_track_marquee_text_job(ui: &mut Ui, text: &str) -> text::LayoutJob {
+fn format_colored_marquee_text(text: &str, style: &Style, text_color: Color32, divider_color: Color32) -> text::LayoutJob {
     let leading_space = 0.0;
-    let style = ui.style();
-    let text_color = ui.visuals().text_color();
-    let divider_color = ui.visuals().weak_text_color();
-
     let get_text_format = |color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
 
     let mut job = text::LayoutJob::default();
