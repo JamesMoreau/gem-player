@@ -142,7 +142,11 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                     spread: 1,
                     color: Color32::BLACK,
                 }),
-            marquee: ui::MarqueeState { position: 0, last_update: Instant::now() },
+            marquee: ui::MarqueeState {
+                position: 0,
+                last_update: Instant::now(),
+                track_identifier: None,
+            },
         },
 
         library,
