@@ -503,7 +503,7 @@ pub fn render_track_marquee(ui: &mut Ui, title: &str, artist: &str, album: &str,
         marquee.position = 0;
     }
 
-    ui.ctx().request_repaint_after_secs(time_per_char); // Keep the ui updated to see every character.
+    ui.ctx().request_repaint_after_secs(time_per_char); // Keep the ui updated to see every character change.
 
     let display_text: String = text.chars().cycle().skip(marquee.position).take(max_characters).collect();
     ui.add(unselectable_label(display_text));
