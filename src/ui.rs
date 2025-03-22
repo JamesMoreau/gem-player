@@ -10,7 +10,9 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals
+    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
+    Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
