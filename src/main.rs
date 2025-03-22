@@ -140,6 +140,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                     spread: 1,
                     color: Color32::BLACK,
                 }),
+            marquee: ui::MarqueeState { position: 0, accumulator: 0.0 },
         },
 
         library,

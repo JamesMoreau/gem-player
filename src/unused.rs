@@ -1,3 +1,23 @@
+// ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+// 	let leading_space = 0.0;
+// 	let style = ui.style();
+// 	let text_color = ui.visuals().text_color();
+// 	let divider_color = ui.visuals().weak_text_color();
+
+// 	let get_text_format =
+// 		|style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
+
+// 	let mut job = text::LayoutJob::default();
+// 	job.append(title, leading_space, get_text_format(style, text_color));
+// 	job.append(" / ", leading_space, get_text_format(style, divider_color));
+// 	job.append(artist, leading_space, get_text_format(style, text_color));
+// 	job.append(" / ", leading_space, get_text_format(style, divider_color));
+// 	job.append(album, leading_space, get_text_format(style, text_color));
+
+// 	let track_label = Label::new(job).selectable(false).truncate();
+// 	ui.add(track_label);
+// });
+
 //.fill(ui.visuals().faint_bg_color)
 
 // ui.style_mut().text_styles.insert(TextStyle::Button, FontId::new(18.0, FontFamily::Proportional));

@@ -10,9 +10,9 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
-    Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, Style, TextEdit, TextFormat,
-    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, popup, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id,
+    Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextStyle, TextureFilter,
+    TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -38,6 +38,7 @@ pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
     theme_dirty: bool,
+    marquee: MarqueeState,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
@@ -46,10 +47,16 @@ pub struct UIState {
 }
 
 #[fully_pub]
+pub struct MarqueeState {
+    pub position: usize,
+    pub accumulator: f32,
+}
+
+#[fully_pub]
 pub struct LibraryViewState {
     selected_track_key: Option<PathBuf>,
     track_menu_is_open: bool, // The menu is open for selected_track
-    
+
     cached_library: Vec<Track>,
     cache_dirty: bool,
 
@@ -68,7 +75,7 @@ pub struct PlaylistsViewState {
 
     playlist_rename: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_playlist_modal_is_open: bool, // The menu is open for selected_playlist_path.
-    track_menu_is_open: bool, // The menu is open for selected_playlist_path.
+    track_menu_is_open: bool,        // The menu is open for selected_playlist_path.
     search_string: String,
 }
 
@@ -402,24 +409,24 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                                 .step_by(1.0); // Step by 1 second.
                             let track_is_playing = gem_player.player.playing.is_some();
                             let response = ui.add_enabled(track_is_playing, playback_progress_slider);
-    
+
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
                                 gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
                                 gem_player.player.sink.pause(); // Pause playback during scrubbing
                             }
-    
+
                             if response.drag_stopped() {
                                 let new_position = Duration::from_secs_f32(position_as_secs);
                                 info!("Seeking to {} of {}", format_duration_to_mmss(new_position), title);
                                 if let Err(e) = gem_player.player.sink.try_seek(new_position) {
                                     error!("Error seeking to new position: {:?}", e);
                                 }
-    
+
                                 // Resume playback if the player was not paused before scrubbing
                                 if gem_player.player.paused_before_scrubbing == Some(false) {
                                     gem_player.player.sink.play();
                                 }
-    
+
                                 gem_player.player.paused_before_scrubbing = None;
                             }
                         });
@@ -433,23 +440,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                             .horizontal(|mut hstrip| {
                                 hstrip.cell(|ui| {
                                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                        let leading_space = 0.0;
-                                        let style = ui.style();
-                                        let text_color = ui.visuals().text_color();
-                                        let divider_color = ui.visuals().weak_text_color();
-
-                                        let get_text_format =
-                                            |style: &Style, color: Color32| TextFormat::simple(TextStyle::Body.resolve(style), color);
-
-                                        let mut job = text::LayoutJob::default();
-                                        job.append(title, leading_space, get_text_format(style, text_color));
-                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                        job.append(artist, leading_space, get_text_format(style, text_color));
-                                        job.append(" / ", leading_space, get_text_format(style, divider_color));
-                                        job.append(album, leading_space, get_text_format(style, text_color));
-
-                                        let track_label = Label::new(job).selectable(false).truncate();
-                                        ui.add(track_label);
+                                        render_track_title_artist_and_album(ui, title, artist, album, &mut gem_player.ui_state.marquee);
                                     });
                                 });
 
@@ -472,6 +463,53 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
                 });
             });
         });
+}
+
+pub fn render_track_title_artist_and_album(ui: &mut Ui, title: &str, artist: &str, album: &str, marquee: &mut MarqueeState) {
+    let text = format!("{} / {} / {}", title, artist, album);
+    let text_galley = ui
+        .painter()
+        .layout_no_wrap(text.clone(), TextStyle::Body.resolve(ui.style()), ui.visuals().text_color());
+    let text_width = text_galley.size().x;
+
+    let character_count = text.chars().count();
+    let average_character_width = text_width / character_count as f32;
+
+    let available_width = ui.available_width();
+    let max_characters = (available_width / average_character_width).floor() as usize;
+
+    // If the text fits, no scrolling is needed.
+    if character_count <= max_characters {
+        ui.add(unselectable_label(text));
+        return;
+    }
+
+    // Update the marquee state.
+    let marquee_speed: f32 = 5.0; // Characters per second
+    let dt = ui.input(|i| i.stable_dt);
+    let time_per_char = 1.0 / marquee_speed;
+    ui.ctx().request_repaint_after_secs(marquee_speed.recip()); // Keep the ui updated to see every character.
+
+    marquee.accumulator += dt;
+    if marquee.accumulator >= time_per_char {
+        let steps = (marquee.accumulator / time_per_char).floor() as usize;
+        marquee.position += steps;
+        marquee.accumulator -= steps as f32 * time_per_char;
+    }
+
+    // Wraparound the text.
+    let mut display_text: String = text.chars().skip(marquee.position).take(max_characters).collect();
+    if display_text.chars().count() < max_characters {
+        let remaining_chars = max_characters - display_text.chars().count();
+        display_text.push_str(&text.chars().take(remaining_chars).collect::<String>());
+    }
+
+    // Reset position when it loops completely.
+    if marquee.position >= character_count {
+        marquee.position = 0;
+    }
+
+    ui.add(unselectable_label(display_text));
 }
 
 fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
