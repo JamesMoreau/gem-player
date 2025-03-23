@@ -55,9 +55,10 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 #[fully_pub]
 pub struct MarqueeState {
     position: usize,
+    track_identifier: Option<PathBuf>,
+    
     last_update: Instant,
     next_update: Instant,
-    track_identifier: Option<PathBuf>,
     paused_until: Option<Instant>,
 }
 
