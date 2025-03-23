@@ -24,7 +24,6 @@ mod ui;
 
 /*
 TODO:
-* maybe add a short pause to marquee at the beginning.
 * get app notorized.
 * app icon isn't showing when running.
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
@@ -145,7 +144,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 }),
             marquee: ui::MarqueeState {
                 position: 0,
-                last_update: Instant::now(),
+                accumulator: 0.0,
                 track_identifier: None,
                 paused_until: None,
             },

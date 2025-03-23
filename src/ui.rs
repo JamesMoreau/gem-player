@@ -49,6 +49,9 @@ pub struct UIState {
     toasts: Toasts,
 }
 
+const MARQUEE_SPEED: f32 = 5.0; // chars per second
+const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
+
 #[fully_pub]
 pub struct MarqueeState {
     position: usize,
@@ -507,22 +510,20 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             return;
         }
 
-        let marquee_speed: f32 = 5.0; // chars per second
-        let seconds_per_char = marquee_speed.recip();
-        let pause_duration = Duration::from_secs(2);
+        let seconds_per_char = MARQUEE_SPEED.recip();
 
         // If track changed, reset marquee and pause.
         if marquee.track_identifier != track_identifier {
             marquee.position = 0;
             marquee.track_identifier = track_identifier.clone();
-            marquee.paused_until = Some(Instant::now() + pause_duration);
+            marquee.paused_until = Some(Instant::now() + MARQUEE_PAUSE_DURATION);
             marquee.last_update = Instant::now();
         }
 
         // Handle pause.
         if let Some(paused_until) = marquee.paused_until {
             if Instant::now() < paused_until {
-                ui.ctx().request_repaint_after(pause_duration);
+                ui.ctx().request_repaint_after(MARQUEE_PAUSE_DURATION);
                 let display_text: String = text.chars().take(max_chars).collect();
                 ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
                 return;
@@ -541,7 +542,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
         // Wrap-around and trigger pause at beginning.
         if marquee.position >= character_count {
             marquee.position = 0;
-            marquee.paused_until = Some(Instant::now() + pause_duration);
+            marquee.paused_until = Some(Instant::now() + MARQUEE_PAUSE_DURATION);
             marquee.last_update = Instant::now();
         }
 
