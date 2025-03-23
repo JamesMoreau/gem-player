@@ -56,6 +56,8 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 pub struct MarqueeState {
     position: usize,
     track_identifier: Option<PathBuf>,
+
+    max_chars_cache: usize,
     
     last_update: Instant,
     next_update: Instant,
@@ -498,23 +500,23 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             job
         };
 
-        // Measure how many characters can fit.
-        let character_count = text.chars().count();
-        let available_width = ui.available_width();
-        let mut current_width = 0.0;
-        let mut max_chars = 0;
-        for ch in text.chars() {
-            let glyph = ui.fonts(|fonts| fonts.layout_no_wrap(ch.to_string(), TextStyle::Body.resolve(style), text_color));
-            let glyph_width = glyph.size().x;
-            if current_width + glyph_width > available_width {
-                break;
+        // Calculate how many characters can fit in the available space.
+        if marquee.track_identifier != track_identifier {
+            let mut current_width = 0.0;
+            marquee.max_chars_cache = 0;
+            for ch in text.chars() {
+                let glyph = ui.fonts(|fonts| fonts.layout_no_wrap(ch.to_string(), TextStyle::Body.resolve(style), text_color));
+                let glyph_width = glyph.size().x;
+                if current_width + glyph_width > ui.available_width() {
+                    break;
+                }
+                current_width += glyph_width;
+                marquee.max_chars_cache += 1;
             }
-
-            current_width += glyph_width;
-            max_chars += 1;
         }
 
-        if character_count <= max_chars {
+        let character_count = text.chars().count();
+        if character_count <= marquee.max_chars_cache {
             ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false));
             return;
         }
@@ -531,11 +533,10 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
         }
 
-        // Handle pause.
         if let Some(paused_until) = marquee.paused_until {
             if now < paused_until {
                 ui.ctx().request_repaint_after(paused_until - now);
-                let display_text: String = text.chars().take(max_chars).collect();
+                let display_text: String = text.chars().take(marquee.max_chars_cache).collect();
                 ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
                 return;
             } else {
@@ -561,7 +562,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
 
         ui.ctx().request_repaint_after(marquee.next_update - now);
 
-        let display_text: String = text.chars().cycle().skip(marquee.position).take(max_chars).collect();
+        let display_text: String = text.chars().cycle().skip(marquee.position).take(marquee.max_chars_cache).collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
     });
 }

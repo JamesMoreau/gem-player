@@ -24,7 +24,7 @@ mod ui;
 
 /*
 TODO:
-* avoid request_repaint_after() in track positon slider by checking delta.
+* maybe remove pubs on ui.rs fns
 * get app notorized.
 * app icon isn't showing when running.
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
@@ -145,9 +145,10 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 }),
             marquee: ui::MarqueeState {
                 position: 0,
+                track_identifier: None,
+                max_chars_cache: 0,
                 last_update: Instant::now(),
                 next_update: Instant::now(),
-                track_identifier: None,
                 paused_until: None,
             },
         },
