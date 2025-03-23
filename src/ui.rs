@@ -540,6 +540,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
         if marquee.last_update.elapsed().as_secs_f32() >= seconds_per_char {
             marquee.position += 1;
             marquee.last_update = Instant::now();
+            ui.ctx().request_repaint();
         }
 
         // Wrap-around and trigger pause at the beginning.
@@ -548,8 +549,6 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             marquee.paused_until = Some(Instant::now() + MARQUEE_PAUSE_DURATION);
             marquee.last_update = Instant::now();
         }
-
-        ui.ctx().request_repaint_after_secs(seconds_per_char);
 
         let display_text: String = text.chars().cycle().skip(marquee.position).take(max_chars).collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));

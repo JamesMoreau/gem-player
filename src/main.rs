@@ -24,6 +24,7 @@ mod ui;
 
 /*
 TODO:
+* avoid request_repaint_after() in track positon slider by checking delta.
 * get app notorized.
 * app icon isn't showing when running.
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
