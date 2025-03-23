@@ -474,7 +474,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
         let mut title = "None";
         let mut artist = "None";
         let mut album = "None";
-        let mut track_identifier = None;
+        let mut track_identifier = Some(PathBuf::from("none")); // Use a placeholder identifier.
 
         if let Some(playing_track) = maybe_track {
             title = playing_track.title.as_deref().unwrap_or("Unknown Title");
@@ -509,8 +509,8 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
         let seconds_per_char = MARQUEE_SPEED.recip();
         let now = Instant::now();
 
-        // If the track has changed, reset the marquee state.
-        if marquee.track_identifier != track_identifier {
+        // Reset marquee state if track changes.
+        if marquee.track_identifier != track_identifier || marquee.track_identifier.is_none() {
             marquee.scroll_offset = 0;
             marquee.track_identifier = track_identifier.clone();
             marquee.pause_until = Some(now + MARQUEE_PAUSE_DURATION);
