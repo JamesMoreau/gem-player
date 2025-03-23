@@ -497,7 +497,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             job
         };
 
-        // Calculate the number of characters that can be shown in the marquee.
+        // Measure how many characters can fit.
         let character_count = text.chars().count();
         let available_width = ui.available_width();
         let mut current_width = 0.0;
@@ -518,10 +518,10 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             return;
         }
 
-        let now = Instant::now();
         let seconds_per_char = MARQUEE_SPEED.recip();
+        let now = Instant::now();
 
-        // If the track has changed, reset the marquee.
+        // If the track has changed, reset the marquee state.
         if marquee.track_identifier != track_identifier {
             marquee.position = 0;
             marquee.track_identifier = track_identifier.clone();
