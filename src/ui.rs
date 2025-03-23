@@ -500,7 +500,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             job
         };
 
-        // Calculate how many characters can fit in the available space.
+        // Calculate how many characters can fit in the available space. If the track has changed we need to recalculate.
         if marquee.track_identifier != track_identifier {
             let mut current_width = 0.0;
             marquee.max_chars_cache = 0;
