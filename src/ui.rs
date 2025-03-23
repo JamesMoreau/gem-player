@@ -497,6 +497,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             job
         };
 
+        // Calculate the number of characters that can be shown in the marquee.
         let character_count = text.chars().count();
         let available_width = ui.available_width();
         let mut current_width = 0.0;
@@ -507,6 +508,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             if current_width + glyph_width > available_width {
                 break;
             }
+
             current_width += glyph_width;
             max_chars += 1;
         }
