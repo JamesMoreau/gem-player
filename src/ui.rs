@@ -56,8 +56,9 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 pub struct MarqueeState {
     position: usize,
     last_update: Instant,
-    track_identifier: Option<PathBuf>, // So we know if the current track has changed.
-    paused_until: Option<Instant>,     // We pause at the beginning of the marquee.
+    next_update: Instant, // New field to track the next expected update time
+    track_identifier: Option<PathBuf>,
+    paused_until: Option<Instant>,
 }
 
 #[fully_pub]
@@ -515,40 +516,47 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             return;
         }
 
+        let now = Instant::now();
         let seconds_per_char = MARQUEE_SPEED.recip();
 
-        // If the playing track has changed, reset marquee state.
+        // If the track has changed, reset the marquee.
         if marquee.track_identifier != track_identifier {
             marquee.position = 0;
             marquee.track_identifier = track_identifier.clone();
-            marquee.paused_until = Some(Instant::now() + MARQUEE_PAUSE_DURATION);
-            marquee.last_update = Instant::now();
+            marquee.paused_until = Some(now + MARQUEE_PAUSE_DURATION);
+            marquee.last_update = now;
+            marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
         }
 
+        // Handle pause.
         if let Some(paused_until) = marquee.paused_until {
-            if Instant::now() < paused_until {
-                ui.ctx().request_repaint_after(MARQUEE_PAUSE_DURATION);
+            if now < paused_until {
+                ui.ctx().request_repaint_after(paused_until - now);
                 let display_text: String = text.chars().take(max_chars).collect();
                 ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
                 return;
             } else {
                 marquee.paused_until = None;
-                marquee.last_update = Instant::now();
+                marquee.last_update = now;
+                marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
             }
         }
 
-        if marquee.last_update.elapsed().as_secs_f32() >= seconds_per_char {
+        // Advance marquee only if the next expected update time has passed.
+        if now >= marquee.next_update {
             marquee.position += 1;
-            marquee.last_update = Instant::now();
-            ui.ctx().request_repaint();
+            marquee.last_update = now;
+            marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
+
+            // Wrap-around and trigger pause at the beginning.
+            if marquee.position >= character_count {
+                marquee.position = 0;
+                marquee.paused_until = Some(now + MARQUEE_PAUSE_DURATION);
+                marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
+            }
         }
 
-        // Wrap-around and trigger pause at the beginning.
-        if marquee.position >= character_count {
-            marquee.position = 0;
-            marquee.paused_until = Some(Instant::now() + MARQUEE_PAUSE_DURATION);
-            marquee.last_update = Instant::now();
-        }
+        ui.ctx().request_repaint_after(marquee.next_update - now);
 
         let display_text: String = text.chars().cycle().skip(marquee.position).take(max_chars).collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
