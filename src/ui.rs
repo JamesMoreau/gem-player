@@ -502,7 +502,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
 
         let character_count = text.chars().count();
         if character_count <= marquee.visible_chars {
-            ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false));
+            ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false).truncate());
             return;
         }
 
