@@ -57,7 +57,7 @@ pub struct MarqueeState {
     scroll_offset: usize,
     track_identifier: Option<PathBuf>,
 
-    max_visible_characters: usize,
+    visible_chars: usize,
 
     last_update: Instant,
     next_update: Instant,
@@ -501,7 +501,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
         };
 
         let character_count = text.chars().count();
-        if character_count <= marquee.max_visible_characters {
+        if character_count <= marquee.visible_chars {
             ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false));
             return;
         }
@@ -519,7 +519,7 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
 
             // Calculate how many characters can fit in the available space.
             let mut current_width = 0.0;
-            marquee.max_visible_characters = 0;
+            marquee.visible_chars = 0;
             for ch in text.chars() {
                 let glyph = ui.fonts(|fonts| fonts.layout_no_wrap(ch.to_string(), TextStyle::Body.resolve(style), text_color));
                 let glyph_width = glyph.size().x;
@@ -527,14 +527,14 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
                     break;
                 }
                 current_width += glyph_width;
-                marquee.max_visible_characters += 1;
+                marquee.visible_chars += 1;
             }
         }
 
         if let Some(paused_until) = marquee.pause_until {
             if now < paused_until {
                 ui.ctx().request_repaint_after(paused_until - now);
-                let display_text: String = text.chars().take(marquee.max_visible_characters).collect();
+                let display_text: String = text.chars().take(marquee.visible_chars).collect();
                 ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
                 return;
             } else {
@@ -562,9 +562,9 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
 
         let display_text: String = text
             .chars()
-            .cycle()
+            .chain(text.chars())
             .skip(marquee.scroll_offset)
-            .take(marquee.max_visible_characters)
+            .take(marquee.visible_chars)
             .collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
     });
