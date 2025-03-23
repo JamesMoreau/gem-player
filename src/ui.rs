@@ -56,7 +56,7 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 pub struct MarqueeState {
     position: usize,
     last_update: Instant,
-    next_update: Instant, // New field to track the next expected update time
+    next_update: Instant,
     track_identifier: Option<PathBuf>,
     paused_until: Option<Instant>,
 }
