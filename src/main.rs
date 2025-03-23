@@ -24,7 +24,6 @@ mod ui;
 
 /*
 TODO:
-* maybe remove pubs on ui.rs fns
 * get app notorized.
 * app icon isn't showing when running.
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
