@@ -146,7 +146,7 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
     });
 }
 
-pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
+fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
     let panel_frame = Frame {
         fill: ctx.style().visuals.window_fill(),
         corner_radius: 10.0.into(),
@@ -177,7 +177,7 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
     });
 }
 
-pub fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
+fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
     let painter = ui.painter();
 
     let title_bar_response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
@@ -262,12 +262,12 @@ pub fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title
     );
 }
 
-pub fn switch_view(ui_state: &mut UIState, view: View) {
+fn switch_view(ui_state: &mut UIState, view: View) {
     info!("Switching to view: {:?}", view);
     ui_state.current_view = view;
 }
 
-pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
     let button_width = 20.0;
     let gap = 10.0;
@@ -295,7 +295,7 @@ pub fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         let track_is_playing = gem_player.player.playing.is_some();
 
@@ -339,7 +339,7 @@ pub fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let available_height = ui.available_height();
 
@@ -467,7 +467,7 @@ pub fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f
         });
 }
 
-pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
+fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         let mut title = "None";
         let mut artist = "None";
@@ -604,7 +604,7 @@ fn render_volume_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -777,7 +777,7 @@ pub fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 #[named]
-pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if !gem_player.ui_state.library.track_menu_is_open {
         return;
     }
@@ -865,7 +865,7 @@ pub fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
+fn render_queue_view(ui: &mut Ui, player: &mut Player) {
     if player.queue.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -984,7 +984,7 @@ pub fn render_queue_view(ui: &mut Ui, player: &mut Player) {
     }
 }
 
-pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library_directory.is_none() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1088,7 +1088,7 @@ pub fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if !gem_player.ui_state.playlists.delete_playlist_modal_is_open {
         return;
     }
@@ -1146,7 +1146,7 @@ pub fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
     render_playlist_track_menu(ui, gem_player);
 
     let Some(playlist_key) = gem_player.ui_state.playlists.selected_playlist_key.clone() else {
@@ -1281,7 +1281,7 @@ pub fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let Some(playlist_key) = gem_player.ui_state.playlists.selected_playlist_key.clone() else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1470,7 +1470,7 @@ pub fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 #[named]
-pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if !gem_player.ui_state.playlists.track_menu_is_open {
         return;
     }
@@ -1556,7 +1556,7 @@ pub fn render_playlist_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new()
         .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
         .show(ui, |ui| {
@@ -1747,7 +1747,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
+fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     let duration = calculate_total_duration(tracks);
     let duration_string = format_duration_to_hhmmss(duration);
     format!("{} tracks / {}", tracks.len(), duration_string)
@@ -1779,7 +1779,7 @@ fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut 
     sort_by_changed || sort_order_changed
 }
 
-pub fn render_search(ui: &mut Ui, search_text: &mut String) -> bool {
+fn render_search(ui: &mut Ui, search_text: &mut String) -> bool {
     let mut changed = false;
     let clear_button_is_visible = !search_text.is_empty();
     let response = ui
