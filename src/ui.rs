@@ -63,7 +63,7 @@ pub struct MarqueeState {
 }
 
 #[fully_pub]
-pub struct LibraryViewState {
+struct LibraryViewState {
     selected_track_key: Option<PathBuf>,
     track_menu_is_open: bool, // The menu is open for selected_track
 
@@ -76,7 +76,7 @@ pub struct LibraryViewState {
 }
 
 #[fully_pub]
-pub struct PlaylistsViewState {
+struct PlaylistsViewState {
     selected_playlist_key: Option<PathBuf>, // None: no playlist is selected. Some: the path of the selected playlist.
     selected_track_key: Option<PathBuf>,
 

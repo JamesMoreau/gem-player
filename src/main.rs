@@ -15,7 +15,7 @@ use std::{
     time::{Duration, Instant},
 };
 use track::{read_in_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
-use ui::{maybe_update_theme, render_gem_player, LibraryViewState, PlaylistsViewState, UIState};
+use ui::{maybe_update_theme, render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
 
 mod player;
 mod playlist;
@@ -113,7 +113,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     GemPlayer {
         ui_state: UIState {
-            current_view: ui::View::Library,
+            current_view: View::Library,
             theme_preference,
             theme_dirty: true,
             library: LibraryViewState {
@@ -143,7 +143,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                     spread: 1,
                     color: Color32::BLACK,
                 }),
-            marquee: ui::MarqueeState {
+            marquee: MarqueeState {
                 offset: 0,
                 track_identifier: None,
                 last_update: Instant::now(),
