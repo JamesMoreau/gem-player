@@ -25,7 +25,7 @@ mod ui;
 /*
 TODO:
 * get app notorized.
-* app icon isn't showing when running.
+* get a font that covers all characters in every language.
 * UI + aestethics. Music Visualizer. Scrolling track info could be cool (maybe only applies when the string is too big?).
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */
