@@ -144,12 +144,12 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                     color: Color32::BLACK,
                 }),
             marquee: ui::MarqueeState {
-                position: 0,
+                scroll_offset: 0,
                 track_identifier: None,
-                max_chars_cache: 0,
+                max_visible_characters: 0,
                 last_update: Instant::now(),
                 next_update: Instant::now(),
-                paused_until: None,
+                pause_until: None,
             },
         },
 

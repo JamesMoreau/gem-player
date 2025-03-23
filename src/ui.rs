@@ -54,14 +54,14 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 
 #[fully_pub]
 pub struct MarqueeState {
-    position: usize,
+    scroll_offset: usize,
     track_identifier: Option<PathBuf>,
 
-    max_chars_cache: usize,
-    
+    max_visible_characters: usize,
+
     last_update: Instant,
     next_update: Instant,
-    paused_until: Option<Instant>,
+    pause_until: Option<Instant>,
 }
 
 #[fully_pub]
@@ -500,23 +500,8 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
             job
         };
 
-        // Calculate how many characters can fit in the available space. If the track has changed we need to recalculate.
-        if marquee.track_identifier != track_identifier {
-            let mut current_width = 0.0;
-            marquee.max_chars_cache = 0;
-            for ch in text.chars() {
-                let glyph = ui.fonts(|fonts| fonts.layout_no_wrap(ch.to_string(), TextStyle::Body.resolve(style), text_color));
-                let glyph_width = glyph.size().x;
-                if current_width + glyph_width > ui.available_width() {
-                    break;
-                }
-                current_width += glyph_width;
-                marquee.max_chars_cache += 1;
-            }
-        }
-
         let character_count = text.chars().count();
-        if character_count <= marquee.max_chars_cache {
+        if character_count <= marquee.max_visible_characters {
             ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false));
             return;
         }
@@ -526,21 +511,34 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
 
         // If the track has changed, reset the marquee state.
         if marquee.track_identifier != track_identifier {
-            marquee.position = 0;
+            marquee.scroll_offset = 0;
             marquee.track_identifier = track_identifier.clone();
-            marquee.paused_until = Some(now + MARQUEE_PAUSE_DURATION);
+            marquee.pause_until = Some(now + MARQUEE_PAUSE_DURATION);
             marquee.last_update = now;
             marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
+
+            // Calculate how many characters can fit in the available space.
+            let mut current_width = 0.0;
+            marquee.max_visible_characters = 0;
+            for ch in text.chars() {
+                let glyph = ui.fonts(|fonts| fonts.layout_no_wrap(ch.to_string(), TextStyle::Body.resolve(style), text_color));
+                let glyph_width = glyph.size().x;
+                if current_width + glyph_width > ui.available_width() {
+                    break;
+                }
+                current_width += glyph_width;
+                marquee.max_visible_characters += 1;
+            }
         }
 
-        if let Some(paused_until) = marquee.paused_until {
+        if let Some(paused_until) = marquee.pause_until {
             if now < paused_until {
                 ui.ctx().request_repaint_after(paused_until - now);
-                let display_text: String = text.chars().take(marquee.max_chars_cache).collect();
+                let display_text: String = text.chars().take(marquee.max_visible_characters).collect();
                 ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
                 return;
             } else {
-                marquee.paused_until = None;
+                marquee.pause_until = None;
                 marquee.last_update = now;
                 marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
             }
@@ -548,21 +546,26 @@ pub fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &
 
         // Advance marquee only if the next expected update time has passed.
         if now >= marquee.next_update {
-            marquee.position += 1;
+            marquee.scroll_offset += 1;
             marquee.last_update = now;
             marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
 
             // Wrap-around and trigger pause at the beginning.
-            if marquee.position >= character_count {
-                marquee.position = 0;
-                marquee.paused_until = Some(now + MARQUEE_PAUSE_DURATION);
+            if marquee.scroll_offset >= character_count {
+                marquee.scroll_offset = 0;
+                marquee.pause_until = Some(now + MARQUEE_PAUSE_DURATION);
                 marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
             }
         }
 
         ui.ctx().request_repaint_after(marquee.next_update - now);
 
-        let display_text: String = text.chars().cycle().skip(marquee.position).take(marquee.max_chars_cache).collect();
+        let display_text: String = text
+            .chars()
+            .cycle()
+            .skip(marquee.scroll_offset)
+            .take(marquee.max_visible_characters)
+            .collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false));
     });
 }
