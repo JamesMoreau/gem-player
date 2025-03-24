@@ -5,6 +5,9 @@ set -e  # Exit on any error
 # Load environment variables from .env file
 source .env
 
+# Go to root directory
+cd "$(dirname "$0")/.."
+
 APP_NAME="Gem Player"
 BUNDLE_PATH="target/release/bundle/osx/$APP_NAME.app"
 DMG_PATH="target/release/bundle/osx/$APP_NAME.dmg"
