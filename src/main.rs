@@ -84,7 +84,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         .insert(0, font_key.to_owned());
 
     // Load system fonts as fallbacks
-    let fonts = load_system_fonts(fonts);
+    load_system_fonts(&mut fonts);
 
     cc.egui_ctx.set_fonts(fonts);
 
@@ -428,11 +428,12 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
             },
         }
     }
+    
     None
 }
 
-/// Loads system fonts as fallbacks for various language regions and adds them to the provided `FontDefinitions`.
-pub fn load_system_fonts(mut fonts: FontDefinitions) -> FontDefinitions {
+// Loads system fonts as fallbacks for various language regions and adds them to the provided `FontDefinitions`.
+pub fn load_system_fonts(fonts: &mut FontDefinitions) {
     let mut fontdb: HashMap<&str, Vec<&str>> = HashMap::new(); // Map of region identifiers to a list of candidate system font names.
 
     fontdb.insert(
@@ -467,6 +468,4 @@ pub fn load_system_fonts(mut fonts: FontDefinitions) -> FontDefinitions {
             }
         }
     }
-
-    fonts
 }
