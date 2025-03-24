@@ -11,7 +11,11 @@ use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_
 use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
-    collections::HashMap, fs, path::{Path, PathBuf}, sync::Arc, time::{Duration, Instant}
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::{Duration, Instant},
 };
 use track::{read_in_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{maybe_update_theme, render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
@@ -403,22 +407,20 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
 
     for &name in family_names {
         match system_source.select_best_match(&[font_kit::family_name::FamilyName::Title(name.to_string())], &Properties::new()) {
-            Ok(handle) => {
-                match handle {
-                    Handle::Memory { ref bytes, .. } => {
-                        debug!("Loaded {name} from memory.");
-                        return Some(bytes.to_vec());
-                    }
-                    Handle::Path { ref path, .. } => {
-                        info!("Loaded {name} from path: {:?}", path);
-                        if let Ok(data) = fs::read(path) {
-                            return Some(data);
-                        } else {
-                            error!("Failed to read font data from path: {:?}", path);
-                        }
+            Ok(handle) => match handle {
+                Handle::Memory { ref bytes, .. } => {
+                    debug!("Loaded {name} from memory.");
+                    return Some(bytes.to_vec());
+                }
+                Handle::Path { ref path, .. } => {
+                    info!("Loaded {name} from path: {:?}", path);
+                    if let Ok(data) = fs::read(path) {
+                        return Some(data);
+                    } else {
+                        error!("Failed to read font data from path: {:?}", path);
                     }
                 }
-            }
+            },
             Err(e) => error!("Could not load {}: {:?}", name, e),
         }
     }
@@ -427,8 +429,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
 
 /// Loads system fonts as fallbacks for various language regions and adds them to the provided `FontDefinitions`.
 pub fn load_system_fonts(mut fonts: FontDefinitions) -> FontDefinitions {
-    // Map of region identifiers to a list of candidate system font names.
-    let mut fontdb: HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut fontdb: HashMap<&str, Vec<&str>> = HashMap::new(); // Map of region identifiers to a list of candidate system font names.
 
     fontdb.insert(
         "simplified_chinese",
@@ -443,19 +444,8 @@ pub fn load_system_fonts(mut fonts: FontDefinitions) -> FontDefinitions {
             "Source Han Sans CN",
         ],
     );
-
     fontdb.insert("korean", vec!["Source Han Sans KR"]);
-
-    fontdb.insert(
-        "arabic_fonts",
-        vec![
-            "Noto Sans Arabic",
-            "Amiri",
-            "Lateef",
-            "Al Tarikh",
-            "Segoe UI",
-        ],
-    );
+    fontdb.insert("arabic_fonts", vec!["Noto Sans Arabic", "Amiri", "Lateef", "Al Tarikh", "Segoe UI"]);
     // Add more regions and their candidate font names as needed
 
     // Iterate over each region and try to load a matching system font.
