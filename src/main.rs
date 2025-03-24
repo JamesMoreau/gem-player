@@ -2,7 +2,7 @@ use eframe::egui::{
     Color32, Context, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals,
 };
 use egui_notify::Toasts;
-use font_kit::{handle::Handle, properties::Properties, source::SystemSource};
+use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
@@ -406,7 +406,12 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
     let system_source = SystemSource::new();
 
     for &name in family_names {
-        match system_source.select_best_match(&[font_kit::family_name::FamilyName::Title(name.to_string())], &Properties::new()) {
+        let result = system_source.select_best_match(&[FamilyName::Title(name.to_string())], &Properties::new());
+        match result {
+            Err(e) => {
+                error!("Could not load {}: {:?}", name, e);
+                continue;
+            },
             Ok(handle) => match handle {
                 Handle::Memory { ref bytes, .. } => {
                     debug!("Loaded {name} from memory.");
@@ -421,7 +426,6 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
                     }
                 }
             },
-            Err(e) => error!("Could not load {}: {:?}", name, e),
         }
     }
     None
@@ -446,7 +450,7 @@ pub fn load_system_fonts(mut fonts: FontDefinitions) -> FontDefinitions {
     );
     fontdb.insert("korean", vec!["Source Han Sans KR"]);
     fontdb.insert("arabic_fonts", vec!["Noto Sans Arabic", "Amiri", "Lateef", "Al Tarikh", "Segoe UI"]);
-    // Add more regions and their candidate font names as needed
+    // Add more regions and their candidate font names as needed...
 
     // Iterate over each region and try to load a matching system font.
     for (region, font_names) in fontdb.iter() {
