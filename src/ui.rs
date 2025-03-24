@@ -562,7 +562,7 @@ fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
     let artwork_size = Vec2::splat(artwork_width);
 
     // Use a default image; if artwork exists for the playing track, load it.
-    let mut artwork = Image::new(include_image!("../assets/music_note_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24.svg"));
+    let mut artwork = Image::new(include_image!("../assets/music_note.svg"));
     if let Some(playing_track) = &gem_player.player.playing {
         if let Some(artwork_bytes) = &playing_track.artwork {
             let artwork_uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
