@@ -24,7 +24,6 @@ mod ui;
 
 /*
 TODO:
-* get app notorized.
 * get a font that covers all characters in every language.
 * UI + aestethics. Music Visualizer.
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
