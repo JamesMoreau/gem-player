@@ -2,17 +2,16 @@ use eframe::egui::{
     Color32, Context, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals,
 };
 use egui_notify::Toasts;
+use font_kit::{handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
-use log::{error, info};
+use log::{debug, error, info};
 use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
 use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-    time::{Duration, Instant},
+    collections::HashMap, fs, path::{Path, PathBuf}, sync::Arc, time::{Duration, Instant}
 };
 use track::{read_in_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{maybe_update_theme, render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
@@ -74,12 +73,14 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             "../assets/Inconsolata-VariableFont_wdth,wght.ttf"
         ))),
     );
-
     fonts
         .families
         .entry(FontFamily::Proportional)
         .or_default()
         .insert(0, font_key.to_owned());
+
+    // Load system fonts as fallbacks
+    let fonts = load_system_fonts(fonts);
 
     cc.egui_ctx.set_fonts(fonts);
 
@@ -395,4 +396,83 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
     let seconds = total_seconds % seconds_per_minute;
 
     format!("{}:{:02}:{:02}", hours, minutes, seconds)
+}
+
+fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
+    let system_source = SystemSource::new();
+
+    for &name in family_names {
+        match system_source.select_best_match(&[font_kit::family_name::FamilyName::Title(name.to_string())], &Properties::new()) {
+            Ok(handle) => {
+                match handle {
+                    Handle::Memory { ref bytes, .. } => {
+                        debug!("Loaded {name} from memory.");
+                        return Some(bytes.to_vec());
+                    }
+                    Handle::Path { ref path, .. } => {
+                        info!("Loaded {name} from path: {:?}", path);
+                        if let Ok(data) = fs::read(path) {
+                            return Some(data);
+                        } else {
+                            error!("Failed to read font data from path: {:?}", path);
+                        }
+                    }
+                }
+            }
+            Err(e) => error!("Could not load {}: {:?}", name, e),
+        }
+    }
+    None
+}
+
+/// Loads system fonts as fallbacks for various language regions and adds them to the provided `FontDefinitions`.
+pub fn load_system_fonts(mut fonts: FontDefinitions) -> FontDefinitions {
+    // Map of region identifiers to a list of candidate system font names.
+    let mut fontdb: HashMap<&str, Vec<&str>> = HashMap::new();
+
+    fontdb.insert(
+        "simplified_chinese",
+        vec![
+            "Heiti SC",
+            "Songti SC",
+            "Noto Sans CJK SC", // Good coverage for Simplified Chinese
+            "Noto Sans SC",
+            "WenQuanYi Zen Hei", // Includes both Simplified and Traditional Chinese.
+            "SimSun",
+            "PingFang SC",
+            "Source Han Sans CN",
+        ],
+    );
+
+    fontdb.insert("korean", vec!["Source Han Sans KR"]);
+
+    fontdb.insert(
+        "arabic_fonts",
+        vec![
+            "Noto Sans Arabic",
+            "Amiri",
+            "Lateef",
+            "Al Tarikh",
+            "Segoe UI",
+        ],
+    );
+    // Add more regions and their candidate font names as needed
+
+    // Iterate over each region and try to load a matching system font.
+    for (region, font_names) in fontdb.iter() {
+        if let Some(font_data) = load_font_family(font_names) {
+            info!("Inserting font fallback for region: {region}");
+            fonts.font_data.insert(region.to_string(), FontData::from_owned(font_data).into());
+
+            // Add the region key as a fallback font in the proportional family.
+            // This means that if the primary font is missing a glyph, egui will try this fallback.
+            if let Some(proportional) = fonts.families.get_mut(&FontFamily::Proportional) {
+                proportional.push(region.to_string());
+            } else {
+                fonts.families.insert(FontFamily::Proportional, vec![region.to_string()]);
+            }
+        }
+    }
+
+    fonts
 }
