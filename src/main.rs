@@ -67,8 +67,9 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     let mut fonts = FontDefinitions::default();
 
+    let font_key = "inconsolata";
     fonts.font_data.insert(
-        "inconsolata".to_owned(),
+        font_key.to_owned(),
         Arc::new(FontData::from_static(include_bytes!(
             "../assets/Inconsolata-VariableFont_wdth,wght.ttf"
         ))),
@@ -78,7 +79,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         .families
         .entry(FontFamily::Proportional)
         .or_default()
-        .insert(0, "inconsolata".to_owned());
+        .insert(0, font_key.to_owned());
 
     cc.egui_ctx.set_fonts(fonts);
 
