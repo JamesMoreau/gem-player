@@ -27,7 +27,6 @@ mod ui;
 
 /*
 TODO:
-* get a font that covers all characters in every language.
 * UI + aestethics. Music Visualizer.
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */
@@ -428,7 +427,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
             },
         }
     }
-    
+
     None
 }
 

@@ -1575,6 +1575,9 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if response.clicked() {
                         let maybe_directory = FileDialog::new().set_directory("/").pick_folder();
                         match maybe_directory {
+                            None => {
+                                info!("No folder selected");
+                            }
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
 
@@ -1586,15 +1589,12 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 gem_player.playlists = found_playlists;
                                 gem_player.library_directory = Some(directory);
                             }
-                            None => {
-                                info!("No folder selected");
-                            }
                         }
                     }
 
                     ui.add_space(8.0);
 
-                    let refresh_button = Button::new(icons::ICON_REFRESH); // TODO: move this to settings.
+                    let refresh_button = Button::new(icons::ICON_REFRESH);
                     let response = ui.add(refresh_button).on_hover_text("Refresh library");
                     if response.clicked() {
                         match &gem_player.library_directory {
@@ -1647,7 +1647,8 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
                 let version = env!("CARGO_PKG_VERSION");
                 ui.add(unselectable_label(format!("Version: {version}")));
-                ui.add(unselectable_label("Gem Player is a lightweight music player."));
+                let description = env!("CARGO_PKG_DESCRIPTION");
+                ui.add(unselectable_label(description));
 
                 ui.add(Separator::default().spacing(32.0));
 
