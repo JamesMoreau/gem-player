@@ -4,8 +4,6 @@ use eframe::egui::{
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use indexmap::IndexMap;
-use lazy_static::lazy_static;
 use log::{debug, error, info};
 use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
 use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
@@ -333,20 +331,14 @@ pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_t
     Ok(())
 }
 
-lazy_static! {
-    pub static ref KEY_COMMANDS: IndexMap<Key, &'static str> = {
-        let mut map = IndexMap::new();
-
-        map.insert(Key::Space, "Play/Pause");
-        map.insert(Key::ArrowLeft, "Previous");
-        map.insert(Key::ArrowRight, "Next");
-        map.insert(Key::ArrowUp, "Volume Up");
-        map.insert(Key::ArrowDown, "Volume Down");
-        map.insert(Key::M, "Mute/Unmute");
-
-        map
-    };
-}
+const KEY_COMMANDS: &[(Key, &str)] = &[
+    (Key::Space, "Play/Pause"),
+    (Key::ArrowLeft, "Previous"),
+    (Key::ArrowRight, "Next"),
+    (Key::ArrowUp, "Volume Up"),
+    (Key::ArrowDown, "Volume Down"),
+    (Key::M, "Mute/Unmute"),
+];
 
 pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
     if ctx.wants_keyboard_input() {
@@ -355,19 +347,12 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
 
     ctx.input(|i| {
         for event in &i.events {
-            if let Event::Key {
-                key,
-                pressed: true,
-                physical_key: _,
-                repeat: _,
-                modifiers: _,
-            } = event
-            {
-                let Some(binding) = KEY_COMMANDS.get(key) else {
+            if let Event::Key { key, pressed: true, .. } = event {
+                let Some(description) = KEY_COMMANDS.iter().find_map(|(k, desc)| (k == key).then_some(*desc)) else {
                     continue;
                 };
 
-                info!("Key pressed: {}", binding);
+                info!("Key pressed: {}", description);
 
                 match key {
                     Key::Space => play_or_pause(&mut gem_player.player),
@@ -412,7 +397,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
             Err(e) => {
                 error!("Could not load {}: {:?}", name, e);
                 continue;
-            },
+            }
             Ok(handle) => match handle {
                 Handle::Memory { ref bytes, .. } => {
                     debug!("Loaded {name} from memory.");
