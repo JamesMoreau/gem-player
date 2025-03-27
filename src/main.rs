@@ -25,7 +25,8 @@ mod ui;
 
 /*
 TODO:
-* maybe switch to only cpal.
+* discord-rich-presence
+* maybe switch to only cpal. need better handling if the rodio initialization fails.
 * rodio callback on end.
 * UI + aestethics. Music Visualizer.
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
@@ -122,10 +123,10 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             theme_dirty: true,
+            search: String::new(),
             library: LibraryViewState {
                 cached_library: Vec::new(),
                 cache_dirty: true,
-                search_string: String::new(),
                 selected_track_key: None,
                 sort_by,
                 sort_order,
@@ -139,7 +140,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 delete_playlist_modal_is_open: false,
                 selected_track_key: None,
                 track_menu_is_open: false,
-                search_string: String::new(),
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)

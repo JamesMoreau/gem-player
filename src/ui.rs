@@ -42,6 +42,7 @@ pub struct UIState {
     theme_preference: ThemePreference,
     theme_dirty: bool,
     marquee: MarqueeState,
+    search: String,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
@@ -72,7 +73,6 @@ struct LibraryViewState {
 
     sort_by: SortBy,
     sort_order: SortOrder,
-    search_string: String,
 }
 
 #[fully_pub]
@@ -86,7 +86,6 @@ struct PlaylistsViewState {
     playlist_rename: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_playlist_modal_is_open: bool, // The menu is open for selected_playlist_path.
     track_menu_is_open: bool,        // The menu is open for selected_playlist_path.
-    search_string: String,
 }
 
 pub fn maybe_update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
@@ -626,7 +625,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .library
             .iter()
             .filter(|track| {
-                let search_lower = gem_player.ui_state.library.search_string.to_lowercase();
+                let search_lower = gem_player.ui_state.search.to_lowercase();
 
                 let matches_search = |field: &Option<String>| {
                     field
@@ -1314,7 +1313,7 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .tracks
             .iter()
             .filter(|track| {
-                let search_lower = gem_player.ui_state.playlists.search_string.to_lowercase();
+                let search_lower = gem_player.ui_state.search.to_lowercase();
 
                 let matches_search = |field: &Option<String>| {
                     field
@@ -1710,9 +1709,10 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui_state.current_view {
                 View::Library => {
-                    let search_changed = render_search(ui, &mut gem_player.ui_state.library.search_string);
+                    let search_changed = render_search(ui, &mut gem_player.ui_state.search);
                     if search_changed {
                         gem_player.ui_state.library.cache_dirty = true;
+                        gem_player.ui_state.playlists.cache_dirty = true;
                     }
 
                     let sort_changed = render_sort_and_order_by(
@@ -1737,8 +1737,9 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 }
                 View::Playlists => {
-                    let search_changed = render_search(ui, &mut gem_player.ui_state.playlists.search_string);
+                    let search_changed = render_search(ui, &mut gem_player.ui_state.search);
                     if search_changed {
+                        gem_player.ui_state.library.cache_dirty = true;
                         gem_player.ui_state.playlists.cache_dirty = true;
                     }
                 }
