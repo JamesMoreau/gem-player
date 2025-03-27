@@ -112,8 +112,18 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists = found_playlists;
     }
 
-    let (stream, handle) = OutputStream::try_default().unwrap();
-    let sink = Sink::try_new(&handle).unwrap();
+    let (stream, handle) = match OutputStream::try_default() {
+        Ok(result) => result,
+        Err(e) => {
+            panic!("Failed to initialize audio output: {}", e);
+        }
+    };
+    let sink = match Sink::try_new(&handle) {
+        Ok(s) => s,
+        Err(e) => {
+            panic!("Failed to create sink: {}", e);
+        }
+    };
     sink.pause();
     let initial_volume = 0.6;
     sink.set_volume(initial_volume);
