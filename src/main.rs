@@ -25,9 +25,6 @@ mod ui;
 
 /*
 TODO:
-* discord-rich-presence
-* maybe switch to only cpal. need better handling if the rodio initialization fails.
-* rodio callback on end.
 * UI + aestethics. Music Visualizer.
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */
