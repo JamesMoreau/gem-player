@@ -80,7 +80,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         .or_default()
         .insert(0, font_key.to_owned());
 
-    // Load system fonts as fallbacks
+    // Load system fonts as fallbacks.
     load_system_fonts(&mut fonts);
 
     cc.egui_ctx.set_fonts(fonts);
