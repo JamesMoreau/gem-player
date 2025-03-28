@@ -25,7 +25,7 @@ mod ui;
 
 /*
 TODO:
-* UI + aestethics. Music Visualizer.
+* Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */
 
