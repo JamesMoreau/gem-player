@@ -31,6 +31,7 @@ TODO:
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 pub const THEME_STORAGE_KEY: &str = "theme";
+pub const VOLUME_STORAGE_KEY: &str = "volume";
 
 #[fully_pub]
 pub struct GemPlayer {
@@ -85,15 +86,38 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     cc.egui_ctx.set_fonts(fonts);
 
+    let (stream, handle) = match OutputStream::try_default() {
+        Ok(result) => result,
+        Err(e) => {
+            panic!("Failed to initialize audio output: {}", e);
+        }
+    };
+    let sink = match Sink::try_new(&handle) {
+        Ok(s) => s,
+        Err(e) => {
+            panic!("Failed to create sink: {}", e);
+        }
+    };
+    sink.pause();
+    
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
     if let Some(storage) = cc.storage {
         if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
             library_directory = Some(PathBuf::from(library_directory_string));
         }
-
+    
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
-            theme_preference = ron::from_str(&theme_string).unwrap_or(ThemePreference::System);
+            if let Ok(theme) = ron::from_str(&theme_string) {
+                theme_preference = theme;
+            }
+        }
+    
+        if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY) {
+            if let Ok(volume) = ron::from_str::<f32>(&volume_string) {
+                let initial_volume = volume.clamp(0.0, 1.0);
+                sink.set_volume(initial_volume);
+            }
         }
     }
 
@@ -108,22 +132,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         library = found_tracks;
         playlists = found_playlists;
     }
-
-    let (stream, handle) = match OutputStream::try_default() {
-        Ok(result) => result,
-        Err(e) => {
-            panic!("Failed to initialize audio output: {}", e);
-        }
-    };
-    let sink = match Sink::try_new(&handle) {
-        Ok(s) => s,
-        Err(e) => {
-            panic!("Failed to create sink: {}", e);
-        }
-    };
-    sink.pause();
-    let initial_volume = 0.6;
-    sink.set_volume(initial_volume);
 
     GemPlayer {
         ui_state: UIState {
@@ -203,6 +211,9 @@ impl eframe::App for GemPlayer {
 
         let theme_ron_string = ron::to_string(&self.ui_state.theme_preference).unwrap();
         storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
+
+        let volume_ron_string = ron::to_string(&self.player.sink.volume()).unwrap();
+        storage.set_string(VOLUME_STORAGE_KEY, volume_ron_string);
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {

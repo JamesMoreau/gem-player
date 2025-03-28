@@ -704,14 +704,17 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")).truncate());
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     let duration_string = format_duration_to_mmss(track.duration);
                     ui.add(unselectable_label(duration_string));
                 });
@@ -932,18 +935,22 @@ fn render_queue_view(ui: &mut Ui, player: &mut Player) {
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")));
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")));
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     let duration_string = format_duration_to_mmss(track.duration);
                     ui.add(unselectable_label(duration_string));
                 });
@@ -1392,18 +1399,22 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")));
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")));
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
                 });
 
                 row.col(|ui| {
+                    ui.add_space(4.0);
                     let duration_string = format_duration_to_mmss(track.duration);
                     ui.add(unselectable_label(duration_string));
                 });
