@@ -63,11 +63,9 @@ fn main() -> eframe::Result {
 
 pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     egui_extras::install_image_loaders(&cc.egui_ctx);
-
     egui_material_icons::initialize(&cc.egui_ctx);
 
     let mut fonts = FontDefinitions::default();
-
     let font_key = "inconsolata";
     fonts.font_data.insert(
         font_key.to_owned(),
@@ -81,54 +79,41 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         .or_default()
         .insert(0, font_key.to_owned());
 
-    // Load system fonts as fallbacks.
     load_system_fonts(&mut fonts);
-
     cc.egui_ctx.set_fonts(fonts);
 
-    let (stream, handle) = match OutputStream::try_default() {
-        Ok(result) => result,
-        Err(e) => {
-            panic!("Failed to initialize audio output: {}", e);
-        }
-    };
-    let sink = match Sink::try_new(&handle) {
-        Ok(s) => s,
-        Err(e) => {
-            panic!("Failed to create sink: {}", e);
-        }
-    };
+    let (stream, handle) = OutputStream::try_default().expect("Failed to initialize audio output");
+    let sink = Sink::try_new(&handle).expect("Failed to create sink");
     sink.pause();
-    
+
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
+    let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
+
     if let Some(storage) = cc.storage {
         if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
             library_directory = Some(PathBuf::from(library_directory_string));
         }
-    
+
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
             if let Ok(theme) = ron::from_str(&theme_string) {
                 theme_preference = theme;
             }
         }
-    
+
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY) {
             if let Ok(volume) = ron::from_str::<f32>(&volume_string) {
-                let initial_volume = volume.clamp(0.0, 1.0);
-                sink.set_volume(initial_volume);
+                initial_volume = volume.clamp(0.0, 1.0);
             }
         }
     }
 
-    let sort_by = SortBy::Title;
-    let sort_order = SortOrder::Ascending;
+    sink.set_volume(initial_volume);
 
     let mut library = Vec::new();
     let mut playlists = Vec::new();
     if let Some(directory) = &library_directory {
         let (found_tracks, found_playlists) = read_tracks_and_playlists_from_directory(directory);
-
         library = found_tracks;
         playlists = found_playlists;
     }
@@ -143,8 +128,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 cached_library: Vec::new(),
                 cache_dirty: true,
                 selected_track_key: None,
-                sort_by,
-                sort_order,
+                sort_by: SortBy::Title,
+                sort_order: SortOrder::Ascending,
                 track_menu_is_open: false,
             },
             playlists: PlaylistsViewState {
