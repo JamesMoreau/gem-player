@@ -4,7 +4,7 @@ use eframe::egui::{
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
 use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
@@ -402,7 +402,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
         let result = system_source.select_best_match(&[FamilyName::Title(name.to_string())], &Properties::new());
         match result {
             Err(e) => {
-                error!("Could not load {}: {:?}", name, e);
+                warn!("Could not load {}: {:?}", name, e);
                 continue;
             }
             Ok(handle) => match handle {
