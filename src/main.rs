@@ -27,7 +27,6 @@ mod ui;
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
-* when should saving preferences occur? only on shutdown?
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -207,7 +206,7 @@ impl eframe::App for GemPlayer {
 
         check_for_next_track(self);
 
-        // ctx.set_debug_on_hover(true);
+        // ctx.set_debug_on_hover(true); // For debugging.
         maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
