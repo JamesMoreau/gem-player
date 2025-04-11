@@ -30,6 +30,8 @@ infer = "0.19.0"
 walkdir = "2.5.0"
 sanitize-filename = "0.6.0"
 font-kit = "0.14.2"
+egui_inbox = "0.8.0"
+notify-debouncer-mini = "0.6.0"
 
 [package.metadata.bundle]
 name = "Gem Player"

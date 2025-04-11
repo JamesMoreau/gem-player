@@ -1,10 +1,13 @@
 use eframe::egui::{
     Color32, Context, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals,
 };
+use egui_inbox::{UiInbox, UiInboxSender};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
 use log::{debug, error, info, warn};
+use notify::RecursiveMode;
+use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
 use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
@@ -40,6 +43,7 @@ pub struct GemPlayer {
     pub library: Vec<Track>,                // All the tracks stored in the user's music directory.
     pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
+    pub inbox: UiInbox<(Vec<Track>, Vec<Playlist>)>,
 
     pub player: Player,
 }
@@ -161,6 +165,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         library,
         library_directory,
         playlists,
+        inbox: UiInbox::new(),
 
         player: Player {
             history: Vec::new(),
@@ -243,6 +248,38 @@ pub fn load_library(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
     );
 
     (library, playlists)
+}
+
+fn start_library_watcher(
+    library_folder: &Path,
+    sender: UiInboxSender<(Vec<Track>, Vec<Playlist>)>,
+) -> Result<Debouncer<notify::RecommendedWatcher>, String> {
+    let callback_folder = library_folder.to_path_buf();
+    let result = new_debouncer(Duration::from_secs(2), move |res: DebounceEventResult| match res {
+        Err(e) => {
+            error!("watch error: {:?}", e);
+        }
+        Ok(events) => {
+            events.iter().for_each(|e| info!("Event {:?} for {:?}", e.kind, e.path));
+
+            let (tracks, playlists) = load_library(&callback_folder);
+            let result = sender.send((tracks, playlists));
+            if result.is_err() {
+                error!("Unable to send library to inbox.");
+            }
+        }
+    });
+
+    let mut debouncer = match result {
+        Ok(w) => w,
+        Err(e) => return Err(format!("Failed to create watcher: {:?}", e)),
+    };
+
+    if let Err(e) = debouncer.watcher().watch(library_folder, RecursiveMode::Recursive) {
+        return Err(format!("Failed to watch folder: {:?}", e));
+    }
+
+    Ok(debouncer)
 }
 
 pub fn check_for_next_track(gem_player: &mut GemPlayer) {
