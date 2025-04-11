@@ -4,7 +4,7 @@ use crate::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
-    read_tracks_and_playlists_from_directory,
+    load_library,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
@@ -1591,7 +1591,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
 
-                                let (found_tracks, found_playlists) = read_tracks_and_playlists_from_directory(&directory);
+                                let (found_tracks, found_playlists) = load_library(&directory);
 
                                 gem_player.library = found_tracks;
                                 gem_player.ui_state.library.cache_dirty = true;
@@ -1609,7 +1609,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if response.clicked() {
                         match &gem_player.library_directory {
                             Some(directory) => {
-                                let (found_tracks, found_playlists) = read_tracks_and_playlists_from_directory(directory);
+                                let (found_tracks, found_playlists) = load_library(directory);
                                 gem_player.library = found_tracks;
                                 gem_player.ui_state.library.cache_dirty = true;
 

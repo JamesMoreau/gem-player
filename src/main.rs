@@ -6,7 +6,7 @@ use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, 
 use fully_pub::fully_pub;
 use log::{debug, error, info, warn};
 use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
-use playlist::{read_all_from_a_directory, Playlist, PlaylistRetrieval};
+use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
     collections::HashMap,
@@ -15,7 +15,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use track::{read_in_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
+use track::{load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{maybe_update_theme, render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
 
 mod player;
@@ -113,7 +113,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let mut library = Vec::new();
     let mut playlists = Vec::new();
     if let Some(directory) = &library_directory {
-        let (found_tracks, found_playlists) = read_tracks_and_playlists_from_directory(directory);
+        let (found_tracks, found_playlists) = load_library(directory);
         library = found_tracks;
         playlists = found_playlists;
     }
@@ -213,11 +213,11 @@ impl eframe::App for GemPlayer {
     }
 }
 
-pub fn read_tracks_and_playlists_from_directory(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
+pub fn load_library(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
     let mut library = Vec::new();
     let mut playlists = Vec::new();
 
-    match read_in_tracks_from_directory(directory) {
+    match load_tracks_from_directory(directory) {
         Ok(found_tracks) => {
             library = found_tracks;
         }
@@ -226,7 +226,7 @@ pub fn read_tracks_and_playlists_from_directory(directory: &Path) -> (Vec<Track>
         }
     }
 
-    match read_all_from_a_directory(directory) {
+    match load_playlists_from_directory(directory) {
         Ok(found_playlists) => {
             playlists = found_playlists;
         }

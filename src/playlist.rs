@@ -68,7 +68,7 @@ pub fn remove_from_playlist(playlist: &mut Playlist, track_key: &Path) -> io::Re
     Ok(())
 }
 
-pub fn read_all_from_a_directory(directory: &Path) -> io::Result<Vec<Playlist>> {
+pub fn load_playlists_from_directory(directory: &Path) -> io::Result<Vec<Playlist>> {
     let mut playlists = Vec::new();
 
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
