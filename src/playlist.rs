@@ -74,7 +74,7 @@ pub fn read_all_from_a_directory(directory: &Path) -> io::Result<Vec<Playlist>> 
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
 
-        let is_m3u_file = path.is_file() && path.extension().map_or(false, |ext| ext.to_ascii_lowercase() == "m3u");
+        let is_m3u_file = path.is_file() && path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("m3u"));
         if !is_m3u_file {
             continue;
         }

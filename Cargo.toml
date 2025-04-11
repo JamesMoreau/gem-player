@@ -1,6 +1,6 @@
 [package]
 name = "gem-player"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "A lightweight music player."
 
@@ -10,7 +10,7 @@ egui_extras = { version = "0.31.1", features = ["all_loaders"] }
 egui_material_icons = "0.3.0"
 env_logger = { version = "0.11.7", default-features = false, features = ["auto-color", "humantime"] }
 image = { version = "0.25.6", features = ["jpeg", "png"] }
-lofty = "0.22.2"
+lofty = "0.22.3"
 notify = "8.0.0"
 open = "5.3.2"
 rand = "0.9.0"
@@ -23,7 +23,7 @@ fully_pub = "0.1.4"
 trash = "5.2.2"
 log = "0.4.27"
 serde = "1.0.219"
-ron = "0.9.0"
+ron = "0.10.1"
 dark-light = "2.0.0"
 function_name = "0.3.0"
 infer = "0.19.0"

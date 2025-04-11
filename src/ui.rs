@@ -590,7 +590,7 @@ fn render_volume_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
         gem_player.player.sink.set_volume(volume);
 
         let volume_icon = match gem_player.player.sink.volume() {
-            v if v == 0.0 => icons::ICON_VOLUME_OFF,
+            0.0 => icons::ICON_VOLUME_OFF,
             v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
             _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
         };
@@ -695,7 +695,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .library
                     .selected_track_key
                     .as_ref()
-                    .map_or(false, |t| *t == track.path);
+                    .is_some_and(|t| *t == track.path);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -1390,7 +1390,7 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     .playlists
                     .selected_track_key
                     .as_ref()
-                    .map_or(false, |p| *p == track.path);
+                    .is_some_and(|p| *p == track.path);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
