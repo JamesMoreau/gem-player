@@ -28,6 +28,7 @@ mod ui;
 
 /*
 TODO:
+* watcher should just immedietly load upon start.
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */
@@ -41,9 +42,11 @@ pub struct GemPlayer {
     pub ui_state: UIState,
 
     pub library: Vec<Track>,                // All the tracks stored in the user's music directory.
-    pub library_directory: Option<PathBuf>, // The directory where music is stored.
     pub playlists: Vec<Playlist>,
-    pub inbox: UiInbox<(Vec<Track>, Vec<Playlist>)>,
+    
+    pub library_directory: Option<PathBuf>, // The directory where music is stored.
+    pub inbox: Option<UiInbox<(Vec<Track>, Vec<Playlist>)>>,
+    pub debounce_watcher: Option<Debouncer<RecommendedWatcher>>,
 
     pub player: Player,
 }
@@ -114,12 +117,24 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
-    let mut library = Vec::new();
-    let mut playlists = Vec::new();
+    let (mut library, mut playlists) = (Vec::new(), Vec::new());
+    let (mut debounce_watcher, mut inbox) = (None, None);
     if let Some(directory) = &library_directory {
-        let (found_tracks, found_playlists) = load_library(directory);
+        let (found_tracks, found_playlists) = load_library(directory); // TODO: would like to not have to do this and instead just start the watcher.
         library = found_tracks;
         playlists = found_playlists;
+
+        // Start watching the directory.
+        let new_inbox = UiInbox::new();
+        let result = start_library_watcher(directory, new_inbox.sender());
+        match result {
+            Ok(dw) => {
+                info!("Started watching: {:?}", directory);
+                debounce_watcher = Some(dw);
+                inbox = Some(new_inbox);
+            },
+            Err(e) => error!("Failed to start watching the library directory: {e}"),
+        }
     }
 
     GemPlayer {
@@ -163,9 +178,11 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         },
 
         library,
-        library_directory,
         playlists,
-        inbox: UiInbox::new(),
+        
+        library_directory,
+        inbox,
+        debounce_watcher,
 
         player: Player {
             history: Vec::new(),
@@ -210,11 +227,22 @@ impl eframe::App for GemPlayer {
         handle_key_commands(ctx, self);
 
         check_for_next_track(self);
+        handle_inbox(self, ctx);
 
         // ctx.set_debug_on_hover(true); // For debugging.
         maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
+    }
+}
+
+pub fn handle_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
+    if let Some(inbox) = &mut gem_player.inbox {
+        for (tracks, playlists) in inbox.read(ctx) { // TODO: why does ctx need to be passed?
+            gem_player.library = tracks;
+            gem_player.playlists = playlists;
+            gem_player.ui_state.library.cache_dirty = true;
+        }
     }
 }
 
@@ -269,7 +297,7 @@ fn start_library_watcher(path: &Path, sender: UiInboxSender<(Vec<Track>, Vec<Pla
 
     let mut debouncer = match result {
         Ok(w) => w,
-        Err(e) => return Err(format!("Failed to create watcher: {:?}", e)),
+        Err(e) => return Err(format!("Failed to create the watcher: {:?}", e)),
     };
 
     if let Err(e) = debouncer.watcher().watch(path, RecursiveMode::Recursive) {

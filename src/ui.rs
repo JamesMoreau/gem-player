@@ -1,10 +1,10 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist,
+    format_duration_to_hhmmss, format_duration_to_mmss, load_library, maybe_play_next, maybe_play_previous, play_library, play_playlist,
     player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
-    load_library,
+    start_library_watcher,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
@@ -15,14 +15,15 @@ use eframe::egui::{
     TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
+use egui_inbox::UiInbox;
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use function_name::named;
-use log::{error, info, warn};
+use log::{error, info};
 use rfd::FileDialog;
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 use strum::IntoEnumIterator;
@@ -1583,7 +1584,10 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     let response = ui.button(icons::ICON_FOLDER_OPEN).on_hover_text("Change");
                     if response.clicked() {
-                        let maybe_directory = FileDialog::new().set_directory("/").pick_folder();
+                        let maybe_directory = FileDialog::new()
+                            .set_directory(gem_player.library_directory.as_deref().unwrap_or_else(|| Path::new("/")))
+                            .pick_folder();
+                        
                         match maybe_directory {
                             None => {
                                 info!("No folder selected");
@@ -1593,29 +1597,24 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                                 let (found_tracks, found_playlists) = load_library(&directory);
 
+                                // Start watching the newly selected directory.
+                                let inbox = UiInbox::new();
+                                let result = start_library_watcher(&directory, inbox.sender());
+                                match result {
+                                    Ok(dw) => {
+                                        info!("Started watching: {:?}", directory);
+                                        gem_player.debounce_watcher = Some(dw);
+                                        gem_player.inbox = Some(inbox);
+                                    }
+                                    Err(e) => error!("Failed to start watching the library directory: {e}"),
+                                }
+
                                 gem_player.library = found_tracks;
                                 gem_player.ui_state.library.cache_dirty = true;
 
                                 gem_player.playlists = found_playlists;
                                 gem_player.library_directory = Some(directory);
                             }
-                        }
-                    }
-
-                    ui.add_space(8.0);
-
-                    let refresh_button = Button::new(icons::ICON_REFRESH);
-                    let response = ui.add(refresh_button).on_hover_text("Refresh library");
-                    if response.clicked() {
-                        match &gem_player.library_directory {
-                            Some(directory) => {
-                                let (found_tracks, found_playlists) = load_library(directory);
-                                gem_player.library = found_tracks;
-                                gem_player.ui_state.library.cache_dirty = true;
-
-                                gem_player.playlists = found_playlists;
-                            }
-                            None => warn!("Cannot refresh library, as there is no library path."),
                         }
                     }
                 });
