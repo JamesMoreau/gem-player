@@ -41,12 +41,12 @@ pub const VOLUME_STORAGE_KEY: &str = "volume";
 pub struct GemPlayer {
     pub ui_state: UIState,
 
-    pub library: Vec<Track>,                // All the tracks stored in the user's music directory.
+    pub library: Vec<Track>,
     pub playlists: Vec<Playlist>,
-    
-    pub library_directory: Option<PathBuf>, // The directory where music is stored.
+
+    pub library_directory: Option<PathBuf>,
     pub inbox: Option<UiInbox<(Vec<Track>, Vec<Playlist>)>>,
-    pub debounce_watcher: Option<Debouncer<RecommendedWatcher>>,
+    pub watcher: Option<Debouncer<RecommendedWatcher>>,
 
     pub player: Player,
 }
@@ -117,22 +117,18 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
-    let (mut library, mut playlists) = (Vec::new(), Vec::new());
-    let (mut debounce_watcher, mut inbox) = (None, None);
+    let (mut watcher, mut inbox) = (None, None);
     if let Some(directory) = &library_directory {
-        let (found_tracks, found_playlists) = load_library(directory); // TODO: would like to not have to do this and instead just start the watcher.
-        library = found_tracks;
-        playlists = found_playlists;
-
-        // Start watching the directory.
-        let new_inbox = UiInbox::new();
-        let result = start_library_watcher(directory, new_inbox.sender());
+        let i = UiInbox::new();
+        let result = start_library_watcher(directory, i.sender());
         match result {
             Ok(dw) => {
                 info!("Started watching: {:?}", directory);
-                debounce_watcher = Some(dw);
-                inbox = Some(new_inbox);
-            },
+                watcher = Some(dw);
+                inbox = Some(i);
+
+                tickle_watcher(directory);
+            }
             Err(e) => error!("Failed to start watching the library directory: {e}"),
         }
     }
@@ -177,12 +173,12 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             },
         },
 
-        library,
-        playlists,
-        
+        library: Vec::new(),
+        playlists: Vec::new(),
+
         library_directory,
         inbox,
-        debounce_watcher,
+        watcher,
 
         player: Player {
             history: Vec::new(),
@@ -280,17 +276,15 @@ pub fn load_library(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
 
 fn start_library_watcher(path: &Path, sender: UiInboxSender<(Vec<Track>, Vec<Playlist>)>) -> Result<Debouncer<RecommendedWatcher>, String> {
     let cloned_path = path.to_path_buf();
-    let result = new_debouncer(Duration::from_secs(2), move |res: DebounceEventResult| {
-        match res {
-            Err(e) => error!("watch error: {:?}", e),
-            Ok(events) => {
-                events.iter().for_each(|e| info!("Event {:?} for {:?}", e.kind, e.path));
+    let result = new_debouncer(Duration::from_secs(2), move |res: DebounceEventResult| match res {
+        Err(e) => error!("watch error: {:?}", e),
+        Ok(events) => {
+            events.iter().for_each(|e| info!("Event {:?} for {:?}", e.kind, e.path));
 
-                let (tracks, playlists) = load_library(&cloned_path);
+            let (tracks, playlists) = load_library(&cloned_path);
 
-                if sender.send((tracks, playlists)).is_err() {
-                    error!("Unable to send library to inbox.");
-                }
+            if sender.send((tracks, playlists)).is_err() {
+                error!("Unable to send library to inbox.");
             }
         }
     });
@@ -305,6 +299,19 @@ fn start_library_watcher(path: &Path, sender: UiInboxSender<(Vec<Track>, Vec<Pla
     }
 
     Ok(debouncer)
+}
+
+// Manually creates a file, then deletes it in order to trigger the file watcher callback.
+fn tickle_watcher(directory: &Path) {
+    let path = directory.join(".watcher-tickle.tmp");
+    if let Err(e) = std::fs::write(&path, b"ping") {
+        error!("Failed to write temp file to trigger watcher: {:?}", e);
+        return;
+    }
+
+    if let Err(e) = std::fs::remove_file(&path) {
+        error!("Failed to remove temp file to trigger watcher: {:?}", e);
+    }
 }
 
 pub fn check_for_next_track(gem_player: &mut GemPlayer) {

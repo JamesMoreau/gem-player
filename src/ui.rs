@@ -1,12 +1,7 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, load_library, maybe_play_next, maybe_play_previous, play_library, play_playlist,
-    player::{
+    format_duration_to_hhmmss, format_duration_to_mmss, load_library, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
-    },
-    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
-    start_library_watcher,
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    GemPlayer, Track, KEY_COMMANDS,
+    }, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval}, start_library_watcher, tickle_watcher, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
 };
 use dark_light::Mode;
 use eframe::egui::{
@@ -1589,31 +1584,22 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             .pick_folder();
                         
                         match maybe_directory {
-                            None => {
-                                info!("No folder selected");
-                            }
+                            None => info!("No folder selected"),
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
 
-                                let (found_tracks, found_playlists) = load_library(&directory);
-
-                                // Start watching the newly selected directory.
-                                let inbox = UiInbox::new();
-                                let result = start_library_watcher(&directory, inbox.sender());
+                                let i = UiInbox::new();
+                                let result = start_library_watcher(&directory, i.sender());
                                 match result {
                                     Ok(dw) => {
-                                        info!("Started watching: {:?}", directory);
-                                        gem_player.debounce_watcher = Some(dw);
-                                        gem_player.inbox = Some(inbox);
+                                        info!("Started watching: {:?}", &directory);
+                                        gem_player.watcher = Some(dw);
+                                        gem_player.inbox = Some(i);
+
+                                        tickle_watcher(&directory);
                                     }
                                     Err(e) => error!("Failed to start watching the library directory: {e}"),
                                 }
-
-                                gem_player.library = found_tracks;
-                                gem_player.ui_state.library.cache_dirty = true;
-
-                                gem_player.playlists = found_playlists;
-                                gem_player.library_directory = Some(directory);
                             }
                         }
                     }
