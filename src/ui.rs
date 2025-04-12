@@ -1594,7 +1594,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     Ok(dw) => {
                                         info!("Started watching: {:?}", &directory);
                                         gem_player.watcher = Some(dw);
-                                        gem_player.inbox = Some(i);
+                                        gem_player.watcher_inbox = Some(i);
 
                                         tickle_watcher(&directory);
                                     }

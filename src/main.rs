@@ -45,8 +45,8 @@ pub struct GemPlayer {
     pub playlists: Vec<Playlist>,
 
     pub library_directory: Option<PathBuf>,
-    pub inbox: Option<UiInbox<(Vec<Track>, Vec<Playlist>)>>,
     pub watcher: Option<Debouncer<RecommendedWatcher>>,
+    pub watcher_inbox: Option<UiInbox<(Vec<Track>, Vec<Playlist>)>>,
 
     pub player: Player,
 }
@@ -117,7 +117,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
-    let (mut watcher, mut inbox) = (None, None);
+    let (mut watcher, mut watcher_inbox) = (None, None);
     if let Some(directory) = &library_directory {
         let i = UiInbox::new();
         let result = start_library_watcher(directory, i.sender());
@@ -125,7 +125,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             Ok(dw) => {
                 info!("Started watching: {:?}", directory);
                 watcher = Some(dw);
-                inbox = Some(i);
+                watcher_inbox = Some(i);
 
                 tickle_watcher(directory);
             }
@@ -177,7 +177,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists: Vec::new(),
 
         library_directory,
-        inbox,
+        watcher_inbox,
         watcher,
 
         player: Player {
@@ -233,7 +233,7 @@ impl eframe::App for GemPlayer {
 }
 
 pub fn handle_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
-    if let Some(inbox) = &mut gem_player.inbox {
+    if let Some(inbox) = &mut gem_player.watcher_inbox {
         for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
             gem_player.playlists = playlists;
