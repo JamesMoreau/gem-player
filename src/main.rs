@@ -238,7 +238,7 @@ impl eframe::App for GemPlayer {
 
 pub fn handle_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
     if let Some(inbox) = &mut gem_player.inbox {
-        for (tracks, playlists) in inbox.read(ctx) { // TODO: why does ctx need to be passed?
+        for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
             gem_player.playlists = playlists;
             gem_player.ui_state.library.cache_dirty = true;
