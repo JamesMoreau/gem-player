@@ -223,7 +223,7 @@ impl eframe::App for GemPlayer {
         handle_key_commands(ctx, self);
 
         check_for_next_track(self);
-        handle_inbox(self, ctx);
+        handle_watcher_inbox(self, ctx);
 
         // ctx.set_debug_on_hover(true); // For debugging.
         maybe_update_theme(self, ctx);
@@ -232,12 +232,13 @@ impl eframe::App for GemPlayer {
     }
 }
 
-pub fn handle_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn handle_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
     if let Some(inbox) = &mut gem_player.watcher_inbox {
         for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
             gem_player.playlists = playlists;
             gem_player.ui_state.library.cache_dirty = true;
+            gem_player.ui_state.playlists.cache_dirty = true;
         }
     }
 }

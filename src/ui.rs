@@ -1,5 +1,5 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, load_library, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{
+    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     }, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval}, start_library_watcher, tickle_watcher, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
 };
