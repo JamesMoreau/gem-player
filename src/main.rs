@@ -46,8 +46,8 @@ pub struct GemPlayer {
     pub playlists: Vec<Playlist>,
 
     pub library_directory: Option<PathBuf>,
-    pub watcher: Option<Debouncer<RecommendedWatcher>>,
-    pub watcher_inbox: Option<UiInbox<(Vec<Track>, Vec<Playlist>)>>,
+    pub library_watcher: Option<Debouncer<RecommendedWatcher>>,
+    pub library_watcher_inbox: Option<UiInbox<(Vec<Track>, Vec<Playlist>)>>,
 
     pub player: Player,
 }
@@ -178,8 +178,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists: Vec::new(),
 
         library_directory,
-        watcher_inbox,
-        watcher,
+        library_watcher_inbox: watcher_inbox,
+        library_watcher: watcher,
 
         player: Player {
             history: Vec::new(),
@@ -235,7 +235,7 @@ impl eframe::App for GemPlayer {
 }
 
 pub fn handle_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
-    if let Some(inbox) = &mut gem_player.watcher_inbox {
+    if let Some(inbox) = &mut gem_player.library_watcher_inbox {
         for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
             gem_player.playlists = playlists;

@@ -78,17 +78,6 @@
 //     ui.visuals().widgets.noninteractive.bg_stroke,
 // );
 
-// pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) { // Could just start up a new watcher instead of updating the old one.
-//     if let Err(e) = watcher.unwatch(old_path) {
-//         eprintln!("Failed to unwatch old folder: {:?}", e);
-//     }
-
-//     if let Err(e) = watcher.watch(new_path, RecursiveMode::Recursive) {
-//         eprintln!("Failed to watch new folder: {:?}", e);
-//     }
-
-//     println!("Updated library folder to {:?}", new_path);
-// }
 	// row.col(|ui| {
 	//     let has_artwork = song.artwork.is_some();
 	//     if has_artwork {
