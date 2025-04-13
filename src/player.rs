@@ -2,7 +2,10 @@ use crate::track::Track;
 use fully_pub::fully_pub;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
-use std::{fs, io::{self, BufReader, ErrorKind}};
+use std::{
+    fs,
+    io::{self, BufReader, ErrorKind},
+};
 
 #[fully_pub]
 pub struct Player {
@@ -40,20 +43,20 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
         if let Some(ref playing) = player.playing {
             // If repeat is enabled, just restart the current track.
             if let Err(e) = load_and_play(&mut player.sink, playing) {
-                return Err(e.to_string())
+                return Err(e.to_string());
             };
             return Ok(());
         }
     }
 
     if player.queue.is_empty() {
-        return Ok(()); // Nothing to play 
+        return Ok(()); // Nothing to play
     }
-    
+
     if let Some(current) = player.playing.take() {
         player.history.push(current);
     }
-    
+
     if let Some(next_track) = player.queue.first().cloned() {
         player.queue.remove(0);
         if let Err(e) = load_and_play(&mut player.sink, &next_track) {
@@ -61,7 +64,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
         }
         player.playing = Some(next_track);
     }
-    
+
     Ok(())
 }
 
