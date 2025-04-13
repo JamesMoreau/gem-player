@@ -223,7 +223,7 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
     Ok(playlist)
 }
 
-// Removes the playlist from the list and deletes the associated m3u file.
+/// Removes the playlist from the list and deletes the associated m3u file.
 pub fn delete(playlist_key: &Path, playlists: &mut Vec<Playlist>) -> Result<(), String> {
     let index = playlists
         .iter()

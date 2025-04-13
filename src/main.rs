@@ -304,7 +304,7 @@ fn start_library_watcher(path: &Path, sender: UiInboxSender<(Vec<Track>, Vec<Pla
     Ok(debouncer)
 }
 
-// Manually creates a file, then deletes it in order to trigger the file watcher callback.
+/// Manually creates a file, then deletes it in order to trigger the file watcher callback.
 fn tickle_watcher(directory: &Path) {
     let path = directory.join(".watcher-tickle.tmp");
     if let Err(e) = std::fs::write(&path, b"ping") {
