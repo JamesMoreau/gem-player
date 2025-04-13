@@ -81,7 +81,6 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
     Ok(())
 }
 
-// TODO: Is this ok to call this function from the UI thread since we are doing heavy events like loading a file?
 pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
     sink.stop(); // Stop the current track if any.
 

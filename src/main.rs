@@ -28,9 +28,9 @@ mod ui;
 
 /*
 TODO:
-* watcher should just immedietly load upon start.
+* On web, egui takes only ~1ms per frame. Figure out what is taking up so much cpu.
+* egui context has these animation fields. could this be used for the marquee?
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
-* could use egui_inbox for library updating with watcher. should expensive operations such as opening a file use an async system? research this!
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -226,6 +226,7 @@ impl eframe::App for GemPlayer {
         handle_watcher_inbox(self, ctx);
 
         // ctx.set_debug_on_hover(true); // For debugging.
+        // info!("Frame time: {:.2} ms", _frame.info().cpu_usage.unwrap_or(0.0) * 1000.0);
         maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);

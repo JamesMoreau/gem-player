@@ -1,13 +1,18 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{
+    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist,
+    player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
-    }, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval}, start_library_watcher, tickle_watcher, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
+    },
+    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
+    start_library_watcher, tickle_watcher,
+    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
+    GemPlayer, Track, KEY_COMMANDS,
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
-    Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    containers, include_image, os::OperatingSystem, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context,
+    Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
+    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_inbox::UiInbox;
@@ -203,8 +208,9 @@ fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
+    let is_macos = ui.ctx().os() == OperatingSystem::Mac;
     ui.scope_builder(
-        UiBuilder::new().max_rect(title_bar_rect).layout(if cfg!(target_os = "macos") {
+        UiBuilder::new().max_rect(title_bar_rect).layout(if is_macos {
             Layout::left_to_right(Align::Center)
         } else {
             Layout::right_to_left(Align::Center)
@@ -244,7 +250,7 @@ fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
                 }
             };
 
-            if cfg!(target_os = "macos") {
+            if is_macos {
                 close_button(ui);
                 minimize_button(ui);
                 fullscreen_button(ui);
@@ -1582,7 +1588,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let maybe_directory = FileDialog::new()
                             .set_directory(gem_player.library_directory.as_deref().unwrap_or_else(|| Path::new("/")))
                             .pick_folder();
-                        
+
                         match maybe_directory {
                             None => info!("No folder selected"),
                             Some(directory) => {
