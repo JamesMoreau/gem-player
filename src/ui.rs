@@ -190,15 +190,6 @@ fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
         ui.style().visuals.text_color(),
     );
 
-    // Paint the line under the title:
-    // painter.line_segment(
-    //     [
-    //         title_bar_rect.left_bottom() + vec2(1.0, 0.0),
-    //         title_bar_rect.right_bottom() + vec2(-1.0, 0.0),
-    //     ],
-    //     ui.visuals().widgets.noninteractive.bg_stroke,
-    // );
-
     if title_bar_response.double_clicked() {
         let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
         ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));

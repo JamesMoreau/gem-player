@@ -78,38 +78,6 @@
 //     ui.visuals().widgets.noninteractive.bg_stroke,
 // );
 
-// pub fn start_library_watcher(library_folder: PathBuf, library_is_dirty_flag: Arc<AtomicBool>) -> Result<RecommendedWatcher, String> {
-//     let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
-
-//     let mut watcher = match recommended_watcher(tx) {
-//         Ok(w) => w,
-//         Err(e) => {
-//             return Err(format!("Failed to create watcher: {:?}", e));
-//         }
-//     };
-
-//     if let Err(e) = watcher.watch(&library_folder, RecursiveMode::Recursive) {
-//         return Err(format!("Failed to watch folder: {:?}", e));
-//     }
-
-//     thread::spawn(move || {
-//         for res in rx {
-//             match res {
-//                 Ok(event) => {
-//                     println!("File event detected: {:?}", event);
-//                     let is_relevant_event = event.kind.is_create() || event.kind.is_remove() || event.kind.is_modify();
-//                     if is_relevant_event {
-//                         library_is_dirty_flag.store(true, Ordering::SeqCst);
-//                     }
-//                 }
-//                 Err(e) => eprintln!("Watch error: {:?}", e),
-//             }
-//         }
-//     });
-
-//     Ok(watcher)
-// }
-
 // pub fn update_watched_directory(watcher: &mut RecommendedWatcher, old_path: &Path, new_path: &Path) { // Could just start up a new watcher instead of updating the old one.
 //     if let Err(e) = watcher.unwatch(old_path) {
 //         eprintln!("Failed to unwatch old folder: {:?}", e);
