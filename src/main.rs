@@ -28,6 +28,7 @@ mod ui;
 
 /*
 TODO:
+* Loading and caching artwork for each song increases memory usage. Consider uncaching to manage memory.
 * On web, egui takes only ~1ms per frame. Figure out what is taking up so much cpu.
 * egui context has these animation fields. could this be used for the marquee?
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
