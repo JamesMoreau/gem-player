@@ -493,7 +493,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
     None
 }
 
-// Loads system fonts as fallbacks for various language regions and adds them to the provided `FontDefinitions`.
+/// Loads system fonts as fallbacks for various language regions and adds them to the provided `FontDefinitions`.
 pub fn load_system_fonts(fonts: &mut FontDefinitions) {
     let mut fontdb: HashMap<&str, Vec<&str>> = HashMap::new(); // Map of region identifiers to a list of candidate system font names.
 
