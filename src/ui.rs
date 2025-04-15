@@ -552,13 +552,13 @@ fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut 
     });
 }
 
-// TODO: clean this function up / simplify.
 fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
     // Use a default image; if artwork exists for the playing track, load it.
     let mut artwork = Image::new(include_image!("../assets/music_note.svg"));
+    let mut should_forget_uri = false;
 
     if let Some(playing_track) = &gem_player.player.playing {
         if let Some(artwork_bytes) = &playing_track.artwork {
@@ -575,13 +575,18 @@ fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
                 // Already cached, so just use it
                 artwork = Image::new(uri);
             }
-        } else if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
+        } else {
+            should_forget_uri = true;
+        }
+    } else {
+        should_forget_uri = true;
+    }
+
+    if should_forget_uri {
+        if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
             ui.ctx().forget_image(old_uri);
             gem_player.ui_state.cached_artwork_uri = None;
         }
-    } else if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
-        ui.ctx().forget_image(old_uri);
-        gem_player.ui_state.cached_artwork_uri = None;
     }
 
     ui.add(
