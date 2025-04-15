@@ -558,33 +558,33 @@ fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
 
     // Use a default image; if artwork exists for the playing track, load it.
     let mut artwork = Image::new(include_image!("../assets/music_note.svg"));
-    let mut should_forget_uri = false;
 
     if let Some(playing_track) = &gem_player.player.playing {
         if let Some(artwork_bytes) = &playing_track.artwork {
             let uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
 
-            if gem_player.ui_state.cached_artwork_uri.as_deref() != Some(&uri) {
-                if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
-                    ui.ctx().forget_image(old_uri);
+            match &gem_player.ui_state.cached_artwork_uri {
+                Some(cached_uri) if *cached_uri == uri => {
+                    // Already cached.
+                    artwork = Image::new(uri);
                 }
-
-                artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
-                gem_player.ui_state.cached_artwork_uri = Some(uri);
-            } else {
-                // Already cached, so just use it
-                artwork = Image::new(uri);
+                Some(cached_uri) => {
+                    // Artwork has change. Release the cached uri.
+                    ui.ctx().forget_image(cached_uri);
+                    artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
+                    gem_player.ui_state.cached_artwork_uri = Some(uri);
+                }
+                None => {
+                    // No cache, load new artwork.
+                    artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
+                    gem_player.ui_state.cached_artwork_uri = Some(uri);
+                }
             }
-        } else {
-            should_forget_uri = true;
         }
     } else {
-        should_forget_uri = true;
-    }
-
-    if should_forget_uri {
-        if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
-            ui.ctx().forget_image(old_uri);
+        // No playing track, so release the cache if there is one.
+        if let Some(cached_uri) = &gem_player.ui_state.cached_artwork_uri {
+            ui.ctx().forget_image(cached_uri);
             gem_player.ui_state.cached_artwork_uri = None;
         }
     }
