@@ -114,8 +114,6 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
         let navigation_ui_height = 32.0;
         let separator_space = 2.0; // Even numbers seem to work better for getting pixel perfect placements.
 
-        ctx.texture_ui(ui);
-
         StripBuilder::new(ui)
             .size(Size::exact(separator_space))
             .size(Size::exact(control_ui_height))
