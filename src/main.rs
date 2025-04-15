@@ -140,6 +140,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             theme_preference,
             theme_dirty: true,
             search: String::new(),
+            cached_artwork_uri: None,
             library: LibraryViewState {
                 cached_library: Vec::new(),
                 cache_dirty: true,

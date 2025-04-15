@@ -44,6 +44,7 @@ pub struct UIState {
     theme_dirty: bool,
     marquee: MarqueeState,
     search: String,
+    cached_artwork_uri: Option<String>,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
@@ -112,6 +113,8 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
         let control_ui_height = 64.0;
         let navigation_ui_height = 32.0;
         let separator_space = 2.0; // Even numbers seem to work better for getting pixel perfect placements.
+
+        ctx.texture_ui(ui);
 
         StripBuilder::new(ui)
             .size(Size::exact(separator_space))
@@ -549,17 +552,36 @@ fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut 
     });
 }
 
+// TODO: clean this function up / simplify.
 fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
     // Use a default image; if artwork exists for the playing track, load it.
     let mut artwork = Image::new(include_image!("../assets/music_note.svg"));
+
     if let Some(playing_track) = &gem_player.player.playing {
         if let Some(artwork_bytes) = &playing_track.artwork {
-            let artwork_uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
-            artwork = Image::from_bytes(artwork_uri, artwork_bytes.clone());
+            let uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
+
+            if gem_player.ui_state.cached_artwork_uri.as_deref() != Some(&uri) {
+                if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
+                    ui.ctx().forget_image(old_uri);
+                }
+
+                artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
+                gem_player.ui_state.cached_artwork_uri = Some(uri);
+            } else {
+                // Already cached, so just use it
+                artwork = Image::new(uri);
+            }
+        } else if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
+            ui.ctx().forget_image(old_uri);
+            gem_player.ui_state.cached_artwork_uri = None;
         }
+    } else if let Some(old_uri) = &gem_player.ui_state.cached_artwork_uri {
+        ui.ctx().forget_image(old_uri);
+        gem_player.ui_state.cached_artwork_uri = None;
     }
 
     ui.add(
