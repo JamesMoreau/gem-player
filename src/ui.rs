@@ -1753,7 +1753,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Playlists => {
                     let search_changed = render_search(ui, &mut gem_player.ui_state.search);
                     if search_changed {
-                        // gem_player.ui_state.library.cache_dirty = true; TODO
+                        gem_player.ui_state.library.cached_library = None;
                         gem_player.ui_state.playlists.cache_dirty = true;
                     }
                 }
