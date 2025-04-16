@@ -69,9 +69,8 @@ struct LibraryViewState {
     selected_track_key: Option<PathBuf>,
     track_menu_is_open: bool, // The menu is open for selected_track
 
-    cached_library: Vec<Track>,
-    cache_dirty: bool,
-
+    cached_library: Option<Vec<Track>>,
+    // cache_dirty: bool,
     sort_by: SortBy,
     sort_order: SortOrder,
 }
@@ -633,8 +632,10 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     render_library_track_menu(ui, gem_player);
 
-    if gem_player.ui_state.library.cache_dirty {
-        gem_player.ui_state.library.cached_library = gem_player
+    let cached_library = gem_player.ui_state.library.cached_library.get_or_insert_with(|| {
+        // Regenerate the cache.
+
+        let mut filtered_and_sorted: Vec<Track> = gem_player
             .library
             .iter()
             .filter(|track| {
@@ -653,13 +654,13 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .collect();
 
         sort(
-            &mut gem_player.ui_state.library.cached_library,
+            &mut filtered_and_sorted,
             gem_player.ui_state.library.sort_by,
             gem_player.ui_state.library.sort_order,
         );
 
-        gem_player.ui_state.library.cache_dirty = false;
-    }
+        filtered_and_sorted
+    });
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
@@ -700,8 +701,8 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
         })
         .body(|body| {
-            body.rows(26.0, gem_player.ui_state.library.cached_library.len(), |mut row| {
-                let track = &gem_player.ui_state.library.cached_library[row.index()];
+            body.rows(26.0, cached_library.len(), |mut row| {
+                let track = &cached_library[row.index()];
 
                 let row_is_selected = gem_player
                     .ui_state
@@ -1724,7 +1725,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Library => {
                     let search_changed = render_search(ui, &mut gem_player.ui_state.search);
                     if search_changed {
-                        gem_player.ui_state.library.cache_dirty = true;
+                        gem_player.ui_state.library.cached_library = None;
                         gem_player.ui_state.playlists.cache_dirty = true;
                     }
 
@@ -1734,7 +1735,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         &mut gem_player.ui_state.library.sort_order,
                     );
                     if sort_changed {
-                        gem_player.ui_state.library.cache_dirty = true;
+                        gem_player.ui_state.library.cached_library = None;
                     }
                 }
                 View::Queue => {
@@ -1752,7 +1753,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Playlists => {
                     let search_changed = render_search(ui, &mut gem_player.ui_state.search);
                     if search_changed {
-                        gem_player.ui_state.library.cache_dirty = true;
+                        // gem_player.ui_state.library.cache_dirty = true; TODO
                         gem_player.ui_state.playlists.cache_dirty = true;
                     }
                 }

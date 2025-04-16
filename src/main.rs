@@ -141,8 +141,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             search: String::new(),
             cached_artwork_uri: None,
             library: LibraryViewState {
-                cached_library: Vec::new(),
-                cache_dirty: true,
+                cached_library: None,
                 selected_track_key: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
@@ -238,7 +237,6 @@ pub fn handle_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
         for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
             gem_player.playlists = playlists;
-            gem_player.ui_state.library.cache_dirty = true;
             gem_player.ui_state.playlists.cache_dirty = true;
         }
     }
