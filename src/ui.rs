@@ -1329,7 +1329,9 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let cached_playlist_tracks = gem_player.ui_state.playlists.cached_playlist_tracks.get_or_insert_with(|| {
         // Regenerate the cache.
 
-        let filtered: Vec<Track> = gem_player.playlists.get_by_path(&playlist_key)
+        let filtered: Vec<Track> = gem_player
+            .playlists
+            .get_by_path(&playlist_key)
             .tracks
             .iter()
             .filter(|track| {
