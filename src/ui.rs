@@ -567,13 +567,13 @@ fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
                     artwork = Image::new(uri);
                 }
                 Some(cached_uri) => {
-                    // Artwork has change. Release the cached uri.
+                    // Artwork has changed. Release the cached uri and save the new one.
                     ui.ctx().forget_image(cached_uri);
                     artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
                     gem_player.ui_state.cached_artwork_uri = Some(uri);
                 }
                 None => {
-                    // No cache, load new artwork.
+                    // No cache, load new artwork and cache it.
                     artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
                     gem_player.ui_state.cached_artwork_uri = Some(uri);
                 }
