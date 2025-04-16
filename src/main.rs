@@ -223,7 +223,7 @@ impl eframe::App for GemPlayer {
         handle_key_commands(ctx, self);
 
         check_for_next_track(self);
-        handle_watcher_inbox(self, ctx);
+        read_library_watcher_inbox(self, ctx);
 
         // ctx.set_debug_on_hover(true); // For debugging.
         // info!("Frame time: {:.2} ms", _frame.info().cpu_usage.unwrap_or(0.0) * 1000.0);
@@ -232,7 +232,7 @@ impl eframe::App for GemPlayer {
     }
 }
 
-pub fn handle_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn read_library_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
     if let Some(inbox) = &mut gem_player.library_watcher_inbox {
         for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
