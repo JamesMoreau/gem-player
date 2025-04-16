@@ -19,7 +19,7 @@ use std::{
     time::{Duration, Instant},
 };
 use track::{load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
-use ui::{maybe_update_theme, render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
+use ui::{render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
 
 mod player;
 mod playlist;
@@ -138,7 +138,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         ui_state: UIState {
             current_view: View::Library,
             theme_preference,
-            theme_dirty: true,
             search: String::new(),
             cached_artwork_uri: None,
             library: LibraryViewState {
@@ -229,7 +228,6 @@ impl eframe::App for GemPlayer {
 
         // ctx.set_debug_on_hover(true); // For debugging.
         // info!("Frame time: {:.2} ms", _frame.info().cpu_usage.unwrap_or(0.0) * 1000.0);
-        maybe_update_theme(self, ctx);
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
     }

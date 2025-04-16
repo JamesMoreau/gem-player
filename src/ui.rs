@@ -41,7 +41,6 @@ pub enum View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
-    theme_dirty: bool,
     marquee: MarqueeState,
     search: String,
     cached_artwork_uri: Option<String>,
@@ -90,12 +89,8 @@ struct PlaylistsViewState {
     track_menu_is_open: bool,        // The menu is open for selected_playlist_path.
 }
 
-pub fn maybe_update_theme(gem_player: &mut GemPlayer, ctx: &Context) {
-    if !gem_player.ui_state.theme_dirty {
-        return; // We don't need to update the theme if it has not been changed.
-    }
-
-    match gem_player.ui_state.theme_preference {
+fn apply_theme(ctx: &Context, pref: ThemePreference) {
+    match pref {
         ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
         ThemePreference::Light => ctx.set_visuals(Visuals::light()),
         ThemePreference::System => {
@@ -1638,7 +1633,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let theme_was_changed = before != after;
                 if theme_was_changed {
-                    gem_player.ui_state.theme_dirty = true;
+                    apply_theme(ui.ctx(), after);
                 }
 
                 ui.add(Separator::default().spacing(32.0));
