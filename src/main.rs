@@ -28,7 +28,6 @@ mod ui;
 
 /*
 TODO:
-* probably rename filterd_and_sorted to tracks.
 * On web, egui takes only ~1ms per frame. Figure out what is taking up so much cpu.
 * egui context has these animation fields. could this be used for the marquee?
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
