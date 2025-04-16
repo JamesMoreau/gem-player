@@ -1725,6 +1725,7 @@ fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Library => {
                     let search_changed = render_search(ui, &mut gem_player.ui_state.search);
                     if search_changed {
+                        // We reset both caches since there is only one search text state variable.
                         gem_player.ui_state.library.cached_library = None;
                         gem_player.ui_state.playlists.cache_dirty = true;
                     }
