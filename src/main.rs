@@ -28,7 +28,7 @@ mod ui;
 
 /*
 TODO:
-* Use Option instead of boolean flags for cache in the ui state.
+* probably rename filterd_and_sorted to tracks.
 * On web, egui takes only ~1ms per frame. Figure out what is taking up so much cpu.
 * egui context has these animation fields. could this be used for the marquee?
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
@@ -149,8 +149,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
-                cached_playlist_tracks: Vec::new(),
-                cache_dirty: true,
+                cached_playlist_tracks: None,
                 playlist_rename: None,
                 delete_playlist_modal_is_open: false,
                 selected_track_key: None,
@@ -237,7 +236,8 @@ pub fn read_library_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
         for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
             gem_player.playlists = playlists;
-            gem_player.ui_state.playlists.cache_dirty = true;
+            gem_player.ui_state.library.cached_library = None;
+            gem_player.ui_state.playlists.cached_playlist_tracks = None;
         }
     }
 }
