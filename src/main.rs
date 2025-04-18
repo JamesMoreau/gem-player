@@ -242,7 +242,6 @@ impl eframe::App for GemPlayer {
         // Render
         #[cfg(debug_assertions)]
         puffin::profile_scope!("UI render");
-        
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
     }
