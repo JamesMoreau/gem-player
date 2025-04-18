@@ -29,6 +29,7 @@ mod ui;
 /*
 TODO:
 * On web, egui takes only ~1ms per frame. Figure out what is taking up so much cpu.
+* maybe switch to simple_logger ?
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 */
 
@@ -53,6 +54,14 @@ pub struct GemPlayer {
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if run with `RUST_LOG=debug`).
     info!("Starting up Gem Player.");
+
+    #[cfg(debug_assertions)]
+    {
+        let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
+        let _ = Box::leak(Box::new(puffin_http::Server::new(&server_addr).unwrap()));
+        eprintln!("Serving demo profile data on {server_addr}. Run `puffin_viewer` to view it.");
+        puffin::set_scopes_on(true);
+    }
 
     let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("The icon data must be valid");
 
@@ -217,13 +226,23 @@ impl eframe::App for GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        #[cfg(debug_assertions)]
+        {
+            puffin::GlobalProfiler::lock().new_frame();
+            puffin::profile_function!();
+        }
+
+        // Input
         handle_key_commands(ctx, self);
 
+        // Update
         check_for_next_track(self);
         read_library_watcher_inbox(self, ctx);
 
-        // ctx.set_debug_on_hover(true); // For debugging.
-        // info!("Frame time: {:.2} ms", _frame.info().cpu_usage.unwrap_or(0.0) * 1000.0);
+        // Render
+        #[cfg(debug_assertions)]
+        puffin::profile_scope!("UI render");
+        
         render_gem_player(self, ctx);
         self.ui_state.toasts.show(ctx);
     }

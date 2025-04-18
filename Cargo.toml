@@ -35,6 +35,8 @@ dark-light = "2.0.0"
 function_name = "0.3.0"
 font-kit = "0.14.2"
 fully_pub = "0.1.4"
+puffin = "0.19.1"
+puffin_http = "0.16.1"
 
 [package.metadata.bundle]
 name = "Gem Player"
