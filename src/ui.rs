@@ -134,7 +134,7 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| {
-                    render_navigation_ui(ui, gem_player);
+                    render_navigation_bar(ui, gem_player);
                 });
             });
     });
@@ -1674,7 +1674,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-fn render_navigation_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         ui.columns_const(|[left, center, right]| {
             left.with_layout(Layout::left_to_right(Align::Center), |ui| {
