@@ -61,6 +61,7 @@ fn main() -> eframe::Result {
         let _ = Box::leak(Box::new(puffin_http::Server::new(&server_addr).unwrap()));
         eprintln!("Serving demo profile data on {server_addr}. Run `puffin_viewer` to view it.");
         puffin::set_scopes_on(true);
+        // To add profile data, use puffin::profile_function!() or puffin::profile_scope!() in the desired locations.
     }
 
     let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("The icon data must be valid");
