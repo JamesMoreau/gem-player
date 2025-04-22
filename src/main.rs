@@ -28,7 +28,6 @@ mod ui;
 
 /*
 TODO:
-* what should we do if current song is done playing and there's nothing left in the queue?
 * On web, egui takes only ~1ms per frame. Figure out what is taking up so much cpu.
 * maybe switch to simple_logger ?
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
