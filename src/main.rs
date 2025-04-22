@@ -55,15 +55,6 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if run with `RUST_LOG=debug`).
     info!("Starting up Gem Player.");
 
-    #[cfg(debug_assertions)]
-    {
-        let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
-        let _ = Box::leak(Box::new(puffin_http::Server::new(&server_addr).unwrap()));
-        eprintln!("Serving demo profile data on {server_addr}. Run `puffin_viewer` to view it.");
-        puffin::set_scopes_on(true);
-        // To add profile data, use puffin::profile_function!() or puffin::profile_scope!() in the desired locations.
-    }
-
     let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("The icon data must be valid");
 
     let options = eframe::NativeOptions {
@@ -227,12 +218,6 @@ impl eframe::App for GemPlayer {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        #[cfg(debug_assertions)]
-        {
-            puffin::GlobalProfiler::lock().new_frame();
-            puffin::profile_function!();
-        }
-
         // Input
         handle_key_commands(ctx, self);
 
