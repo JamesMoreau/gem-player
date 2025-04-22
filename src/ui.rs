@@ -56,8 +56,8 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 
 #[fully_pub]
 pub struct MarqueeState {
-    offset: usize,
     track_identifier: Option<PathBuf>,
+    offset: usize,
 
     last_update: Instant,
     next_update: Instant,
@@ -504,8 +504,8 @@ fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut 
 
         // Reset marquee state if track changes.
         if marquee.track_identifier != track_identifier || marquee.track_identifier.is_none() {
-            marquee.offset = 0;
             marquee.track_identifier = track_identifier.clone();
+            marquee.offset = 0;
             marquee.pause_until = Some(now + MARQUEE_PAUSE_DURATION);
             marquee.last_update = now;
             marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
