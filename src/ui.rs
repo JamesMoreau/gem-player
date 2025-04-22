@@ -475,12 +475,14 @@ fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut 
 
         let format_colored_marquee_text = |s: &str| {
             let mut job = text::LayoutJob::default();
+
             for (i, part) in s.split(" / ").enumerate() {
                 if i > 0 {
                     job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(style), divider_color));
                 }
                 job.append(part, 0.0, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
             }
+
             job
         };
 
