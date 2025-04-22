@@ -50,6 +50,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     }
 
     if player.queue.is_empty() {
+        player.playing = None;
         return Ok(()); // Nothing to play
     }
 
