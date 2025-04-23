@@ -554,7 +554,7 @@ fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
 
     if let Some(playing_track) = &gem_player.player.playing {
         if let Some(artwork_bytes) = &playing_track.artwork {
-            let uri = format!("bytes://artwork-{}", playing_track.path.to_string_lossy());
+            let uri = format!("bytes://{}", playing_track.path.to_string_lossy());
 
             match &gem_player.ui_state.cached_artwork_uri {
                 Some(cached_uri) if *cached_uri == uri => {
