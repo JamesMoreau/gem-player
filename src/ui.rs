@@ -43,7 +43,7 @@ pub struct UIState {
     theme_preference: ThemePreference,
     marquee: MarqueeState,
     search: String,
-    cached_artwork_uri: Option<String>,
+    cached_artwork_uri: Option<String>, // The uri pointing to the cached texture for the artwork of the currently playing track.
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
