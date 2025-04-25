@@ -56,7 +56,7 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 
 #[fully_pub]
 pub struct MarqueeState {
-    track_identifier: Option<PathBuf>, // We need to know when the track changes to reset the offset.
+    track_identifier: Option<PathBuf>, // We need to know when the track changes to reset.
     offset: usize,
 
     last_update: Instant,
