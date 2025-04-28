@@ -35,7 +35,7 @@ pub const VOLUME_STORAGE_KEY: &str = "volume";
 
 #[fully_pub]
 pub struct GemPlayer {
-    pub ui_state: UIState,
+    pub ui: UIState,
 
     pub library: Vec<Track>,
     pub playlists: Vec<Playlist>,
@@ -130,7 +130,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     }
 
     GemPlayer {
-        ui_state: UIState {
+        ui: UIState {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
@@ -206,7 +206,7 @@ impl eframe::App for GemPlayer {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
 
-        let theme_ron_string = ron::to_string(&self.ui_state.theme_preference).unwrap();
+        let theme_ron_string = ron::to_string(&self.ui.theme_preference).unwrap();
         storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
 
         let volume_ron_string = ron::to_string(&self.player.sink.volume()).unwrap();
@@ -223,7 +223,7 @@ impl eframe::App for GemPlayer {
 
         // Render
         render_gem_player(self, ctx);
-        self.ui_state.toasts.show(ctx);
+        self.ui.toasts.show(ctx);
     }
 }
 
@@ -232,8 +232,8 @@ pub fn read_library_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
         for (tracks, playlists) in inbox.read(ctx) {
             gem_player.library = tracks;
             gem_player.playlists = playlists;
-            gem_player.ui_state.library.cached_library = None;
-            gem_player.ui_state.playlists.cached_playlist_tracks = None;
+            gem_player.ui.library.cached_library = None;
+            gem_player.ui.playlists.cached_playlist_tracks = None;
         }
     }
 }
@@ -318,7 +318,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);
-        gem_player.ui_state.toasts.error("Error playing the next track");
+        gem_player.ui.toasts.error("Error playing the next track");
     }
 }
 
@@ -327,7 +327,7 @@ pub fn maybe_play_next(gem_player: &mut GemPlayer) {
     let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);
-        gem_player.ui_state.toasts.error("Error playing the next track");
+        gem_player.ui.toasts.error("Error playing the next track");
     }
 }
 
@@ -345,7 +345,7 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     if can_go_previous {
         if let Err(e) = play_previous(&mut gem_player.player) {
             error!("{}", e);
-            gem_player.ui_state.toasts.error("Error playing the previous track");
+            gem_player.ui.toasts.error("Error playing the previous track");
         }
     } else {
         if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
