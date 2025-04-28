@@ -126,7 +126,7 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
     })
 }
 
-fn is_relevant_media_file(path: &Path) -> bool {
+pub fn is_relevant_media_file(path: &Path) -> bool {
     if let Ok(data) = fs::read(path) {
         if let Some(kind) = infer::get(&data) {
             return matches!(kind.matcher_type(), infer::MatcherType::Audio | infer::MatcherType::Video);

@@ -1,5 +1,6 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, maybe_play_next, maybe_play_previous, play_library, play_playlist,
+    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library,
+    play_playlist,
     player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
@@ -103,6 +104,11 @@ fn apply_theme(ctx: &Context, pref: ThemePreference) {
 
 pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
     custom_window_frame(ctx, "", |ui| {
+        let is_dropping_files = render_drop_files_area(ui, gem_player);
+        if is_dropping_files {
+            return; // Don't render anything else if files are being dropped.
+        }
+
         let control_ui_height = 64.0;
         let navigation_ui_height = 32.0;
         let separator_space = 2.0; // Even numbers seem to work better for getting pixel perfect placements.
@@ -251,6 +257,49 @@ fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &s
 fn switch_view(ui_state: &mut UIState, view: View) {
     info!("Switching to view: {:?}", view);
     ui_state.current_view = view;
+}
+
+fn render_drop_files_area(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
+    let mut drop_area_is_active = false;
+
+    let files_are_hovered = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
+    let files_were_dropped = ui.ctx().input(|i| !i.raw.dropped_files.is_empty());
+
+    if files_were_dropped {
+        ui.ctx().input(|i| {
+            for dropped_file in &i.raw.dropped_files {
+                let result = handle_dropped_file(dropped_file, gem_player);
+                if let Err(e) = result {
+                    gem_player.ui_state.toasts.error(format!("Error adding file: {}", e));
+                } else {
+                    let file_name = dropped_file
+                        .path
+                        .as_ref()
+                        .and_then(|p| p.file_name())
+                        .and_then(|f| f.to_str())
+                        .unwrap_or("Unnamed file");
+
+                    gem_player.ui_state.toasts.success(format!("Added '{}' to Library.", file_name));
+                }
+            }
+        });
+    }
+
+    if files_are_hovered {
+        Frame::new()
+            .outer_margin(Margin::symmetric(
+                (ui.available_width() * (1.0 / 4.0)) as i8,
+                (ui.available_height() * (1.0 / 4.0)) as i8,
+            ))
+            .show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(unselectable_label(format!("Drop to add to Library.{}", icons::ICON_DOWNLOAD)));
+                });
+            });
+        drop_area_is_active = true;
+    }
+
+    drop_area_is_active
 }
 
 fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
