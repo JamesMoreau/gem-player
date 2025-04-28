@@ -24,6 +24,7 @@ mod ui;
 
 /*
 TODO:
+* maybe just get rid of library and playlist tracks cached in the UIState.
 * multiple selection of tracks.
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 */
