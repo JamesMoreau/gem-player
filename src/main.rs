@@ -25,7 +25,6 @@ mod ui;
 /*
 TODO:
 * multiple selection of tracks.
-* drag and drop songs into the library?
 * On web, egui takes only ~1ms per frame. Figure out what is taking up so much cpu.
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 */
