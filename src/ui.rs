@@ -1775,19 +1775,19 @@ fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui.current_view {
                 View::Library => {
-                    let search_changed = render_search(ui, &mut gem_player.ui.search);
-                    if search_changed {
+                    let search_was_changed = render_search(ui, &mut gem_player.ui.search);
+                    if search_was_changed {
                         // We reset both caches since there is only one search text state variable.
                         gem_player.ui.library.cached_library = None;
                         gem_player.ui.playlists.cached_playlist_tracks = None;
                     }
 
-                    let sort_changed = render_sort_and_order_by(
+                    let sort_was_changed = render_sort_and_order_by(
                         ui,
                         &mut gem_player.ui.library.sort_by,
                         &mut gem_player.ui.library.sort_order,
                     );
-                    if sort_changed {
+                    if sort_was_changed {
                         gem_player.ui.library.cached_library = None;
                     }
                 }
