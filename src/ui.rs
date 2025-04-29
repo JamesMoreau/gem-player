@@ -13,7 +13,7 @@ use dark_light::Mode;
 use eframe::egui::{
     containers, include_image, os::OperatingSystem, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context,
     Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
-    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals,
+    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_inbox::UiInbox;
@@ -1872,6 +1872,6 @@ fn render_search(ui: &mut Ui, search_text: &mut String) -> bool {
     changed
 }
 
-fn unselectable_label(text: impl Into<RichText>) -> Label {
-    Label::new(text.into()).selectable(false)
+fn unselectable_label(text: impl Into<WidgetText>) -> Label {
+    Label::new(text).selectable(false)
 }
