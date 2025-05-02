@@ -587,7 +587,8 @@ fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut 
             }
         }
 
-        ui.ctx().request_repaint_after(marquee.next_update - now);
+        let next_update_in = marquee.next_update - now;
+        ui.ctx().request_repaint_after(next_update_in);
 
         let display_text: String = text.chars().chain(text.chars()).skip(marquee.offset).take(visible_chars).collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
