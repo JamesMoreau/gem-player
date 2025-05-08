@@ -1,5 +1,5 @@
 use eframe::egui::{
-    Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals
+    Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals,
 };
 use egui_inbox::{UiInbox, UiInboxSender};
 use egui_notify::Toasts;
@@ -12,7 +12,11 @@ use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStream, Sink};
 use std::{
-    collections::HashMap, fs, io, path::{Path, PathBuf}, sync::Arc, time::{Duration, Instant}
+    collections::HashMap,
+    fs, io,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::{Duration, Instant},
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
@@ -537,7 +541,10 @@ pub fn handle_dropped_file(dropped_file: &DroppedFile, gem_player: &mut GemPlaye
     };
 
     if !is_relevant_media_file(path) {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file is not a relevant media file"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Dropped file is not a relevant media file",
+        ));
     }
 
     let destination = library_path.join(file_name);

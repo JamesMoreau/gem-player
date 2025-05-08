@@ -755,12 +755,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(26.0, cached_library.len(), |mut row| {
                 let track = &cached_library[row.index()];
 
-                let row_is_selected = gem_player
-                    .ui
-                    .library
-                    .selected_track_key
-                    .as_ref()
-                    .is_some_and(|t| *t == track.path);
+                let row_is_selected = gem_player.ui.library.selected_track_key.as_ref().is_some_and(|t| *t == track.path);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -1783,11 +1778,8 @@ fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         gem_player.ui.playlists.cached_playlist_tracks = None;
                     }
 
-                    let sort_was_changed = render_sort_and_order_by(
-                        ui,
-                        &mut gem_player.ui.library.sort_by,
-                        &mut gem_player.ui.library.sort_order,
-                    );
+                    let sort_was_changed =
+                        render_sort_and_order_by(ui, &mut gem_player.ui.library.sort_by, &mut gem_player.ui.library.sort_order);
                     if sort_was_changed {
                         gem_player.ui.library.cached_library = None;
                     }
