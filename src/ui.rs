@@ -293,7 +293,7 @@ fn render_drop_files_area(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
             ))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label(format!("Drop to add to Library.{}", icons::ICON_DOWNLOAD)));
+                    ui.add(unselectable_label(format!("Drop tracks here to add them to your library.{}", icons::ICON_DOWNLOAD)));
                 });
             });
         drop_area_is_active = true;
