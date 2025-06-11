@@ -78,6 +78,10 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
         return Err(e.to_string());
     }
 
+    if let Some(playing) = player.playing.take() {
+        enqueue_next(player, playing);
+    }
+    
     player.playing = Some(previous);
     Ok(())
 }

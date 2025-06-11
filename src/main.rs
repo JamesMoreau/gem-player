@@ -28,7 +28,7 @@ mod ui;
 
 /*
 TODO:
-* There is a bug where sometimes navigating back doesn't store the song back to the queue. I think this has to do with the threshold.
+* Do something better with the library watcher on startyp. The debouncing takes a while, so the library is not immediately available.
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * multiple selection of tracks. We need new egui popup menu API for this.
 */
