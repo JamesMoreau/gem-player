@@ -28,7 +28,6 @@ mod ui;
 
 /*
 TODO:
-* Do something better with the library watcher on startyp. The debouncing takes a while, so the library is not immediately available.
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * multiple selection of tracks. We need new egui popup menu API for this.
 */
@@ -124,10 +123,15 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         match result {
             Ok(dw) => {
                 info!("Started watching: {:?}", directory);
+
+                // We want to load the library manually since the watcher will only fire if there is a file event.
+                let (tracks, playlists) = load_library(directory);
+                if i.sender().send((tracks, playlists)).is_err() {
+                    error!("Unable to send initial library to inbox.");
+                }
+
                 watcher = Some(dw);
                 watcher_inbox = Some(i);
-
-                tickle_watcher(directory);
             }
             Err(e) => error!("Failed to start watching the library directory: {e}"),
         }
@@ -299,19 +303,6 @@ fn start_library_watcher(path: &Path, sender: UiInboxSender<(Vec<Track>, Vec<Pla
     }
 
     Ok(debouncer)
-}
-
-/// Manually creates a file, then deletes it in order to trigger the file watcher callback.
-fn tickle_watcher(directory: &Path) {
-    let path = directory.join(".watcher-tickle.tmp");
-    if let Err(e) = std::fs::write(&path, b"ping") {
-        error!("Failed to write temp file to trigger watcher: {:?}", e);
-        return;
-    }
-
-    if let Err(e) = std::fs::remove_file(&path) {
-        error!("Failed to remove temp file to trigger watcher: {:?}", e);
-    }
 }
 
 pub fn check_for_next_track(gem_player: &mut GemPlayer) {

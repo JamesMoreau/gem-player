@@ -1,13 +1,7 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library,
-    play_playlist,
-    player::{
+    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, load_library, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
-    },
-    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval},
-    start_library_watcher, tickle_watcher,
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    GemPlayer, Track, KEY_COMMANDS,
+    }, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, PlaylistRetrieval}, start_library_watcher, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
 };
 use dark_light::Mode;
 use eframe::egui::{
@@ -293,7 +287,10 @@ fn render_drop_files_area(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
             ))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label(format!("Drop tracks here to add them to your library.{}", icons::ICON_DOWNLOAD)));
+                    ui.add(unselectable_label(format!(
+                        "Drop tracks here to add them to your library.{}",
+                        icons::ICON_DOWNLOAD
+                    )));
                 });
             });
         drop_area_is_active = true;
@@ -1659,10 +1656,15 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 match result {
                                     Ok(dw) => {
                                         info!("Started watching: {:?}", &directory);
+
+                                        let (tracks, playlists) = load_library(&directory);
+                                        if i.sender().send((tracks, playlists)).is_err() {
+                                            error!("Unable to send initial library to inbox.");
+                                        }
+
                                         gem_player.library_watcher = Some(dw);
                                         gem_player.library_watcher_inbox = Some(i);
-
-                                        tickle_watcher(&directory);
+                                        gem_player.library_directory = Some(directory);
                                     }
                                     Err(e) => error!("Failed to start watching the library directory: {e}"),
                                 }
