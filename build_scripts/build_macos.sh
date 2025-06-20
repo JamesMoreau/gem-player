@@ -23,7 +23,8 @@ codesign --force --deep --options runtime --sign "Developer ID Application: $NAM
 
 echo "📦 Creating a DMG..."
 create-dmg \
-  --volname "$APP_NAME" \
+  --volname "$APP_NAME Installer" \
+  --app-drop-link 0 0 \
   --codesign "Developer ID Application: $NAME ($TEAM_ID)" \
   "$DMG_PATH" \
   "$BUNDLE_PATH"
