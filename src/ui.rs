@@ -5,7 +5,7 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, os::OperatingSystem, popup_above_or_below_widget, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, PopupCloseBehavior, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText
+    containers, include_image, os::OperatingSystem, text, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, Popup, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_inbox::UiInbox;
@@ -877,7 +877,6 @@ fn render_library_track_menu(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                         error!("{}", e);
                                         gem_player.ui.toasts.error(format!("{}", e));
                                     }
-                                    ui.close_menu();
                                     gem_player.ui.library.track_menu_is_open = false;
                                     gem_player.ui.playlists.cached_playlist_tracks = None;
                                 }
@@ -1816,19 +1815,12 @@ fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
 }
 
 fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
-    let popup_id = ui.make_persistent_id("sort_by_popup");
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
-    if response.clicked() {
-        ui.memory_mut(|mem| mem.toggle_popup(popup_id));
-    }
 
     let mut sort_by_changed = false;
     let mut sort_order_changed = false;
 
-    let close_on_click_outside = PopupCloseBehavior::CloseOnClickOutside;
-    popup_above_or_below_widget(ui, popup_id, &response, AboveOrBelow::Above, close_on_click_outside, |ui| {
-        ui.set_min_width(100.0);
-
+    Popup::menu(&response).show(|ui| {
         for sb in SortBy::iter() {
             sort_by_changed |= ui.radio_value(sort_by, sb, format!("{:?}", sb)).changed();
         }
