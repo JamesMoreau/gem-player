@@ -10,7 +10,7 @@ use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
 use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
-use rodio::{OutputStream, Sink};
+use rodio::{OutputStreamBuilder, Sink};
 use std::{
     collections::HashMap,
     fs, io,
@@ -88,8 +88,9 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     load_system_fonts(&mut fonts);
     cc.egui_ctx.set_fonts(fonts);
 
-    let (stream, handle) = OutputStream::try_default().expect("Failed to initialize audio output");
-    let sink = Sink::try_new(&handle).expect("Failed to create sink");
+    let stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize 
+    audio output");
+    let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
 
     let mut library_directory = None;
@@ -193,7 +194,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             volume_before_mute: None,
             paused_before_scrubbing: None,
 
-            stream,
+            stream_handle,
             sink,
         },
     }

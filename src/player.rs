@@ -19,8 +19,8 @@ pub struct Player {
     volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
-    stream: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink,           // Controls playback (play, pause, stop, etc.)
+    stream_handle: OutputStream, // Holds the OutputStream to keep it alive
+    sink: Sink,                  // Controls playback (play, pause, stop, etc.)
 }
 
 pub fn clear_the_queue(player: &mut Player) {
@@ -81,7 +81,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
     if let Some(playing) = player.playing.take() {
         enqueue_next(player, playing);
     }
-    
+
     player.playing = Some(previous);
     Ok(())
 }

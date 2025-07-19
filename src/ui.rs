@@ -5,9 +5,7 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, os::OperatingSystem, popup, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context,
-    Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
-    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
+    containers, include_image, os::OperatingSystem, popup_above_or_below_widget, text, AboveOrBelow, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton, PopupCloseBehavior, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_inbox::UiInbox;
@@ -1827,8 +1825,8 @@ fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut 
     let mut sort_by_changed = false;
     let mut sort_order_changed = false;
 
-    let close_on_click_outside = popup::PopupCloseBehavior::CloseOnClickOutside;
-    popup::popup_above_or_below_widget(ui, popup_id, &response, AboveOrBelow::Above, close_on_click_outside, |ui| {
+    let close_on_click_outside = PopupCloseBehavior::CloseOnClickOutside;
+    popup_above_or_below_widget(ui, popup_id, &response, AboveOrBelow::Above, close_on_click_outside, |ui| {
         ui.set_min_width(100.0);
 
         for sb in SortBy::iter() {
