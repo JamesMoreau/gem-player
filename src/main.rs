@@ -88,8 +88,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     load_system_fonts(&mut fonts);
     cc.egui_ctx.set_fonts(fonts);
 
-    let stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize 
-    audio output");
+    let stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
 
