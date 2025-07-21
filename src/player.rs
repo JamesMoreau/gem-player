@@ -4,7 +4,7 @@ use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     fs,
-    io::{self, BufReader, ErrorKind},
+    io::{self, ErrorKind},
 };
 
 #[fully_pub]
