@@ -727,9 +727,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // causing the right side of the table to be cut off by the window.
     ui.spacing_mut().item_spacing.x = 0.0;
 
-    let mut should_select_track = None;
     let mut should_play_library = None;
-
     let mut track_context_menu_action = None;
 
     TableBuilder::new(ui)
@@ -800,7 +798,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let response = ui.add(more_button).on_hover_text("More");
 
                             if response.clicked() {
-                                should_select_track = Some(track.path.clone());
+                                gem_player.ui.library.selected_track_key = Some(track.path.clone());
                             }
 
                             if let Some(selected_track_key) = &gem_player.ui.library.selected_track_key {
@@ -821,16 +819,16 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let response = row.response();
 
                 if response.clicked() {
-                    should_select_track = Some(track.path.clone());
+                    gem_player.ui.library.selected_track_key = Some(track.path.clone());
                 }
 
                 if response.double_clicked() {
-                    should_select_track = Some(track.path.clone());
+                    gem_player.ui.library.selected_track_key = Some(track.path.clone());
                     should_play_library = Some(track.clone());
                 }
 
                 if response.secondary_clicked() {
-                    should_select_track = Some(track.path.clone());
+                    gem_player.ui.library.selected_track_key = Some(track.path.clone());
                 }
 
                 if let Some(selected_track_key) = &gem_player.ui.library.selected_track_key {
@@ -848,10 +846,6 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 
     // Perform actions AFTER rendering the table to avoid borrow checker issues that come with mutating state inside closures.
-
-    if let Some(track_key) = should_select_track {
-        gem_player.ui.library.selected_track_key = Some(track_key);
-    }
 
     if let Some(track) = should_play_library {
         if let Err(e) = play_library(gem_player, Some(&track)) {
