@@ -30,6 +30,7 @@ mod ui;
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * multiple selection of tracks. We need new egui popup menu API for this.
+* open song file location should highlight file.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -148,7 +149,6 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 selected_track_key: None,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
-                track_menu_is_open: false,
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
@@ -168,7 +168,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 }),
             marquee: MarqueeState {
                 offset: 0,
-                track_identifier: None,
+                track_key: None,
                 last_update: Instant::now(),
                 next_update: Instant::now(),
                 pause_until: None,
