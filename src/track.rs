@@ -162,12 +162,12 @@ pub fn calculate_total_duration(tracks: &[Track]) -> Duration {
 }
 
 pub fn open_file_location(track: &Track) -> io::Result<()> {
-    let maybe_folder = track.path.as_path().parent();
-    let Some(folder) = maybe_folder else {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Track has no file path."));
-    };
-
-    open::that_detached(folder)?;
+    let path = track.path.as_path();
+    
+    let result = opener::reveal(path);
+    if let Err(e) = result {
+        return Err(io::Error::new(ErrorKind::Other, format!("Failed to open file location: {}", e)));
+    }
 
     Ok(())
 }

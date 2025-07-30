@@ -24,7 +24,7 @@ lofty = "0.22.4"
 rodio = { version = "0.21.1", features = ["symphonia-all"] }
 notify = "8.1.0"
 notify-debouncer-mini = "0.6.0"
-open = "5.3.2"
+opener = { version = "0.8.2", features = ["reveal"] }
 rfd = "0.15.4"
 serde = "1.0.219"
 ron = "0.10.1"

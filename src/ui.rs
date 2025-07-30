@@ -805,7 +805,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 Popup::menu(&response).show(|ui| {
                                     let track = gem_player.library.get_by_path(selected_track_key);
                                     let tracks = &[track];
-                                    
+
                                     let maybe_action = render_library_track_context_menu_ui(ui, tracks, &gem_player.playlists);
                                     if let Some(action) = maybe_action {
                                         track_context_menu_action = Some(action);
@@ -856,7 +856,6 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     // TODO: this should handle multiple selected tracks.
     if let Some(action) = track_context_menu_action {
-        println!("executing da action.");
         match action {
             LibraryTrackContextMenuAction::AddToPlaylist(playlist_key) => {
                 let Some(track_key) = &gem_player.ui.library.selected_track_key else {
@@ -874,6 +873,11 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 gem_player.ui.playlists.cached_playlist_tracks = None;
+
+                gem_player
+                    .ui
+                    .toasts
+                    .success(format!("Added {} track(s) to playlist '{}'", 1, playlist.name));
             }
             LibraryTrackContextMenuAction::EnqueueNext => {
                 let Some(track_key) = &gem_player.ui.library.selected_track_key else {
@@ -1809,7 +1813,7 @@ fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&playlist.tracks);
                         ui.add(unselectable_label(tracks_count_and_duration));
                     }
-                    _ => {}
+                    View::Settings => {}
                 }
             });
 
