@@ -802,10 +802,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                             if let Some(selected_track_key) = &gem_player.ui.library.selected_track_key {
                                 Popup::menu(&response).show(|ui| {
-                                    let track = gem_player.library.get_by_path(selected_track_key);
-                                    let tracks = &[track];
-
-                                    let maybe_action = library_context_menu_ui(ui, tracks, &gem_player.playlists);
+                                    let maybe_action = library_context_menu_ui(ui, 1, &gem_player.playlists);
                                     if let Some(action) = maybe_action {
                                         context_menu_action = Some(action);
                                     }
@@ -835,7 +832,7 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let track = gem_player.library.get_by_path(selected_track_key);
                         let tracks = &[track];
 
-                        let maybe_action = library_context_menu_ui(ui, tracks, &gem_player.playlists);
+                        let maybe_action = library_context_menu_ui(ui, 1, &gem_player.playlists);
                         if let Some(action) = maybe_action {
                             context_menu_action = Some(action);
                         }
@@ -921,11 +918,11 @@ enum LibraryContextMenuAction {
     OpenFileLocation,
 }
 
-fn library_context_menu_ui(ui: &mut Ui, tracks: &[&Track], playlists: &[Playlist]) -> Option<LibraryContextMenuAction> {
+fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists: &[Playlist]) -> Option<LibraryContextMenuAction> {
     let modal_width = 220.0;
     ui.set_width(modal_width);
 
-    ui.add_enabled(false, Label::new(format!("{} track(s) selected", tracks.len())));
+    ui.add_enabled(false, Label::new(format!("{} track(s) selected", selected_tracks_count)));
 
     ui.separator();
 
@@ -1541,7 +1538,7 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let response = ui.add(more_button).on_hover_text("More");
 
                             Popup::menu(&response).show(|ui| {
-                                let maybe_action = playlist_context_menu_ui(ui);
+                                let maybe_action = playlist_context_menu_ui(ui, 1);
                                 if let Some(action) = maybe_action {
                                     context_menu_action = Some(action);
                                 }
@@ -1567,7 +1564,7 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 Popup::context_menu(&response).show(|ui| {
-                    let maybe_action = playlist_context_menu_ui(ui);
+                    let maybe_action = playlist_context_menu_ui(ui, 1);
                     if let Some(action) = maybe_action {
                         context_menu_action = Some(action);
                     }
@@ -1648,11 +1645,11 @@ enum PlaylistContextMenuAction {
     OpenFileLocation,
 }
 
-fn playlist_context_menu_ui(ui: &mut Ui) -> Option<PlaylistContextMenuAction> {
+fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option<PlaylistContextMenuAction> {
     let modal_width = 220.0;
     ui.set_width(modal_width);
 
-    ui.add_enabled(false, Label::new(format!("{} track(s) selected", 1)));
+    ui.add_enabled(false, Label::new(format!("{} track(s) selected", selected_tracks_count)));
 
     ui.separator();
 
