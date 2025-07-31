@@ -12,7 +12,7 @@ use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStreamBuilder, Sink};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs, io,
     path::{Path, PathBuf},
     sync::Arc,
@@ -145,7 +145,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             cached_artwork_uri: None,
             library: LibraryViewState {
                 cached_library: None,
-                selected_track_key: None,
+                selected_tracks: HashSet::new(),
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
             },
