@@ -1540,7 +1540,7 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let more_button = Button::new(icons::ICON_MORE_HORIZ);
                             let response = ui.add(more_button).on_hover_text("More");
 
-                            Popup::context_menu(&response).show(|ui| {
+                            Popup::menu(&response).show(|ui| {
                                 let maybe_action = playlist_context_menu_ui(ui);
                                 if let Some(action) = maybe_action {
                                     context_menu_action = Some(action);
