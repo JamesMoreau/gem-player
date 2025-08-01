@@ -77,7 +77,7 @@ struct LibraryViewState {
 #[fully_pub]
 struct PlaylistsViewState {
     selected_playlist_key: Option<PathBuf>, // None: no playlist is selected. Some: the path of the selected playlist.
-    selected_track_key: Option<PathBuf>,
+    selected_tracks: HashSet<PathBuf>,
 
     cached_playlist_tracks: Option<Vec<Track>>,
 
@@ -822,16 +822,17 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let already_selected = gem_player.ui.library.selected_tracks.contains(&track.path);
 
                 if primary_clicked || secondary_clicked {
+                    let selected_tracks = &mut gem_player.ui.library.selected_tracks;
                     if secondary_clicked {
-                        if gem_player.ui.library.selected_tracks.is_empty() || !already_selected {
-                            gem_player.ui.library.selected_tracks.clear();
-                            gem_player.ui.library.selected_tracks.insert(track.path.clone());
+                        if selected_tracks.is_empty() || !already_selected {
+                            selected_tracks.clear();
+                            selected_tracks.insert(track.path.clone());
                         }
                     } else {
                         if !shift_is_pressed {
-                            gem_player.ui.library.selected_tracks.clear();
+                            selected_tracks.clear();
                         }
-                        gem_player.ui.library.selected_tracks.insert(track.path.clone());
+                        selected_tracks.insert(track.path.clone());
                     }
                 }
 
@@ -1472,6 +1473,9 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
 
+    let mut shift_is_pressed = false; // Used to determine if selection should be extended.
+    ui.input(|i| shift_is_pressed = i.modifiers.shift);
+
     let mut should_play_playlist = None;
     let mut context_menu_action = None;
 
@@ -1500,12 +1504,7 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let index = row.index();
                 let track = &cached_playlist_tracks[index];
 
-                let row_is_selected = gem_player
-                    .ui
-                    .playlists
-                    .selected_track_key
-                    .as_ref()
-                    .is_some_and(|p| *p == track.path);
+                let row_is_selected = gem_player.ui.playlists.selected_tracks.contains(&track.path);
                 row.set_selected(row_is_selected);
 
                 row.col(|ui| {
@@ -1566,18 +1565,27 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = row.response();
 
-                if response.clicked() {
-                    gem_player.ui.playlists.selected_track_key = Some(track.path.clone());
-                }
+                let secondary_clicked = response.secondary_clicked();
+                let primary_clicked = response.clicked() || response.double_clicked();
+                let already_selected = gem_player.ui.playlists.selected_tracks.contains(&track.path);
 
-                if response.secondary_clicked() {
-                    gem_player.ui.playlists.selected_track_key = Some(track.path.clone());
+                if primary_clicked || secondary_clicked {
+                    let selected_tracks = &mut gem_player.ui.playlists.selected_tracks;
+                    if secondary_clicked {
+                        if selected_tracks.is_empty() || !already_selected {
+                            selected_tracks.clear();
+                            selected_tracks.insert(track.path.clone());
+                        }
+                    } else {
+                        if !shift_is_pressed {
+                            selected_tracks.clear();
+                        }
+                        selected_tracks.insert(track.path.clone());
+                    }
                 }
 
                 if response.double_clicked() {
-                    gem_player.ui.playlists.selected_track_key = Some(track.path.clone());
-                    let playlist_key = gem_player.playlists.get_by_path(&playlist_key).m3u_path.clone();
-                    should_play_playlist = Some((playlist_key, track.path.clone()));
+                    should_play_playlist = Some((playlist_key.clone(), track.path.clone()));
                 }
 
                 Popup::context_menu(&response).show(|ui| {
@@ -1592,55 +1600,71 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if let Some(action) = context_menu_action {
         match action {
             PlaylistContextMenuAction::RemoveFromPlaylist => {
-                let Some(track_key) = &gem_player.ui.playlists.selected_track_key else {
-                    error!("No track selected for removing track from playlist next");
-                    return;
-                };
-
                 let Some(playlist_key) = &gem_player.ui.playlists.selected_playlist_key else {
                     error!("No playlist selected for removing track from playlist");
                     return;
                 };
 
-                let result = remove_from_playlist(gem_player.playlists.get_by_path_mut(playlist_key), track_key);
-                if let Err(e) = result {
-                    let message = format!("Error removing track from playlist: {}", e);
-                    error!("{}", message);
-                    gem_player.ui.toasts.error(message);
+                if gem_player.ui.playlists.selected_tracks.is_empty() {
+                    error!("No track(s) selected for removing track from playlist next");
+                    return;
+                };
+
+                let playlist = gem_player.playlists.get_by_path_mut(playlist_key);
+
+                let mut added_count = 0;
+                for track_key in &gem_player.ui.playlists.selected_tracks {
+                    if let Err(e) = remove_from_playlist(playlist, track_key) {
+                        error!("Failed to remove track from playlist: {}", e);
+                    } else {
+                        added_count += 1;
+                    }
+                }
+
+                gem_player.ui.playlists.cached_playlist_tracks = None;
+
+                if added_count > 0 {
+                    let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
+                    info!("{}", message);
+                    gem_player.ui.toasts.success(message);
                 } else {
-                    gem_player.ui.playlists.cached_playlist_tracks = None;
-                    info!("Removed track from playlist");
+                    gem_player.ui.toasts.error("No tracks were removed.");
                 }
             }
             PlaylistContextMenuAction::EnqueueNext => {
-                let Some(track_key) = &gem_player.ui.playlists.selected_track_key else {
-                    error!("No track selected for enqueue next");
+                if gem_player.ui.playlists.selected_tracks.is_empty() {
+                    error!("No track(s) selected for enqueue next");
                     return;
                 };
 
-                let track = gem_player.playlists.get_by_path(&playlist_key).tracks.get_by_path(track_key);
-                enqueue_next(&mut gem_player.player, track.clone());
+                let playlist = gem_player.playlists.get_by_path(&playlist_key);
+                for track in &playlist.tracks {
+                    enqueue_next(&mut gem_player.player, track.clone());
+                }
             }
             PlaylistContextMenuAction::Enqueue => {
-                let Some(track_key) = &gem_player.ui.playlists.selected_track_key else {
-                    error!("No track selected for enqueue");
+                if gem_player.ui.playlists.selected_tracks.is_empty() {
+                    error!("No track(s) selected for enqueue");
                     return;
                 };
 
-                let track = gem_player.playlists.get_by_path(&playlist_key).tracks.get_by_path(track_key);
-                enqueue(&mut gem_player.player, track.clone());
+                let playlist = gem_player.playlists.get_by_path(&playlist_key);
+                for track in &playlist.tracks {
+                    enqueue(&mut gem_player.player, track.clone());
+                }
             }
             PlaylistContextMenuAction::OpenFileLocation => {
-                let Some(track_key) = &gem_player.ui.playlists.selected_track_key else {
-                    error!("No track selected for opening file location");
+                let Some(first_track_key) = gem_player.ui.playlists.selected_tracks.iter().next() else {
+                    error!("No track(s) selected for opening file location");
                     return;
                 };
 
-                let track = gem_player.playlists.get_by_path(&playlist_key).tracks.get_by_path(track_key);
-                let result = open_file_location(track);
-                match result {
-                    Err(e) => error!("{}", e),
-                    Ok(_) => info!("Opening track location"),
+                let playlist = gem_player.playlists.get_by_path(&playlist_key);
+                let first_track = playlist.tracks.get_by_path(first_track_key);
+                if let Err(e) = open_file_location(first_track) {
+                    error!("Failed to open track location: {}", e);
+                } else {
+                    info!("Opening track location: {}", first_track.path.display());
                 }
             }
         }
@@ -1805,11 +1829,8 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
                 ui.add(unselectable_label("James Moreau"));
                 ui.hyperlink_to("jamesmoreau.github.io", "https://jamesmoreau.github.io");
-
-                ui.add(Separator::default().spacing(32.0));
-
-                ui.add(unselectable_label(RichText::new("Support").heading()));
                 ui.add_space(8.0);
+
                 ui.horizontal_wrapped(|ui| {
                     ui.add(unselectable_label("If you like this project, consider supporting me:"));
                     ui.hyperlink_to("Ko-fi", "https://ko-fi.com/jamesmoreau");
