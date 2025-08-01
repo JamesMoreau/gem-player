@@ -1764,7 +1764,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(Separator::default().spacing(32.0));
 
                 ui.add(unselectable_label(RichText::new("Controls").heading()));
-                
+
                 ui.add_space(8.0);
                 for (key, binding) in KEY_COMMANDS.iter() {
                     containers::Sides::new().show(
@@ -1774,7 +1774,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             ui.add_space(16.0);
-                            ui.label(binding.to_string());
+                            ui.add(unselectable_label(binding.to_string()));
                         },
                     );
                 }
@@ -1786,7 +1786,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     },
                     |ui| {
                         ui.add_space(16.0);
-                        ui.label("Select multiple tracks");
+                        ui.add(unselectable_label("Select multiple tracks"));
                     },
                 );
 
@@ -1805,6 +1805,15 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
                 ui.add(unselectable_label("James Moreau"));
                 ui.hyperlink_to("jamesmoreau.github.io", "https://jamesmoreau.github.io");
+
+                ui.add(Separator::default().spacing(32.0));
+
+                ui.add(unselectable_label(RichText::new("Support").heading()));
+                ui.add_space(8.0);
+                ui.horizontal_wrapped(|ui| {
+                    ui.add(unselectable_label("If you like this project, consider supporting me:"));
+                    ui.hyperlink_to("Ko-fi", "https://ko-fi.com/jamesmoreau");
+                });
             });
         });
 }
