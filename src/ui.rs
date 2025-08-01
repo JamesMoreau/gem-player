@@ -727,6 +727,9 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // causing the right side of the table to be cut off by the window.
     ui.spacing_mut().item_spacing.x = 0.0;
 
+    let mut shift_is_pressed = false; // Used to determine if selection should be extended.
+    ui.input(|i| shift_is_pressed = i.modifiers.shift);
+
     let mut should_play_library = None;
     let mut context_menu_action = None;
 
@@ -814,9 +817,22 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let response = row.response();
 
-                if response.clicked() || response.double_clicked() || response.secondary_clicked() {
-                    gem_player.ui.library.selected_tracks.clear();
-                    gem_player.ui.library.selected_tracks.insert(track.path.clone());
+                let secondary_clicked = response.secondary_clicked();
+                let primary_clicked = response.clicked() || response.double_clicked();
+                let already_selected = gem_player.ui.library.selected_tracks.contains(&track.path);
+
+                if primary_clicked || secondary_clicked {
+                    if secondary_clicked {
+                        if gem_player.ui.library.selected_tracks.is_empty() || !already_selected {
+                            gem_player.ui.library.selected_tracks.clear();
+                            gem_player.ui.library.selected_tracks.insert(track.path.clone());
+                        }
+                    } else {
+                        if !shift_is_pressed {
+                            gem_player.ui.library.selected_tracks.clear();
+                        }
+                        gem_player.ui.library.selected_tracks.insert(track.path.clone());
+                    }
                 }
 
                 if response.double_clicked() {
@@ -1747,7 +1763,8 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(32.0));
 
-                ui.add(unselectable_label(RichText::new("Key Commands").heading()));
+                ui.add(unselectable_label(RichText::new("Controls").heading()));
+                
                 ui.add_space(8.0);
                 for (key, binding) in KEY_COMMANDS.iter() {
                     containers::Sides::new().show(
@@ -1757,10 +1774,21 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         },
                         |ui| {
                             ui.add_space(16.0);
-                            ui.label(*binding);
+                            ui.label(binding.to_string());
                         },
                     );
                 }
+
+                containers::Sides::new().show(
+                    ui,
+                    |ui| {
+                        ui.add(unselectable_label("Shift + Click"));
+                    },
+                    |ui| {
+                        ui.add_space(16.0);
+                        ui.label("Select multiple tracks");
+                    },
+                );
 
                 ui.add(Separator::default().spacing(32.0));
 

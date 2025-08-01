@@ -392,7 +392,7 @@ pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_t
     Ok(())
 }
 
-const KEY_COMMANDS: &[(Key, &str)] = &[
+const KEY_COMMANDS: &[(Key,&str)] = &[
     (Key::Space, "Play/Pause"),
     (Key::ArrowLeft, "Previous"),
     (Key::ArrowRight, "Next"),
