@@ -29,7 +29,6 @@ mod ui;
 /*
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
-* multiple selection of tracks. We need new egui popup menu API for this.
 * disabled progress slider looks bad.
 */
 

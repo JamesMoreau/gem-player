@@ -83,7 +83,6 @@ struct PlaylistsViewState {
 
     playlist_rename: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_playlist_modal_is_open: bool, // The menu is open for selected_playlist_path.
-                                     // track_menu_is_open: bool,        // The menu is open for selected_playlist_path.
 }
 
 fn apply_theme(ctx: &Context, pref: ThemePreference) {
