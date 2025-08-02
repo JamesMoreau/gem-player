@@ -727,8 +727,8 @@ fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // causing the right side of the table to be cut off by the window.
     ui.spacing_mut().item_spacing.x = 0.0;
 
-    let mut shift_is_pressed = false; // Used to determine if selection should be extended.
-    ui.input(|i| shift_is_pressed = i.modifiers.shift);
+    // Used to determine if selection should be extended.
+    let shift_is_pressed = ui.input(|i| i.modifiers.shift);
 
     let mut should_play_library = None;
     let mut context_menu_action = None;
@@ -1473,8 +1473,8 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
 
-    let mut shift_is_pressed = false; // Used to determine if selection should be extended.
-    ui.input(|i| shift_is_pressed = i.modifiers.shift);
+    // Used to determine if selection should be extended.
+    let shift_is_pressed = ui.input(|i| i.modifiers.shift);
 
     let mut should_play_playlist = None;
     let mut context_menu_action = None;
@@ -1554,7 +1554,8 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let response = ui.add(more_button).on_hover_text("More");
 
                             Popup::menu(&response).show(|ui| {
-                                let maybe_action = playlist_context_menu_ui(ui, 1);
+                                let selected_tracks_count = gem_player.ui.playlists.selected_tracks.len();
+                                let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
                                 if let Some(action) = maybe_action {
                                     context_menu_action = Some(action);
                                 }
@@ -1589,7 +1590,8 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 Popup::context_menu(&response).show(|ui| {
-                    let maybe_action = playlist_context_menu_ui(ui, 1);
+                    let selected_tracks_count = gem_player.ui.playlists.selected_tracks.len();
+                    let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
                     if let Some(action) = maybe_action {
                         context_menu_action = Some(action);
                     }
