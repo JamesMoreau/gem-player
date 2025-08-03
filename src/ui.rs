@@ -1638,7 +1638,8 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 };
 
                 let playlist = gem_player.playlists.get_by_path(&playlist_key);
-                for track in &playlist.tracks {
+                for track_key in &gem_player.ui.playlists.selected_tracks {
+                    let track = playlist.tracks.get_by_path(track_key);
                     enqueue_next(&mut gem_player.player, track.clone());
                 }
             }
@@ -1649,7 +1650,8 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 };
 
                 let playlist = gem_player.playlists.get_by_path(&playlist_key);
-                for track in &playlist.tracks {
+                for track_key in &gem_player.ui.playlists.selected_tracks {
+                    let track = playlist.tracks.get_by_path(track_key);
                     enqueue(&mut gem_player.player, track.clone());
                 }
             }
