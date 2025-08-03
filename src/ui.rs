@@ -634,6 +634,7 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     ui.add(
         artwork
             .texture_options(artwork_texture_options)
+            .show_loading_spinner(false)
             .fit_to_exact_size(artwork_size)
             .maintain_aspect_ratio(false)
             .corner_radius(2.0),
