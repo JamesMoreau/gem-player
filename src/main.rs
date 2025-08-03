@@ -29,7 +29,6 @@ mod ui;
 /*
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
-* disabled progress slider looks bad.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";

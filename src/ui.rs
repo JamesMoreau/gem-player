@@ -446,8 +446,7 @@ fn track_info_ui(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap:
                                 .trailing_fill(true)
                                 .show_value(false)
                                 .step_by(1.0); // Step by 1 second.
-                            let track_is_playing = gem_player.player.playing.is_some();
-                            let response = ui.add_enabled(track_is_playing, playback_progress_slider);
+                            let response = ui.add(playback_progress_slider);
 
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
                                 gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
