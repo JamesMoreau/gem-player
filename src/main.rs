@@ -19,7 +19,7 @@ use std::{
     time::{Duration, Instant},
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
-use ui::{render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
+use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
 
 mod player;
 mod playlist;
@@ -228,7 +228,7 @@ impl eframe::App for GemPlayer {
         read_library_watcher_inbox(self, ctx);
 
         // Render
-        render_gem_player(self, ctx);
+        gem_player_ui(self, ctx);
         self.ui.toasts.show(ctx);
     }
 }
@@ -392,7 +392,7 @@ pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_t
     Ok(())
 }
 
-const KEY_COMMANDS: &[(Key,&str)] = &[
+const KEY_COMMANDS: &[(Key, &str)] = &[
     (Key::Space, "Play/Pause"),
     (Key::ArrowLeft, "Previous"),
     (Key::ArrowRight, "Next"),

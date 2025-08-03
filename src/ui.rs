@@ -99,9 +99,9 @@ fn apply_theme(ctx: &Context, pref: ThemePreference) {
     }
 }
 
-pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn gem_player_ui(gem_player: &mut GemPlayer, ctx: &Context) {
     custom_window_frame(ctx, "", |ui| {
-        let is_dropping_files = render_drop_files_area(ui, gem_player);
+        let is_dropping_files = drop_files_area_ui(ui, gem_player);
         if is_dropping_files {
             return; // Don't render anything else if files are being dropped.
         }
@@ -122,22 +122,22 @@ pub fn render_gem_player(gem_player: &mut GemPlayer, ctx: &Context) {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| {
-                    render_control_panel(ui, gem_player);
+                    control_panel_ui(ui, gem_player);
                 });
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| match gem_player.ui.current_view {
-                    View::Library => render_library_view(ui, gem_player),
-                    View::Queue => render_queue_view(ui, &mut gem_player.player),
-                    View::Playlists => render_playlists_view(ui, gem_player),
-                    View::Settings => render_settings_view(ui, gem_player),
+                    View::Library => library_view(ui, gem_player),
+                    View::Queue => queue_view(ui, &mut gem_player.player),
+                    View::Playlists => playlists_view(ui, gem_player),
+                    View::Settings => settings_view(ui, gem_player),
                 });
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| {
-                    render_navigation_bar(ui, gem_player);
+                    navigation_bar(ui, gem_player);
                 });
             });
     });
@@ -161,7 +161,7 @@ fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mu
             rect.max.y = rect.min.y + title_bar_height;
             rect
         };
-        render_title_bar(ui, title_bar_rect, title);
+        title_bar_ui(ui, title_bar_rect, title);
 
         let content_rect = {
             let mut rect = app_rect;
@@ -174,7 +174,7 @@ fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mu
     });
 }
 
-fn render_title_bar(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
+fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
     let painter = ui.painter();
 
     let title_bar_response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
@@ -256,7 +256,7 @@ fn switch_view(ui: &mut UIState, view: View) {
     ui.current_view = view;
 }
 
-fn render_drop_files_area(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
+fn drop_files_area_ui(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
     let mut drop_area_is_active = false;
 
     let files_are_hovered = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
@@ -302,7 +302,7 @@ fn render_drop_files_area(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
     drop_area_is_active
 }
 
-fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
     let button_width = 20.0;
     let gap = 10.0;
@@ -316,21 +316,21 @@ fn render_control_panel(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
-                    render_playback_controls(ui, gem_player);
+                    playback_controls_ui(ui, gem_player);
                 });
 
                 strip.cell(|ui| {
-                    render_track_info(ui, gem_player, button_width, gap, artwork_width, slider_width);
+                    track_info_ui(ui, gem_player, button_width, gap, artwork_width, slider_width);
                 });
 
                 strip.cell(|ui| {
-                    render_volume_controls(ui, gem_player);
+                    volume_controls_ui(ui, gem_player);
                 });
             });
     });
 }
 
-fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         let track_is_playing = gem_player.player.playing.is_some();
 
@@ -374,7 +374,7 @@ fn render_playback_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn track_info_ui(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let available_height = ui.available_height();
 
@@ -426,7 +426,7 @@ fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, 
             });
             strip.empty();
             strip.cell(|ui| {
-                render_artwork(ui, gem_player, artwork_width);
+                display_artwork(ui, gem_player, artwork_width);
             });
             strip.empty();
             strip.strip(|builder| {
@@ -478,7 +478,7 @@ fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, 
                             .size(Size::exact(slider_width * (1.0 / 5.0)))
                             .horizontal(|mut hstrip| {
                                 hstrip.cell(|ui| {
-                                    render_track_marquee(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui.marquee);
+                                    track_marquee_ui(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui.marquee);
                                 });
 
                                 hstrip.cell(|ui| {
@@ -502,7 +502,7 @@ fn render_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, 
         });
 }
 
-fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
+fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         let mut title = "None";
         let mut artist = "None";
@@ -595,7 +595,7 @@ fn render_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut 
     });
 }
 
-fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
+fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
@@ -641,7 +641,7 @@ fn render_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
     );
 }
 
-fn render_volume_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn volume_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let mut volume = gem_player.player.sink.volume();
         let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
@@ -666,7 +666,7 @@ fn render_volume_controls(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-fn render_library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -983,7 +983,7 @@ fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists:
     action
 }
 
-fn render_queue_view(ui: &mut Ui, player: &mut Player) {
+fn queue_view(ui: &mut Ui, player: &mut Player) {
     if player.queue.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1014,7 +1014,7 @@ fn render_queue_view(ui: &mut Ui, player: &mut Player) {
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
 
-    ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
+    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() for why we set item_spacing to 0.
 
     // We only operate on the queue after we are done iterating over it.
     let mut to_be_removed = None;
@@ -1106,7 +1106,7 @@ fn render_queue_view(ui: &mut Ui, player: &mut Player) {
     }
 }
 
-fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library_directory.is_none() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1119,12 +1119,12 @@ fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    render_delete_playlist_modal(ui, gem_player);
+    delete_playlist_modal(ui, gem_player);
 
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
 
-    ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui() as to why we do this.
+    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view as to why we do this.
 
     StripBuilder::new(ui)
         .size(Size::exact(playlists_width))
@@ -1205,12 +1205,12 @@ fn render_playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                render_playlist(ui, gem_player);
+                playlist_ui(ui, gem_player);
             });
         });
 }
 
-fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if !gem_player.ui.playlists.delete_playlist_modal_is_open {
         return;
     }
@@ -1268,7 +1268,7 @@ fn render_delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 }
 
-fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let Some(playlist_key) = gem_player.ui.playlists.selected_playlist_key.clone() else {
         return; // No playlist selected, do nothing
     };
@@ -1396,12 +1396,12 @@ fn render_playlist(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                render_playlist_tracks(ui, gem_player);
+                playlist_tracks_ui(ui, gem_player);
             });
         });
 }
 
-fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let Some(playlist_key) = gem_player.ui.playlists.selected_playlist_key.clone() else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1470,7 +1470,7 @@ fn render_playlist_tracks(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
 
-    ui.spacing_mut().item_spacing.x = 0.0; // See comment in render_library_ui for why we set item_spacing to 0.
+    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() for why we set item_spacing to 0.
 
     // Used to determine if selection should be extended.
     let shift_is_pressed = ui.input(|i| i.modifiers.shift);
@@ -1724,7 +1724,7 @@ fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option
     action
 }
 
-fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new()
         .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
         .show(ui, |ui| {
@@ -1840,7 +1840,7 @@ fn render_settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         ui.columns_const(|[left, center, right]| {
             left.with_layout(Layout::left_to_right(Align::Center), |ui| {
@@ -1890,7 +1890,7 @@ fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui.current_view {
                 View::Library => {
-                    let search_was_changed = render_search(ui, &mut gem_player.ui.search);
+                    let search_was_changed = search_ui(ui, &mut gem_player.ui.search);
                     if search_was_changed {
                         // We reset both caches since there is only one search text state variable.
                         gem_player.ui.library.cached_library = None;
@@ -1898,7 +1898,7 @@ fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
 
                     let sort_was_changed =
-                        render_sort_and_order_by(ui, &mut gem_player.ui.library.sort_by, &mut gem_player.ui.library.sort_order);
+                        sort_and_order_by_ui(ui, &mut gem_player.ui.library.sort_by, &mut gem_player.ui.library.sort_order);
                     if sort_was_changed {
                         gem_player.ui.library.cached_library = None;
                     }
@@ -1916,7 +1916,7 @@ fn render_navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 }
                 View::Playlists => {
-                    let search_changed = render_search(ui, &mut gem_player.ui.search);
+                    let search_changed = search_ui(ui, &mut gem_player.ui.search);
                     if search_changed {
                         gem_player.ui.library.cached_library = None;
                         gem_player.ui.playlists.cached_playlist_tracks = None;
@@ -1934,7 +1934,7 @@ fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     format!("{} tracks / {}", tracks.len(), duration_string)
 }
 
-fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
+fn sort_and_order_by_ui(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
 
     let mut sort_by_changed = false;
@@ -1955,7 +1955,7 @@ fn render_sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut 
     sort_by_changed || sort_order_changed
 }
 
-fn render_search(ui: &mut Ui, search_text: &mut String) -> bool {
+fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
     let mut changed = false;
     let clear_button_is_visible = !search_text.is_empty();
     let response = ui
