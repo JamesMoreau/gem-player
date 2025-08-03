@@ -12,14 +12,14 @@ use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStreamBuilder, Sink};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs, io,
     path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, Instant},
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
-use ui::{render_gem_player, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
+use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
 
 mod player;
 mod playlist;
@@ -29,7 +29,6 @@ mod ui;
 /*
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
-* multiple selection of tracks. We need new egui popup menu API for this.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -145,18 +144,16 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             cached_artwork_uri: None,
             library: LibraryViewState {
                 cached_library: None,
-                selected_track_key: None,
+                selected_tracks: HashSet::new(),
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
-                track_menu_is_open: false,
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
                 cached_playlist_tracks: None,
                 playlist_rename: None,
                 delete_playlist_modal_is_open: false,
-                selected_track_key: None,
-                track_menu_is_open: false,
+                selected_tracks: HashSet::new(),
             },
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
@@ -168,7 +165,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 }),
             marquee: MarqueeState {
                 offset: 0,
-                track_identifier: None,
+                track_key: None,
                 last_update: Instant::now(),
                 next_update: Instant::now(),
                 pause_until: None,
@@ -230,7 +227,7 @@ impl eframe::App for GemPlayer {
         read_library_watcher_inbox(self, ctx);
 
         // Render
-        render_gem_player(self, ctx);
+        gem_player_ui(self, ctx);
         self.ui.toasts.show(ctx);
     }
 }
