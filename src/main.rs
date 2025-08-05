@@ -25,6 +25,8 @@ mod player;
 mod playlist;
 mod track;
 mod ui;
+mod visualizer_source;
+mod custom_sink;
 
 /*
 TODO:

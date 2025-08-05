@@ -1,4 +1,4 @@
-use crate::track::Track;
+use crate::{track::Track, visualizer_source::visualizer};
 use fully_pub::fully_pub;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
@@ -97,7 +97,8 @@ pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
         Ok(d) => d,
     };
 
-    sink.append(decoder);
+    let visualizer_source = visualizer(decoder);
+    sink.append(visualizer_source);
     sink.play();
 
     Ok(())
