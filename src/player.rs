@@ -1,10 +1,11 @@
-use crate::{track::Track, visualizer_source::visualizer};
+use crate::{track::Track, visualizer::visualizer_source};
 use fully_pub::fully_pub;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     fs,
     io::{self, ErrorKind},
+    sync::mpsc::{Receiver, Sender},
 };
 
 #[fully_pub]
@@ -21,6 +22,15 @@ pub struct Player {
 
     stream_handle: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,                  // Controls playback (play, pause, stop, etc.)
+
+    visualizer: VisualizerState,
+}
+
+#[fully_pub]
+pub struct VisualizerState {
+    //TODO: maybe just put the sender and receiver directly in Player. Could also replace with EguiInbox
+    sender: Sender<Vec<f32>>,
+    receiver: Receiver<Vec<f32>>,
 }
 
 pub fn clear_the_queue(player: &mut Player) {
@@ -42,7 +52,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(ref playing) = player.playing {
             // If repeat is enabled, just restart the current track.
-            if let Err(e) = load_and_play(&mut player.sink, playing) {
+            if let Err(e) = load_and_play(&mut player.sink, &mut player.visualizer, playing) {
                 return Err(e.to_string());
             };
             return Ok(());
@@ -60,7 +70,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
 
     if let Some(next_track) = player.queue.first().cloned() {
         player.queue.remove(0);
-        if let Err(e) = load_and_play(&mut player.sink, &next_track) {
+        if let Err(e) = load_and_play(&mut player.sink, &mut player.visualizer, &next_track) {
             return Err(e.to_string());
         }
         player.playing = Some(next_track);
@@ -74,7 +84,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
         return Err("There is no previous track to play.".to_owned());
     };
 
-    if let Err(e) = load_and_play(&mut player.sink, &previous) {
+    if let Err(e) = load_and_play(&mut player.sink, &mut player.visualizer, &previous) {
         return Err(e.to_string());
     }
 
@@ -86,7 +96,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
     Ok(())
 }
 
-pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
+pub fn load_and_play(sink: &mut Sink, visualizer: &mut VisualizerState, track: &Track) -> io::Result<()> {
     sink.stop(); // Stop the current track if any.
 
     let file = fs::File::open(&track.path)?;
@@ -97,7 +107,7 @@ pub fn load_and_play(sink: &mut Sink, track: &Track) -> io::Result<()> {
         Ok(d) => d,
     };
 
-    let visualizer_source = visualizer(decoder);
+    let visualizer_source = visualizer_source(decoder, visualizer.sender.clone());
     sink.append(visualizer_source);
     sink.play();
 

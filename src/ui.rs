@@ -11,9 +11,12 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, os::OperatingSystem, text, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
-    Id, Image, Label, Layout, Margin, PointerButton, Popup, PopupCloseBehavior, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
-    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
+    containers::{self},
+    include_image,
+    os::OperatingSystem,
+    text, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin, PointerButton,
+    Popup, PopupCloseBehavior, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
+    TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_inbox::UiInbox;
@@ -643,27 +646,40 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn volume_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        let mut volume = gem_player.player.sink.volume();
-        let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-        let changed = ui.add(volume_slider).changed();
-        if changed {
-            gem_player.player.muted = false;
-            gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-        }
-        gem_player.player.sink.set_volume(volume);
+        visualizer_ui(ui, gem_player);
+
+        ui.add_space(8.0);
 
         let volume_icon = match gem_player.player.sink.volume() {
             0.0 => icons::ICON_VOLUME_OFF,
             v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
             _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
         };
-        let tooltip = if gem_player.player.muted { "Unmute" } else { "Mute" };
+
         let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
-        let response = ui.add(volume_button).on_hover_text(tooltip);
+
+        // Using the submenu api achieves the desired hover-style menu that we want. However, it does cause an egui warning:
+        // "Called ui.close() on a Ui that has no closable parent."
+        // Since it is not being called from within a menu widget. This is fine for now.
+        let (response, _) = containers::menu::SubMenuButton::from_button(volume_button).ui(ui, |ui| {
+            let mut volume = gem_player.player.sink.volume();
+            let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+            let changed = ui.add(volume_slider).changed();
+            if changed {
+                gem_player.player.muted = false;
+                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+            }
+            gem_player.player.sink.set_volume(volume);
+        });
+
         if response.clicked() {
             mute_or_unmute(&mut gem_player.player);
         }
     });
+}
+
+fn visualizer_ui(ui: &mut Ui, _gem_player: &mut GemPlayer) {
+    ui.label("Hello, sailor!");
 }
 
 fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {

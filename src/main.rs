@@ -8,14 +8,19 @@ use fully_pub::fully_pub;
 use log::{debug, error, info, warn};
 use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
-use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
+use player::{
+    adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player, VisualizerState,
+};
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStreamBuilder, Sink};
 use std::{
     collections::{HashMap, HashSet},
     fs, io,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        mpsc::{self},
+        Arc,
+    },
     time::{Duration, Instant},
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
@@ -25,12 +30,13 @@ mod player;
 mod playlist;
 mod track;
 mod ui;
-mod visualizer_source;
-mod custom_sink;
+mod visualizer;
 
 /*
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
+* Make songs outside of library playable.
+* Should drop-in files be moved from original location instead of copied?
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -92,6 +98,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
+
+    let (sender, receiver) = mpsc::channel();
 
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
@@ -194,6 +202,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
             stream_handle,
             sink,
+            visualizer: VisualizerState { sender, receiver },
         },
     }
 }
@@ -227,6 +236,7 @@ impl eframe::App for GemPlayer {
         // Update
         check_for_next_track(self);
         read_library_watcher_inbox(self, ctx);
+        process_visualizer(self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -542,4 +552,20 @@ pub fn handle_dropped_file(dropped_file: &DroppedFile, gem_player: &mut GemPlaye
     fs::copy(path, destination)?;
 
     Ok(())
+}
+
+// TODO: should this be a method in Player or visualizer?
+// Do we want to send a vec of samples vs vec of frames?
+pub fn process_visualizer(gem_player: &mut GemPlayer) {
+    while let Ok(samples) = gem_player.player.visualizer.receiver.try_recv() {
+        if samples.is_empty() {
+            continue; // Skip empty samples
+        }
+
+        // just print for now.
+        println!("Received audio samples for visualization. Time: {:?}", std::time::Instant::now());
+
+        // Process the received samples (e.g., update the visualizer)
+        // This is where you would handle the visualization logic.
+    }
 }

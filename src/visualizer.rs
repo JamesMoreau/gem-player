@@ -1,42 +1,51 @@
-use std::time::Duration;
+use std::{sync::mpsc::Sender, time::Duration};
 
-use log::info;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 
 /// Internal function that builds a `Visualizer` object.
-pub fn visualizer<I>(input: I) -> Visualizer<I>
+const BUFFER_SIZE: usize = 1024;
+
+pub fn visualizer_source<I>(input: I, tx: Sender<Vec<f32>>) -> VisualizerSource<I>
 where
     I: Source,
 {
-    Visualizer { input }
+    VisualizerSource {
+        input,
+        tx,
+        buffer: Vec::with_capacity(BUFFER_SIZE),
+    }
 }
 
+/// The `VisualizerSource` struct is a wrapper around a source that collects audio samples
+/// and sends them to a channel for visualization purposes.
 #[derive(Clone, Debug)]
-pub struct Visualizer<I> {
+pub struct VisualizerSource<I> {
     input: I,
+    tx: Sender<Vec<f32>>,
+    buffer: Vec<f32>,
 }
 
-impl<I> Visualizer<I> {
+impl<I> VisualizerSource<I> {
     /// Returns a reference to the inner source.
     #[inline]
-    pub fn inner(&self) -> &I {
+    pub fn _inner(&self) -> &I {
         &self.input
     }
 
     /// Returns a mutable reference to the inner source.
     #[inline]
-    pub fn inner_mut(&mut self) -> &mut I {
+    pub fn _inner_mut(&mut self) -> &mut I {
         &mut self.input
     }
 
     /// Returns the inner source.
     #[inline]
-    pub fn into_inner(self) -> I {
+    pub fn _into_inner(self) -> I {
         self.input
     }
 }
 
-impl<I> Iterator for Visualizer<I>
+impl<I> Iterator for VisualizerSource<I>
 where
     I: Source,
 {
@@ -44,16 +53,16 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // TODO: send data to another thread for display.
-        // For now, just print the time.
-        let now = std::time::SystemTime::now();
-        let duration = now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
-        let seconds = duration.as_secs() % 60;
-        let minutes = (duration.as_secs() / 60) % 60;
-        let hours = duration.as_secs() / 3600;
-        info!("sample timestamp {:02}:{:02}:{:02}", hours, minutes, seconds);
+        let sample = self.input.next()?;
 
-        self.input.next()
+        self.buffer.push(sample);
+
+        if self.buffer.len() >= BUFFER_SIZE {
+            let chunk = std::mem::take(&mut self.buffer); // efficient way to replace and send
+            let _ = self.tx.send(chunk); // ignore if receiver is gone
+        }
+
+        Some(sample)
     }
 
     #[inline]
@@ -62,9 +71,9 @@ where
     }
 }
 
-impl<I> ExactSizeIterator for Visualizer<I> where I: Source + ExactSizeIterator {}
+impl<I> ExactSizeIterator for VisualizerSource<I> where I: Source + ExactSizeIterator {}
 
-impl<I> Source for Visualizer<I>
+impl<I> Source for VisualizerSource<I>
 where
     I: Source,
 {
