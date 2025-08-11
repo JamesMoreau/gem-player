@@ -28,9 +28,8 @@ pub struct Player {
 
 #[fully_pub]
 pub struct VisualizerState {
-    //TODO: maybe just put the sender and receiver directly in Player. Could also replace with EguiInbox
-    sender: Sender<Vec<f32>>,
-    receiver: Receiver<Vec<f32>>,
+    sample_sender: Sender<f32>,
+    fft_output_receiver: Receiver<Vec<f32>>,
 }
 
 pub fn clear_the_queue(player: &mut Player) {
@@ -107,7 +106,7 @@ pub fn load_and_play(sink: &mut Sink, visualizer: &mut VisualizerState, track: &
         Ok(d) => d,
     };
 
-    let visualizer_source = visualizer_source(decoder, visualizer.sender.clone());
+    let visualizer_source = visualizer_source(decoder, visualizer.sample_sender.clone());
     sink.append(visualizer_source);
     sink.play();
 

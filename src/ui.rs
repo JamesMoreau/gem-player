@@ -679,7 +679,7 @@ fn volume_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn visualizer_ui(ui: &mut Ui, _gem_player: &mut GemPlayer) {
-    ui.label("Hello, sailor!");
+    ui.label("Visualizer Here!");
 }
 
 fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
