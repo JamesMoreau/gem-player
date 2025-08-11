@@ -36,6 +36,7 @@ TODO:
 * Make songs outside of library playable.
 * Should drop-in files be moved from original location instead of copied?
 * maybe just use channels instead of egui_inbox.
+* Add "Open with" from filesystem functionality.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
