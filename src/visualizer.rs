@@ -1,6 +1,7 @@
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
+    f32::consts::PI,
     sync::mpsc::{self, Sender},
     thread,
     time::Duration,
@@ -11,6 +12,10 @@ use std::{
 // cache fft planner
 // Is the other half of fft still being processed?
 // use process_with_scratch fft.
+// generate hann table at compile time
+// Smoothing. needs to be stateful.
+
+const FFT_SIZE: usize = 1 << 9;
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
@@ -44,40 +49,81 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
 pub const NUM_BARS: usize = 12;
 
 fn process_fft(samples: &[f32]) -> Vec<f32> {
-    let mut buffer: Vec<Complex<f32>> = samples.iter().map(|&s| Complex { re: s, im: 0.0 }).collect();
+    // Apply Hann window on the input.
+    let window = hann_window(samples.len());
+    let mut buffer: Vec<Complex<f32>> = samples
+        .iter()
+        .zip(window.iter())
+        .map(|(&sample, &hann)| Complex {
+            re: sample * hann,
+            im: 0.0,
+        })
+        .collect();
 
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(buffer.len());
     fft.process(&mut buffer);
 
-    // Calculate magnitudes
+    // Convert FFT complex output to magnitudes.
     let magnitudes: Vec<f32> = buffer.iter().map(|c| (c.re.powi(2) + c.im.powi(2)).sqrt()).collect();
 
-    // Keep only first half (unique part of the FFT)
+    // Apply a Logarithmic Scale.
+    let step = 1.06_f32;
+    let low_frequency = 1.0_f32;
     let half = magnitudes.len() / 2;
-    let magnitudes = &magnitudes[..half];
+    let mut bars = Vec::new();
+    let mut max_amplitude = 1.0_f32;
 
-    // Bucket into ~NUM_BARS bars, skip DC component
-    let bucket_size = magnitudes.len() / NUM_BARS;
-    let mut bars: Vec<f32> = (1..NUM_BARS)
-        .map(|i| {
-            let start = i * bucket_size;
-            let end = start + bucket_size;
-            let slice = &magnitudes[start..end];
-            slice.iter().copied().sum::<f32>() / slice.len() as f32
-        })
-        .collect();
+    let mut f = low_frequency;
+    while (f as usize) < half {
+        let f1 = (f * step).ceil();
 
-    // Normalize to max value
-    if let Some(&max_val) = bars.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
-        if max_val > 0.0 {
-            for val in &mut bars {
-                *val /= max_val;
-            }
+        let start_bin = f as usize;
+        let end_bin = f1.min(half as f32) as usize;
+
+        let a = magnitudes[start_bin..end_bin].iter().fold(0.0_f32, |max_val, &val| max_val.max(val));
+
+        if a > max_amplitude {
+            max_amplitude = a;
+        }
+
+        bars.push(a);
+        f = f1;
+    }
+
+    // Normalize. ie. scale to 0.0 - 1.0
+    if max_amplitude > 0.0 {
+        for val in &mut bars {
+            *val /= max_amplitude;
         }
     }
 
-    bars
+    // Bucket the bars into NUM_BARS buckets by averaging.
+    let bucket_size = bars.len() / NUM_BARS;
+    let mut final_bars = Vec::with_capacity(NUM_BARS);
+
+    for i in 0..NUM_BARS {
+        let start = i * bucket_size;
+        let end = if i == NUM_BARS - 1 {
+            bars.len()
+        } else {
+            start + bucket_size
+        };
+        let slice = &bars[start..end];
+        let avg = slice.iter().copied().sum::<f32>() / slice.len() as f32;
+        final_bars.push(avg);
+    }
+
+    final_bars
+}
+
+fn hann_window(size: usize) -> Vec<f32> {
+    (0..size)
+        .map(|i| {
+            let t = i as f32 / (size as f32 - 1.0);
+            0.5 - 0.5 * (2.0 * PI * t).cos()
+        })
+        .collect()
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>

@@ -680,6 +680,8 @@ fn volume_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    ui.ctx().request_repaint();
+
     let mut latest_fft = None;
     while let Ok(fft_data) = gem_player.player.visualizer.fft_output_receiver.try_recv() {
         latest_fft = Some(fft_data);
@@ -687,6 +689,12 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     // Either use the FFT data, or fallback.
     let fft_values = latest_fft.unwrap_or_else(|| vec![0.05; NUM_BARS]);
+
+    // print!("Visualizer data: ");
+    // for value in fft_values {
+    //     print!("{:.2} ", value);
+    // }
+    // println!();
 
     let (rect, _response) = ui.allocate_exact_size(vec2(100.0, ui.available_height()), Sense::hover());
 
