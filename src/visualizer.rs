@@ -1,9 +1,16 @@
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
+use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
     sync::mpsc::{self, Sender},
     thread,
     time::Duration,
 };
+
+// TODO: potential optimizations
+// use ringbuffer
+// cache fft planner
+// Is the other half of fft still being processed?
+// use process_with_scratch fft.
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
@@ -34,10 +41,43 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
     (sample_sender, fft_output_receiver)
 }
 
+pub const NUM_BARS: usize = 12;
+
 fn process_fft(samples: &[f32]) -> Vec<f32> {
-    println!("Processing FFT for {} samples", samples.len());
-    // TODO: replace with real FFT processing
-    samples.iter().map(|s| s.abs()).collect()
+    let mut buffer: Vec<Complex<f32>> = samples.iter().map(|&s| Complex { re: s, im: 0.0 }).collect();
+
+    let mut planner = FftPlanner::new();
+    let fft = planner.plan_fft_forward(buffer.len());
+    fft.process(&mut buffer);
+
+    // Calculate magnitudes
+    let magnitudes: Vec<f32> = buffer.iter().map(|c| (c.re.powi(2) + c.im.powi(2)).sqrt()).collect();
+
+    // Keep only first half (unique part of the FFT)
+    let half = magnitudes.len() / 2;
+    let magnitudes = &magnitudes[..half];
+
+    // Bucket into ~NUM_BARS bars, skip DC component
+    let bucket_size = magnitudes.len() / NUM_BARS;
+    let mut bars: Vec<f32> = (1..NUM_BARS)
+        .map(|i| {
+            let start = i * bucket_size;
+            let end = start + bucket_size;
+            let slice = &magnitudes[start..end];
+            slice.iter().copied().sum::<f32>() / slice.len() as f32
+        })
+        .collect();
+
+    // Normalize to max value
+    if let Some(&max_val) = bars.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
+        if max_val > 0.0 {
+            for val in &mut bars {
+                *val /= max_val;
+            }
+        }
+    }
+
+    bars
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>
