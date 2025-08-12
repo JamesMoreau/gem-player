@@ -65,6 +65,7 @@ fn analyse(samples: &[f32]) -> Vec<f32> {
     let fft = planner.plan_fft_forward(buffer.len());
     fft.process(&mut buffer);
 
+    // Apply a logarithmic scale.
     let half = buffer.len() / 2;
     let mut bars = Vec::new();
     let mut max_amplitude = 1.0_f32;
@@ -99,7 +100,7 @@ fn analyse(samples: &[f32]) -> Vec<f32> {
         }
     }
 
-    // Bucket by averaging.
+    // Sort into buckets by averaging.
     let bucket_size = bars.len() / NUM_BARS;
     let mut final_bars = Vec::with_capacity(NUM_BARS);
 
