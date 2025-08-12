@@ -36,7 +36,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
             }
 
             if buffer.len() >= 1024 {
-                let fft_result = process_fft(&buffer);
+                let fft_result = analyse(&buffer);
                 let _ = fft_output_sender.send(fft_result);
                 buffer.clear();
             }
@@ -48,7 +48,8 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
 
 pub const NUM_BARS: usize = 12;
 
-fn process_fft(samples: &[f32]) -> Vec<f32> {
+// Algorithm implementation taken from tsoding: https://github.com/tsoding/musializer
+fn analyse(samples: &[f32]) -> Vec<f32> {
     // Apply Hann window on the input.
     let window = hann_window(samples.len());
     let mut buffer: Vec<Complex<f32>> = samples
@@ -64,30 +65,30 @@ fn process_fft(samples: &[f32]) -> Vec<f32> {
     let fft = planner.plan_fft_forward(buffer.len());
     fft.process(&mut buffer);
 
-    // Convert FFT complex output to magnitudes.
-    let magnitudes: Vec<f32> = buffer.iter().map(|c| (c.re.powi(2) + c.im.powi(2)).sqrt()).collect();
-
-    // Apply a Logarithmic Scale.
-    let step = 1.06_f32;
-    let low_frequency = 1.0_f32;
-    let half = magnitudes.len() / 2;
+    let half = buffer.len() / 2;
     let mut bars = Vec::new();
     let mut max_amplitude = 1.0_f32;
+    let step = 1.06_f32;
+    let mut f = 1.0_f32;
 
-    let mut f = low_frequency;
     while (f as usize) < half {
         let f1 = (f * step).ceil();
-
         let start_bin = f as usize;
         let end_bin = f1.min(half as f32) as usize;
 
-        let a = magnitudes[start_bin..end_bin].iter().fold(0.0_f32, |max_val, &val| max_val.max(val));
+        let mut max_val = 0.0_f32;
+        buffer.iter().skip(start_bin).take(end_bin - start_bin).for_each(|c| {
+            let mag = (c.re.powi(2) + c.im.powi(2)).sqrt();
+            if mag > max_val {
+                max_val = mag;
+            }
+        });
 
-        if a > max_amplitude {
-            max_amplitude = a;
+        if max_val > max_amplitude {
+            max_amplitude = max_val;
         }
 
-        bars.push(a);
+        bars.push(max_val);
         f = f1;
     }
 
@@ -98,17 +99,13 @@ fn process_fft(samples: &[f32]) -> Vec<f32> {
         }
     }
 
-    // Bucket the bars into NUM_BARS buckets by averaging.
+    // Bucket the output by averaging.
     let bucket_size = bars.len() / NUM_BARS;
     let mut final_bars = Vec::with_capacity(NUM_BARS);
 
     for i in 0..NUM_BARS {
         let start = i * bucket_size;
-        let end = if i == NUM_BARS - 1 {
-            bars.len()
-        } else {
-            start + bucket_size
-        };
+        let end = if i == NUM_BARS - 1 { bars.len() } else { start + bucket_size };
         let slice = &bars[start..end];
         let avg = slice.iter().copied().sum::<f32>() / slice.len() as f32;
         final_bars.push(avg);
