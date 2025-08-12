@@ -92,14 +92,14 @@ fn analyse(samples: &[f32]) -> Vec<f32> {
         f = f1;
     }
 
-    // Normalize. ie. scale to 0.0 - 1.0
+    // Normalize.
     if max_amplitude > 0.0 {
         for val in &mut bars {
             *val /= max_amplitude;
         }
     }
 
-    // Bucket the output by averaging.
+    // Bucket by averaging.
     let bucket_size = bars.len() / NUM_BARS;
     let mut final_bars = Vec::with_capacity(NUM_BARS);
 
