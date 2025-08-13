@@ -12,7 +12,6 @@ use std::{
 // cache fft planner
 // Is the other half of fft still being processed?
 // use process_with_scratch fft.
-// generate hann table at compile time
 // Smoothing. needs to be stateful.
 
 const FFT_SIZE: usize = 1 << 9; // 512
