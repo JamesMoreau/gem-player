@@ -15,7 +15,8 @@ use std::{
 // generate hann table at compile time
 // Smoothing. needs to be stateful.
 
-const FFT_SIZE: usize = 1 << 9;
+const FFT_SIZE: usize = 1 << 9; // 512
+pub const NUM_BUCKETS: usize = 12;
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
@@ -23,22 +24,25 @@ const FFT_SIZE: usize = 1 << 9;
 //   3. Visualization UI code in the main thread that displays the processed data.
 //
 //   Communication between the components is achieved using channels.
-pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32>>) {
+pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; NUM_BUCKETS]>) {
     let (sample_sender, sample_receiver) = mpsc::channel::<f32>();
-    let (fft_output_sender, fft_output_receiver) = mpsc::channel::<Vec<f32>>();
+    let (fft_output_sender, fft_output_receiver) = mpsc::channel::<[f32; NUM_BUCKETS]>();
 
     thread::spawn(move || {
-        let mut buffer = Vec::with_capacity(1024);
+        let mut buffer = [0f32; FFT_SIZE];
+        let mut sample_count = 0;
+        let hann_window = hann_window::<FFT_SIZE>();
 
         loop {
             if let Ok(sample) = sample_receiver.recv_timeout(Duration::from_millis(10)) {
-                buffer.push(sample);
+                buffer[sample_count] = sample;
+                sample_count += 1;
             }
 
-            if buffer.len() >= 1024 {
-                let fft_result = analyse(&buffer);
+            if sample_count == FFT_SIZE {
+                let fft_result = analyse(&buffer, &hann_window);
                 let _ = fft_output_sender.send(fft_result);
-                buffer.clear();
+                sample_count = 0;
             }
         }
     });
@@ -46,15 +50,12 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
     (sample_sender, fft_output_receiver)
 }
 
-pub const NUM_BARS: usize = 12;
-
 // Algorithm implementation taken from tsoding: https://github.com/tsoding/musializer
-fn analyse(samples: &[f32]) -> Vec<f32> {
+fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NUM_BUCKETS] {
     // Apply Hann window on the input.
-    let window = hann_window(samples.len());
     let mut buffer: Vec<Complex<f32>> = samples
         .iter()
-        .zip(window.iter())
+        .zip(hann_window.iter())
         .map(|(&sample, &hann)| Complex {
             re: sample * hann,
             im: 0.0,
@@ -101,27 +102,33 @@ fn analyse(samples: &[f32]) -> Vec<f32> {
     }
 
     // Sort into buckets by averaging.
-    let bucket_size = bars.len() / NUM_BARS;
-    let mut final_bars = Vec::with_capacity(NUM_BARS);
+    let bucket_size = bars.len() / NUM_BUCKETS;
+    let mut buckets = [0.0; NUM_BUCKETS];
 
-    for i in 0..NUM_BARS {
+    for (i, bucket) in buckets.iter_mut().enumerate() {
         let start = i * bucket_size;
-        let end = if i == NUM_BARS - 1 { bars.len() } else { start + bucket_size };
+        let end = if i == NUM_BUCKETS - 1 { bars.len() } else { start + bucket_size };
         let slice = &bars[start..end];
         let avg = slice.iter().copied().sum::<f32>() / slice.len() as f32;
-        final_bars.push(avg);
+        *bucket = avg;
     }
 
-    final_bars
+    buckets
 }
 
-fn hann_window(size: usize) -> Vec<f32> {
-    (0..size)
-        .map(|i| {
-            let t = i as f32 / (size as f32 - 1.0);
-            0.5 - 0.5 * (2.0 * PI * t).cos()
-        })
-        .collect()
+fn hann_window<const N: usize>() -> [f32; N] {
+    let mut array = [0.0f32; N];
+    let size_f = (N - 1) as f32;
+    let two_pi = 2.0 * PI;
+
+    let mut i = 0;
+    while i < N {
+        let t = i as f32 / size_f;
+        array[i] = 0.5 - 0.5 * (two_pi * t).cos();
+        i += 1;
+    }
+
+    array
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>

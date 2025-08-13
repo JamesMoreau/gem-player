@@ -7,7 +7,7 @@ use crate::{
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
     start_library_watcher,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    visualizer::NUM_BARS,
+    visualizer::NUM_BUCKETS,
     GemPlayer, Track, KEY_COMMANDS,
 };
 use dark_light::Mode;
@@ -688,7 +688,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     // Either use the FFT data, or fallback.
-    let fft_values = latest_fft.unwrap_or_else(|| vec![0.05; NUM_BARS]);
+    let fft_values = latest_fft.unwrap_or([0.05_f32; NUM_BUCKETS]);
 
     // print!("Visualizer data: ");
     // for value in fft_values {
