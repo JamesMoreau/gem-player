@@ -67,56 +67,58 @@ fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NU
 
     // Apply a logarithmic scale.
     let half = buffer.len() / 2;
-    let mut bars = Vec::new();
+    let mut buckets = Vec::new();
     let mut max_amplitude = 1.0_f32;
     let step = 1.06_f32;
     let mut f = 1.0_f32;
 
     while (f as usize) < half {
         let f1 = (f * step).ceil();
-        let start_bin = f as usize;
-        let end_bin = f1.min(half as f32) as usize;
+        let start_bucket = f as usize;
+        let end_bucket = f1.min(half as f32) as usize;
 
         let mut max_val = 0.0_f32;
-        buffer.iter().skip(start_bin).take(end_bin - start_bin).for_each(|c| {
-            let mag = (c.re.powi(2) + c.im.powi(2)).sqrt();
-            if mag > max_val {
-                max_val = mag;
+        for c in &buffer[start_bucket..end_bucket] {
+            let a = c.re;
+            let b = c.im;
+            let mag_log = (a * a + b * b).ln();
+            if mag_log > max_val {
+                max_val = mag_log;
             }
-        });
+        }
 
         if max_val > max_amplitude {
             max_amplitude = max_val;
         }
 
-        bars.push(max_val);
+        buckets.push(max_val);
         f = f1;
     }
 
     // Normalize.
     if max_amplitude > 0.0 {
-        for val in &mut bars {
+        for val in &mut buckets {
             *val /= max_amplitude;
         }
     }
 
     // Sort into buckets by averaging.
-    let bucket_size = bars.len() / NUM_BUCKETS;
-    let mut buckets = [0.0; NUM_BUCKETS];
+    let mut display_buckets = [0.0; NUM_BUCKETS];
+    let bucket_size = buckets.len() / NUM_BUCKETS;
 
-    for (i, bucket) in buckets.iter_mut().enumerate() {
+    for (i, bucket) in display_buckets.iter_mut().enumerate() {
         let start = i * bucket_size;
 
         let is_last_bucket = i == NUM_BUCKETS - 1;
-        let end = if is_last_bucket { bars.len() } else { start + bucket_size };
+        let end = if is_last_bucket { buckets.len() } else { start + bucket_size };
 
-        let slice = &bars[start..end];
+        let slice = &buckets[start..end];
         let avg = slice.iter().sum::<f32>() / slice.len() as f32;
 
         *bucket = avg;
     }
 
-    buckets
+    display_buckets
 }
 
 fn hann_window<const N: usize>() -> [f32; N] {
