@@ -9,9 +9,6 @@ use std::{
 
 // TODO: potential optimizations
 // use ringbuffer
-// cache fft planner
-// Is the other half of fft still being processed?
-// use process_with_scratch fft.
 // Smoothing. needs to be stateful.
 
 const FFT_SIZE: usize = 1 << 9; // 512
