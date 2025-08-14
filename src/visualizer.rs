@@ -64,7 +64,7 @@ fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NU
 
     // Apply a logarithmic scale.
     let nyquist_bin = buffer.len() / 2;
-    let mut band_maximum_log_amplitudes = Vec::new();
+    let mut maximum_log_amplitudes = Vec::new();
     let mut global_maximum_log_amplitude = 1.0_f32;
     let band_growth_factor = 1.06_f32;
     let mut current_band_start_bin = 1.0_f32;
@@ -88,28 +88,28 @@ fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NU
             global_maximum_log_amplitude = band_max_log_amplitude;
         }
 
-        band_maximum_log_amplitudes.push(band_max_log_amplitude);
+        maximum_log_amplitudes.push(band_max_log_amplitude);
         current_band_start_bin = next_band_start_bin;
     }
 
     // Normalize.
     if global_maximum_log_amplitude > 0.0 {
-        for val in &mut band_maximum_log_amplitudes {
+        for val in &mut maximum_log_amplitudes {
             *val /= global_maximum_log_amplitude;
         }
     }
 
     // Sort into buckets by averaging.
     let mut display_buckets = [0.0; NUM_BUCKETS];
-    let bucket_size = band_maximum_log_amplitudes.len() / NUM_BUCKETS;
+    let bucket_size = maximum_log_amplitudes.len() / NUM_BUCKETS;
 
     for (i, bucket) in display_buckets.iter_mut().enumerate() {
         let start = i * bucket_size;
 
         let is_last_bucket = i == NUM_BUCKETS - 1;
-        let end = if is_last_bucket { band_maximum_log_amplitudes.len() } else { start + bucket_size };
+        let end = if is_last_bucket { maximum_log_amplitudes.len() } else { start + bucket_size };
 
-        let slice = &band_maximum_log_amplitudes[start..end];
+        let slice = &maximum_log_amplitudes[start..end];
         let avg = slice.iter().sum::<f32>() / slice.len() as f32;
 
         *bucket = avg;
