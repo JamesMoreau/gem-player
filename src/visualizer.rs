@@ -65,8 +65,8 @@ fn analyze(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE], previous_bu
 
     // Apply a logarithmic scale.
     let nyquist_bin = buffer.len() / 2;
-    let mut maximum_log_amplitudes = Vec::new();
-    let mut global_maximum_log_amplitude = 1.0_f32;
+    let mut max_log_amplitudes = Vec::new();
+    let mut global_max_log_amplitude = 1.0_f32;
     let band_growth_factor = 1.06_f32;
     let mut current_band_start_bin = 1.0_f32;
 
@@ -85,36 +85,36 @@ fn analyze(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE], previous_bu
             }
         }
 
-        if band_max_log_amplitude > global_maximum_log_amplitude {
-            global_maximum_log_amplitude = band_max_log_amplitude;
+        if band_max_log_amplitude > global_max_log_amplitude {
+            global_max_log_amplitude = band_max_log_amplitude;
         }
 
-        maximum_log_amplitudes.push(band_max_log_amplitude);
+        max_log_amplitudes.push(band_max_log_amplitude);
         current_band_start_bin = next_band_start_bin;
     }
 
     // Normalize.
-    if global_maximum_log_amplitude > 0.0 {
-        for val in &mut maximum_log_amplitudes {
-            *val /= global_maximum_log_amplitude;
+    if global_max_log_amplitude > 0.0 {
+        for val in &mut max_log_amplitudes {
+            *val /= global_max_log_amplitude;
         }
     }
 
     // Sort into buckets by averaging.
     let mut buckets = [0.0; NUM_BUCKETS];
-    let bucket_size = maximum_log_amplitudes.len() / NUM_BUCKETS;
+    let bucket_size = max_log_amplitudes.len() / NUM_BUCKETS;
 
     for (i, bucket) in buckets.iter_mut().enumerate() {
         let start = i * bucket_size;
 
         let is_last_bucket = i == NUM_BUCKETS - 1;
         let end = if is_last_bucket {
-            maximum_log_amplitudes.len()
+            max_log_amplitudes.len()
         } else {
             start + bucket_size
         };
 
-        let slice = &maximum_log_amplitudes[start..end];
+        let slice = &max_log_amplitudes[start..end];
         let avg = slice.iter().sum::<f32>() / slice.len() as f32;
 
         *bucket = avg;

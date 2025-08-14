@@ -1,4 +1,4 @@
-use crate::{track::Track, visualizer::{self, visualizer_source}};
+use crate::{track::Track, visualizer::{visualizer_source, NUM_BUCKETS}};
 use fully_pub::fully_pub;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
@@ -29,7 +29,7 @@ pub struct Player {
 #[fully_pub]
 pub struct VisualizerState {
     sample_sender: Sender<f32>,
-    fft_output_receiver: Receiver<[f32; visualizer::NUM_BUCKETS]>,
+    fft_output_receiver: Receiver<[f32; NUM_BUCKETS]>,
 }
 
 pub fn clear_the_queue(player: &mut Player) {
