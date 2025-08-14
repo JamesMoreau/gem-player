@@ -106,9 +106,13 @@ fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NU
 
     for (i, bucket) in buckets.iter_mut().enumerate() {
         let start = i * bucket_size;
-        let end = if i == NUM_BUCKETS - 1 { bars.len() } else { start + bucket_size };
+
+        let is_last_bucket = i == NUM_BUCKETS - 1;
+        let end = if is_last_bucket { bars.len() } else { start + bucket_size };
+
         let slice = &bars[start..end];
-        let avg = slice.iter().copied().sum::<f32>() / slice.len() as f32;
+        let avg = slice.iter().sum::<f32>() / slice.len() as f32;
+
         *bucket = avg;
     }
 
