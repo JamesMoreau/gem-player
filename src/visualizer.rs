@@ -9,10 +9,10 @@ use std::{
 
 // TODO: potential optimizations
 // use ringbuffer
-// Smoothing. needs to be stateful.
 
-const FFT_SIZE: usize = 1 << 9; // 512
 pub const NUM_BUCKETS: usize = 12;
+const FFT_SIZE: usize = 1 << 9; // 512
+const SMOOTHING_FACTOR: f32 = 0.6;
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
@@ -25,9 +25,10 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
     let (fft_output_sender, fft_output_receiver) = mpsc::channel::<[f32; NUM_BUCKETS]>();
 
     thread::spawn(move || {
-        let mut buffer = [0f32; FFT_SIZE];
+        let mut buffer = [0.0_f32; FFT_SIZE];
         let mut sample_count = 0;
         let hann_window = hann_window::<FFT_SIZE>();
+        let mut previous_buckets = [0.0_f32; NUM_BUCKETS];
 
         loop {
             if let Ok(sample) = sample_receiver.recv_timeout(Duration::from_millis(10)) {
@@ -36,8 +37,8 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
             }
 
             if sample_count == FFT_SIZE {
-                let fft_result = analyse(&buffer, &hann_window);
-                let _ = fft_output_sender.send(fft_result);
+                let buckets = analyze(&buffer, &hann_window, &mut previous_buckets);
+                let _ = fft_output_sender.send(buckets);
                 sample_count = 0;
             }
         }
@@ -46,8 +47,8 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
     (sample_sender, fft_output_receiver)
 }
 
-// Algorithm implementation taken from tsoding: https://github.com/tsoding/musializer
-fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NUM_BUCKETS] {
+// Algorithm implementation inspired by tsoding: https://github.com/tsoding/musializer
+fn analyze(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; NUM_BUCKETS] {
     // Apply Hann window on the input.
     let mut buffer: Vec<Complex<f32>> = samples
         .iter()
@@ -107,12 +108,22 @@ fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NU
         let start = i * bucket_size;
 
         let is_last_bucket = i == NUM_BUCKETS - 1;
-        let end = if is_last_bucket { maximum_log_amplitudes.len() } else { start + bucket_size };
+        let end = if is_last_bucket {
+            maximum_log_amplitudes.len()
+        } else {
+            start + bucket_size
+        };
 
         let slice = &maximum_log_amplitudes[start..end];
         let avg = slice.iter().sum::<f32>() / slice.len() as f32;
 
         *bucket = avg;
+    }
+
+    // Smooth
+    for i in 0..NUM_BUCKETS {
+        buckets[i] = previous_buckets[i] * SMOOTHING_FACTOR + buckets[i] * (1.0 - SMOOTHING_FACTOR);
+        previous_buckets[i] = buckets[i];
     }
 
     buckets
