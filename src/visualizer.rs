@@ -100,10 +100,10 @@ fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NU
     }
 
     // Sort into buckets by averaging.
-    let mut display_buckets = [0.0; NUM_BUCKETS];
+    let mut buckets = [0.0; NUM_BUCKETS];
     let bucket_size = maximum_log_amplitudes.len() / NUM_BUCKETS;
 
-    for (i, bucket) in display_buckets.iter_mut().enumerate() {
+    for (i, bucket) in buckets.iter_mut().enumerate() {
         let start = i * bucket_size;
 
         let is_last_bucket = i == NUM_BUCKETS - 1;
@@ -115,7 +115,7 @@ fn analyse(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE]) -> [f32; NU
         *bucket = avg;
     }
 
-    display_buckets
+    buckets
 }
 
 fn hann_window<const N: usize>() -> [f32; N] {
