@@ -59,11 +59,12 @@ fn analyze(samples: &[f32], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; 
     let fft = planner.plan_fft_forward(buffer.len());
     fft.process(&mut buffer);
 
-    let norm_factor = 1.0 / (buffer.len() as f32).sqrt();
+    // Scale using divide by sqrt(N)
+    let normalization_factor = 1.0 / (buffer.len() as f32).sqrt();
     let nyquist_bin = buffer.len() / 2;
     let amplitudes: Vec<f32> = buffer[..nyquist_bin]
         .iter()
-        .map(|c| ((c.re * c.re + c.im * c.im).sqrt()) * norm_factor)
+        .map(|c| ((c.re * c.re + c.im * c.im).sqrt()) * normalization_factor)
         .collect();
 
     // Sort into buckets
