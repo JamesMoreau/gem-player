@@ -27,7 +27,6 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
     thread::spawn(move || {
         let mut buffer = [0.0_f32; FFT_SIZE];
         let mut sample_count = 0;
-        let hann_window = hann_window::<FFT_SIZE>();
         let mut previous_buckets = [0.0_f32; NUM_BUCKETS];
 
         loop {
@@ -37,7 +36,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
             }
 
             if sample_count == FFT_SIZE {
-                let buckets = analyze(&buffer, &hann_window, &mut previous_buckets);
+                let buckets = analyze(&buffer, &mut previous_buckets);
                 let _ = fft_output_sender.send(buckets);
                 sample_count = 0;
             }
@@ -48,15 +47,13 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
 }
 
 // Algorithm implementation inspired by tsoding: https://github.com/tsoding/musializer
-fn analyze(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; NUM_BUCKETS] {
+fn analyze(samples: &[f32; FFT_SIZE], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; NUM_BUCKETS] {
     // Apply Hann window on the input.
+    let window = hann_window(samples.len());
     let mut buffer: Vec<Complex<f32>> = samples
         .iter()
-        .zip(hann_window.iter())
-        .map(|(&sample, &hann)| Complex {
-            re: sample * hann,
-            im: 0.0,
-        })
+        .zip(&window)
+        .map(|(&sample, &hann)| Complex::new(sample * hann, 0.0))
         .collect();
 
     let mut planner = FftPlanner::new();
@@ -129,19 +126,19 @@ fn analyze(samples: &[f32; FFT_SIZE], hann_window: &[f32; FFT_SIZE], previous_bu
     buckets
 }
 
-fn hann_window<const N: usize>() -> [f32; N] {
-    let mut array = [0.0f32; N];
-    let size_f = (N - 1) as f32;
-    let two_pi = 2.0 * PI;
-
-    let mut i = 0;
-    while i < N {
-        let t = i as f32 / size_f;
-        array[i] = 0.5 - 0.5 * (two_pi * t).cos();
-        i += 1;
+pub fn hann_window(n: usize) -> Vec<f32> {
+    if n == 0 {
+        return Vec::new();
     }
 
-    array
+    let mut window = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let multiplier = 0.5 - 0.5 * ((2.0 * PI * i as f32) / (n - 1) as f32).cos();
+        window.push(multiplier);
+    }
+
+    window
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>
