@@ -20,12 +20,12 @@ const SMOOTHING_FACTOR: f32 = 0.6;
 //   3. Visualization UI code in the main thread that displays the processed data.
 //
 //   Communication between the components is achieved using channels.
-pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; NUM_BUCKETS]>) {
+pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32>>) {
     let (sample_sender, sample_receiver) = mpsc::channel::<f32>();
-    let (fft_output_sender, fft_output_receiver) = mpsc::channel::<[f32; NUM_BUCKETS]>();
+    let (fft_output_sender, fft_output_receiver) = mpsc::channel::<Vec<f32>>();
 
     thread::spawn(move || {
-        let mut buffer = [0.0_f32; FFT_SIZE];
+        let mut buffer = Vec::with_capacity(FFT_SIZE);
         let mut sample_count = 0;
         let mut previous_buckets = [0.0_f32; NUM_BUCKETS];
 
@@ -37,7 +37,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
 
             if sample_count == FFT_SIZE {
                 let buckets = analyze(&buffer, &mut previous_buckets);
-                let _ = fft_output_sender.send(buckets);
+                let _ = fft_output_sender.send(buckets.to_vec());
                 sample_count = 0;
             }
         }
@@ -47,8 +47,8 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<[f32; N
 }
 
 // Algorithm implementation inspired by tsoding: https://github.com/tsoding/musializer
-fn analyze(samples: &[f32; FFT_SIZE], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; NUM_BUCKETS] {
-    // Apply Hann window on the input.
+fn analyze(samples: &[f32], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; NUM_BUCKETS] {
+    // Apply Hann window
     let window = hann_window(samples.len());
     let mut buffer: Vec<Complex<f32>> = samples
         .iter()
@@ -60,60 +60,22 @@ fn analyze(samples: &[f32; FFT_SIZE], previous_buckets: &mut [f32; NUM_BUCKETS])
     let fft = planner.plan_fft_forward(buffer.len());
     fft.process(&mut buffer);
 
-    // Apply a logarithmic scale.
+    let norm_factor = 1.0 / (buffer.len() as f32).sqrt();
     let nyquist_bin = buffer.len() / 2;
-    let mut max_log_amplitudes = Vec::new();
-    let mut global_max_log_amplitude = 1.0_f32;
-    let band_growth_factor = 1.06_f32;
-    let mut current_band_start_bin = 1.0_f32;
+    let amplitudes: Vec<f32> = buffer[..nyquist_bin]
+        .iter()
+        .map(|c| ((c.re * c.re + c.im * c.im).sqrt()) * norm_factor)
+        .collect();
 
-    while (current_band_start_bin as usize) < nyquist_bin {
-        // Compute the end of this logarithmic band
-        let next_band_start_bin = (current_band_start_bin * band_growth_factor).ceil();
-        let start_bin_index = current_band_start_bin as usize;
-        let end_bin_index = next_band_start_bin.min(nyquist_bin as f32) as usize;
-
-        // Find the max log amplitude in this band
-        let mut band_max_log_amplitude = f32::NEG_INFINITY;
-        for c in &buffer[start_bin_index..end_bin_index] {
-            let log_power = (c.re * c.re + c.im * c.im + 1e-12).ln();
-            if log_power > band_max_log_amplitude {
-                band_max_log_amplitude = log_power;
-            }
-        }
-
-        if band_max_log_amplitude > global_max_log_amplitude {
-            global_max_log_amplitude = band_max_log_amplitude;
-        }
-
-        max_log_amplitudes.push(band_max_log_amplitude);
-        current_band_start_bin = next_band_start_bin;
-    }
-
-    // Normalize.
-    if global_max_log_amplitude > 0.0 {
-        for val in &mut max_log_amplitudes {
-            *val /= global_max_log_amplitude;
-        }
-    }
-
-    // Sort into buckets by averaging.
+    // Sort into buckets
     let mut buckets = [0.0; NUM_BUCKETS];
-    let bucket_size = max_log_amplitudes.len() / NUM_BUCKETS;
-
+    let bucket_size = amplitudes.len() / NUM_BUCKETS;
     for (i, bucket) in buckets.iter_mut().enumerate() {
         let start = i * bucket_size;
 
         let is_last_bucket = i == NUM_BUCKETS - 1;
-        let end = if is_last_bucket {
-            max_log_amplitudes.len()
-        } else {
-            start + bucket_size
-        };
-
-        let slice = &max_log_amplitudes[start..end];
-        let avg = slice.iter().sum::<f32>() / slice.len() as f32;
-
+        let end = if is_last_bucket { amplitudes.len() } else { start + bucket_size };
+        let avg = amplitudes[start..end].iter().sum::<f32>() / (end - start) as f32;
         *bucket = avg;
     }
 

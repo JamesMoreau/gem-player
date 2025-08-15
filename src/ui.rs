@@ -688,7 +688,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     // Either use the FFT data, or fallback.
-    let fft_values = latest_fft.unwrap_or([0.05_f32; NUM_BUCKETS]);
+    let fft_values = latest_fft.unwrap_or([0.05_f32; NUM_BUCKETS].to_vec());
 
     // print!("Visualizer data: ");
     // for value in fft_values {
