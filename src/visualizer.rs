@@ -1,3 +1,4 @@
+use log::error;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
@@ -25,7 +26,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
     let (fft_output_sender, fft_output_receiver) = mpsc::channel::<Vec<f32>>();
 
     thread::spawn(move || {
-        let mut buffer = Vec::with_capacity(FFT_SIZE);
+        let mut buffer = vec![0.0_f32; FFT_SIZE];
         let mut sample_count = 0;
         let mut previous_buckets = [0.0_f32; NUM_BUCKETS];
 
@@ -37,7 +38,13 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
 
             if sample_count == FFT_SIZE {
                 let buckets = analyze(&buffer, &mut previous_buckets);
-                let _ = fft_output_sender.send(buckets.to_vec());
+
+                let result = fft_output_sender.send(buckets.to_vec());
+                if result.is_err() {
+                    error!("Failed to send FFT output. Closing thread.");
+                    return;
+                }
+
                 sample_count = 0;
             }
         }
@@ -58,6 +65,15 @@ fn analyze(samples: &[f32], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; 
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(buffer.len());
     fft.process(&mut buffer);
+
+    let magnitudes: Vec<f32> = buffer
+        .iter()
+        .map(|c| c.norm()) // norm() = sqrt(re^2 + im^2)
+        .collect();
+
+    println!("FFT magnitudes: {:?}", magnitudes);
+
+    return [0.3_f32; NUM_BUCKETS];
 
     // Scale using divide by sqrt(N)
     let normalization_factor = 1.0 / (buffer.len() as f32).sqrt();
