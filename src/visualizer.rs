@@ -48,7 +48,6 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
 
 // Algorithm implementation inspired by tsoding: https://github.com/tsoding/musializer
 fn analyze(samples: &[f32], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; NUM_BUCKETS] {
-    // Apply Hann window
     let window = hann_window(samples.len());
     let mut buffer: Vec<Complex<f32>> = samples
         .iter()
