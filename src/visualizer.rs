@@ -1,19 +1,24 @@
 use log::error;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
-use rustfft::{num_complex::Complex, FftPlanner};
+use spectrum_analyzer::{samples_fft_to_spectrum, scaling::divide_by_N_sqrt, windows::hann_window, FrequencyLimit};
 use std::{
-    f32::consts::PI,
     sync::mpsc::{self, Sender},
     thread,
     time::Duration,
 };
 
-// TODO: potential optimizations
+// TODO:
 // use ringbuffer
+// Smoothing
+// dynamic sample rate
+// do proper error handling instead of recv_timeout
+// extract loop into process() procedure.
+// Use egui inbox.
+// don't normalize using the max. this makes it so there is always one bar==1, that is, max height.
 
-pub const NUM_BUCKETS: usize = 12;
+pub const NUM_BUCKETS: usize = 8;
 const FFT_SIZE: usize = 1 << 9; // 512
-const SMOOTHING_FACTOR: f32 = 0.6;
+const SAMPLE_RATE: f32 = 44100.0;
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
@@ -26,97 +31,74 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
     let (fft_output_sender, fft_output_receiver) = mpsc::channel::<Vec<f32>>();
 
     thread::spawn(move || {
-        let mut buffer = vec![0.0_f32; FFT_SIZE];
-        let mut sample_count = 0;
-        let mut previous_buckets = [0.0_f32; NUM_BUCKETS];
+        let mut samples = Vec::with_capacity(FFT_SIZE);
 
         loop {
             if let Ok(sample) = sample_receiver.recv_timeout(Duration::from_millis(10)) {
-                buffer[sample_count] = sample;
-                sample_count += 1;
+                samples.push(sample);
             }
 
-            if sample_count == FFT_SIZE {
-                let buckets = analyze(&buffer, &mut previous_buckets);
+            if samples.len() == FFT_SIZE {
+                let hann_window = hann_window(&samples);
 
-                let result = fft_output_sender.send(buckets.to_vec());
+                let spectrum = samples_fft_to_spectrum(
+                    &hann_window,
+                    SAMPLE_RATE as u32, // For now this is hardcoded. In the future this should be dynamic.
+                    FrequencyLimit::All,
+                    Some(&divide_by_N_sqrt),
+                )
+                .unwrap();
+
+                let spectrum: Vec<f32> = spectrum.data().iter().map(|(_, mag)| mag.val()).collect();
+                let spectrum_length = spectrum.len();
+
+                let mut buckets = Vec::with_capacity(NUM_BUCKETS);
+
+                let min_frequency: f32 = 20.0; // 20 Hz is roughly the lower limit of human hearing
+                let nyquist_frequency: f32 = SAMPLE_RATE / 2.0;
+
+                // Apply log-spacing. This helps avoid the left side of the spectrum dominating visually.
+                let log_min = min_frequency.ln();
+                let log_max = nyquist_frequency.ln();
+                let log_step = (log_max - log_min) / NUM_BUCKETS as f32;
+
+                for i in 0..NUM_BUCKETS {
+                    let bucket_start_freq = (log_min + i as f32 * log_step).exp();
+                    let bucket_end_freq = (log_min + (i + 1) as f32 * log_step).exp();
+
+                    let start_bin = ((bucket_start_freq / (SAMPLE_RATE / 2.0)) * spectrum_length as f32).floor() as usize;
+                    let end_bin = ((bucket_end_freq / (SAMPLE_RATE / 2.0)) * spectrum_length as f32).ceil() as usize;
+
+                    let slice = &spectrum[start_bin.min(spectrum_length)..end_bin.min(spectrum_length)];
+                    let avg = if !slice.is_empty() {
+                        slice.iter().sum::<f32>() / slice.len() as f32
+                    } else {
+                        0.0
+                    };
+
+                    buckets.push(avg);
+                }
+
+                if let Some(max_val) = buckets.iter().cloned().reduce(f32::max) {
+                    if max_val > 0.0 {
+                        for v in &mut buckets {
+                            *v /= max_val;
+                        }
+                    }
+                }
+
+                let result = fft_output_sender.send(buckets);
                 if result.is_err() {
                     error!("Failed to send FFT output. Closing thread.");
                     return;
                 }
 
-                sample_count = 0;
+                samples.clear();
             }
         }
     });
 
     (sample_sender, fft_output_receiver)
-}
-
-// Algorithm implementation inspired by tsoding: https://github.com/tsoding/musializer
-fn analyze(samples: &[f32], previous_buckets: &mut [f32; NUM_BUCKETS]) -> [f32; NUM_BUCKETS] {
-    let window = hann_window(samples.len());
-    let mut buffer: Vec<Complex<f32>> = samples
-        .iter()
-        .zip(&window)
-        .map(|(&sample, &hann)| Complex::new(sample * hann, 0.0))
-        .collect();
-
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(buffer.len());
-    fft.process(&mut buffer);
-
-    let magnitudes: Vec<f32> = buffer
-        .iter()
-        .map(|c| c.norm()) // norm() = sqrt(re^2 + im^2)
-        .collect();
-
-    println!("FFT magnitudes: {:?}", magnitudes);
-
-    return [0.3_f32; NUM_BUCKETS];
-
-    // Scale using divide by sqrt(N)
-    let normalization_factor = 1.0 / (buffer.len() as f32).sqrt();
-    let nyquist_bin = buffer.len() / 2;
-    let amplitudes: Vec<f32> = buffer[..nyquist_bin]
-        .iter()
-        .map(|c| ((c.re * c.re + c.im * c.im).sqrt()) * normalization_factor)
-        .collect();
-
-    // Sort into buckets
-    let mut buckets = [0.0; NUM_BUCKETS];
-    let bucket_size = amplitudes.len() / NUM_BUCKETS;
-    for (i, bucket) in buckets.iter_mut().enumerate() {
-        let start = i * bucket_size;
-
-        let is_last_bucket = i == NUM_BUCKETS - 1;
-        let end = if is_last_bucket { amplitudes.len() } else { start + bucket_size };
-        let avg = amplitudes[start..end].iter().sum::<f32>() / (end - start) as f32;
-        *bucket = avg;
-    }
-
-    // Smooth
-    for i in 0..NUM_BUCKETS {
-        buckets[i] = previous_buckets[i] * SMOOTHING_FACTOR + buckets[i] * (1.0 - SMOOTHING_FACTOR);
-        previous_buckets[i] = buckets[i];
-    }
-
-    buckets
-}
-
-pub fn hann_window(n: usize) -> Vec<f32> {
-    if n == 0 {
-        return Vec::new();
-    }
-
-    let mut window = Vec::with_capacity(n);
-
-    for i in 0..n {
-        let multiplier = 0.5 - 0.5 * ((2.0 * PI * i as f32) / (n - 1) as f32).cos();
-        window.push(multiplier);
-    }
-
-    window
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>

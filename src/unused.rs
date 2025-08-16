@@ -175,3 +175,19 @@ while (current_band_start_bin as usize) < nyquist_bin {
 	max_log_amplitudes.push(band_max_log_amplitude);
 	current_band_start_bin = next_band_start_bin;
 }*/
+
+/*
+pub fn hann_window(n: usize) -> Vec<f32> {
+    if n == 0 {
+        return Vec::new();
+    }
+
+    let mut window = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let multiplier = 0.5 - 0.5 * ((2.0 * PI * i as f32) / (n - 1) as f32).cos();
+        window.push(multiplier);
+    }
+
+    window
+ */
