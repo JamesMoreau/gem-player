@@ -79,11 +79,11 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Receiver<Vec<f32
                     buckets.push(avg);
                 }
 
-                if let Some(max_val) = buckets.iter().cloned().reduce(f32::max) {
-                    if max_val > 0.0 {
-                        for v in &mut buckets {
-                            *v /= max_val;
-                        }
+                // Normalize
+                let max_val = buckets.iter().fold(0.0_f32, |max, &val| max.max(val));
+                if max_val > 0.0 {
+                    for value in &mut buckets {
+                        *value /= max_val;
                     }
                 }
 
