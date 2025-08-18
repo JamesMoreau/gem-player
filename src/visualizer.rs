@@ -12,9 +12,11 @@ use std::{
 // use ringbuffer
 // Smoothing
 // dynamic sample rate
+// perhaps convert energy to decibals?
+// error is being fired on shutdown.
 
 pub const NUM_BUCKETS: usize = 7;
-const FFT_SIZE: usize = 1 << 9; // 512
+const FFT_SIZE: usize = 1 << 10; // 1024
 const SAMPLE_RATE: f32 = 44100.0;
 
 //   The visualizer pipeline is comprised of three components:

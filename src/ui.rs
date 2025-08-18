@@ -7,7 +7,6 @@ use crate::{
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
     start_library_watcher,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    visualizer::NUM_BUCKETS,
     GemPlayer, Track, KEY_COMMANDS,
 };
 use dark_light::Mode;
@@ -675,13 +674,11 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        let maybe_last = gem_player.player.visualizer.processing_inbox.read(ui).last();
-        let bar_values = if let Some(last) = maybe_last {
-            gem_player.player.visualizer.last_buckets = last.clone();
-            &gem_player.player.visualizer.last_buckets
-        } else {
-            &gem_player.player.visualizer.last_buckets
+        let maybe_buckets = gem_player.player.visualizer.processing_inbox.read(ui).last();
+        if let Some(buckets) = maybe_buckets {
+            gem_player.player.visualizer.buckets_cache = buckets.clone();
         };
+        let bar_values = &gem_player.player.visualizer.buckets_cache;
 
         let desired_height = ui.available_height() * 0.6;
 
