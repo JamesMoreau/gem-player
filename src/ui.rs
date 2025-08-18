@@ -674,11 +674,21 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        let maybe_buckets = gem_player.player.visualizer.processing_inbox.read(ui).last();
-        if let Some(buckets) = maybe_buckets {
-            gem_player.player.visualizer.buckets_cache = buckets.clone();
-        };
-        let bar_values = &gem_player.player.visualizer.buckets_cache;
+        if let Some(bands) = gem_player.player.visualizer.processing_inbox.read(ui).last() {
+            // Apply smoothing
+            let smoothing_factor = 0.4; // smaller = smoother, larger = more snappy
+            
+            if gem_player.player.visualizer.bands_cache.len() == bands.len() {
+                for (old, new) in gem_player.player.visualizer.bands_cache.iter_mut().zip(bands) {
+                    *old = *old + smoothing_factor * (new - *old);
+                }
+            } else {
+                // first frame or size mismatch -> just replace
+                gem_player.player.visualizer.bands_cache = bands.clone();
+            }
+        }
+
+        let bar_values = &gem_player.player.visualizer.bands_cache;
 
         let desired_height = ui.available_height() * 0.6;
 

@@ -204,7 +204,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             visualizer: VisualizerState {
                 sample_sender,
                 processing_inbox: fft_output_receiver,
-                buckets_cache: Vec::new(),
+                bands_cache: Vec::new(),
             },
         },
     }

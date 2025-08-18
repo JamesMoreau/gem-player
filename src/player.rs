@@ -31,7 +31,7 @@ pub struct Player {
 pub struct VisualizerState {
     sample_sender: Sender<f32>,
     processing_inbox: UiInbox<Vec<f32>>,
-    buckets_cache: Vec<f32>,
+    bands_cache: Vec<f32>,
 }
 
 pub fn clear_the_queue(player: &mut Player) {

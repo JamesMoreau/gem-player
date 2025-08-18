@@ -15,7 +15,7 @@ use std::{
 // perhaps convert energy to decibals?
 // error is being fired on shutdown.
 
-pub const NUM_BUCKETS: usize = 7;
+pub const NUM_BANDS: usize = 7;
 const FFT_SIZE: usize = 1 << 10; // 1024
 const SAMPLE_RATE: f32 = 44100.0;
 
@@ -41,9 +41,9 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
             }
 
             if samples.len() == FFT_SIZE {
-                let buckets = process_samples(&samples, SAMPLE_RATE as u32, NUM_BUCKETS);
+                let bands = process_samples(&samples, SAMPLE_RATE as u32, NUM_BANDS);
 
-                let result = processing_sender.send(buckets);
+                let result = processing_sender.send(bands);
                 if result.is_err() {
                     error!("Failed to send visualizer output. Closing pipeline.");
                     return;
@@ -57,7 +57,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
     (sample_sender, processing_inbox)
 }
 
-fn process_samples(samples: &[f32], sample_rate: u32, number_of_buckets: usize) -> Vec<f32> {
+fn process_samples(samples: &[f32], sample_rate: u32, number_of_bands: usize) -> Vec<f32> {
     let hann_window = hann_window(samples);
 
     let spectrum = samples_fft_to_spectrum(
@@ -71,7 +71,7 @@ fn process_samples(samples: &[f32], sample_rate: u32, number_of_buckets: usize) 
     let spectrum: Vec<f32> = spectrum.data().iter().map(|(_, mag)| mag.val()).collect();
     let spectrum_length = spectrum.len();
 
-    let mut buckets = Vec::with_capacity(number_of_buckets);
+    let mut bands = Vec::with_capacity(number_of_bands);
 
     let min_frequency: f32 = 20.0; // 20 Hz is roughly the lower limit of human hearing
     let nyquist_frequency: f32 = SAMPLE_RATE / 2.0;
@@ -79,14 +79,14 @@ fn process_samples(samples: &[f32], sample_rate: u32, number_of_buckets: usize) 
     // Apply log-spacing. This helps avoid the left side of the spectrum dominating visually.
     let log_min = min_frequency.ln();
     let log_max = nyquist_frequency.ln();
-    let log_step = (log_max - log_min) / number_of_buckets as f32;
+    let log_step = (log_max - log_min) / number_of_bands as f32;
 
-    for i in 0..NUM_BUCKETS {
-        let bucket_start_freq = (log_min + i as f32 * log_step).exp();
-        let bucket_end_freq = (log_min + (i + 1) as f32 * log_step).exp();
+    for i in 0..NUM_BANDS {
+        let band_start_freq = (log_min + i as f32 * log_step).exp();
+        let band_end_freq = (log_min + (i + 1) as f32 * log_step).exp();
 
-        let start_bin = ((bucket_start_freq / (SAMPLE_RATE / 2.0)) * spectrum_length as f32).floor() as usize;
-        let end_bin = ((bucket_end_freq / (SAMPLE_RATE / 2.0)) * spectrum_length as f32).ceil() as usize;
+        let start_bin = ((band_start_freq / (SAMPLE_RATE / 2.0)) * spectrum_length as f32).floor() as usize;
+        let end_bin = ((band_end_freq / (SAMPLE_RATE / 2.0)) * spectrum_length as f32).ceil() as usize;
 
         let slice = &spectrum[start_bin.min(spectrum_length)..end_bin.min(spectrum_length)];
         let avg = if !slice.is_empty() {
@@ -95,18 +95,18 @@ fn process_samples(samples: &[f32], sample_rate: u32, number_of_buckets: usize) 
             0.0
         };
 
-        buckets.push(avg);
+        bands.push(avg);
     }
 
     // Normalize
-    let max_val = buckets.iter().fold(0.0_f32, |max, &val| max.max(val));
+    let max_val = bands.iter().fold(0.0_f32, |max, &val| max.max(val));
     if max_val > 0.0 {
-        for value in &mut buckets {
+        for value in &mut bands {
             *value /= max_val;
         }
     }
 
-    buckets
+    bands
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>
