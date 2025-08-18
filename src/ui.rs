@@ -677,7 +677,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         ui.ctx().request_repaint_after(Duration::from_millis(33)); // ~30 fps. TODO: this forces the whole app to run at this fps.
 
         let smoothing_factor = 0.4;
-        let decay_factor = 0.02;
+        let decay_factor = 0.04;
 
         if let Some(bands) = gem_player.player.visualizer.processing_inbox.read(ui).last() {
             if gem_player.player.visualizer.bands_cache.len() == bands.len() {

@@ -13,8 +13,9 @@ use std::{
 // dynamic sample rate
 // perhaps convert energy to decibals?
 // error is being fired on shutdown.
+// no music playing should not be 0 value bands.
 
-pub const NUM_BANDS: usize = 7;
+pub const NUM_BANDS: usize = 6;
 const FFT_SIZE: usize = 1 << 10; // 1024
 const SAMPLE_RATE: f32 = 44100.0;
 
