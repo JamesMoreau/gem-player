@@ -675,26 +675,28 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        let bar_values = if let Some(last) = gem_player.player.visualizer.processing_inbox.read(ui).last() {
-            last.clone()
+        let maybe_last = gem_player.player.visualizer.processing_inbox.read(ui).last();
+        let bar_values = if let Some(last) = maybe_last {
+            gem_player.player.visualizer.last_buckets = last.clone();
+            &gem_player.player.visualizer.last_buckets
         } else {
-            vec![0.05_f32; NUM_BUCKETS]
+            &gem_player.player.visualizer.last_buckets
         };
-    
+
         let desired_height = ui.available_height() * 0.6;
-    
+
         let (rect, _response) = ui.allocate_exact_size(vec2(100.0, desired_height), Sense::hover());
-    
+
         let bar_gap = 2.0;
         let bar_radius = 1.0;
         let bar_width = rect.width() / bar_values.len() as f32;
         let painter = ui.painter();
-    
+
         for (i, &value) in bar_values.iter().enumerate() {
             let height = value * rect.height();
             let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
             let y = rect.bottom();
-    
+
             let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
             painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
         }

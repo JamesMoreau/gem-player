@@ -13,7 +13,6 @@ use player::{
 };
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStreamBuilder, Sink};
-use visualizer::start_visualizer_pipeline;
 use std::{
     collections::{HashMap, HashSet},
     fs, io,
@@ -23,6 +22,7 @@ use std::{
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
+use visualizer::start_visualizer_pipeline;
 
 mod player;
 mod playlist;
@@ -201,7 +201,11 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
             stream_handle,
             sink,
-            visualizer: VisualizerState { sample_sender, processing_inbox: fft_output_receiver },
+            visualizer: VisualizerState {
+                sample_sender,
+                processing_inbox: fft_output_receiver,
+                last_buckets: Vec::new(),
+            },
         },
     }
 }
