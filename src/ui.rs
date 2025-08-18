@@ -674,35 +674,31 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 }
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    ui.ctx().request_repaint();
-
-    let mut latest_fft = None;
-    while let Ok(fft_data) = gem_player.player.visualizer.fft_output_receiver.try_recv() {
-        latest_fft = Some(fft_data);
-    }
-
-    // Either use the FFT data, or fallback.
-    let fft_values = latest_fft.unwrap_or([0.05_f32; NUM_BUCKETS].to_vec());
-
-    print!("Visualizer data: ");
-    fft_values.iter().for_each(|value| print!("{:.2} ", value));
-    println!();
-
-    let (rect, _response) = ui.allocate_exact_size(vec2(100.0, ui.available_height()), Sense::hover());
-
-    let bar_gap = 2.0;
-    let bar_radius = 1.0;
-    let bar_width = rect.width() / fft_values.len() as f32;
-    let painter = ui.painter();
-
-    for (i, &value) in fft_values.iter().enumerate() {
-        let height = value * rect.height();
-        let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
-        let y = rect.bottom();
-
-        let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
-        painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
-    }
+    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+        let bar_values = if let Some(last) = gem_player.player.visualizer.processing_inbox.read(ui).last() {
+            last.clone()
+        } else {
+            vec![0.05_f32; NUM_BUCKETS]
+        };
+    
+        let desired_height = ui.available_height() * 0.6;
+    
+        let (rect, _response) = ui.allocate_exact_size(vec2(100.0, desired_height), Sense::hover());
+    
+        let bar_gap = 2.0;
+        let bar_radius = 1.0;
+        let bar_width = rect.width() / bar_values.len() as f32;
+        let painter = ui.painter();
+    
+        for (i, &value) in bar_values.iter().enumerate() {
+            let height = value * rect.height();
+            let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
+            let y = rect.bottom();
+    
+            let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
+            painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
+        }
+    });
 }
 
 fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {

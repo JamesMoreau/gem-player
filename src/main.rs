@@ -35,7 +35,6 @@ TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * Make songs outside of library playable.
 * Should drop-in files be moved from original location instead of copied?
-* maybe just use channels instead of egui_inbox.
 * Add "Open with" from filesystem functionality.
 */
 
@@ -202,7 +201,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
             stream_handle,
             sink,
-            visualizer: VisualizerState { sample_sender, fft_output_receiver },
+            visualizer: VisualizerState { sample_sender, processing_inbox: fft_output_receiver },
         },
     }
 }

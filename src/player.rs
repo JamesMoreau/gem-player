@@ -1,11 +1,12 @@
 use crate::{track::Track, visualizer::visualizer_source};
+use egui_inbox::UiInbox;
 use fully_pub::fully_pub;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink};
 use std::{
     fs,
     io::{self, ErrorKind},
-    sync::mpsc::{Receiver, Sender},
+    sync::mpsc::Sender,
 };
 
 #[fully_pub]
@@ -29,7 +30,7 @@ pub struct Player {
 #[fully_pub]
 pub struct VisualizerState {
     sample_sender: Sender<f32>,
-    fft_output_receiver: Receiver<Vec<f32>>,
+    processing_inbox: UiInbox<Vec<f32>>,
 }
 
 pub fn clear_the_queue(player: &mut Player) {
