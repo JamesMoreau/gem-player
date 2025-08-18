@@ -674,7 +674,7 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        ui.ctx().request_repaint_after(Duration::from_millis(33)); // ~30 fps. TODO: this forces the whole app to run at this fps.
+        ui.ctx().request_repaint_after(Duration::from_millis(33)); // ~30 fps.
 
         let smoothing_factor = 0.4;
         let decay_factor = 0.04;
@@ -687,6 +687,9 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             } else {
                 gem_player.player.visualizer.bands_cache = bands.clone();
             }
+        } else if gem_player.player.visualizer.bands_cache.is_empty() {
+            // Initialize with a default number of bands so we always render something
+            gem_player.player.visualizer.bands_cache = vec![0.0; 8];
         } else {
             // No new data -> apply decay
             for old in &mut gem_player.player.visualizer.bands_cache {
@@ -697,7 +700,6 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let bands = &gem_player.player.visualizer.bands_cache;
 
         let desired_height = ui.available_height() * 0.6;
-
         let (rect, _response) = ui.allocate_exact_size(vec2(100.0, desired_height), Sense::hover());
 
         let bar_gap = 2.0;
@@ -706,7 +708,14 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let painter = ui.painter();
 
         for (i, &value) in bands.iter().enumerate() {
-            let height = value * rect.height();
+            let mut height = value * rect.height();
+
+            // Minimum height so there’s always a visual
+            let min_height = 2.0;
+            if height < min_height {
+                height = min_height;
+            }
+
             let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
             let y = rect.bottom();
 
