@@ -1,5 +1,5 @@
 use egui_inbox::UiInbox;
-use log::{error, info};
+use log::error;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use spectrum_analyzer::{samples_fft_to_spectrum, scaling::divide_by_N_sqrt, windows::hann_window, FrequencyLimit};
 use std::{
