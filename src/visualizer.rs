@@ -1,5 +1,5 @@
 use egui_inbox::UiInbox;
-use log::error;
+use log::{error, info};
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use spectrum_analyzer::{samples_fft_to_spectrum, scaling::divide_by_N_sqrt, windows::hann_window, FrequencyLimit};
 use std::{
@@ -12,7 +12,6 @@ use std::{
 // use ringbuffer
 // Smoothing
 // dynamic sample rate
-// do proper error handling instead of recv_timeout
 
 pub const NUM_BUCKETS: usize = 7;
 const FFT_SIZE: usize = 1 << 9; // 512
@@ -22,8 +21,6 @@ const SAMPLE_RATE: f32 = 44100.0;
 //   1. A source wrapper that captures audio samples from the audio stream.
 //   2. A processing thread that receives the samples and performs FFT and other processing.
 //   3. Visualization UI code in the main thread that displays the processed data.
-//
-//   Communication between the components is achieved using channels.
 pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
     let (sample_sender, sample_receiver) = mpsc::channel::<f32>();
     let processing_inbox: UiInbox<Vec<f32>> = UiInbox::new();
@@ -33,18 +30,23 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
         loop {
-            if let Ok(sample) = sample_receiver.recv_timeout(Duration::from_millis(10)) {
+            let result = sample_receiver.recv();
+            if let Ok(sample) = result {
                 samples.push(sample);
+            } else {
+                error!("Failed to receive sample input. Closing pipeline.");
+                return;
             }
 
             if samples.len() == FFT_SIZE {
                 let buckets = process_samples(&samples, SAMPLE_RATE as u32, NUM_BUCKETS);
-                
+
                 let result = processing_sender.send(buckets);
                 if result.is_err() {
-                    error!("Failed to send visualizer output. Closing thread.");
+                    error!("Failed to send visualizer output. Closing pipeline.");
+                    return;
                 }
-                
+
                 samples.clear();
             }
         }
