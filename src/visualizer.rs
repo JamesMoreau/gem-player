@@ -10,7 +10,6 @@ use std::{
 
 // TODO:
 // use ringbuffer
-// Smoothing
 // dynamic sample rate
 // perhaps convert energy to decibals?
 // error is being fired on shutdown.

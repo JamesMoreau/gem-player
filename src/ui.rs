@@ -674,21 +674,27 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+        ui.ctx().request_repaint_after(Duration::from_millis(33)); // ~30 fps. TODO: this forces the whole app to run at this fps.
+
+        let smoothing_factor = 0.4;
+        let decay_factor = 0.02;
+
         if let Some(bands) = gem_player.player.visualizer.processing_inbox.read(ui).last() {
-            // Apply smoothing
-            let smoothing_factor = 0.4; // smaller = smoother, larger = more snappy
-            
             if gem_player.player.visualizer.bands_cache.len() == bands.len() {
                 for (old, new) in gem_player.player.visualizer.bands_cache.iter_mut().zip(bands) {
                     *old = *old + smoothing_factor * (new - *old);
                 }
             } else {
-                // first frame or size mismatch -> just replace
                 gem_player.player.visualizer.bands_cache = bands.clone();
+            }
+        } else {
+            // No new data -> apply decay
+            for old in &mut gem_player.player.visualizer.bands_cache {
+                *old = (*old - decay_factor).max(0.0);
             }
         }
 
-        let bar_values = &gem_player.player.visualizer.bands_cache;
+        let bands = &gem_player.player.visualizer.bands_cache;
 
         let desired_height = ui.available_height() * 0.6;
 
@@ -696,10 +702,10 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
         let bar_gap = 2.0;
         let bar_radius = 1.0;
-        let bar_width = rect.width() / bar_values.len() as f32;
+        let bar_width = rect.width() / bands.len() as f32;
         let painter = ui.painter();
 
-        for (i, &value) in bar_values.iter().enumerate() {
+        for (i, &value) in bands.iter().enumerate() {
             let height = value * rect.height();
             let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
             let y = rect.bottom();
