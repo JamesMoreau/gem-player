@@ -1,5 +1,5 @@
 use egui_inbox::UiInbox;
-use log::error;
+use log::info;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use spectrum_analyzer::{samples_fft_to_spectrum, scaling::divide_by_N_sqrt, windows::hann_window, FrequencyLimit};
 use std::{
@@ -13,7 +13,6 @@ use std::{
 // dynamic sample rate
 // perhaps convert energy to decibals?
 // error is being fired on shutdown.
-// no music playing should not be 0 value bands.
 
 pub const NUM_BANDS: usize = 6;
 const FFT_SIZE: usize = 1 << 10; // 1024
@@ -36,7 +35,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
             if let Ok(sample) = result {
                 samples.push(sample);
             } else {
-                error!("Failed to receive sample input. Closing pipeline.");
+                info!("Sample channel dropped. Shutting down the visualizer pipeline.");
                 return;
             }
 
@@ -45,7 +44,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
 
                 let result = processing_sender.send(bands);
                 if result.is_err() {
-                    error!("Failed to send visualizer output. Closing pipeline.");
+                    info!("Ui inbox dropped. Shutting down the visualizer pipeline.");
                     return;
                 }
 
