@@ -43,7 +43,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
 
                 let result = processing_sender.send(bands);
                 if result.is_err() {
-                    info!("Ui inbox dropped. Shutting down the visualizer pipeline.");
+                    info!("Processing inbox dropped. Shutting down the visualizer pipeline.");
                     return;
                 }
 
