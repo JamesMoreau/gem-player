@@ -12,7 +12,6 @@ use std::{
 // use ringbuffer
 // dynamic sample rate
 // perhaps convert energy to decibals?
-// error is being fired on shutdown.
 
 pub const NUM_BANDS: usize = 6;
 const FFT_SIZE: usize = 1 << 10; // 1024
