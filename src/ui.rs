@@ -1,13 +1,7 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, load_library, maybe_play_next, maybe_play_previous,
-    play_library, play_playlist,
-    player::{
+    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, load_library, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
-    },
-    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
-    start_library_watcher,
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    GemPlayer, Track, KEY_COMMANDS,
+    }, playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval}, start_library_watcher, track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval}, GemPlayer, Track, KEY_COMMANDS
 };
 use dark_light::Mode;
 use eframe::egui::{
@@ -687,8 +681,6 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             } else {
                 gem_player.player.visualizer.bands_cache = bands.clone();
             }
-        } else if gem_player.player.visualizer.bands_cache.is_empty() {
-            gem_player.player.visualizer.bands_cache = vec![0.0; 8];
         } else {
             for old in &mut gem_player.player.visualizer.bands_cache {
                 *old = (*old - per_second_decay_rate * dt).max(0.0);
@@ -698,7 +690,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let bands = &gem_player.player.visualizer.bands_cache;
 
         let desired_height = ui.available_height() * 0.6;
-        let (rect, _response) = ui.allocate_exact_size(vec2(100.0, desired_height), Sense::hover());
+        let (rect, _response) = ui.allocate_exact_size(vec2(90.0, desired_height), Sense::hover());
 
         let bar_gap = 2.0;
         let bar_radius = 1.0;

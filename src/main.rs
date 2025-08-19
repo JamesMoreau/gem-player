@@ -22,7 +22,7 @@ use std::{
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
-use visualizer::start_visualizer_pipeline;
+use visualizer::{start_visualizer_pipeline, NUM_BANDS};
 
 mod player;
 mod playlist;
@@ -205,7 +205,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             visualizer: VisualizerState {
                 sample_sender,
                 processing_inbox: fft_output_receiver,
-                bands_cache: Vec::new(),
+                bands_cache: vec![0.0; NUM_BANDS],
             },
         },
     }
@@ -245,7 +245,7 @@ impl eframe::App for GemPlayer {
         gem_player_ui(self, ctx);
         self.ui.toasts.show(ctx);
 
-        // Set a minimum refresh rate for the app to keep the ui updated.
+        // Set a minimum refresh rate for the app to keep the ui elements updated.
         ctx.request_repaint_after(Duration::from_millis(33)); // ~30 fps
     }
 }
