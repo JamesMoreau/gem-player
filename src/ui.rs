@@ -674,10 +674,10 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        ui.ctx().request_repaint_after(Duration::from_millis(33)); // ~30 fps.
+        let dt = ui.input(|i| i.stable_dt);
 
         let smoothing_factor = 0.4;
-        let decay_factor = 0.04;
+        let per_second_decay_rate = 4.0;
 
         if let Some(bands) = gem_player.player.visualizer.processing_inbox.read(ui).last() {
             if gem_player.player.visualizer.bands_cache.len() == bands.len() {
@@ -688,12 +688,10 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 gem_player.player.visualizer.bands_cache = bands.clone();
             }
         } else if gem_player.player.visualizer.bands_cache.is_empty() {
-            // Initialize with a default number of bands so we always render something
             gem_player.player.visualizer.bands_cache = vec![0.0; 8];
         } else {
-            // No new data -> apply decay
             for old in &mut gem_player.player.visualizer.bands_cache {
-                *old = (*old - decay_factor).max(0.0);
+                *old = (*old - per_second_decay_rate * dt).max(0.0);
             }
         }
 

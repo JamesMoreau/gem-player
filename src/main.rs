@@ -36,6 +36,7 @@ TODO:
 * Make songs outside of library playable.
 * Should drop-in files be moved from original location instead of copied?
 * Add "Open with" from filesystem functionality.
+* remove request_repaints().
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -243,6 +244,9 @@ impl eframe::App for GemPlayer {
         // Render
         gem_player_ui(self, ctx);
         self.ui.toasts.show(ctx);
+
+        // Set a minimum refresh rate for the app to keep the ui updated.
+        ctx.request_repaint_after(Duration::from_millis(33)); // ~30 fps
     }
 }
 
