@@ -679,11 +679,13 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let smoothing_factor = 0.4;
         let per_second_decay_rate = 4.0;
 
-        if let Some(bands) = gem_player.player.visualizer.processing_inbox.read(ui).last() {
+        let maybe_bands = gem_player.player.visualizer.processing_inbox.read(ui).last();
+        if let Some(bands) = maybe_bands {
             for (old, new) in gem_player.player.visualizer.bands_cache.iter_mut().zip(bands) {
                 *old = *old + smoothing_factor * (new - *old);
             }
         } else {
+            // Apply decay when no new data.
             for old in &mut gem_player.player.visualizer.bands_cache {
                 *old = (*old - per_second_decay_rate * dt).max(0.0);
             }
