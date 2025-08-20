@@ -676,16 +676,17 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let dt = ui.input(|i| i.stable_dt);
 
-        let smoothing_factor = 0.4;
+        let smoothing_per_second = 8.0;
+        let alpha = 1.0 - (-smoothing_per_second * dt).exp();
         let per_second_decay_rate = 4.0;
-
+        
         let maybe_bands = gem_player.player.visualizer.processing_inbox.read(ui).last();
         if let Some(bands) = maybe_bands {
             for (old, new) in gem_player.player.visualizer.bands_cache.iter_mut().zip(bands) {
-                *old = *old + smoothing_factor * (new - *old);
+                *old += (new - *old) * alpha;
             }
         } else {
-            // Apply decay when no new data.
+            // Apply decay when no new data
             for old in &mut gem_player.player.visualizer.bands_cache {
                 *old = (*old - per_second_decay_rate * dt).max(0.0);
             }
@@ -694,7 +695,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let bands = &gem_player.player.visualizer.bands_cache;
 
         let desired_height = ui.available_height() * 0.6;
-        let (rect, _response) = ui.allocate_exact_size(vec2(90.0, desired_height), Sense::hover());
+        let (rect, _response) = ui.allocate_exact_size(vec2(100.0, desired_height), Sense::hover());
 
         let bar_gap = 2.0;
         let bar_radius = 1.0;
