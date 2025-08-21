@@ -11,10 +11,10 @@ use std::{
 // TODO:
 // use ringbuffer
 // dynamic sample rate
-// perhaps convert energy to decibals?
+// perhaps convert energy to decibels?
 
 pub const NUM_BANDS: usize = 16;
-const FFT_SIZE: usize = 1 << 13; // 8192
+const FFT_SIZE: usize = 1 << 11; // 2048
 const SAMPLE_RATE: f32 = 44100.0;
 
 //   The visualizer pipeline is comprised of three components:
@@ -47,7 +47,8 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
                     return;
                 }
 
-                samples.clear();
+                // Keep half the samples for overlap. This improves continuity / smoothness.
+                samples.drain(0..FFT_SIZE / 2);
             }
         }
     });
