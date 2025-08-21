@@ -678,39 +678,34 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
         let smoothing_per_second = 8.0;
         let alpha = 1.0 - (-smoothing_per_second * dt).exp();
-        let per_second_decay_rate = 4.0;
-        
+        let per_second_decay = 4.0;
+
         let maybe_bands = gem_player.player.visualizer.processing_inbox.read(ui).last();
-        if let Some(bands) = maybe_bands {
-            for (old, new) in gem_player.player.visualizer.bands_cache.iter_mut().zip(bands) {
+        let bands_cache = &mut gem_player.player.visualizer.bands_cache;
+
+        if let Some(new_bands) = maybe_bands {
+            // Smooth new data
+            for (old, new) in bands_cache.iter_mut().zip(new_bands) {
                 *old += (new - *old) * alpha;
             }
         } else {
-            // Apply decay when no new data
-            for old in &mut gem_player.player.visualizer.bands_cache {
-                *old = (*old - per_second_decay_rate * dt).max(0.0);
+            // Decay when no new data
+            for old in bands_cache.iter_mut() {
+                *old = (*old - per_second_decay * dt).max(0.0);
             }
         }
 
-        let bands = &gem_player.player.visualizer.bands_cache;
-
         let desired_height = ui.available_height() * 0.6;
-        let (rect, _response) = ui.allocate_exact_size(vec2(100.0, desired_height), Sense::hover());
+        let (rect, _response) = ui.allocate_exact_size(vec2(600.0, desired_height), Sense::hover());
 
         let bar_gap = 2.0;
         let bar_radius = 1.0;
-        let bar_width = rect.width() / bands.len() as f32;
+        let bar_width = rect.width() / bands_cache.len() as f32;
+        let min_bar_height = 2.0;
+
         let painter = ui.painter();
-
-        for (i, &value) in bands.iter().enumerate() {
-            let mut height = value * rect.height();
-
-            // Minimum height so there’s always a visual
-            let min_height = 2.0;
-            if height < min_height {
-                height = min_height;
-            }
-
+        for (i, &value) in bands_cache.iter().enumerate() {
+            let height = (value * rect.height()).max(min_bar_height);
             let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
             let y = rect.bottom();
 
