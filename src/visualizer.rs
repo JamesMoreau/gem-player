@@ -15,6 +15,7 @@ use std::{
 
 // is divide_by_N_sqrt the most applicable??
 // Will using the wrong sample rate affect the results a lot?
+// check for negatives?
 
 pub const NUM_BANDS: usize = 16;
 const FFT_SIZE: usize = 1 << 11; // 2048
