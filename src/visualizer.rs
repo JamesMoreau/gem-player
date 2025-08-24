@@ -13,9 +13,12 @@ use std::{
 // dynamic sample rate
 // perhaps convert energy to decibels?
 
-pub const NUM_BANDS: usize = 256;
-const FFT_SIZE: usize = 1 << 8; // 256
-const SAMPLE_RATE: f32 = 44100.0;
+// is divide_by_N_sqrt the most applicable??
+// Will using the wrong sample rate affect the results a lot?
+
+pub const NUM_BANDS: usize = 16;
+const FFT_SIZE: usize = 1 << 11; // 2048
+const SAMPLE_RATE: f32 = 48000.0;
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
@@ -56,57 +59,43 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
     (sample_sender, processing_inbox)
 }
 
-fn process_samples(samples: &[f32], sample_rate: u32, number_of_bands: usize) -> Vec<f32> {
-    let hann_window = hann_window(samples);
+pub fn process_samples(samples: &[f32], sample_rate: u32, num_bands: usize) -> Vec<f32> {
+    let windowed = hann_window(samples);
 
     let spectrum = samples_fft_to_spectrum(
-        &hann_window,
-        sample_rate, // For now this is hardcoded. In the future this should be dynamic.
+        &windowed,
+        sample_rate, // should be dynamic
         FrequencyLimit::All,
-        None,
+        Some(&divide_by_N_sqrt), //maybe change or dont do
     )
     .unwrap();
 
-    let spectrum: Vec<f32> = spectrum.data().iter().map(|(_, mag)| mag.val()).collect();
+    let magnitudes: Vec<f32> = spectrum.data().iter().map(|(_, mag)| mag.val()).collect();
 
-    return spectrum;
+    // Split into bands
+    let bins_per_band = magnitudes.len() / num_bands;
+    let mut bands = Vec::with_capacity(num_bands);
 
-    let spectrum_length = spectrum.len();
+    for i in 0..num_bands {
+        let start = i * bins_per_band;
+        let end = start + bins_per_band;
+        let slice = &magnitudes[start..end];
 
-    let mut bands = Vec::with_capacity(number_of_bands);
+        let avg = if !slice.is_empty() {
+            slice.iter().copied().sum::<f32>() / slice.len() as f32
+        } else {
+            0.0
+        };
 
-    // let min_frequency: f32 = 20.0; // 20 Hz is roughly the lower limit of human hearing
-    // let nyquist_frequency: f32 = sample_rate as f32 / 2.0;
+        bands.push(avg);
+    }
 
-    // Apply log-spacing
-    // let log_min = min_frequency.ln();
-    // let log_max = nyquist_frequency.ln();
-    // let log_step = (log_max - log_min) / number_of_bands as f32;
-
-    // for i in 0..number_of_bands {
-    //     let band_start_freq = (log_min + i as f32 * log_step).exp();
-    //     let band_end_freq = (log_min + (i + 1) as f32 * log_step).exp();
-
-    //     let start_bin = ((band_start_freq / nyquist_frequency) * spectrum_length as f32).floor() as usize;
-    //     let end_bin = ((band_end_freq / nyquist_frequency) * spectrum_length as f32).ceil() as usize;
-
-    //     let slice = &spectrum[start_bin.min(spectrum_length)..end_bin.min(spectrum_length)];
-    //     let avg = if !slice.is_empty() {
-    //         slice.iter().sum::<f32>() / slice.len() as f32
-    //     } else {
-    //         0.0
-    //     };
-
-    //     bands.push(avg);
-    // }
-
-    // Normalize to 0..1 range
-    // let max_val = bands.iter().fold(0.0_f32, |max, &val| max.max(val));
-    // if max_val > 0.0 {
-    //     for value in &mut bands {
-    //         *value /= max_val;
-    //     }
-    // }
+    let max_band = bands.iter().fold(0.0f32, |a, &b| a.max(b));
+    if max_band > 0.0 {
+        for val in &mut bands {
+            *val /= max_band;
+        }
+    }
 
     bands
 }

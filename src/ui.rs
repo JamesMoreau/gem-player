@@ -696,7 +696,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         }
 
         let desired_height = ui.available_height() * 0.6;
-        let (rect, _response) = ui.allocate_exact_size(vec2(600.0, desired_height), Sense::hover());
+        let (rect, _response) = ui.allocate_exact_size(vec2(100.0, desired_height), Sense::hover());
 
         let bar_gap = 2.0;
         let bar_radius = 1.0;
