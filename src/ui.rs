@@ -676,9 +676,10 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let dt = ui.input(|i| i.stable_dt);
 
-        let smoothing_per_second = 8.0;
+        let smoothing_per_second = 3.0;
         let alpha = 1.0 - (-smoothing_per_second * dt).exp();
-        let per_second_decay = 4.0;
+
+        let gravity = 4.0;
 
         let maybe_bands = gem_player.player.visualizer.processing_inbox.read(ui).last();
         let bands_cache = &mut gem_player.player.visualizer.bands_cache;
@@ -691,7 +692,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         } else {
             // Decay when no new data
             for old in bands_cache.iter_mut() {
-                *old = (*old - per_second_decay * dt).max(0.0);
+                *old = (*old - gravity * dt).max(0.0);
             }
         }
 
