@@ -676,24 +676,21 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let dt = ui.input(|i| i.stable_dt);
 
-        let smoothing_per_second = 3.0;
-        let alpha = 1.0 - (-smoothing_per_second * dt).exp();
-
-        let gravity = 4.0;
+        let attack_rate = 12.0;
+        let decay_rate = 2.0;
 
         let maybe_bands = gem_player.player.visualizer.processing_inbox.read(ui).last();
         let bands_cache = &mut gem_player.player.visualizer.bands_cache;
 
-        if let Some(new_bands) = maybe_bands {
-            // Smooth new data
-            for (old, new) in bands_cache.iter_mut().zip(new_bands) {
-                *old += (new - *old) * alpha;
-            }
-        } else {
-            // Decay when no new data
-            for old in bands_cache.iter_mut() {
-                *old = (*old - gravity * dt).max(0.0);
-            }
+        let targets = maybe_bands.unwrap_or_else(|| vec![0.0; bands_cache.len()]);
+        
+        for (bar, &target) in bands_cache.iter_mut().zip(&targets) {
+            let alpha = if target > *bar {
+                1.0 - (-attack_rate * dt).exp()
+            } else {
+                1.0 - (-decay_rate * dt).exp()
+            };
+            *bar += (target - *bar) * alpha;
         }
 
         let desired_height = ui.available_height() * 0.6;
