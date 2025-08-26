@@ -13,7 +13,7 @@ use std::{
 // use ringbuffer
 // dynamic sample rate
 
-pub const NUM_BANDS: usize = 32;
+pub const NUM_BANDS: usize = 8; // TODO: REMOVE
 const FFT_SIZE: usize = 1 << 11; // 2048
 const SAMPLE_RATE: f32 = 48000.0;
 
@@ -39,7 +39,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
             }
 
             if samples.len() == FFT_SIZE {
-                let bands = process_samples(&samples, SAMPLE_RATE as u32, NUM_BANDS);
+                let bands = process_samples(&samples, SAMPLE_RATE as u32);
 
                 let result = processing_sender.send(bands);
                 if result.is_err() {
@@ -56,7 +56,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
     (sample_sender, processing_inbox)
 }
 
-pub fn process_samples(samples: &[f32], sample_rate: u32, num_bands: usize) -> Vec<f32> {
+pub fn process_samples(samples: &[f32], sample_rate: u32) -> Vec<f32> {
     let n = samples.len();
     let window = hann_window(n);
 
@@ -70,54 +70,39 @@ pub fn process_samples(samples: &[f32], sample_rate: u32, num_bands: usize) -> V
     let fft = planner.plan_fft_forward(n);
     fft.process(&mut buffer);
 
-    let magnitudes: Vec<f32> = buffer
-        .iter()
-        .take(n / 2 + 1) // keep only positive frequencies
-        .map(|c| c.norm())
-        .collect();
+    let magnitudes: Vec<f32> = buffer.iter().take(n / 2 + 1).map(|c| c.norm()).collect();
 
-    let nyquist = sample_rate as f32 / 2.0;
-    let fft_size = magnitudes.len();
+    let center_freqs = [63.0, 125.0, 500.0, 1000.0, 2000.0, 4000.0, 6000.0, 8000.0];
+    let bandwidth = 1.414_f32; // 2^(1/2), half-octave
 
-    let mut bands = vec![0.0; num_bands];
+    let mut bands = vec![0.0f32; center_freqs.len()];
 
-    // Determing band boundaries
-    let f_min = 31.25;
-    let f_max = nyquist;
-    let mut band_boundaries = Vec::with_capacity(num_bands + 1);
-    for b in 0..=num_bands {
-        let frac = b as f32 / num_bands as f32;
-        let f = f_min * (f_max / f_min).powf(frac);
-        band_boundaries.push(f);
-    }
+    for (b, &center) in center_freqs.iter().enumerate() {
+        let f_start = center / bandwidth;
+        let f_end = center * bandwidth;
 
-    // Group FFT bins into bands
-    for (i, &mag) in magnitudes.iter().enumerate() {
-        let freq = (i as f32 / fft_size as f32) * nyquist;
-        if freq < f_min {
-            continue;
-        }
+        let i_min = ((f_start * n as f32) / sample_rate as f32).floor() as usize;
+        let i_max = ((f_end * n as f32) / sample_rate as f32).ceil() as usize;
+        let i_max = i_max.min(magnitudes.len() - 1); // clamp to available bins
 
-        // Find which band this frequency belongs to
-        for b in 0..num_bands {
-            if freq >= band_boundaries[b] && freq < band_boundaries[b + 1] {
-                bands[b] += mag * mag;
-                break;
-            }
+        for mag in &magnitudes[i_min..=i_max] {
+            bands[b] += mag * mag; // accumulate power
         }
     }
 
-    // Convert accumulated power to RMS and dB
+    // DOES KEIJIRO DO THIS??
+    // --- Convert to RMS + dB --- 
     for band in &mut bands {
-        *band = (*band).sqrt().max(1e-10); // avoid log(0)
-        *band = 20.0 * band.log10();
+        *band = band.sqrt().max(1e-10); // RMS
+        *band = 20.0 * band.log10(); // dB
     }
 
-    // Normalize 0..1
-    let max_band = bands.iter().fold(0.0f32, |a, &b| a.max(b));
-    if max_band > 0.0 {
-        for val in &mut bands {
-            *val /= max_band;
+    // --- Normalize 0..1 ---
+    if let Some(&max_band) = bands.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
+        if max_band > 0.0 {
+            for band in &mut bands {
+                *band /= max_band;
+            }
         }
     }
 
