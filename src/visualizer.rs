@@ -1,13 +1,9 @@
 use egui_inbox::UiInbox;
 use log::info;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
-use spectrum_analyzer::{
-    samples_fft_to_spectrum,
-    scaling::{divide_by_N, divide_by_N_sqrt, scale_20_times_log10},
-    windows::hann_window,
-    FrequencyLimit,
-};
+use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
+    f32::consts::PI,
     sync::mpsc::{self, Sender},
     thread,
     time::Duration,
@@ -16,13 +12,8 @@ use std::{
 // TODO:
 // use ringbuffer
 // dynamic sample rate
-// perhaps convert energy to decibels?
 
-// is divide_by_N_sqrt the most applicable??
-// Will using the wrong sample rate affect the results a lot?
-// check for negatives?
-
-pub const NUM_BANDS: usize = 8;
+pub const NUM_BANDS: usize = 32;
 const FFT_SIZE: usize = 1 << 11; // 2048
 const SAMPLE_RATE: f32 = 48000.0;
 
@@ -66,11 +57,24 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
 }
 
 pub fn process_samples(samples: &[f32], sample_rate: u32, num_bands: usize) -> Vec<f32> {
-    let windowed = hann_window(samples);
+    let n = samples.len();
+    let window = hann_window(n);
 
-    let spectrum = samples_fft_to_spectrum(&windowed, sample_rate, FrequencyLimit::All, None).unwrap();
+    let mut buffer: Vec<Complex<f32>> = samples
+        .iter()
+        .zip(window.iter())
+        .map(|(&s, &w)| Complex { re: s * w, im: 0.0 })
+        .collect();
 
-    let magnitudes: Vec<f32> = spectrum.data().iter().map(|(_, mag)| mag.val()).collect();
+    let mut planner = FftPlanner::new();
+    let fft = planner.plan_fft_forward(n);
+    fft.process(&mut buffer);
+
+    let magnitudes: Vec<f32> = buffer
+        .iter()
+        .take(n / 2 + 1) // keep only positive frequencies
+        .map(|c| c.norm())
+        .collect();
 
     let nyquist = sample_rate as f32 / 2.0;
     let fft_size = magnitudes.len();
@@ -118,6 +122,11 @@ pub fn process_samples(samples: &[f32], sample_rate: u32, num_bands: usize) -> V
     }
 
     bands
+}
+
+pub fn hann_window(n: usize) -> Vec<f32> {
+    let denominator = (n - 1) as f32;
+    (0..n).map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / denominator).cos())).collect()
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>
