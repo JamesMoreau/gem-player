@@ -73,7 +73,7 @@ pub fn process_samples(samples: &[f32], sample_rate: u32) -> Vec<f32> {
     let magnitudes: Vec<f32> = buffer.iter().take(n / 2 + 1).map(|c| c.norm()).collect();
 
     let center_freqs = [63.0, 125.0, 500.0, 1000.0, 2000.0, 4000.0, 6000.0, 8000.0];
-    let bandwidth = 1.414_f32; // 2^(1/2), half-octave
+    let bandwidth = 1.414_f32; // half-octave width
 
     let mut bands = vec![0.0f32; center_freqs.len()];
 
@@ -90,14 +90,12 @@ pub fn process_samples(samples: &[f32], sample_rate: u32) -> Vec<f32> {
         }
     }
 
-    // DOES KEIJIRO DO THIS??
-    // --- Convert to RMS + dB --- 
     for band in &mut bands {
-        *band = band.sqrt().max(1e-10); // RMS
-        *band = 20.0 * band.log10(); // dB
+        *band = band.sqrt().max(1e-10); // avoid log(0)
+        *band = 20.0 * band.log10();
     }
 
-    // --- Normalize 0..1 ---
+    // Normalize 0..1
     if let Some(&max_band) = bands.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
         if max_band > 0.0 {
             for band in &mut bands {
@@ -110,8 +108,9 @@ pub fn process_samples(samples: &[f32], sample_rate: u32) -> Vec<f32> {
 }
 
 pub fn hann_window(n: usize) -> Vec<f32> {
-    let denominator = (n - 1) as f32;
-    (0..n).map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / denominator).cos())).collect()
+    (0..n)
+        .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / (n as f32 - 1.0)).cos()))
+        .collect()
 }
 
 pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>
