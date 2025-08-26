@@ -19,7 +19,7 @@ const SAMPLE_RATE: f32 = 48000.0;
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
-//   2. A processing thread that receives the samples and performs FFT and other processing.
+//   2. A processing thread that receives the samples, performs FFT, and performs other processing.
 //   3. Visualization UI code in the main thread that displays the processed data.
 pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
     let (sample_sender, sample_receiver) = mpsc::channel::<f32>();
