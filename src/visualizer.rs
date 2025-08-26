@@ -1,7 +1,12 @@
 use egui_inbox::UiInbox;
 use log::info;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
-use spectrum_analyzer::{samples_fft_to_spectrum, scaling::divide_by_N_sqrt, windows::hann_window, FrequencyLimit};
+use spectrum_analyzer::{
+    samples_fft_to_spectrum,
+    scaling::{divide_by_N, divide_by_N_sqrt, scale_20_times_log10},
+    windows::hann_window,
+    FrequencyLimit,
+};
 use std::{
     sync::mpsc::{self, Sender},
     thread,
@@ -17,7 +22,7 @@ use std::{
 // Will using the wrong sample rate affect the results a lot?
 // check for negatives?
 
-pub const NUM_BANDS: usize = 16;
+pub const NUM_BANDS: usize = 8;
 const FFT_SIZE: usize = 1 << 11; // 2048
 const SAMPLE_RATE: f32 = 48000.0;
 
@@ -63,34 +68,48 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
 pub fn process_samples(samples: &[f32], sample_rate: u32, num_bands: usize) -> Vec<f32> {
     let windowed = hann_window(samples);
 
-    let spectrum = samples_fft_to_spectrum(
-        &windowed,
-        sample_rate, // should be dynamic
-        FrequencyLimit::All,
-        Some(&divide_by_N_sqrt), //maybe change or dont do
-    )
-    .unwrap();
+    let spectrum = samples_fft_to_spectrum(&windowed, sample_rate, FrequencyLimit::All, None).unwrap();
 
     let magnitudes: Vec<f32> = spectrum.data().iter().map(|(_, mag)| mag.val()).collect();
 
-    // Split into bands
-    let bins_per_band = magnitudes.len() / num_bands;
-    let mut bands = Vec::with_capacity(num_bands);
+    let nyquist = sample_rate as f32 / 2.0;
+    let fft_size = magnitudes.len();
 
-    for i in 0..num_bands {
-        let start = i * bins_per_band;
-        let end = start + bins_per_band;
-        let slice = &magnitudes[start..end];
+    let mut bands = vec![0.0; num_bands];
 
-        let avg = if !slice.is_empty() {
-            slice.iter().copied().sum::<f32>() / slice.len() as f32
-        } else {
-            0.0
-        };
-
-        bands.push(avg);
+    // Determing band boundaries
+    let f_min = 31.25;
+    let f_max = nyquist;
+    let mut band_boundaries = Vec::with_capacity(num_bands + 1);
+    for b in 0..=num_bands {
+        let frac = b as f32 / num_bands as f32;
+        let f = f_min * (f_max / f_min).powf(frac);
+        band_boundaries.push(f);
     }
 
+    // Group FFT bins into bands
+    for (i, &mag) in magnitudes.iter().enumerate() {
+        let freq = (i as f32 / fft_size as f32) * nyquist;
+        if freq < f_min {
+            continue;
+        }
+
+        // Find which band this frequency belongs to
+        for b in 0..num_bands {
+            if freq >= band_boundaries[b] && freq < band_boundaries[b + 1] {
+                bands[b] += mag * mag;
+                break;
+            }
+        }
+    }
+
+    // Convert accumulated power to RMS and dB
+    for band in &mut bands {
+        *band = (*band).sqrt().max(1e-10); // avoid log(0)
+        *band = 20.0 * band.log10();
+    }
+
+    // Normalize 0..1
     let max_band = bands.iter().fold(0.0f32, |a, &b| a.max(b));
     if max_band > 0.0 {
         for val in &mut bands {
