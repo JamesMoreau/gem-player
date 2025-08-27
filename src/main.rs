@@ -8,7 +8,9 @@ use fully_pub::fully_pub;
 use log::{debug, error, info, warn};
 use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
-use player::{adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player};
+use player::{
+    adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player, VisualizerState,
+};
 use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
 use rodio::{OutputStreamBuilder, Sink};
 use std::{
@@ -20,16 +22,21 @@ use std::{
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
+use visualizer::{start_visualizer_pipeline, NUM_BANDS};
 
 mod player;
 mod playlist;
 mod track;
 mod ui;
+mod visualizer;
 
 /*
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
+* Make songs outside of library playable.
+* Should drop-in files be moved from original location instead of copied?
 * Add "Open with" from filesystem functionality.
+* remove request_repaints().
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -91,6 +98,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
+
+    let (sample_sender, fft_output_receiver) = start_visualizer_pipeline();
 
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
@@ -193,6 +202,11 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
             stream_handle,
             sink,
+            visualizer: VisualizerState {
+                sample_sender,
+                processing_inbox: fft_output_receiver,
+                bands_cache: vec![0.0; NUM_BANDS],
+            },
         },
     }
 }
@@ -230,6 +244,9 @@ impl eframe::App for GemPlayer {
         // Render
         gem_player_ui(self, ctx);
         self.ui.toasts.show(ctx);
+
+        // Set a minimum refresh rate for the app to keep the ui elements updated.
+        ctx.request_repaint_after(Duration::from_millis(33)); // ~30 fps
     }
 }
 

@@ -11,9 +11,12 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::egui::{
-    containers, include_image, os::OperatingSystem, text, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame,
-    Id, Image, Label, Layout, Margin, PointerButton, Popup, PopupCloseBehavior, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
-    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
+    containers::{self},
+    include_image,
+    os::OperatingSystem,
+    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin,
+    PointerButton, Popup, PopupCloseBehavior, Rect, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_inbox::UiInbox;
@@ -324,7 +327,7 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 strip.cell(|ui| {
-                    volume_controls_ui(ui, gem_player);
+                    visualizer_ui(ui, gem_player);
                 });
             });
     });
@@ -370,6 +373,34 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .on_disabled_hover_text("No next track");
         if response.clicked() {
             maybe_play_next(gem_player);
+        }
+
+        ui.add_space(12.0);
+
+        let volume_icon = match gem_player.player.sink.volume() {
+            0.0 => icons::ICON_VOLUME_OFF,
+            v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
+            _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
+        };
+
+        let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
+
+        // Using the submenu api achieves the desired hover-style menu that we want. However, it does cause an egui warning:
+        // "Called ui.close() on a Ui that has no closable parent."
+        // Since it is not being called from within a menu widget. This is fine for now.
+        let (response, _) = containers::menu::SubMenuButton::from_button(volume_button).ui(ui, |ui| {
+            let mut volume = gem_player.player.sink.volume();
+            let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+            let changed = ui.add(volume_slider).changed();
+            if changed {
+                gem_player.player.muted = false;
+                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+            }
+            gem_player.player.sink.set_volume(volume);
+        });
+
+        if response.clicked() {
+            mute_or_unmute(&mut gem_player.player);
         }
     });
 }
@@ -641,27 +672,43 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     );
 }
 
-fn volume_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        let mut volume = gem_player.player.sink.volume();
-        let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-        let changed = ui.add(volume_slider).changed();
-        if changed {
-            gem_player.player.muted = false;
-            gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-        }
-        gem_player.player.sink.set_volume(volume);
+        let dt = ui.input(|i| i.stable_dt);
 
-        let volume_icon = match gem_player.player.sink.volume() {
-            0.0 => icons::ICON_VOLUME_OFF,
-            v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
-            _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
-        };
-        let tooltip = if gem_player.player.muted { "Unmute" } else { "Mute" };
-        let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
-        let response = ui.add(volume_button).on_hover_text(tooltip);
-        if response.clicked() {
-            mute_or_unmute(&mut gem_player.player);
+        let attack_rate = 12.0;
+        let decay_rate = 4.0;
+
+        let maybe_bands = gem_player.player.visualizer.processing_inbox.read(ui).last();
+        let bands_cache = &mut gem_player.player.visualizer.bands_cache;
+
+        let targets = maybe_bands.unwrap_or_else(|| vec![0.0; bands_cache.len()]);
+
+        for (bar, &target) in bands_cache.iter_mut().zip(&targets) {
+            let alpha = if target > *bar {
+                1.0 - (-attack_rate * dt).exp()
+            } else {
+                1.0 - (-decay_rate * dt).exp()
+            };
+            *bar += (target - *bar) * alpha;
+        }
+
+        let desired_height = ui.available_height() * 0.6;
+        let (rect, _response) = ui.allocate_exact_size(vec2(96.0, desired_height), Sense::hover());
+
+        let bar_gap = 3.0;
+        let bar_radius = 1.0;
+        let bar_width = rect.width() / bands_cache.len() as f32;
+        let min_bar_height = 2.0;
+
+        let painter = ui.painter();
+        for (i, &value) in bands_cache.iter().enumerate() {
+            let height = (value * rect.height()).max(min_bar_height);
+            let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
+            let y = rect.bottom();
+
+            let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
+            painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
         }
     });
 }

@@ -35,6 +35,7 @@ dark-light = "2.0.0"
 function_name = "0.3.0"
 font-kit = "0.14.3"
 fully_pub = "0.1.4"
+rustfft = "6.4.0"
 
 [package.metadata.bundle]
 name = "Gem Player"

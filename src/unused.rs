@@ -146,3 +146,35 @@
 		.unwrap()
 		.push("my_font".to_owned());
 	cc.egui_ctx.set_fonts(fonts);*/
+
+/*let nyquist_bin = buffer.len() / 2;
+let mut max_log_amplitudes = Vec::new();
+let mut global_max_log_amplitude = 1.0_f32;
+let band_growth_factor = 1.06_f32;
+let mut current_band_start_bin = 1.0_f32;
+
+while (current_band_start_bin as usize) < nyquist_bin {
+	// Compute the end of this logarithmic band
+	let next_band_start_bin = (current_band_start_bin * band_growth_factor).ceil();
+	let start_bin_index = current_band_start_bin as usize;
+	let end_bin_index = next_band_start_bin.min(nyquist_bin as f32) as usize;
+
+	// Find the max log amplitude in this band
+	let mut band_max_log_amplitude = f32::NEG_INFINITY;
+	for c in &buffer[start_bin_index..end_bin_index] {
+		let log_power = (c.re * c.re + c.im * c.im + 1e-12).ln();
+		if log_power > band_max_log_amplitude {
+			band_max_log_amplitude = log_power;
+		}
+	}
+
+	if band_max_log_amplitude > global_max_log_amplitude {
+		global_max_log_amplitude = band_max_log_amplitude;
+	}
+
+	max_log_amplitudes.push(band_max_log_amplitude);
+	current_band_start_bin = next_band_start_bin;
+}*/
+
+/*
+ */
