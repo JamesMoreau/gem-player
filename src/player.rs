@@ -1,8 +1,9 @@
 use crate::{track::Track, visualizer::visualizer_source};
 use egui_inbox::UiInbox;
 use fully_pub::fully_pub;
+use log::error;
 use rand::seq::SliceRandom;
-use rodio::{Decoder, OutputStream, Sink};
+use rodio::{Decoder, OutputStream, Sink, Source};
 use std::{
     fs,
     io::{self, ErrorKind},
@@ -30,7 +31,8 @@ pub struct Player {
 #[fully_pub]
 pub struct VisualizerState {
     sample_sender: Sender<f32>,
-    processing_inbox: UiInbox<Vec<f32>>,
+    sample_rate_sender: Sender<f32>,
+    band_inbox: UiInbox<Vec<f32>>,
     bands_cache: Vec<f32>,
 }
 
@@ -107,6 +109,12 @@ pub fn load_and_play(sink: &mut Sink, visualizer: &mut VisualizerState, track: &
         Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
         Ok(d) => d,
     };
+
+    let sample_rate = decoder.sample_rate() as f32;
+    let result = visualizer.sample_rate_sender.send(sample_rate);
+    if let Err(e) = result {
+        error!("Visualizer channel error: {e}. Continuing playback anyway.");
+    }
 
     let visualizer_source = visualizer_source(decoder, visualizer.sample_sender.clone());
     sink.append(visualizer_source);

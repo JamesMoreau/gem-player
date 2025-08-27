@@ -679,7 +679,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let attack_rate = 12.0;
         let decay_rate = 4.0;
 
-        let maybe_bands = gem_player.player.visualizer.processing_inbox.read(ui).last();
+        let maybe_bands = gem_player.player.visualizer.band_inbox.read(ui).last();
         let bands_cache = &mut gem_player.player.visualizer.bands_cache;
 
         let targets = maybe_bands.unwrap_or_else(|| vec![0.0; bands_cache.len()]);

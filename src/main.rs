@@ -22,7 +22,7 @@ use std::{
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
-use visualizer::{start_visualizer_pipeline, NUM_BANDS};
+use visualizer::start_visualizer_pipeline;
 
 mod player;
 mod playlist;
@@ -34,7 +34,6 @@ mod visualizer;
 TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * Make songs outside of library playable.
-* Should drop-in files be moved from original location instead of copied?
 * Add "Open with" from filesystem functionality.
 * remove request_repaints().
 */
@@ -99,7 +98,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
 
-    let (sample_sender, fft_output_receiver) = start_visualizer_pipeline();
+    let (sample_sender, sample_rate_sender, band_inbox) = start_visualizer_pipeline();
 
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
@@ -204,8 +203,9 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             sink,
             visualizer: VisualizerState {
                 sample_sender,
-                processing_inbox: fft_output_receiver,
-                bands_cache: vec![0.0; NUM_BANDS],
+                sample_rate_sender,
+                band_inbox,
+                bands_cache: vec![0.0; 8], //TODO
             },
         },
     }

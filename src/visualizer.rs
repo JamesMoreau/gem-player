@@ -11,25 +11,37 @@ use std::{
 
 // TODO:
 // use ringbuffer
-// dynamic sample rate
 
-pub const NUM_BANDS: usize = 8; // TODO: REMOVE
 const FFT_SIZE: usize = 1 << 11; // 2048
-const SAMPLE_RATE: f32 = 48000.0;
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
 //   2. A processing thread that receives the samples, performs FFT, and performs other processing.
 //   3. Visualization UI code in the main thread that displays the processed data.
-pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
+pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
     let (sample_sender, sample_receiver) = mpsc::channel::<f32>();
-    let processing_inbox: UiInbox<Vec<f32>> = UiInbox::new();
-    let processing_sender = processing_inbox.sender();
+    let (sample_rate_sender, sample_rate_receiver) = mpsc::channel::<f32>();
+    let band_inbox: UiInbox<Vec<f32>> = UiInbox::new();
+    let processing_sender = band_inbox.sender();
 
     thread::spawn(move || {
+        let mut sample_rate = 44100.0;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
         loop {
+            let result = sample_rate_receiver.try_recv();
+            match result {
+                Ok(sr) => {
+                    sample_rate = sr;
+                    samples.clear();
+                }
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    info!("Sample rate channel dropped. Shutting down the visualizer pipeline");
+                    return;
+                }
+                Err(mpsc::TryRecvError::Empty) => {} // no update this frame
+            }
+
             let result = sample_receiver.recv();
             if let Ok(sample) = result {
                 samples.push(sample);
@@ -39,7 +51,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
             }
 
             if samples.len() == FFT_SIZE {
-                let bands = process_samples(&samples, SAMPLE_RATE as u32);
+                let bands = process_samples(&samples, sample_rate as u32);
 
                 let result = processing_sender.send(bands);
                 if result.is_err() {
@@ -53,7 +65,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
         }
     });
 
-    (sample_sender, processing_inbox)
+    (sample_sender, sample_rate_sender, band_inbox)
 }
 
 pub fn process_samples(samples: &[f32], sample_rate: u32) -> Vec<f32> {
