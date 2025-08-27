@@ -22,7 +22,7 @@ use std::{
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
-use visualizer::start_visualizer_pipeline;
+use visualizer::{start_visualizer_pipeline, CENTER_FREQUENCIES};
 
 mod player;
 mod playlist;
@@ -36,6 +36,7 @@ TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
 * remove request_repaints().
+* do something about volume.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -205,7 +206,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 sample_sender,
                 sample_rate_sender,
                 band_inbox,
-                bands_cache: vec![0.0; 8], //TODO
+                bands_cache: vec![0.0; CENTER_FREQUENCIES.len()],
             },
         },
     }

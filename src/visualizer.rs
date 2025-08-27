@@ -3,7 +3,7 @@ use log::info;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
-    f32::consts::PI,
+    f32::consts::{PI, SQRT_2},
     sync::mpsc::{self, Sender},
     thread,
     time::Duration,
@@ -13,6 +13,7 @@ use std::{
 // use ringbuffer
 
 const FFT_SIZE: usize = 1 << 11; // 2048
+pub const CENTER_FREQUENCIES: [f32; 8] = [63.0, 125.0, 500.0, 1000.0, 2000.0, 4000.0, 6000.0, 8000.0];
 
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
@@ -51,7 +52,8 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Sender<f32>, UiI
             }
 
             if samples.len() == FFT_SIZE {
-                let bands = process_samples(&samples, sample_rate as u32);
+                let half_octave_bandwidth = SQRT_2;
+                let bands = process_samples(&samples, sample_rate as u32, &CENTER_FREQUENCIES, half_octave_bandwidth);
 
                 let result = processing_sender.send(bands);
                 if result.is_err() {
@@ -68,7 +70,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Sender<f32>, UiI
     (sample_sender, sample_rate_sender, band_inbox)
 }
 
-pub fn process_samples(samples: &[f32], sample_rate: u32) -> Vec<f32> {
+pub fn process_samples(samples: &[f32], sample_rate: u32, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {
     let n = samples.len();
     let window = hann_window(n);
 
@@ -84,12 +86,9 @@ pub fn process_samples(samples: &[f32], sample_rate: u32) -> Vec<f32> {
 
     let magnitudes: Vec<f32> = buffer.iter().take(n / 2 + 1).map(|c| c.norm()).collect();
 
-    let center_freqs = [63.0, 125.0, 500.0, 1000.0, 2000.0, 4000.0, 6000.0, 8000.0];
-    let bandwidth = 1.414_f32; // half-octave width
+    let mut bands = vec![0.0f32; band_center_frequencies.len()];
 
-    let mut bands = vec![0.0f32; center_freqs.len()];
-
-    for (b, &center) in center_freqs.iter().enumerate() {
+    for (b, &center) in band_center_frequencies.iter().enumerate() {
         let f_start = center / bandwidth;
         let f_end = center * bandwidth;
 
