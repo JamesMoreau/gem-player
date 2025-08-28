@@ -63,7 +63,7 @@ pub struct MarqueeState {
     track_key: Option<PathBuf>, // We need to know when the track changes to reset.
     offset: usize,
 
-    last_update: Instant,
+    // last_update: Instant,
     next_update: Instant,
     pause_until: Option<Instant>,
 }
@@ -409,12 +409,6 @@ fn track_info_ui(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap:
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let available_height = ui.available_height();
 
-    if gem_player.player.playing.is_some() {
-        // Necessary to keep UI up-to-date with the current state of the sink/player.
-        // We only need to call this if there is a currently playing track.
-        ui.ctx().request_repaint_after_secs(1.0);
-    }
-
     StripBuilder::new(ui)
         .size(Size::exact(button_size))
         .size(Size::exact(gap))
@@ -573,6 +567,7 @@ fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marq
         let average_char_width = text_width / character_count as f32;
         let visible_chars = (available_width / average_char_width).floor() as usize;
 
+        // If everything fits, no marquee needed
         if character_count <= visible_chars {
             ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false).truncate());
             return;
@@ -586,19 +581,17 @@ fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marq
             marquee.track_key = track_key.clone();
             marquee.offset = 0;
             marquee.pause_until = Some(now + MARQUEE_PAUSE_DURATION);
-            marquee.last_update = now;
             marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
         }
 
-        if let Some(paused_until) = marquee.pause_until {
-            if now < paused_until {
-                ui.ctx().request_repaint_after(paused_until - now);
+        if let Some(until) = marquee.pause_until {
+            if now < until {
+                ui.ctx().request_repaint_after(until - now);
                 let display_text: String = text.chars().take(visible_chars).collect();
                 ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
                 return;
             } else {
                 marquee.pause_until = None;
-                marquee.last_update = now;
                 marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
             }
         }
@@ -606,7 +599,6 @@ fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marq
         // Advance marquee only if the next expected update time has passed.
         if now >= marquee.next_update {
             marquee.offset += 1;
-            marquee.last_update = now;
             marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
 
             // Wrap-around and trigger pause at the beginning.
