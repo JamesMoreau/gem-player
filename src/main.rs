@@ -32,7 +32,6 @@ mod visualizer;
 
 /*
 TODO:
-* Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
 * do something about volume.
