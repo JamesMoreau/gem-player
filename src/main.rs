@@ -35,7 +35,6 @@ TODO:
 * Music Visualizer. https://github.com/RustAudio/rodio/issues/722#issuecomment-2761176884
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
-* remove request_repaints().
 * do something about volume.
 */
 
