@@ -699,7 +699,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let bar_gap = 3.0;
         let bar_radius = 1.0;
         let bar_width = rect.width() / bands_cache.len() as f32;
-        let min_bar_height = 2.0;
+        let min_bar_height = 3.0;
 
         let painter = ui.painter();
         for (i, &value) in bands_cache.iter().enumerate() {

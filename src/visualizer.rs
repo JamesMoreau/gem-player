@@ -9,10 +9,7 @@ use std::{
     time::Duration,
 };
 
-// TODO:
-// use ringbuffer
-
-const FFT_SIZE: usize = 1 << 11; // 2048
+const FFT_SIZE: usize = 1 << 10; // 1024
 pub const CENTER_FREQUENCIES: [f32; 8] = [63.0, 125.0, 500.0, 1000.0, 2000.0, 4000.0, 6000.0, 8000.0];
 
 //   The visualizer pipeline is comprised of three components:
@@ -61,8 +58,7 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Sender<f32>, UiI
                     return;
                 }
 
-                // Keep half the samples for overlap. This improves continuity / smoothness.
-                samples.drain(0..FFT_SIZE / 2);
+                samples.clear();
             }
         }
     });
