@@ -28,7 +28,7 @@ use rfd::FileDialog;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
-    time::{Duration, Instant},
+    time::Duration,
 };
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -63,9 +63,8 @@ pub struct MarqueeState {
     track_key: Option<PathBuf>, // We need to know when the track changes to reset.
     offset: usize,
 
-    // last_update: Instant,
-    next_update: Instant,
-    pause_until: Option<Instant>,
+    pause_timer: f32,
+    scroll_accumulator: f32,
 }
 
 #[fully_pub]
@@ -573,44 +572,31 @@ fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marq
             return;
         }
 
-        let seconds_per_char = MARQUEE_SPEED.recip();
-        let now = Instant::now();
-
         // Reset marquee state if track changes.
         if marquee.track_key != track_key || marquee.track_key.is_none() {
             marquee.track_key = track_key.clone();
             marquee.offset = 0;
-            marquee.pause_until = Some(now + MARQUEE_PAUSE_DURATION);
-            marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
+            marquee.pause_timer = MARQUEE_PAUSE_DURATION.as_secs_f32();
         }
 
-        if let Some(until) = marquee.pause_until {
-            if now < until {
-                ui.ctx().request_repaint_after(until - now);
-                let display_text: String = text.chars().take(visible_chars).collect();
-                ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
-                return;
-            } else {
-                marquee.pause_until = None;
-                marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
+        let dt = ui.input(|i| i.stable_dt);
+
+        if marquee.pause_timer > 0.0 {
+            marquee.pause_timer -= dt;
+        } else {
+            marquee.scroll_accumulator += dt;
+
+            let seconds_per_char = 1.0 / MARQUEE_SPEED;
+            while marquee.scroll_accumulator >= seconds_per_char {
+                marquee.scroll_accumulator -= seconds_per_char;
+                marquee.offset += 1;
+
+                if marquee.offset >= character_count {
+                    marquee.offset = 0;
+                    marquee.pause_timer = MARQUEE_PAUSE_DURATION.as_secs_f32();
+                }
             }
         }
-
-        // Advance marquee only if the next expected update time has passed.
-        if now >= marquee.next_update {
-            marquee.offset += 1;
-            marquee.next_update = now + Duration::from_secs_f32(seconds_per_char);
-
-            // Wrap-around and trigger pause at the beginning.
-            if marquee.offset >= character_count {
-                marquee.offset = 0;
-                marquee.pause_until = Some(now + MARQUEE_PAUSE_DURATION);
-                marquee.next_update = now + MARQUEE_PAUSE_DURATION + Duration::from_secs_f32(seconds_per_char);
-            }
-        }
-
-        let next_update_in = marquee.next_update - now;
-        ui.ctx().request_repaint_after(next_update_in);
 
         let display_text: String = text.chars().chain(text.chars()).skip(marquee.offset).take(visible_chars).collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());

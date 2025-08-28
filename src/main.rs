@@ -18,7 +18,7 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::Arc,
-    time::{Duration, Instant},
+    time::Duration,
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
@@ -176,8 +176,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             marquee: MarqueeState {
                 offset: 0,
                 track_key: None,
-                next_update: Instant::now(),
-                pause_until: None,
+                pause_timer: 0.0,
+                scroll_accumulator: 0.0,
             },
         },
 
