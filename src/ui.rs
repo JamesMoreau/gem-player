@@ -61,10 +61,8 @@ const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 #[fully_pub]
 pub struct MarqueeState {
     track_key: Option<PathBuf>, // We need to know when the track changes to reset.
-    offset: usize,
-
+    position: f32,
     pause_timer: Duration,
-    scroll_accumulator: Duration,
 }
 
 #[fully_pub]
@@ -575,30 +573,29 @@ fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marq
         // Reset marquee state if track changes.
         if marquee.track_key != track_key || marquee.track_key.is_none() {
             marquee.track_key = track_key.clone();
-            marquee.offset = 0;
+            marquee.position = 0.0;
             marquee.pause_timer = MARQUEE_PAUSE_DURATION;
         }
 
-        let dt = Duration::from_secs_f32(ui.input(|i| i.stable_dt));
+        let dt = ui.input(|i| i.stable_dt);
 
         if marquee.pause_timer > Duration::ZERO {
-            marquee.pause_timer = marquee.pause_timer.saturating_sub(dt);
+            marquee.pause_timer = marquee.pause_timer.saturating_sub(Duration::from_secs_f32(dt));
         } else {
-            marquee.scroll_accumulator += dt;
-            let seconds_per_char = Duration::from_secs_f32(MARQUEE_SPEED.recip());
+            marquee.position += MARQUEE_SPEED * dt;
 
-            while marquee.scroll_accumulator >= seconds_per_char {
-                marquee.scroll_accumulator -= seconds_per_char;
-                marquee.offset += 1;
-
-                if marquee.offset >= character_count {
-                    marquee.offset = 0;
-                    marquee.pause_timer = MARQUEE_PAUSE_DURATION;
-                }
+            if marquee.position >= character_count as f32 {
+                marquee.position = 0.0;
+                marquee.pause_timer = MARQUEE_PAUSE_DURATION;
             }
         }
 
-        let display_text: String = text.chars().chain(text.chars()).skip(marquee.offset).take(visible_chars).collect();
+        let display_text: String = text
+            .chars()
+            .chain(text.chars())
+            .skip(marquee.position.floor() as usize)
+            .take(visible_chars)
+            .collect();
         ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
     });
 }
