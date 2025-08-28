@@ -19,16 +19,13 @@ use eframe::egui::{
     TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
-use egui_inbox::UiInbox;
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
 use rfd::FileDialog;
 use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-    time::Duration,
+    collections::HashSet, path::{Path, PathBuf}, sync::mpsc, time::Duration
 };
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -1774,19 +1771,19 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
 
-                                let i = UiInbox::new();
-                                let result = start_library_watcher(&directory, i.sender());
+                                let (lws, lwr) = mpsc::channel::<(Vec<Track>, Vec<Playlist>)>();
+                                let result = start_library_watcher(&directory, lws.clone());
                                 match result {
                                     Ok(dw) => {
                                         info!("Started watching: {:?}", &directory);
 
                                         let (tracks, playlists) = load_library(&directory);
-                                        if i.sender().send((tracks, playlists)).is_err() {
+                                        if lws.send((tracks, playlists)).is_err() {
                                             error!("Unable to send initial library to inbox.");
                                         }
 
                                         gem_player.library_watcher = Some(dw);
-                                        gem_player.library_watcher_inbox = Some(i);
+                                        gem_player.library_watcher_receiver = Some(lwr);
                                         gem_player.library_directory = Some(directory);
                                     }
                                     Err(e) => error!("Failed to start watching the library directory: {e}"),

@@ -1,7 +1,6 @@
 use eframe::egui::{
     Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals,
 };
-use egui_inbox::{UiInbox, UiInboxSender};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -17,7 +16,10 @@ use std::{
     collections::{HashMap, HashSet},
     fs, io,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        mpsc::{self, Receiver, Sender, TryRecvError},
+        Arc,
+    },
     time::Duration,
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
@@ -35,6 +37,8 @@ TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
 * do something about volume.
+* maybe rename library ( should it include playlists?, should library just be "tracks")
+* remove egui inbox
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -50,7 +54,7 @@ pub struct GemPlayer {
 
     pub library_directory: Option<PathBuf>,
     pub library_watcher: Option<Debouncer<RecommendedWatcher>>,
-    pub library_watcher_inbox: Option<UiInbox<(Vec<Track>, Vec<Playlist>)>>,
+    pub library_watcher_receiver: Option<Receiver<(Vec<Track>, Vec<Playlist>)>>,
 
     pub player: Player,
 }
@@ -123,22 +127,22 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
-    let (mut watcher, mut watcher_inbox) = (None, None);
+    let (mut watcher, mut library_watcher_receiver) = (None, None);
     if let Some(directory) = &library_directory {
-        let i = UiInbox::new();
-        let result = start_library_watcher(directory, i.sender());
+        let (lws, lwr) = mpsc::channel::<(Vec<Track>, Vec<Playlist>)>();
+        let result = start_library_watcher(directory, lws.clone());
         match result {
             Ok(dw) => {
                 info!("Started watching: {:?}", directory);
 
                 // We want to load the library manually since the watcher will only fire if there is a file event.
                 let (tracks, playlists) = load_library(directory);
-                if i.sender().send((tracks, playlists)).is_err() {
+                if lws.send((tracks, playlists)).is_err() {
                     error!("Unable to send initial library to inbox.");
                 }
 
                 watcher = Some(dw);
-                watcher_inbox = Some(i);
+                library_watcher_receiver = Some(lwr);
             }
             Err(e) => error!("Failed to start watching the library directory: {e}"),
         }
@@ -182,8 +186,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists: Vec::new(),
 
         library_directory,
-        library_watcher_inbox: watcher_inbox,
         library_watcher: watcher,
+        library_watcher_receiver,
 
         player: Player {
             history: Vec::new(),
@@ -248,12 +252,26 @@ impl eframe::App for GemPlayer {
 }
 
 pub fn read_library_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
-    if let Some(inbox) = &mut gem_player.library_watcher_inbox {
-        for (tracks, playlists) in inbox.read(ctx) {
-            gem_player.library = tracks;
+    let Some(library_watcher_receiver) = &mut gem_player.library_watcher_receiver else {
+        return;
+    };
+
+    let result = library_watcher_receiver.try_recv();
+    match result {
+        Ok((library, playlists)) => {
+            gem_player.library = library;
             gem_player.playlists = playlists;
+
             gem_player.ui.library.cached_library = None;
             gem_player.ui.playlists.cached_playlist_tracks = None;
+
+            ctx.request_repaint();
+        }
+        Err(TryRecvError::Empty) => {} // no update available this frame
+        Err(TryRecvError::Disconnected) => {
+            error!("Library watcher channel disconnected. Dropping library watcher");
+            gem_player.library_watcher_receiver = None;
+            gem_player.library_watcher = None;
         }
     }
 }
@@ -290,7 +308,7 @@ pub fn load_library(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
     (library, playlists)
 }
 
-fn start_library_watcher(path: &Path, sender: UiInboxSender<(Vec<Track>, Vec<Playlist>)>) -> Result<Debouncer<RecommendedWatcher>, String> {
+fn start_library_watcher(path: &Path, sender: Sender<(Vec<Track>, Vec<Playlist>)>) -> Result<Debouncer<RecommendedWatcher>, String> {
     let cloned_path = path.to_path_buf();
     let result = new_debouncer(Duration::from_secs(2), move |res: DebounceEventResult| match res {
         Err(e) => error!("watch error: {:?}", e),
