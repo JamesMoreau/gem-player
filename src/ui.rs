@@ -63,8 +63,8 @@ pub struct MarqueeState {
     track_key: Option<PathBuf>, // We need to know when the track changes to reset.
     offset: usize,
 
-    pause_timer: f32,
-    scroll_accumulator: f32,
+    pause_timer: Duration,
+    scroll_accumulator: Duration,
 }
 
 #[fully_pub]
@@ -576,24 +576,24 @@ fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marq
         if marquee.track_key != track_key || marquee.track_key.is_none() {
             marquee.track_key = track_key.clone();
             marquee.offset = 0;
-            marquee.pause_timer = MARQUEE_PAUSE_DURATION.as_secs_f32();
+            marquee.pause_timer = MARQUEE_PAUSE_DURATION;
         }
 
-        let dt = ui.input(|i| i.stable_dt);
+        let dt = Duration::from_secs_f32(ui.input(|i| i.stable_dt));
 
-        if marquee.pause_timer > 0.0 {
-            marquee.pause_timer -= dt;
+        if marquee.pause_timer > Duration::ZERO {
+            marquee.pause_timer = marquee.pause_timer.saturating_sub(dt);
         } else {
             marquee.scroll_accumulator += dt;
+            let seconds_per_char = Duration::from_secs_f32(MARQUEE_SPEED.recip());
 
-            let seconds_per_char = 1.0 / MARQUEE_SPEED;
             while marquee.scroll_accumulator >= seconds_per_char {
                 marquee.scroll_accumulator -= seconds_per_char;
                 marquee.offset += 1;
 
                 if marquee.offset >= character_count {
                     marquee.offset = 0;
-                    marquee.pause_timer = MARQUEE_PAUSE_DURATION.as_secs_f32();
+                    marquee.pause_timer = MARQUEE_PAUSE_DURATION;
                 }
             }
         }

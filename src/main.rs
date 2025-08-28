@@ -176,8 +176,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             marquee: MarqueeState {
                 offset: 0,
                 track_key: None,
-                pause_timer: 0.0,
-                scroll_accumulator: 0.0,
+                pause_timer: Duration::ZERO,
+                scroll_accumulator: Duration::ZERO,
             },
         },
 
