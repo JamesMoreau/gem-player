@@ -35,7 +35,6 @@ TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
 * do something about volume.
-* upgrade deps and sort!
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
