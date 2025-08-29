@@ -36,7 +36,6 @@ mod visualizer;
 TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
-* do something about volume.
 * gif in readme
 */
 
@@ -179,6 +178,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 track_key: None,
                 pause_timer: Duration::ZERO,
             },
+            volume_popup_is_open: false,
         },
 
         library: Vec::new(),

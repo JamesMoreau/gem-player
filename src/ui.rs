@@ -15,8 +15,8 @@ use eframe::egui::{
     include_image,
     os::OperatingSystem,
     pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin,
-    PointerButton, Popup, PopupCloseBehavior, Rect, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
+    PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat,
+    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -47,6 +47,7 @@ pub struct UIState {
     marquee: MarqueeState,
     search: String,
     cached_artwork_uri: Option<String>, // The uri pointing to the cached texture for the artwork of the currently playing track.
+    volume_popup_is_open: bool,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
@@ -380,20 +381,35 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         };
 
         let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
+        let response = ui.add(volume_button);
 
-        // Using the submenu api achieves the desired hover-style menu that we want. However, it does cause an egui warning:
-        // "Called ui.close() on a Ui that has no closable parent."
-        // Since it is not being called from within a menu widget. This is fine for now.
-        let (response, _) = containers::menu::SubMenuButton::from_button(volume_button).ui(ui, |ui| {
-            let mut volume = gem_player.player.sink.volume();
-            let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-            let changed = ui.add(volume_slider).changed();
-            if changed {
-                gem_player.player.muted = false;
-                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-            }
-            gem_player.player.sink.set_volume(volume);
-        });
+        let mut button_is_hovered = false;
+        let mut popup_is_hovered = false;
+
+        Popup::menu(&response)
+            .open(gem_player.ui.volume_popup_is_open)
+            .align(RectAlign::RIGHT)
+            .gap(4.0)
+            .show(|ui| {
+                let mut volume = gem_player.player.sink.volume();
+                let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+                let changed = ui.add(volume_slider).changed();
+                if changed {
+                    gem_player.player.muted = false;
+                    gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                }
+                gem_player.player.sink.set_volume(volume);
+
+                if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
+                    popup_is_hovered = true;
+                }
+            });
+
+        if ui.rect_contains_pointer(response.rect.expand(8.0)) {
+            button_is_hovered = true;
+        }
+
+        gem_player.ui.volume_popup_is_open = button_is_hovered || popup_is_hovered;
 
         if response.clicked() {
             mute_or_unmute(&mut gem_player.player);
