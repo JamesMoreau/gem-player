@@ -8,6 +8,7 @@ A lightweight music player built in Rust using [egui](https://github.com/emilk/e
 
 - Audio formats such as mp3, m4a, wav, flac, ogg, etc.
 - Playlisting. Stored as m3u files which can be imported / exported.
+- Audio visualization.
 - Sorting and filtering.
 - Queue management. Shuffle and repeat.
 - Dark and light mode.
