@@ -25,7 +25,9 @@ use fully_pub::fully_pub;
 use log::{error, info};
 use rfd::FileDialog;
 use std::{
-    collections::HashSet, path::{Path, PathBuf}, sync::mpsc, time::Duration
+    collections::HashSet,
+    path::{Path, PathBuf},
+    time::Duration,
 };
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -1771,19 +1773,17 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
 
-                                let (lws, lwr) = mpsc::channel::<(Vec<Track>, Vec<Playlist>)>();
-                                let result = start_library_watcher(&directory, lws.clone());
+                                let result = start_library_watcher(&directory, gem_player.library_watcher_sender.clone());
                                 match result {
                                     Ok(dw) => {
                                         info!("Started watching: {:?}", &directory);
 
                                         let (tracks, playlists) = load_library(&directory);
-                                        if lws.send((tracks, playlists)).is_err() {
+                                        if gem_player.library_watcher_sender.send((tracks, playlists)).is_err() {
                                             error!("Unable to send initial library to inbox.");
                                         }
 
                                         gem_player.library_watcher = Some(dw);
-                                        gem_player.library_watcher_receiver = Some(lwr);
                                         gem_player.library_directory = Some(directory);
                                     }
                                     Err(e) => error!("Failed to start watching the library directory: {e}"),
