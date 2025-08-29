@@ -2,7 +2,7 @@
 
 A lightweight music player built in Rust using [egui](https://github.com/emilk/egui) and [rodio](https://github.com/RustAudio/rodio).
 
-![Screenshot](assets/screenshot.png)
+![kapture](assets/kapture.gif)
 
 # Features
 
