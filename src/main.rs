@@ -37,8 +37,6 @@ TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
 * do something about volume.
-* maybe rename library ( should it include playlists?, should library just be "tracks")
-* remove egui inbox
 * gif in readme
 */
 
@@ -103,7 +101,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
 
-    let (sample_sender, sample_rate_sender, band_inbox) = start_visualizer_pipeline();
+    let (sample_sender, sample_rate_sender, band_receiver) = start_visualizer_pipeline();
 
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
@@ -140,7 +138,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 // We want to load the library manually since the watcher will only fire if there is a file event.
                 let (tracks, playlists) = load_library(directory);
                 if library_watcher_sender.send((tracks, playlists)).is_err() {
-                    error!("Unable to send initial library to inbox.");
+                    error!("Unable to send initial library.");
                 }
 
                 library_watcher = Some(dw);
@@ -207,8 +205,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             visualizer: VisualizerState {
                 sample_sender,
                 sample_rate_sender,
-                band_inbox,
-                bands_cache: vec![0.0; CENTER_FREQUENCIES.len()],
+                bands_receiver: band_receiver,
+                display_bands: vec![0.0; CENTER_FREQUENCIES.len()],
             },
         },
     }
@@ -242,7 +240,7 @@ impl eframe::App for GemPlayer {
 
         // Update
         check_for_next_track(self);
-        read_library_watcher_inbox(self, ctx);
+        read_library_watcher_receiver(self, ctx);
 
         // Render
         gem_player_ui(self, ctx);
@@ -253,7 +251,7 @@ impl eframe::App for GemPlayer {
     }
 }
 
-pub fn read_library_watcher_inbox(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer, ctx: &Context) {
     let result = gem_player.library_watcher_receiver.try_recv();
     match result {
         Ok((library, playlists)) => {
@@ -315,7 +313,7 @@ fn start_library_watcher(path: &Path, sender: Sender<(Vec<Track>, Vec<Playlist>)
             let (tracks, playlists) = load_library(&cloned_path);
 
             if sender.send((tracks, playlists)).is_err() {
-                error!("Unable to send library to inbox.");
+                error!("Unable to send library.");
             }
         }
     });

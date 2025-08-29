@@ -1,10 +1,9 @@
-use egui_inbox::UiInbox;
 use log::info;
 use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
     f32::consts::{PI, SQRT_2},
-    sync::mpsc::{channel, Sender, TryRecvError},
+    sync::mpsc::{channel, Receiver, Sender, TryRecvError},
     thread,
     time::Duration,
 };
@@ -16,11 +15,10 @@ pub const CENTER_FREQUENCIES: [f32; 8] = [63.0, 125.0, 500.0, 1000.0, 2000.0, 40
 //   1. A source wrapper that captures audio samples from the audio stream.
 //   2. A processing thread that receives the samples, performs FFT, and performs other processing.
 //   3. Visualization UI code in the main thread that displays the processed data.
-pub fn start_visualizer_pipeline() -> (Sender<f32>, Sender<f32>, UiInbox<Vec<f32>>) {
+pub fn start_visualizer_pipeline() -> (Sender<f32>, Sender<f32>, Receiver<Vec<f32>>) {
     let (sample_sender, sample_receiver) = channel::<f32>();
     let (sample_rate_sender, sample_rate_receiver) = channel::<f32>();
-    let band_inbox: UiInbox<Vec<f32>> = UiInbox::new();
-    let processing_sender = band_inbox.sender();
+    let (band_sender, band_receiver) = channel::<Vec<f32>>();
 
     thread::spawn(move || {
         let mut sample_rate = 44100.0;
@@ -52,9 +50,9 @@ pub fn start_visualizer_pipeline() -> (Sender<f32>, Sender<f32>, UiInbox<Vec<f32
                 let half_octave_bandwidth = SQRT_2;
                 let bands = process_samples(&samples, sample_rate as u32, &CENTER_FREQUENCIES, half_octave_bandwidth);
 
-                let result = processing_sender.send(bands);
+                let result = band_sender.send(bands);
                 if result.is_err() {
-                    info!("Processing inbox dropped. Shutting down the visualizer pipeline.");
+                    info!("Processing receiver dropped. Shutting down the visualizer pipeline.");
                     return;
                 }
 
@@ -63,7 +61,7 @@ pub fn start_visualizer_pipeline() -> (Sender<f32>, Sender<f32>, UiInbox<Vec<f32
         }
     });
 
-    (sample_sender, sample_rate_sender, band_inbox)
+    (sample_sender, sample_rate_sender, band_receiver)
 }
 
 pub fn process_samples(samples: &[f32], sample_rate: u32, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {

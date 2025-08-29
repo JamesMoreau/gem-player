@@ -8,7 +8,6 @@ description = "A lightweight music player."
 dark-light = "2.0.0"
 eframe = { version = "0.32.1", features = ["default", "persistence"] }
 egui_extras = { version = "0.32.1", features = ["all_loaders"] }
-egui_inbox = "0.9.0"
 egui_material_icons = "0.4.0"
 egui-notify = "0.20.0"
 env_logger = { version = "0.11.7", default-features = false, features = [

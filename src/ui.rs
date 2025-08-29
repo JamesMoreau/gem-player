@@ -653,12 +653,11 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         let attack_rate = 12.0;
         let decay_rate = 4.0;
 
-        let maybe_bands = gem_player.player.visualizer.band_inbox.read(ui).last();
-        let bands_cache = &mut gem_player.player.visualizer.bands_cache;
+        let maybe_bands = gem_player.player.visualizer.bands_receiver.try_iter().last();
+        let display_bands = &mut gem_player.player.visualizer.display_bands;
+        let targets = maybe_bands.unwrap_or_else(|| vec![0.0; display_bands.len()]);
 
-        let targets = maybe_bands.unwrap_or_else(|| vec![0.0; bands_cache.len()]);
-
-        for (bar, &target) in bands_cache.iter_mut().zip(&targets) {
+        for (bar, &target) in display_bands.iter_mut().zip(&targets) {
             let alpha = if target > *bar {
                 1.0 - (-attack_rate * dt).exp()
             } else {
@@ -672,11 +671,11 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
         let bar_gap = 3.0;
         let bar_radius = 1.0;
-        let bar_width = rect.width() / bands_cache.len() as f32;
+        let bar_width = rect.width() / display_bands.len() as f32;
         let min_bar_height = 3.0;
 
         let painter = ui.painter();
-        for (i, &value) in bands_cache.iter().enumerate() {
+        for (i, &value) in display_bands.iter().enumerate() {
             let height = (value * rect.height()).max(min_bar_height);
             let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
             let y = rect.bottom();
@@ -1780,7 +1779,7 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                                         let (tracks, playlists) = load_library(&directory);
                                         if gem_player.library_watcher_sender.send((tracks, playlists)).is_err() {
-                                            error!("Unable to send initial library to inbox.");
+                                            error!("Unable to send initial library.");
                                         }
 
                                         gem_player.library_watcher = Some(dw);
