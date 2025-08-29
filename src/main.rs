@@ -17,7 +17,7 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{
-        mpsc::{self, Receiver, Sender, TryRecvError},
+        mpsc::{channel, Receiver, Sender, TryRecvError},
         Arc,
     },
     time::Duration,
@@ -130,7 +130,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     sink.set_volume(initial_volume);
 
     let mut library_watcher = None;
-    let (library_watcher_sender, library_watcher_receiver) = mpsc::channel::<(Vec<Track>, Vec<Playlist>)>();
+    let (library_watcher_sender, library_watcher_receiver) = channel::<(Vec<Track>, Vec<Playlist>)>();
     if let Some(directory) = &library_directory {
         let result = start_library_watcher(directory, library_watcher_sender.clone());
         match result {

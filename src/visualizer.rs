@@ -4,7 +4,7 @@ use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
     f32::consts::{PI, SQRT_2},
-    sync::mpsc::{self, Sender},
+    sync::mpsc::{channel, Sender, TryRecvError},
     thread,
     time::Duration,
 };
@@ -16,9 +16,9 @@ pub const CENTER_FREQUENCIES: [f32; 8] = [63.0, 125.0, 500.0, 1000.0, 2000.0, 40
 //   1. A source wrapper that captures audio samples from the audio stream.
 //   2. A processing thread that receives the samples, performs FFT, and performs other processing.
 //   3. Visualization UI code in the main thread that displays the processed data.
-pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Sender<f32>, UiInbox<Vec<f32>>) {
-    let (sample_sender, sample_receiver) = mpsc::channel::<f32>();
-    let (sample_rate_sender, sample_rate_receiver) = mpsc::channel::<f32>();
+pub fn start_visualizer_pipeline() -> (Sender<f32>, Sender<f32>, UiInbox<Vec<f32>>) {
+    let (sample_sender, sample_receiver) = channel::<f32>();
+    let (sample_rate_sender, sample_rate_receiver) = channel::<f32>();
     let band_inbox: UiInbox<Vec<f32>> = UiInbox::new();
     let processing_sender = band_inbox.sender();
 
@@ -33,11 +33,11 @@ pub fn start_visualizer_pipeline() -> (mpsc::Sender<f32>, mpsc::Sender<f32>, UiI
                     sample_rate = sr;
                     samples.clear();
                 }
-                Err(mpsc::TryRecvError::Disconnected) => {
+                Err(TryRecvError::Disconnected) => {
                     info!("Sample rate channel dropped. Shutting down the visualizer pipeline");
                     return;
                 }
-                Err(mpsc::TryRecvError::Empty) => {} // no update this frame
+                Err(TryRecvError::Empty) => {} // no update this frame
             }
 
             let result = sample_receiver.recv();
