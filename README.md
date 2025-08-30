@@ -19,3 +19,7 @@ A lightweight music player built in Rust using [egui](https://github.com/emilk/e
 # Installation
 
 Download the latest release from the [releases page](https://github.com/JamesMoreau/gem-player/releases)
+
+# Support
+
+If you like this project, consider supporting me: [kofi](https://ko-fi.com/jamesmoreau)

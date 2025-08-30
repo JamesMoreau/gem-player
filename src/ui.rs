@@ -1788,17 +1788,17 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
 
-                                let result = start_library_watcher(&directory, gem_player.library_watcher_sender.clone());
+                                let result = start_library_watcher(&directory, gem_player.library_watcher.sender.clone());
                                 match result {
                                     Ok(dw) => {
                                         info!("Started watching: {:?}", &directory);
 
                                         let (tracks, playlists) = load_library(&directory);
-                                        if gem_player.library_watcher_sender.send((tracks, playlists)).is_err() {
+                                        if gem_player.library_watcher.sender.send((tracks, playlists)).is_err() {
                                             error!("Unable to send initial library.");
                                         }
 
-                                        gem_player.library_watcher = Some(dw);
+                                        gem_player.library_watcher.watcher = Some(dw);
                                         gem_player.library_directory = Some(directory);
                                     }
                                     Err(e) => error!("Failed to start watching the library directory: {e}"),

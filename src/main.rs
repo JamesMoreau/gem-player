@@ -44,17 +44,22 @@ pub const VOLUME_STORAGE_KEY: &str = "volume";
 
 #[fully_pub]
 pub struct GemPlayer {
-    pub ui: UIState,
+    ui: UIState,
 
-    pub library: Vec<Track>,
-    pub playlists: Vec<Playlist>,
+    library: Vec<Track>,
+    playlists: Vec<Playlist>,
 
-    pub library_directory: Option<PathBuf>,
-    pub library_watcher: Option<Debouncer<RecommendedWatcher>>,
-    pub library_watcher_sender: Sender<(Vec<Track>, Vec<Playlist>)>,
-    pub library_watcher_receiver: Receiver<(Vec<Track>, Vec<Playlist>)>,
+    library_directory: Option<PathBuf>,
+    library_watcher: LibraryWatcher,
 
-    pub player: Player,
+    player: Player,
+}
+
+#[fully_pub]
+struct LibraryWatcher {
+    watcher: Option<Debouncer<RecommendedWatcher>>,
+    sender: Sender<(Vec<Track>, Vec<Playlist>)>,
+    receiver: Receiver<(Vec<Track>, Vec<Playlist>)>,
 }
 
 fn main() -> eframe::Result {
@@ -125,21 +130,21 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
-    let mut library_watcher = None;
-    let (library_watcher_sender, library_watcher_receiver) = channel::<(Vec<Track>, Vec<Playlist>)>();
+    let mut watcher = None;
+    let (sender, receiver) = channel::<(Vec<Track>, Vec<Playlist>)>();
     if let Some(directory) = &library_directory {
-        let result = start_library_watcher(directory, library_watcher_sender.clone());
+        let result = start_library_watcher(directory, sender.clone());
         match result {
             Ok(dw) => {
                 info!("Started watching: {:?}", directory);
 
                 // We want to load the library manually since the watcher will only fire if there is a file event.
                 let (tracks, playlists) = load_library(directory);
-                if library_watcher_sender.send((tracks, playlists)).is_err() {
+                if sender.send((tracks, playlists)).is_err() {
                     error!("Unable to send initial library.");
                 }
 
-                library_watcher = Some(dw);
+                watcher = Some(dw);
             }
             Err(e) => error!("Failed to start watching the library directory: {e}"),
         }
@@ -184,10 +189,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists: Vec::new(),
 
         library_directory,
-        library_watcher,
-        library_watcher_sender,
-        library_watcher_receiver,
-
+        library_watcher: LibraryWatcher { watcher, receiver, sender },
         player: Player {
             history: Vec::new(),
             playing: None,
@@ -251,7 +253,7 @@ impl eframe::App for GemPlayer {
 }
 
 pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer, ctx: &Context) {
-    let result = gem_player.library_watcher_receiver.try_recv();
+    let result = gem_player.library_watcher.receiver.try_recv();
     match result {
         Ok((library, playlists)) => {
             gem_player.library = library;
@@ -265,7 +267,7 @@ pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer, ctx: &Context) 
         Err(TryRecvError::Empty) => {} // no update available this frame
         Err(TryRecvError::Disconnected) => {
             error!("Library watcher channel disconnected. Dropping library watcher");
-            gem_player.library_watcher = None;
+            gem_player.library_watcher.watcher = None;
         }
     }
 }
