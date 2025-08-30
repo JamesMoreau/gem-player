@@ -36,6 +36,7 @@ mod visualizer;
 TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
+* currently playing track has indicator
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -241,7 +242,7 @@ impl eframe::App for GemPlayer {
 
         // Update
         check_for_next_track(self);
-        read_library_watcher_receiver(self, ctx);
+        read_library_watcher_receiver(self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -252,7 +253,7 @@ impl eframe::App for GemPlayer {
     }
 }
 
-pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer) {
     let result = gem_player.library_watcher.receiver.try_recv();
     match result {
         Ok((library, playlists)) => {
@@ -261,8 +262,6 @@ pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer, ctx: &Context) 
 
             gem_player.ui.library.cached_library = None;
             gem_player.ui.playlists.cached_playlist_tracks = None;
-
-            ctx.request_repaint();
         }
         Err(TryRecvError::Empty) => {} // no update available this frame
         Err(TryRecvError::Disconnected) => {
