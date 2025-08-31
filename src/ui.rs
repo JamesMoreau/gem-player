@@ -702,6 +702,34 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
+fn playing_indicator(ui: &mut Ui) {
+    let desired_height = ui.available_height() * 0.4;
+    let desired_width = 18.0;
+
+    let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
+
+    let time = ui.ctx().input(|i| i.time) as f32;
+    let display_bars = [
+        ((time * 6.0).sin() * 0.4 + 0.6).max(0.2),
+        ((time * 7.5).cos() * 0.4 + 0.6).max(0.2),
+        ((time * 5.3).sin() * 0.4 + 0.6).max(0.2),
+    ];
+
+    let bar_gap = 1.0;
+    let bar_radius = 1.0;
+    let bar_width = rect.width() / display_bars.len() as f32;
+    let min_bar_height = 2.0;
+
+    for (i, value) in display_bars.into_iter().enumerate() {
+        let height = (value * rect.height()).max(min_bar_height);
+        let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
+        let y = rect.bottom();
+
+        let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
+        ui.painter().rect_filled(bar_rect, bar_radius, ui.visuals().selection.bg_fill);
+    }
+}
+
 fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if gem_player.library.is_empty() {
         Frame::new()
@@ -768,6 +796,8 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let mut should_play_library = None;
     let mut context_menu_action = None;
 
+    let playing_color = ui.visuals().selection.bg_fill;
+
     TableBuilder::new(ui)
         .striped(true)
         .sense(Sense::click())
@@ -790,64 +820,68 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .body(|body| {
             body.rows(26.0, cached_library.len(), |mut row| {
                 let track = &cached_library[row.index()];
+                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t.path == track.path);
 
                 let row_is_selected = gem_player.ui.library.selected_tracks.contains(&track.path);
                 row.set_selected(row_is_selected);
 
+                let text_color = if track_is_playing && !row_is_selected {
+                    Some(playing_color)
+                } else {
+                    None
+                };
+
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")).truncate());
+                    let label = table_label(track.title.as_deref().unwrap_or("Unknown Title"), text_color);
+                    ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")).truncate());
+                    let label = table_label(track.artist.as_deref().unwrap_or("Unknown Artist"), text_color);
+                    ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
+                    let label = table_label(track.album.as_deref().unwrap_or("Unknown"), text_color);
+                    ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
                     let duration_string = format_duration_to_mmss(track.duration);
-                    ui.add(unselectable_label(duration_string));
+                    let label = table_label(duration_string, text_color);
+                    ui.add(label);
                 });
 
                 let rest_of_row_is_hovered = row.response().hovered();
                 let mut more_cell_contains_pointer = false;
                 row.col(|ui| {
+                    ui.add_space(8.0);
+
                     more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
                     let should_show_more_button: bool = rest_of_row_is_hovered || more_cell_contains_pointer || row_is_selected;
 
-                    ui.add_space(8.0);
+                    if should_show_more_button {
+                        let more_button = Button::new(icons::ICON_MORE_HORIZ);
+                        let response = ui.add(more_button).on_hover_text("More");
 
-                    ui.scope_builder(
-                        {
-                            if should_show_more_button {
-                                UiBuilder::new()
-                            } else {
-                                UiBuilder::new().invisible()
+                        if response.clicked() {
+                            gem_player.ui.library.selected_tracks.insert(track.path.clone());
+                        }
+
+                        Popup::menu(&response).show(|ui| {
+                            let selected_tracks_count = gem_player.ui.library.selected_tracks.len();
+                            let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem_player.playlists);
+                            if let Some(action) = maybe_action {
+                                context_menu_action = Some(action);
                             }
-                        },
-                        |ui| {
-                            let more_button = Button::new(icons::ICON_MORE_HORIZ);
-                            let response = ui.add(more_button).on_hover_text("More");
-
-                            if response.clicked() {
-                                gem_player.ui.library.selected_tracks.insert(track.path.clone());
-                            }
-
-                            Popup::menu(&response).show(|ui| {
-                                let selected_tracks_count = gem_player.ui.library.selected_tracks.len();
-                                let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem_player.playlists);
-                                if let Some(action) = maybe_action {
-                                    context_menu_action = Some(action);
-                                }
-                            });
-                        },
-                    );
+                        });
+                    } else if track_is_playing {
+                        playing_indicator(ui);
+                    }
                 });
 
                 let response = row.response();
@@ -1226,11 +1260,9 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 info!("Selected playlist: {}", playlist.name);
                                 gem_player.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
 
-                                // Reset in case we were currently editing.
-                                gem_player.ui.playlists.playlist_rename = None;
-
-                                // Invalidate the playlist ui track cache.
+                                gem_player.ui.playlists.playlist_rename = None; // In case we were currently editing
                                 gem_player.ui.playlists.cached_playlist_tracks = None;
+                                gem_player.ui.playlists.selected_tracks.clear();
                             }
                         });
                     });
@@ -1514,6 +1546,8 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let mut should_play_playlist = None;
     let mut context_menu_action = None;
 
+    let playing_color = ui.visuals().selection.bg_fill;
+
     TableBuilder::new(ui)
         .striped(true)
         .sense(Sense::click())
@@ -1538,65 +1572,70 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(26.0, cached_playlist_tracks.len(), |mut row| {
                 let index = row.index();
                 let track = &cached_playlist_tracks[index];
+                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t.path == track.path);
 
                 let row_is_selected = gem_player.ui.playlists.selected_tracks.contains(&track.path);
                 row.set_selected(row_is_selected);
 
+                let text_color = if track_is_playing && !row_is_selected {
+                    Some(playing_color)
+                } else {
+                    None
+                };
+
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    ui.add(unselectable_label(format!("{}", index + 1)));
+                    let label = table_label(format!("{}", index + 1), text_color);
+                    ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")));
+                    let label = table_label(track.title.as_deref().unwrap_or("Unknown Title"), text_color);
+                    ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")));
+                    let label = table_label(track.artist.as_deref().unwrap_or("Unknown Artist"), text_color);
+                    ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
+                    let label = table_label(track.album.as_deref().unwrap_or("Unknown"), text_color);
+                    ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
                     let duration_string = format_duration_to_mmss(track.duration);
-                    ui.add(unselectable_label(duration_string));
+                    let label = table_label(duration_string, text_color);
+                    ui.add(label);
                 });
 
                 let rest_of_row_is_hovered = row.response().hovered();
                 let mut more_cell_contains_pointer = false;
                 row.col(|ui| {
+                    ui.add_space(8.0);
+
                     more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
                     let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || row_is_selected;
 
-                    ui.add_space(8.0);
+                    if should_show_more_button {
+                        let more_button = Button::new(icons::ICON_MORE_HORIZ);
+                        let response = ui.add(more_button).on_hover_text("More");
 
-                    ui.scope_builder(
-                        {
-                            if should_show_more_button {
-                                UiBuilder::new()
-                            } else {
-                                UiBuilder::new().invisible()
+                        Popup::menu(&response).show(|ui| {
+                            let selected_tracks_count = gem_player.ui.playlists.selected_tracks.len();
+                            let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
+                            if let Some(action) = maybe_action {
+                                context_menu_action = Some(action);
                             }
-                        },
-                        |ui| {
-                            let more_button = Button::new(icons::ICON_MORE_HORIZ);
-                            let response = ui.add(more_button).on_hover_text("More");
-
-                            Popup::menu(&response).show(|ui| {
-                                let selected_tracks_count = gem_player.ui.playlists.selected_tracks.len();
-                                let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
-                                if let Some(action) = maybe_action {
-                                    context_menu_action = Some(action);
-                                }
-                            });
-                        },
-                    );
+                        });
+                    } else if track_is_playing {
+                        playing_indicator(ui);
+                    }
                 });
 
                 let response = row.response();
@@ -2017,4 +2056,12 @@ fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
 
 fn unselectable_label(text: impl Into<WidgetText>) -> Label {
     Label::new(text).selectable(false)
+}
+
+fn table_label(text: impl Into<String>, color: Option<Color32>) -> Label {
+    let mut rich = RichText::new(text.into());
+    if let Some(c) = color {
+        rich = rich.color(c);
+    }
+    Label::new(rich).selectable(false).truncate()
 }
