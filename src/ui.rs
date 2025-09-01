@@ -324,7 +324,9 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 strip.cell(|ui| {
-                    visualizer_ui(ui, gem_player);
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        visualizer_ui(ui, gem_player);
+                    });
                 });
             });
     });
@@ -667,44 +669,42 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 }
 
 fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        let dt = ui.input(|i| i.stable_dt);
+    let dt = ui.input(|i| i.stable_dt);
 
-        let attack_rate = 12.0;
-        let decay_rate = 4.0;
+    let attack_rate = 12.0;
+    let decay_rate = 4.0;
 
-        let maybe_bands = gem_player.player.visualizer.bands_receiver.try_iter().last();
-        let display_bands = &mut gem_player.player.visualizer.display_bands;
-        let targets = maybe_bands.unwrap_or_else(|| vec![0.0; display_bands.len()]);
+    let maybe_bands = gem_player.player.visualizer.bands_receiver.try_iter().last();
+    let display_bands = &mut gem_player.player.visualizer.display_bands;
+    let targets = maybe_bands.unwrap_or_else(|| vec![0.0; display_bands.len()]);
 
-        for (bar, &target) in display_bands.iter_mut().zip(&targets) {
-            let alpha = if target > *bar {
-                1.0 - (-attack_rate * dt).exp()
-            } else {
-                1.0 - (-decay_rate * dt).exp()
-            };
-            *bar += (target - *bar) * alpha;
-        }
+    for (bar, &target) in display_bands.iter_mut().zip(&targets) {
+        let alpha = if target > *bar {
+            1.0 - (-attack_rate * dt).exp()
+        } else {
+            1.0 - (-decay_rate * dt).exp()
+        };
+        *bar += (target - *bar) * alpha;
+    }
 
-        let desired_height = ui.available_height() * 0.6;
-        let desired_width = 112.0;
-        let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
+    let desired_height = ui.available_height() * 0.6;
+    let desired_width = 112.0;
+    let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
 
-        let bar_gap = 4.0;
-        let bar_radius = 1.0;
-        let bar_width = rect.width() / display_bands.len() as f32;
-        let min_bar_height = 3.0;
+    let bar_gap = 4.0;
+    let bar_radius = 1.0;
+    let bar_width = rect.width() / display_bands.len() as f32;
+    let min_bar_height = 3.0;
 
-        let painter = ui.painter();
-        for (i, &value) in display_bands.iter().enumerate() {
-            let height = (value * rect.height()).max(min_bar_height);
-            let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
-            let y = rect.bottom();
+    let painter = ui.painter();
+    for (i, &value) in display_bands.iter().enumerate() {
+        let height = (value * rect.height()).max(min_bar_height);
+        let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
+        let y = rect.bottom();
 
-            let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
-            painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
-        }
-    });
+        let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
+        painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
+    }
 }
 
 fn playing_indicator(ui: &mut Ui) {
