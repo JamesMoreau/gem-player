@@ -330,6 +330,49 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
+fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    let volume_icon = match gem_player.player.sink.volume() {
+        0.0 => icons::ICON_VOLUME_OFF,
+        v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
+        _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
+    };
+
+    let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
+    let response = ui.add(volume_button);
+
+    let mut button_is_hovered = false;
+    let mut popup_is_hovered = false;
+
+    Popup::menu(&response)
+        .open(gem_player.ui.volume_popup_is_open)
+        .align(RectAlign::RIGHT)
+        .gap(4.0)
+        .show(|ui| {
+            let mut volume = gem_player.player.sink.volume();
+            let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+            let changed = ui.add(volume_slider).changed();
+            if changed {
+                gem_player.player.muted = false;
+                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+            }
+            gem_player.player.sink.set_volume(volume);
+
+            if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
+                popup_is_hovered = true;
+            }
+        });
+
+    if ui.rect_contains_pointer(response.rect.expand(8.0)) {
+        button_is_hovered = true;
+    }
+
+    gem_player.ui.volume_popup_is_open = button_is_hovered || popup_is_hovered;
+
+    if response.clicked() {
+        mute_or_unmute(&mut gem_player.player);
+    }
+}
+
 fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         let track_is_playing = gem_player.player.playing.is_some();
@@ -374,46 +417,7 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
         ui.add_space(12.0);
 
-        let volume_icon = match gem_player.player.sink.volume() {
-            0.0 => icons::ICON_VOLUME_OFF,
-            v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
-            _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
-        };
-
-        let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
-        let response = ui.add(volume_button);
-
-        let mut button_is_hovered = false;
-        let mut popup_is_hovered = false;
-
-        Popup::menu(&response)
-            .open(gem_player.ui.volume_popup_is_open)
-            .align(RectAlign::RIGHT)
-            .gap(4.0)
-            .show(|ui| {
-                let mut volume = gem_player.player.sink.volume();
-                let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-                let changed = ui.add(volume_slider).changed();
-                if changed {
-                    gem_player.player.muted = false;
-                    gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
-                }
-                gem_player.player.sink.set_volume(volume);
-
-                if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
-                    popup_is_hovered = true;
-                }
-            });
-
-        if ui.rect_contains_pointer(response.rect.expand(8.0)) {
-            button_is_hovered = true;
-        }
-
-        gem_player.ui.volume_popup_is_open = button_is_hovered || popup_is_hovered;
-
-        if response.clicked() {
-            mute_or_unmute(&mut gem_player.player);
-        }
+        volume_control_button(ui, gem_player);
     });
 }
 
@@ -683,9 +687,10 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         }
 
         let desired_height = ui.available_height() * 0.6;
-        let (rect, _response) = ui.allocate_exact_size(vec2(96.0, desired_height), Sense::hover());
+        let desired_width = 112.0;
+        let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
 
-        let bar_gap = 3.0;
+        let bar_gap = 4.0;
         let bar_radius = 1.0;
         let bar_width = rect.width() / display_bands.len() as f32;
         let min_bar_height = 3.0;
