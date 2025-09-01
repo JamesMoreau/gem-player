@@ -36,7 +36,7 @@ mod visualizer;
 TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
-* maybe reduce number of bands in visualizer.
+* Proper shutdown of visualizer and watcher.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";

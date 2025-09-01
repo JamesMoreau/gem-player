@@ -326,6 +326,10 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         visualizer_ui(ui, gem_player);
+
+                        ui.add_space(16.0);
+
+                        volume_control_button(ui, gem_player);
                     });
                 });
             });
@@ -398,7 +402,7 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             icons::ICON_PAUSE
         };
         let tooltip = if sink_is_paused { "Play" } else { "Pause" };
-        let play_pause_button = Button::new(RichText::new(play_pause_icon).size(24.0));
+        let play_pause_button = Button::new(RichText::new(play_pause_icon).size(28.0));
         let response = ui
             .add_enabled(track_is_playing, play_pause_button)
             .on_hover_text(tooltip)
@@ -416,10 +420,6 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         if response.clicked() {
             maybe_play_next(gem_player);
         }
-
-        ui.add_space(12.0);
-
-        volume_control_button(ui, gem_player);
     });
 }
 
@@ -688,7 +688,7 @@ fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     let desired_height = ui.available_height() * 0.6;
-    let desired_width = 98.0;
+    let desired_width = 91.0;
     let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
 
     let bar_gap = 4.0;
