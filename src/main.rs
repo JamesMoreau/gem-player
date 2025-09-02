@@ -35,9 +35,9 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
-* should get_count_and_duration_string_from_tracks be cached?
 * should we actually just sort the library array every time
 * fix tag.
+* could load_library_and_playlists() be parallelized / sped-up?
 
 From feedback:
 * indexing the library hogs the disk usage, and the app is completely unresponsive while doing that, importing ~100 tracks takes a good 10-20 seconds
