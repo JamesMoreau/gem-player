@@ -825,7 +825,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .body(|body| {
             body.rows(26.0, cached_library.len(), |mut row| {
                 let track = &cached_library[row.index()];
-                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t.path == track.path);
+                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t == track);
 
                 let row_is_selected = gem_player.ui.library.selected_tracks.contains(&track.path);
                 row.set_selected(row_is_selected);
@@ -1577,7 +1577,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(26.0, cached_playlist_tracks.len(), |mut row| {
                 let index = row.index();
                 let track = &cached_playlist_tracks[index];
-                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t.path == track.path);
+                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t == track);
 
                 let row_is_selected = gem_player.ui.playlists.selected_tracks.contains(&track.path);
                 row.set_selected(row_is_selected);

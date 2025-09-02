@@ -35,8 +35,6 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
-* Figure out why deleted playlists don't always end up in the trash.
-* should we use PartialEq instead? remove all other .path ==...
 * should get_count_and_duration_string_from_tracks be cached?
 * fix tag.
 
