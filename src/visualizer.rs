@@ -3,7 +3,7 @@ use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
 use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
     f32::consts::{PI, SQRT_2},
-    sync::mpsc::{channel, Receiver, Sender, TryRecvError},
+    sync::mpsc::{channel, Receiver, Sender},
     thread,
     time::Duration,
 };
@@ -11,57 +11,59 @@ use std::{
 const FFT_SIZE: usize = 1 << 10; // 1024
 pub const CENTER_FREQUENCIES: [f32; 7] = [63.0, 125.0, 250.0, 500.0, 1000.0, 3000.0, 8000.0];
 
+pub enum VisualizerCommand {
+    Sample(f32),
+    SampleRate(f32),
+    Shutdown,
+}
+
 //   The visualizer pipeline is comprised of three components:
 //   1. A source wrapper that captures audio samples from the audio stream.
 //   2. A processing thread that receives the samples, performs FFT, and performs other processing.
 //   3. Visualization UI code in the main thread that displays the processed data.
-pub fn start_visualizer_pipeline() -> (Sender<f32>, Sender<f32>, Receiver<Vec<f32>>) {
-    let (sample_sender, sample_receiver) = channel::<f32>();
-    let (sample_rate_sender, sample_rate_receiver) = channel::<f32>();
-    let (band_sender, band_receiver) = channel::<Vec<f32>>();
+pub fn start_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f32>>) {
+    let (command_sender, commands_receiver) = channel::<VisualizerCommand>();
+    let (bands_sender, bands_receiver) = channel::<Vec<f32>>();
 
     thread::spawn(move || {
         let mut sample_rate = 44100.0;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
         loop {
-            let result = sample_rate_receiver.try_recv();
-            match result {
-                Ok(sr) => {
+            match commands_receiver.recv() {
+                Ok(VisualizerCommand::Sample(sample)) => {
+                    samples.push(sample);
+
+                    if samples.len() == FFT_SIZE {
+                        let half_octave_bandwidth = SQRT_2;
+                        let bands = process_samples(&samples, sample_rate as u32, &CENTER_FREQUENCIES, half_octave_bandwidth);
+
+                        let result = bands_sender.send(bands);
+                        if result.is_err() {
+                            info!("Processing receiver dropped. Shutting down the visualizer pipeline.");
+                            return;
+                        }
+
+                        samples.clear();
+                    }
+                }
+                Ok(VisualizerCommand::SampleRate(sr)) => {
                     sample_rate = sr;
                     samples.clear();
                 }
-                Err(TryRecvError::Disconnected) => {
-                    info!("Sample rate channel dropped. Shutting down the visualizer pipeline");
+                Ok(VisualizerCommand::Shutdown) => {
+                    info!("Received shutdown message. Shutting down the visualizer pipeline.");
                     return;
                 }
-                Err(TryRecvError::Empty) => {} // no update this frame
-            }
-
-            let result = sample_receiver.recv();
-            if let Ok(sample) = result {
-                samples.push(sample);
-            } else {
-                info!("Sample channel dropped. Shutting down the visualizer pipeline.");
-                return;
-            }
-
-            if samples.len() == FFT_SIZE {
-                let half_octave_bandwidth = SQRT_2;
-                let bands = process_samples(&samples, sample_rate as u32, &CENTER_FREQUENCIES, half_octave_bandwidth);
-
-                let result = band_sender.send(bands);
-                if result.is_err() {
-                    info!("Processing receiver dropped. Shutting down the visualizer pipeline.");
+                Err(_) => {
+                    info!("Message channel dropped. Shutting down the visualizer pipeline.");
                     return;
                 }
-
-                samples.clear();
             }
         }
     });
 
-    (sample_sender, sample_rate_sender, band_receiver)
+    (command_sender, bands_receiver)
 }
 
 pub fn process_samples(samples: &[f32], sample_rate: u32, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {
@@ -118,16 +120,16 @@ pub fn hann_window(n: usize) -> Vec<f32> {
         .collect()
 }
 
-pub fn visualizer_source<I>(input: I, sample_sender: Sender<f32>) -> VisualizerSource<I>
+pub fn visualizer_source<I>(input: I, sender: Sender<VisualizerCommand>) -> VisualizerSource<I>
 where
     I: Source,
 {
-    VisualizerSource { input, tx: sample_sender }
+    VisualizerSource { input, sender }
 }
 
 pub struct VisualizerSource<I> {
     input: I,
-    tx: Sender<f32>, // single f32 samples now
+    sender: Sender<VisualizerCommand>, // single f32 samples now
 }
 
 impl<I> VisualizerSource<I> {
@@ -161,7 +163,7 @@ where
         let sample = self.input.next()?;
 
         // Send sample to the processing thread, ignore if channel is closed
-        let _ = self.tx.send(sample);
+        let _ = self.sender.send(VisualizerCommand::Sample(sample));
 
         Some(sample)
     }

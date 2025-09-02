@@ -1,4 +1,7 @@
-use crate::{track::Track, visualizer::visualizer_source};
+use crate::{
+    track::Track,
+    visualizer::{visualizer_source, VisualizerCommand},
+};
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
@@ -29,8 +32,7 @@ pub struct Player {
 
 #[fully_pub]
 pub struct VisualizerState {
-    sample_sender: Sender<f32>,
-    sample_rate_sender: Sender<f32>,
+    command_sender: Sender<VisualizerCommand>,
     bands_receiver: Receiver<Vec<f32>>,
     display_bands: Vec<f32>,
 }
@@ -110,12 +112,12 @@ pub fn load_and_play(sink: &mut Sink, visualizer: &mut VisualizerState, track: &
     };
 
     let sample_rate = decoder.sample_rate() as f32;
-    let result = visualizer.sample_rate_sender.send(sample_rate);
+    let result = visualizer.command_sender.send(VisualizerCommand::Sample(sample_rate));
     if let Err(e) = result {
         error!("Visualizer channel error: {e}. Continuing playback anyway.");
     }
 
-    let visualizer_source = visualizer_source(decoder, visualizer.sample_sender.clone());
+    let visualizer_source = visualizer_source(decoder, visualizer.command_sender.clone());
     sink.append(visualizer_source);
     sink.play();
 

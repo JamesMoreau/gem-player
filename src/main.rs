@@ -34,12 +34,11 @@ mod visualizer;
 
 /*
 TODO:
-* Make songs outside of library playable.
-* Add "Open with" from filesystem functionality.
-* Proper shutdown of visualizer and watcher.
+* Make songs outside of library playable. Add "Open with" from filesystem functionality.
 * Figure out why deleted playlists don't always end up in the trash.
 * should we use PartialEq instead? remove all other .path ==...
 * should get_count_and_duration_string_from_tracks be cached?
+* fix tag.
 
 From feedback:
 * indexing the library hogs the disk usage, and the app is completely unresponsive while doing that, importing ~100 tracks takes a good 10-20 seconds
@@ -112,7 +111,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
 
-    let (sample_sender, sample_rate_sender, band_receiver) = start_visualizer_pipeline();
+    let (command_sender, bands_receiver) = start_visualizer_pipeline();
 
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
@@ -212,9 +211,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             stream_handle,
             sink,
             visualizer: VisualizerState {
-                sample_sender,
-                sample_rate_sender,
-                bands_receiver: band_receiver,
+                command_sender,
+                bands_receiver,
                 display_bands: vec![0.0; CENTER_FREQUENCIES.len()],
             },
         },
@@ -260,7 +258,7 @@ impl eframe::App for GemPlayer {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        
+        let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
     }
 }
 
