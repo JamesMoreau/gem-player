@@ -37,6 +37,13 @@ TODO:
 * Make songs outside of library playable.
 * Add "Open with" from filesystem functionality.
 * Proper shutdown of visualizer and watcher.
+* Figure out why deleted playlists don't always end up in the trash.
+* should we use PartialEq instead? remove all other .path ==...
+* should get_count_and_duration_string_from_tracks be cached?
+
+From feedback:
+* indexing the library hogs the disk usage, and the app is completely unresponsive while doing that, importing ~100 tracks takes a good 10-20 seconds
+* the settings ui breaks if the path is too long and overflows, i also can't resize the window
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -250,6 +257,10 @@ impl eframe::App for GemPlayer {
 
         // Set a minimum refresh rate for the app to keep the ui elements updated.
         ctx.request_repaint_after(Duration::from_millis(33)); // ~30 fps
+    }
+
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        
     }
 }
 
