@@ -81,8 +81,8 @@ struct PlaylistsViewState {
 
     cached_playlist_tracks: Option<Vec<Track>>,
 
-    playlist_rename: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
-    delete_playlist_modal_is_open: bool, // The menu is open for selected_playlist_path.
+    rename_buffer: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
+    delete_modal_open: bool, // The menu is open for selected_playlist_path.
 }
 
 fn apply_theme(ctx: &Context, pref: ThemePreference) {
@@ -1265,7 +1265,7 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 info!("Selected playlist: {}", playlist.name);
                                 gem_player.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
 
-                                gem_player.ui.playlists.playlist_rename = None; // In case we were currently editing
+                                gem_player.ui.playlists.rename_buffer = None; // In case we were currently editing
                                 gem_player.ui.playlists.cached_playlist_tracks = None;
                                 gem_player.ui.playlists.selected_tracks.clear();
                             }
@@ -1284,7 +1284,7 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    if !gem_player.ui.playlists.delete_playlist_modal_is_open {
+    if !gem_player.ui.playlists.delete_modal_open {
         return;
     }
 
@@ -1337,7 +1337,7 @@ fn delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     if confirm_clicked || cancel_clicked || modal.should_close() {
         // maybe just handle event inside completely or outside completely.
-        gem_player.ui.playlists.delete_playlist_modal_is_open = false;
+        gem_player.ui.playlists.delete_modal_open = false;
     }
 }
 
@@ -1352,7 +1352,7 @@ fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .vertical(|mut strip| {
             strip.cell(|ui| {
                 Frame::new().fill(ui.visuals().faint_bg_color).show(ui, |ui| {
-                    if let Some(name_buffer) = &mut gem_player.ui.playlists.playlist_rename {
+                    if let Some(name_buffer) = &mut gem_player.ui.playlists.rename_buffer {
                         // Editing mode
                         let mut discard_clicked = false;
                         let mut save_clicked = false;
@@ -1396,11 +1396,11 @@ fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 }
                             }
 
-                            gem_player.ui.playlists.playlist_rename = None;
+                            gem_player.ui.playlists.rename_buffer = None;
                         }
 
                         if discard_clicked {
-                            gem_player.ui.playlists.playlist_rename = None;
+                            gem_player.ui.playlists.rename_buffer = None;
                         }
                     } else {
                         // Not edit mode
@@ -1456,13 +1456,13 @@ fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                         if delete_clicked {
                             info!("Opening delete playlist modal");
-                            gem_player.ui.playlists.delete_playlist_modal_is_open = true;
+                            gem_player.ui.playlists.delete_modal_open = true;
                         }
 
                         if edit_clicked {
                             let playlist = &mut gem_player.playlists.get_by_path(&playlist_key);
                             info!("Editing playlist name: {}", playlist.name);
-                            gem_player.ui.playlists.playlist_rename = Some(playlist.name.clone());
+                            gem_player.ui.playlists.rename_buffer = Some(playlist.name.clone());
                         }
                     }
                 });

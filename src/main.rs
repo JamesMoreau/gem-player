@@ -171,8 +171,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
                 cached_playlist_tracks: None,
-                playlist_rename: None,
-                delete_playlist_modal_is_open: false,
+                rename_buffer: None,
+                delete_modal_open: false,
                 selected_tracks: HashSet::new(),
             },
             toasts: Toasts::default()
