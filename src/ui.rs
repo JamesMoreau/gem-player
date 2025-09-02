@@ -1,5 +1,5 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, load_library, maybe_play_next, maybe_play_previous,
+    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, load_library_and_playlists, maybe_play_next, maybe_play_previous,
     play_library, play_playlist,
     player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
@@ -1837,7 +1837,7 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     Ok(dw) => {
                                         info!("Started watching: {:?}", &directory);
 
-                                        let (tracks, playlists) = load_library(&directory);
+                                        let (tracks, playlists) = load_library_and_playlists(&directory);
                                         if gem_player.library_watcher.sender.send((tracks, playlists)).is_err() {
                                             error!("Unable to send initial library.");
                                         }

@@ -36,6 +36,7 @@ mod visualizer;
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
 * should get_count_and_duration_string_from_tracks be cached?
+* should we actually just sort the library array every time
 * fix tag.
 
 From feedback:
@@ -144,7 +145,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 info!("Started watching: {:?}", directory);
 
                 // We want to load the library manually since the watcher will only fire if there is a file event.
-                let (tracks, playlists) = load_library(directory);
+                let (tracks, playlists) = load_library_and_playlists(directory);
                 if sender.send((tracks, playlists)).is_err() {
                     error!("Unable to send initial library.");
                 }
@@ -278,7 +279,7 @@ pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn load_library(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
+pub fn load_library_and_playlists(directory: &Path) -> (Vec<Track>, Vec<Playlist>) {
     let mut library = Vec::new();
     let mut playlists = Vec::new();
 
@@ -317,7 +318,7 @@ fn start_library_watcher(path: &Path, sender: Sender<(Vec<Track>, Vec<Playlist>)
         Ok(events) => {
             events.iter().for_each(|e| info!("Event {:?} for {:?}", e.kind, e.path));
 
-            let (tracks, playlists) = load_library(&cloned_path);
+            let (tracks, playlists) = load_library_and_playlists(&cloned_path);
 
             if sender.send((tracks, playlists)).is_err() {
                 error!("Unable to send library.");
