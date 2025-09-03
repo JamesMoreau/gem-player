@@ -62,7 +62,7 @@ pub struct GemPlayer {
 #[fully_pub]
 struct LibraryWatcher {
     command_sender: Sender<LibraryWatcherCommand>,
-    receiver: Receiver<LibraryAndPlaylists>,
+    update_receiver: Receiver<LibraryAndPlaylists>,
 }
 
 fn main() -> eframe::Result {
@@ -133,7 +133,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
-    let (watcher_command_sender, library_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
+    let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(ref directory) = library_directory {
         let command = LibraryWatcherCommand::PathChange(directory.clone());
         watcher_command_sender.send(command).expect("Failed to start watching library directory.");
@@ -179,7 +179,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
         library_directory,
         library_watcher: LibraryWatcher {
-            receiver: library_receiver,
+            update_receiver,
             command_sender: watcher_command_sender,
         },
         player: Player {
@@ -248,7 +248,7 @@ impl eframe::App for GemPlayer {
 }
 
 pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer) {
-    let result = gem_player.library_watcher.receiver.try_recv();
+    let result = gem_player.library_watcher.update_receiver.try_recv();
     match result {
         Ok((library, playlists)) => {
             gem_player.library = library;
