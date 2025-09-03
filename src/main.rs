@@ -9,7 +9,7 @@ use log::{debug, error, info, warn};
 use player::{
     adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player, VisualizerState,
 };
-use playlist::{load_playlists_from_directory, Playlist, PlaylistRetrieval};
+use playlist::{Playlist, PlaylistRetrieval};
 use rodio::{OutputStreamBuilder, Sink};
 use std::{
     collections::{HashMap, HashSet},
@@ -21,7 +21,7 @@ use std::{
     },
     time::Duration,
 };
-use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
+use track::{is_relevant_media_file, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
@@ -264,38 +264,6 @@ pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer) {
             error!("Library watcher has disconnected.")
         }
     }
-}
-
-pub fn load_library_and_playlists(directory: &Path) -> LibraryAndPlaylists {
-    let mut library = Vec::new();
-    let mut playlists = Vec::new();
-
-    match load_tracks_from_directory(directory) {
-        Ok(found_tracks) => {
-            library = found_tracks;
-        }
-        Err(e) => {
-            error!("{}", e);
-        }
-    }
-
-    match load_playlists_from_directory(directory) {
-        Ok(found_playlists) => {
-            playlists = found_playlists;
-        }
-        Err(e) => {
-            error!("{}", e);
-        }
-    }
-
-    info!(
-        "Loaded library from {:?}: {} tracks, {} playlists.",
-        directory,
-        library.len(),
-        playlists.len()
-    );
-
-    (library, playlists)
 }
 
 pub fn check_for_next_track(gem_player: &mut GemPlayer) {

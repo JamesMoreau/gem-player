@@ -1,5 +1,5 @@
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::mpsc::{self, Receiver, Sender},
     thread,
     time::Duration,
@@ -9,7 +9,7 @@ use log::{error, info};
 use notify::RecursiveMode;
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult};
 
-use crate::{load_library_and_playlists, playlist::Playlist, track::Track};
+use crate::{playlist::{load_playlists_from_directory, Playlist}, track::{load_tracks_from_directory, Track}};
 
 pub enum LibraryWatcherCommand {
     Refresh,
@@ -75,4 +75,36 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
     });
 
     Ok((command_sender, update_receiver))
+}
+
+fn load_library_and_playlists(directory: &Path) -> LibraryAndPlaylists {
+    let mut library = Vec::new();
+    let mut playlists = Vec::new();
+
+    match load_tracks_from_directory(directory) {
+        Ok(found_tracks) => {
+            library = found_tracks;
+        }
+        Err(e) => {
+            error!("{}", e);
+        }
+    }
+
+    match load_playlists_from_directory(directory) {
+        Ok(found_playlists) => {
+            playlists = found_playlists;
+        }
+        Err(e) => {
+            error!("{}", e);
+        }
+    }
+
+    info!(
+        "Loaded library from {:?}: {} tracks, {} playlists.",
+        directory,
+        library.len(),
+        playlists.len()
+    );
+
+    (library, playlists)
 }
