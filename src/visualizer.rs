@@ -21,11 +21,12 @@ pub enum VisualizerCommand {
 //   1. A source wrapper that captures audio samples from the audio stream.
 //   2. A processing thread that receives the samples, performs FFT, and performs other processing.
 //   3. Visualization UI code in the main thread that displays the processed data.
-pub fn start_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f32>>) {
+
+pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f32>>) {
     let (command_sender, commands_receiver) = channel::<VisualizerCommand>();
     let (bands_sender, bands_receiver) = channel::<Vec<f32>>();
 
-    thread::spawn(move || {
+    thread::spawn(move || { // TODO: is this move necessary?
         let mut sample_rate = 44100.0;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 

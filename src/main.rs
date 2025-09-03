@@ -4,9 +4,8 @@ use eframe::egui::{
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
+use library_watcher::{setup_library_watcher, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
-use notify::{RecommendedWatcher, RecursiveMode};
-use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
 use player::{
     adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player, VisualizerState,
 };
@@ -17,15 +16,16 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{
-        mpsc::{channel, Receiver, Sender, TryRecvError},
+        mpsc::{Receiver, Sender, TryRecvError},
         Arc,
     },
     time::Duration,
 };
 use track::{is_relevant_media_file, load_tracks_from_directory, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
-use visualizer::{start_visualizer_pipeline, CENTER_FREQUENCIES};
+use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
+mod library_watcher;
 mod player;
 mod playlist;
 mod track;
@@ -63,8 +63,7 @@ pub struct GemPlayer {
 
 #[fully_pub]
 struct LibraryWatcher {
-    watcher: Option<Debouncer<RecommendedWatcher>>,
-    sender: Sender<(Vec<Track>, Vec<Playlist>)>,
+    command_sender: Sender<LibraryWatcherCommand>,
     receiver: Receiver<(Vec<Track>, Vec<Playlist>)>,
 }
 
@@ -110,7 +109,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
 
-    let (command_sender, bands_receiver) = start_visualizer_pipeline();
+    let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
 
     let mut library_directory = None;
     let mut theme_preference = ThemePreference::System;
@@ -136,24 +135,10 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
-    let mut watcher = None;
-    let (sender, receiver) = channel::<(Vec<Track>, Vec<Playlist>)>();
-    if let Some(directory) = &library_directory {
-        let result = start_library_watcher(directory, sender.clone());
-        match result {
-            Ok(dw) => {
-                info!("Started watching: {:?}", directory);
-
-                // We want to load the library manually since the watcher will only fire if there is a file event.
-                let (tracks, playlists) = load_library_and_playlists(directory);
-                if sender.send((tracks, playlists)).is_err() {
-                    error!("Unable to send initial library.");
-                }
-
-                watcher = Some(dw);
-            }
-            Err(e) => error!("Failed to start watching the library directory: {e}"),
-        }
+    let (watcher_command_sender, library_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
+    if let Some(ref directory) = library_directory {
+        let command = LibraryWatcherCommand::PathChange(directory.clone());
+        watcher_command_sender.send(command).expect("Failed to start watching library directory.");
     }
 
     GemPlayer {
@@ -195,7 +180,10 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists: Vec::new(),
 
         library_directory,
-        library_watcher: LibraryWatcher { watcher, receiver, sender },
+        library_watcher: LibraryWatcher {
+            receiver: library_receiver,
+            command_sender: watcher_command_sender,
+        },
         player: Player {
             history: Vec::new(),
             playing: None,
@@ -210,7 +198,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             stream_handle,
             sink,
             visualizer: VisualizerState {
-                command_sender,
+                command_sender: visualizer_command_sender,
                 bands_receiver,
                 display_bands: vec![0.0; CENTER_FREQUENCIES.len()],
             },
@@ -273,8 +261,7 @@ pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer) {
         }
         Err(TryRecvError::Empty) => {} // no update available this frame
         Err(TryRecvError::Disconnected) => {
-            error!("Library watcher channel disconnected. Dropping library watcher");
-            gem_player.library_watcher.watcher = None;
+            error!("Library watcher has disconnected.")
         }
     }
 }
@@ -309,33 +296,6 @@ pub fn load_library_and_playlists(directory: &Path) -> (Vec<Track>, Vec<Playlist
     );
 
     (library, playlists)
-}
-
-fn start_library_watcher(path: &Path, sender: Sender<(Vec<Track>, Vec<Playlist>)>) -> Result<Debouncer<RecommendedWatcher>, String> {
-    let cloned_path = path.to_path_buf();
-    let result = new_debouncer(Duration::from_secs(2), move |res: DebounceEventResult| match res {
-        Err(e) => error!("watch error: {:?}", e),
-        Ok(events) => {
-            events.iter().for_each(|e| info!("Event {:?} for {:?}", e.kind, e.path));
-
-            let (tracks, playlists) = load_library_and_playlists(&cloned_path);
-
-            if sender.send((tracks, playlists)).is_err() {
-                error!("Unable to send library.");
-            }
-        }
-    });
-
-    let mut debouncer = match result {
-        Ok(w) => w,
-        Err(e) => return Err(format!("Failed to create the watcher: {:?}", e)),
-    };
-
-    if let Err(e) = debouncer.watcher().watch(path, RecursiveMode::Recursive) {
-        return Err(format!("Failed to watch folder: {:?}", e));
-    }
-
-    Ok(debouncer)
 }
 
 pub fn check_for_next_track(gem_player: &mut GemPlayer) {

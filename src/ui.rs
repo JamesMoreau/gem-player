@@ -1,11 +1,11 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, load_library_and_playlists, maybe_play_next, maybe_play_previous,
-    play_library, play_playlist,
+    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file,
+    library_watcher::LibraryWatcherCommand,
+    maybe_play_next, maybe_play_previous, play_library, play_playlist,
     player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
-    start_library_watcher,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
@@ -82,7 +82,7 @@ struct PlaylistsViewState {
     cached_playlist_tracks: Option<Vec<Track>>,
 
     rename_buffer: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
-    delete_modal_open: bool, // The menu is open for selected_playlist_path.
+    delete_modal_open: bool,       // The menu is open for selected_playlist_path.
 }
 
 fn apply_theme(ctx: &Context, pref: ThemePreference) {
@@ -1832,20 +1832,14 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             Some(directory) => {
                                 info!("Selected folder: {:?}", directory);
 
-                                let result = start_library_watcher(&directory, gem_player.library_watcher.sender.clone());
-                                match result {
-                                    Ok(dw) => {
-                                        info!("Started watching: {:?}", &directory);
-
-                                        let (tracks, playlists) = load_library_and_playlists(&directory);
-                                        if gem_player.library_watcher.sender.send((tracks, playlists)).is_err() {
-                                            error!("Unable to send initial library.");
-                                        }
-
-                                        gem_player.library_watcher.watcher = Some(dw);
-                                        gem_player.library_directory = Some(directory);
-                                    }
-                                    Err(e) => error!("Failed to start watching the library directory: {e}"),
+                                let command = LibraryWatcherCommand::PathChange(directory.clone());
+                                let result = gem_player.library_watcher.command_sender.send(command);
+                                if result.is_err() {
+                                    let message = "Failed to start watching library directory. Reverting back to old directory.";
+                                    error!("{}", message);
+                                    gem_player.ui.toasts.error(message);
+                                } else {
+                                    gem_player.library_directory = Some(directory);
                                 }
                             }
                         }
