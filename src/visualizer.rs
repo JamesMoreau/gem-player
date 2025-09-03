@@ -26,6 +26,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     let (command_sender, commands_receiver) = channel::<VisualizerCommand>();
     let (bands_sender, bands_receiver) = channel::<Vec<f32>>();
 
+    let cs = command_sender.clone();
     thread::spawn(move || {
         let mut sample_rate = 44100.0;
         let mut samples = Vec::with_capacity(FFT_SIZE);
@@ -41,8 +42,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 
                         let result = bands_sender.send(bands);
                         if result.is_err() {
-                            info!("Processing receiver dropped. Shutting down the visualizer pipeline.");
-                            return;
+                            let _ = cs.send(VisualizerCommand::Shutdown);
                         }
 
                         samples.clear();
@@ -56,10 +56,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
                     info!("Received shutdown message. Shutting down the visualizer pipeline.");
                     return;
                 }
-                Err(_) => {
-                    info!("Message channel dropped. Shutting down the visualizer pipeline.");
-                    return;
-                }
+                Err(_) => return,
             }
         }
     });
