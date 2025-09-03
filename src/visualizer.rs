@@ -26,7 +26,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     let (command_sender, commands_receiver) = channel::<VisualizerCommand>();
     let (bands_sender, bands_receiver) = channel::<Vec<f32>>();
 
-    thread::spawn(move || { // TODO: is this move necessary?
+    thread::spawn(move || {
         let mut sample_rate = 44100.0;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
