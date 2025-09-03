@@ -17,7 +17,9 @@ pub enum LibraryWatcherCommand {
     Shutdown,
 }
 
-pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<(Vec<Track>, Vec<Playlist>)>), String> {
+type LibraryUpdate = (Vec<Track>, Vec<Playlist>); // TODO: maybe just use this everywhere?
+
+pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<LibraryUpdate>), String> {
     let (command_sender, command_receiver) = mpsc::channel();
     let (update_sender, update_receiver) = mpsc::channel();
 
