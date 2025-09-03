@@ -1815,11 +1815,12 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
                 ui.add(unselectable_label("Playlists are also stored here as m3u files."));
                 ui.horizontal(|ui| {
-                    let path = gem_player
-                        .library_directory
-                        .as_ref()
-                        .map_or("No directory selected".to_string(), |p| p.to_string_lossy().to_string());
-                    ui.label(path);
+                    let (display_path, full_path) = match gem_player.library_directory.as_ref() {
+                        Some(p) => (elide_path(p, 80), p.to_string_lossy().to_string()),
+                        None => ("No directory selected".to_string(), "No directory selected".to_string()),
+                    };
+
+                    ui.label(display_path).on_hover_text(full_path);
 
                     let response = ui.button(icons::ICON_FOLDER_OPEN).on_hover_text("Change");
                     if response.clicked() {
@@ -2062,4 +2063,23 @@ fn table_label(text: impl Into<String>, color: Option<Color32>) -> Label {
         rich = rich.color(c);
     }
     Label::new(rich).selectable(false).truncate()
+}
+
+/// Elide a path string to something like `/Users/user1/…/Music`
+/// Keeps both start and end parts if the path is too long.
+fn elide_path(path: &Path, max_len: usize) -> String {
+    let full = path.to_string_lossy();
+    let full_len = full.len();
+
+    if full_len <= max_len {
+        return full.into_owned();
+    }
+
+    // Split budget roughly in half: keep some start, some end
+    let keep_each_side = (max_len.saturating_sub(1)) / 2; // subtract 1 for the ellipsis
+
+    let start = &full[..keep_each_side];
+    let end = &full[full_len - keep_each_side..];
+
+    format!("{start}…{end}")
 }
