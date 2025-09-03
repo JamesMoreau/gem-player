@@ -17,9 +17,9 @@ pub enum LibraryWatcherCommand {
     Shutdown,
 }
 
-type LibraryUpdate = (Vec<Track>, Vec<Playlist>); // TODO: maybe just use this everywhere?
+pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
 
-pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<LibraryUpdate>), String> {
+pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<LibraryAndPlaylists>), String> {
     let (command_sender, command_receiver) = mpsc::channel();
     let (update_sender, update_receiver) = mpsc::channel();
 
@@ -40,7 +40,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
         })
         .expect("Failed to create watcher");
 
-        let mut current_path: Option<PathBuf> = None;
+        let mut current_path: Option<PathBuf> = None; // TODO: could we just start a new debouncer instead?
 
         while let Ok(command) = command_receiver.recv() {
             match command {
