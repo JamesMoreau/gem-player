@@ -20,7 +20,7 @@ function_name = "0.3.0"
 image = { version = "0.25.6", features = ["jpeg", "png"] }
 infer = "0.19.0"
 lofty = "0.22.4"
-log = "0.4.27"
+log = "0.4.28"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
 opener = { version = "0.8.2", features = ["reveal"] }
