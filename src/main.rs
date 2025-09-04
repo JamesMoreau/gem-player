@@ -37,7 +37,6 @@ TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
 * Disk and memory usage could be reduced by defering the loading of artwork to when it actually gets displayed
     instead of storing all of them in memory.
-* fix tag.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
