@@ -39,7 +39,6 @@ TODO:
 
 From feedback:
 * indexing the library hogs the disk usage, and the app is completely unresponsive while doing that, importing ~100 tracks takes a good 10-20 seconds
-* the settings ui breaks if the path is too long and overflows, i also can't resize the window
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -103,7 +102,8 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     load_system_fonts(&mut fonts);
     cc.egui_ctx.set_fonts(fonts);
 
-    let stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
+    let mut stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
+    stream_handle.log_on_drop(false);
     let sink = Sink::connect_new(stream_handle.mixer());
     sink.pause();
 
