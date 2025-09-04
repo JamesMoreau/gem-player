@@ -134,7 +134,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     sink.set_volume(initial_volume);
 
     let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
-    if let Some(ref directory) = library_directory {
+    if let Some(directory) = &library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
         watcher_command_sender.send(command).expect("Failed to start watching library directory.");
     }

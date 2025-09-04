@@ -54,7 +54,7 @@ pub fn play_or_pause(player: &mut Player) {
 
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
-        if let Some(ref playing) = player.playing {
+        if let Some(playing) = &player.playing {
             // If repeat is enabled, just restart the current track.
             if let Err(e) = load_and_play(&mut player.sink, &mut player.visualizer, playing) {
                 return Err(e.to_string());

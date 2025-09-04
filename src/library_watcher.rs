@@ -48,7 +48,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
         while let Ok(command) = command_receiver.recv() {
             match command {
                 LibraryWatcherCommand::Refresh => {
-                    if let Some(ref path) = current_path {
+                    if let Some(path) = &current_path {
                         let library_and_playlists = load_library_and_playlists(path);
                         let update_result = update_sender.send(library_and_playlists);
                         if update_result.is_err() {
@@ -57,7 +57,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                     }
                 }
                 LibraryWatcherCommand::SetPath(new_path) => {
-                    if let Some(ref old) = current_path {
+                    if let Some(old) = &current_path {
                         let _ = debouncer.watcher().unwatch(old);
                     }
 
