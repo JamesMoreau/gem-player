@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub enum LibraryWatcherCommand {
-    Refresh,
+    Load,
     SetPath(PathBuf),
     Shutdown,
 }
@@ -37,7 +37,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                         info!("Event {:?} for {:?}", e.kind, e.path);
                     }
 
-                    let _ = debouncer_cs.send(LibraryWatcherCommand::Refresh);
+                    let _ = debouncer_cs.send(LibraryWatcherCommand::Load);
                 }
             }
         })
@@ -47,7 +47,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
 
         while let Ok(command) = command_receiver.recv() {
             match command {
-                LibraryWatcherCommand::Refresh => {
+                LibraryWatcherCommand::Load => {
                     if let Some(path) = &current_path {
                         let library_and_playlists = load_library_and_playlists(path);
                         let update_result = update_sender.send(library_and_playlists);
@@ -66,7 +66,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                         error!("Failed to watch new folder: {:?}", e);
                     } else {
                         current_path = Some(new_path.clone());
-                        let _ = thread_cs.send(LibraryWatcherCommand::Refresh);
+                        let _ = thread_cs.send(LibraryWatcherCommand::Load);
                     }
                 }
                 LibraryWatcherCommand::Shutdown => {
