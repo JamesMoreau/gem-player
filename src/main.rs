@@ -35,10 +35,9 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
+* Disk and memory usage could be reduced by defering the loading of artwork to when it actually gets displayed
+    instead of storing all of them in memory.
 * fix tag.
-
-From feedback:
-* indexing the library hogs the disk usage, and the app is completely unresponsive while doing that, importing ~100 tracks takes a good 10-20 seconds
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
