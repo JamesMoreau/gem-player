@@ -9,7 +9,10 @@ use log::{error, info};
 use notify::RecursiveMode;
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult};
 
-use crate::{playlist::{load_playlists_from_directory, Playlist}, track::{load_tracks_from_directory, Track}};
+use crate::{
+    playlist::{load_playlists_from_directory, Playlist},
+    track::{load_tracks_from_directory, Track},
+};
 
 pub enum LibraryWatcherCommand {
     Refresh,
@@ -46,8 +49,8 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
             match command {
                 LibraryWatcherCommand::Refresh => {
                     if let Some(ref path) = current_path {
-                        let (tracks, playlists) = load_library_and_playlists(path);
-                        let update_result = update_sender.send((tracks, playlists));
+                        let library_and_playlists = load_library_and_playlists(path);
+                        let update_result = update_sender.send(library_and_playlists);
                         if update_result.is_err() {
                             let _ = thread_cs.send(LibraryWatcherCommand::Shutdown);
                         }
