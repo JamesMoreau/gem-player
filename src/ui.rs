@@ -6,7 +6,7 @@ use crate::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
+    track::{calculate_total_duration, extract_artwork_from_file, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
 use dark_light::Mode;
@@ -46,7 +46,7 @@ pub struct UIState {
     theme_preference: ThemePreference,
     marquee: MarqueeState,
     search: String,
-    cached_artwork_uri: Option<String>, // The uri pointing to the cached texture for the artwork of the currently playing track.
+    cached_artwork_track_path: Option<PathBuf>, // The uri pointing to the cached texture for the artwork of the currently playing track.
     volume_popup_is_open: bool,
 
     library: LibraryViewState,
@@ -627,37 +627,39 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
-    // Use a default image; if artwork exists for the playing track, load it.
-    let mut artwork = Image::new(include_image!("../assets/music_note.svg"));
+    let placeholder = include_image!("../assets/music_note.svg");
+    let mut artwork = Image::new(placeholder);
 
     if let Some(playing_track) = &gem_player.player.playing {
-        if let Some(artwork_bytes) = &playing_track.artwork {
-            let uri = format!("bytes://{}", playing_track.path.to_string_lossy());
+        match &gem_player.ui.cached_artwork_track_path {
+            Some(cached_path) if *cached_path == playing_track.path => {
+                // Already cached -> reuse
+                let uri = format!("bytes://{}", playing_track.path.to_string_lossy());
+                artwork = Image::new(uri);
+            }
+            _ => {
+                // Track changed -> clear old texture and load new
+                if let Some(old_path) = &gem_player.ui.cached_artwork_track_path {
+                    let old_uri = format!("bytes://{}", old_path.to_string_lossy());
+                    ui.ctx().forget_image(&old_uri);
+                }
 
-            match &gem_player.ui.cached_artwork_uri {
-                Some(cached_uri) if *cached_uri == uri => {
-                    // Already cached.
-                    artwork = Image::new(uri);
-                }
-                Some(cached_uri) => {
-                    // Artwork has changed. Release the cached uri and save the new one.
-                    ui.ctx().forget_image(cached_uri);
-                    artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
-                    gem_player.ui.cached_artwork_uri = Some(uri);
-                }
-                None => {
-                    // No cache, load new artwork and cache it.
-                    artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
-                    gem_player.ui.cached_artwork_uri = Some(uri);
+                if let Ok(Some(bytes)) = extract_artwork_from_file(&playing_track.path) {
+                    let new_uri = format!("bytes://{}", playing_track.path.to_string_lossy());
+                    artwork = Image::from_bytes(new_uri, bytes);
+                    gem_player.ui.cached_artwork_track_path = Some(playing_track.path.clone());
+                } else {
+                    gem_player.ui.cached_artwork_track_path = None;
                 }
             }
         }
     } else {
-        // No playing track, so release the cache if there is one.
-        if let Some(cached_uri) = &gem_player.ui.cached_artwork_uri {
-            ui.ctx().forget_image(cached_uri);
-            gem_player.ui.cached_artwork_uri = None;
+        // Nothing playing -> clear cache
+        if let Some(old_path) = &gem_player.ui.cached_artwork_track_path {
+            let old_uri = format!("bytes://{}", old_path.to_string_lossy());
+            ui.ctx().forget_image(&old_uri);
         }
+        gem_player.ui.cached_artwork_track_path = None;
     }
 
     ui.add(

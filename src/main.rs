@@ -144,7 +144,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
-            cached_artwork_uri: None,
+            cached_artwork_track_path: None,
             library: LibraryViewState {
                 cached_library: None,
                 selected_tracks: HashSet::new(),
