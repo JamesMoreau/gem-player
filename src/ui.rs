@@ -52,6 +52,8 @@ pub struct UIState {
     library: LibraryViewState,
     playlists: PlaylistsViewState,
 
+    library_and_playlists_are_loading: bool,
+
     toasts: Toasts,
 }
 
@@ -736,6 +738,18 @@ fn playing_indicator(ui: &mut Ui) {
 }
 
 fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    if gem_player.ui.library_and_playlists_are_loading {
+        Frame::new()
+            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.spinner();
+                });
+            });
+
+        return;
+    }
+
     if gem_player.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1182,6 +1196,18 @@ fn queue_view(ui: &mut Ui, player: &mut Player) {
 }
 
 fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+    if gem_player.ui.library_and_playlists_are_loading {
+        Frame::new()
+            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .show(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.spinner();
+                });
+            });
+
+        return;
+    }
+
     if gem_player.library_directory.is_none() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1839,6 +1865,7 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                 gem_player.ui.toasts.error(message);
                             } else {
                                 gem_player.library_directory = Some(directory);
+                                gem_player.ui.library_and_playlists_are_loading = true;
                             }
                         } else {
                             info!("No folder selected")

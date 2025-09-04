@@ -133,10 +133,12 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
     sink.set_volume(initial_volume);
 
+    let mut library_and_playlists_are_loading = false;
     let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
         watcher_command_sender.send(command).expect("Failed to start watching library directory.");
+        library_and_playlists_are_loading = true;
     }
 
     GemPlayer {
@@ -158,6 +160,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
                 delete_modal_open: false,
                 selected_tracks: HashSet::new(),
             },
+            library_and_playlists_are_loading,
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
                 .with_shadow(eframe::egui::Shadow {
@@ -232,7 +235,7 @@ impl eframe::App for GemPlayer {
 
         // Update
         check_for_next_track(self);
-        read_library_watcher_receiver(self);
+        handle_library_watcher_messages(self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -249,7 +252,7 @@ impl eframe::App for GemPlayer {
     }
 }
 
-pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer) {
+pub fn handle_library_watcher_messages(gem_player: &mut GemPlayer) {
     let result = gem_player.library_watcher.update_receiver.try_recv();
     match result {
         Ok((library, playlists)) => {
@@ -258,6 +261,8 @@ pub fn read_library_watcher_receiver(gem_player: &mut GemPlayer) {
 
             gem_player.ui.library.cached_library = None;
             gem_player.ui.playlists.cached_playlist_tracks = None;
+
+            gem_player.ui.library_and_playlists_are_loading = false;
         }
         Err(TryRecvError::Empty) => {} // no update available this frame
         Err(TryRecvError::Disconnected) => {
