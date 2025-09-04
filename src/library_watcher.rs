@@ -58,7 +58,10 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                 }
                 LibraryWatcherCommand::SetPath(new_path) => {
                     if let Some(old) = &watcher_directory {
-                        let _ = debouncer.watcher().unwatch(old);
+                        let unwatch_result = debouncer.watcher().unwatch(old);
+                        if let Err(e) = unwatch_result {
+                            error!("Failed to unwatch old folder {:?}: {:?}", old, e);
+                        }
                     }
 
                     let watch_result = debouncer.watcher().watch(&new_path, RecursiveMode::Recursive);
@@ -75,6 +78,8 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                 }
             }
         }
+
+        info!("Command channel closed. Shutting down watcher.");
     });
 
     Ok((command_sender, update_receiver))
