@@ -250,8 +250,8 @@ impl eframe::App for GemPlayer {
 }
 
 pub fn handle_library_watcher_messages(gem_player: &mut GemPlayer) {
-    let result = gem_player.library_watcher.update_receiver.try_recv();
-    match result {
+    let update = gem_player.library_watcher.update_receiver.try_recv();
+    match update {
         Ok((library, playlists)) => {
             gem_player.library = library;
             gem_player.playlists = playlists;
@@ -281,7 +281,6 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
 }
 
 pub fn maybe_play_next(gem_player: &mut GemPlayer) {
-    // maybe just remove this.
     let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);
