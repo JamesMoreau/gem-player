@@ -55,12 +55,11 @@ pub fn play_or_pause(player: &mut Player) {
 
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
-        if let Some(playing) = player.playing.clone() { // TODO: can we remove this clone?
-            // If repeat is enabled, just restart the current track.
-            if let Err(e) = load_and_play(player, &playing) {
-                return Err(e.to_string());
-            };
-            return Ok(());
+        if let Some(playing) = player.playing.clone() {
+            return load_and_play(player, &playing).map_err(|e| e.to_string());
+        } else {
+            player.repeat = false;
+            return Err("Repeat enabled but no track is playing".to_string());
         }
     }
 
@@ -75,9 +74,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
 
     if let Some(next_track) = player.queue.first().cloned() {
         player.queue.remove(0);
-        if let Err(e) = load_and_play(player, &next_track) {
-            return Err(e.to_string());
-        }
+        load_and_play(player, &next_track).map_err(|e| e.to_string())?;
         player.playing = Some(next_track);
     }
 
