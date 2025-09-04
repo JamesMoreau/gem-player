@@ -35,8 +35,6 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
-* Disk and memory usage could be reduced by defering the loading of artwork to when it actually gets displayed
-    instead of storing all of them in memory.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -144,7 +142,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
-            cached_artwork_uri: None,
+            cached_artwork_track_path: None,
             library: LibraryViewState {
                 cached_library: None,
                 selected_tracks: HashSet::new(),
@@ -196,6 +194,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
             stream_handle,
             sink,
+            playing_artwork: None,
             visualizer: VisualizerState {
                 command_sender: visualizer_command_sender,
                 bands_receiver,

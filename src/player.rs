@@ -1,5 +1,5 @@
 use crate::{
-    track::Track,
+    track::{extract_artwork_from_file, Track},
     visualizer::{visualizer_source, VisualizerCommand},
 };
 use fully_pub::fully_pub;
@@ -8,7 +8,7 @@ use rand::seq::SliceRandom;
 use rodio::{Decoder, OutputStream, Sink, Source};
 use std::{
     fs,
-    io::{self, ErrorKind},
+    io::{self, ErrorKind, Seek},
     sync::mpsc::{Receiver, Sender},
 };
 
@@ -27,6 +27,7 @@ pub struct Player {
     stream_handle: OutputStream, // Holds the OutputStream to keep it alive
     sink: Sink,                  // Controls playback (play, pause, stop, etc.)
 
+    playing_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
 }
 
@@ -54,12 +55,11 @@ pub fn play_or_pause(player: &mut Player) {
 
 pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
-        if let Some(playing) = &player.playing {
-            // If repeat is enabled, just restart the current track.
-            if let Err(e) = load_and_play(&mut player.sink, &mut player.visualizer, playing) {
-                return Err(e.to_string());
-            };
-            return Ok(());
+        if let Some(playing) = player.playing.clone() {
+            return load_and_play(player, &playing).map_err(|e| e.to_string());
+        } else {
+            player.repeat = false;
+            return Err("Repeat enabled but no track is playing".to_string());
         }
     }
 
@@ -74,9 +74,7 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
 
     if let Some(next_track) = player.queue.first().cloned() {
         player.queue.remove(0);
-        if let Err(e) = load_and_play(&mut player.sink, &mut player.visualizer, &next_track) {
-            return Err(e.to_string());
-        }
+        load_and_play(player, &next_track).map_err(|e| e.to_string())?;
         player.playing = Some(next_track);
     }
 
@@ -88,7 +86,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
         return Err("There is no previous track to play.".to_owned());
     };
 
-    if let Err(e) = load_and_play(&mut player.sink, &mut player.visualizer, &previous) {
+    if let Err(e) = load_and_play(player, &previous) {
         return Err(e.to_string());
     }
 
@@ -100,10 +98,16 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
     Ok(())
 }
 
-pub fn load_and_play(sink: &mut Sink, visualizer: &mut VisualizerState, track: &Track) -> io::Result<()> {
-    sink.stop(); // Stop the current track if any.
+pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
+    player.sink.stop(); // Stop the current track if any.
 
-    let file = fs::File::open(&track.path)?;
+    let mut file = fs::File::open(&track.path)?;
+
+    let maybe_artwork = extract_artwork_from_file(&mut file)?;
+    player.playing_artwork = maybe_artwork;
+
+    // Reset the file cursor since accessing artwork moves it forward.
+    file.seek(io::SeekFrom::Start(0))?;
 
     let decoder_result = Decoder::try_from(file);
     let decoder = match decoder_result {
@@ -112,14 +116,14 @@ pub fn load_and_play(sink: &mut Sink, visualizer: &mut VisualizerState, track: &
     };
 
     let sample_rate = decoder.sample_rate() as f32;
-    let result = visualizer.command_sender.send(VisualizerCommand::Sample(sample_rate));
+    let result = player.visualizer.command_sender.send(VisualizerCommand::Sample(sample_rate));
     if let Err(e) = result {
         error!("Visualizer channel error: {e}. Continuing playback anyway.");
     }
 
-    let visualizer_source = visualizer_source(decoder, visualizer.command_sender.clone());
-    sink.append(visualizer_source);
-    sink.play();
+    let visualizer_source = visualizer_source(decoder, player.visualizer.command_sender.clone());
+    player.sink.append(visualizer_source);
+    player.sink.play();
 
     Ok(())
 }

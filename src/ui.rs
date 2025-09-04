@@ -46,7 +46,7 @@ pub struct UIState {
     theme_preference: ThemePreference,
     marquee: MarqueeState,
     search: String,
-    cached_artwork_uri: Option<String>, // The uri pointing to the cached texture for the artwork of the currently playing track.
+    cached_artwork_track_path: Option<PathBuf>, // The uri pointing to the cached texture for the artwork of the currently playing track.
     volume_popup_is_open: bool,
 
     library: LibraryViewState,
@@ -627,37 +627,13 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
-    // Use a default image; if artwork exists for the playing track, load it.
-    let mut artwork = Image::new(include_image!("../assets/music_note.svg"));
+    let placeholder= include_image!("../assets/music_note.svg");
+    let mut artwork = Image::new(placeholder);
 
-    if let Some(playing_track) = &gem_player.player.playing {
-        if let Some(artwork_bytes) = &playing_track.artwork {
-            let uri = format!("bytes://{}", playing_track.path.to_string_lossy());
-
-            match &gem_player.ui.cached_artwork_uri {
-                Some(cached_uri) if *cached_uri == uri => {
-                    // Already cached.
-                    artwork = Image::new(uri);
-                }
-                Some(cached_uri) => {
-                    // Artwork has changed. Release the cached uri and save the new one.
-                    ui.ctx().forget_image(cached_uri);
-                    artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
-                    gem_player.ui.cached_artwork_uri = Some(uri);
-                }
-                None => {
-                    // No cache, load new artwork and cache it.
-                    artwork = Image::from_bytes(uri.clone(), artwork_bytes.clone());
-                    gem_player.ui.cached_artwork_uri = Some(uri);
-                }
-            }
-        }
-    } else {
-        // No playing track, so release the cache if there is one.
-        if let Some(cached_uri) = &gem_player.ui.cached_artwork_uri {
-            ui.ctx().forget_image(cached_uri);
-            gem_player.ui.cached_artwork_uri = None;
-        }
+    if let (Some(track), Some(bytes)) = (&gem_player.player.playing, &gem_player.player.playing_artwork) {
+        // Use track path as a unique/stable key for egui
+        let uri = format!("bytes://{}", track.path.to_string_lossy());
+        artwork = Image::from_bytes(uri, bytes.clone());
     }
 
     ui.add(

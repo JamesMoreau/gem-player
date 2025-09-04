@@ -1,11 +1,12 @@
 use fully_pub::fully_pub;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
+    read_from, read_from_path,
     tag::ItemKey,
 };
 use log::error;
 use std::{
-    fs,
+    fs::{self, File},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
     time::Duration,
@@ -34,7 +35,6 @@ pub struct Track {
     artist: Option<String>,
     album: Option<String>,
     duration: Duration,
-    artwork: Option<Vec<u8>>,
     path: PathBuf,
 }
 
@@ -81,23 +81,12 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
 
-    let result = lofty::read_from_path(path);
-    let tagged_file = match result {
-        Err(e) => {
-            return Err(io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)));
-        }
-        Ok(file) => file,
-    };
+    let tagged_file = read_from_path(path).map_err(|e| io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)))?;
 
-    let tag = {
-        if let Some(tag) = tagged_file.primary_tag() {
-            tag
-        } else if let Some(fallback_tag) = tagged_file.first_tag() {
-            fallback_tag
-        } else {
-            return Err(io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path)));
-        }
-    };
+    let tag = tagged_file
+        .primary_tag()
+        .or_else(|| tagged_file.first_tag())
+        .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path)))?;
 
     let title = tag
         .get_string(&ItemKey::TrackTitle)
@@ -111,9 +100,6 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
     let properties = tagged_file.properties();
     let duration = properties.duration();
 
-    let artwork_result = tag.pictures().first();
-    let artwork = artwork_result.map(|artwork| artwork.data().to_vec());
-
     let file_path = path.to_path_buf();
 
     Ok(Track {
@@ -121,7 +107,6 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         artist,
         album,
         duration,
-        artwork,
         path: file_path,
     })
 }
@@ -163,11 +148,22 @@ pub fn calculate_total_duration(tracks: &[Track]) -> Duration {
 
 pub fn open_file_location(track: &Track) -> io::Result<()> {
     let path = track.path.as_path();
-    
+
     let result = opener::reveal(path);
     if let Err(e) = result {
         return Err(io::Error::new(ErrorKind::Other, format!("Failed to open file location: {}", e)));
     }
 
     Ok(())
+}
+
+pub fn extract_artwork_from_file(file: &mut File) -> io::Result<Option<Vec<u8>>> {
+    let tagged_file = read_from(file).map_err(|e| io::Error::new(ErrorKind::InvalidData, format!("Error reading tags: {}", e)))?;
+
+    let tag = tagged_file
+        .primary_tag()
+        .or_else(|| tagged_file.first_tag())
+        .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, "No tags found"))?;
+
+    Ok(tag.pictures().first().map(|pic| pic.data().to_vec()))
 }
