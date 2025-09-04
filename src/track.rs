@@ -1,12 +1,12 @@
 use fully_pub::fully_pub;
 use lofty::{
     file::{AudioFile, TaggedFileExt},
-    read_from_path,
+    read_from, read_from_path,
     tag::ItemKey,
 };
 use log::error;
 use std::{
-    fs,
+    fs::{self, File},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
     time::Duration,
@@ -157,16 +157,13 @@ pub fn open_file_location(track: &Track) -> io::Result<()> {
     Ok(())
 }
 
-pub fn extract_artwork_from_file(path: &Path) -> io::Result<Option<Vec<u8>>> {
-    let tagged_file = read_from_path(path).map_err(|e| io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)))?;
+pub fn extract_artwork_from_file(file: &mut File) -> io::Result<Option<Vec<u8>>> {
+    let tagged_file = read_from(file).map_err(|e| io::Error::new(ErrorKind::InvalidData, format!("Error reading tags: {}", e)))?;
 
     let tag = tagged_file
         .primary_tag()
         .or_else(|| tagged_file.first_tag())
-        .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path)))?;
+        .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, "No tags found"))?;
 
-    let artwork_result = tag.pictures().first();
-    let artwork = artwork_result.map(|artwork| artwork.data().to_vec());
-
-    Ok(artwork)
+    Ok(tag.pictures().first().map(|pic| pic.data().to_vec()))
 }

@@ -6,7 +6,7 @@ use crate::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
-    track::{calculate_total_duration, extract_artwork_from_file, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
+    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
 use dark_light::Mode;
@@ -627,39 +627,13 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
-    let placeholder = include_image!("../assets/music_note.svg");
+    let placeholder= include_image!("../assets/music_note.svg");
     let mut artwork = Image::new(placeholder);
 
-    if let Some(playing_track) = &gem_player.player.playing {
-        match &gem_player.ui.cached_artwork_track_path {
-            Some(cached_path) if *cached_path == playing_track.path => {
-                // Already cached -> reuse
-                let uri = format!("bytes://{}", playing_track.path.to_string_lossy());
-                artwork = Image::new(uri);
-            }
-            _ => {
-                // Track changed -> clear old texture and load new
-                if let Some(old_path) = &gem_player.ui.cached_artwork_track_path {
-                    let old_uri = format!("bytes://{}", old_path.to_string_lossy());
-                    ui.ctx().forget_image(&old_uri);
-                }
-
-                if let Ok(Some(bytes)) = extract_artwork_from_file(&playing_track.path) {
-                    let new_uri = format!("bytes://{}", playing_track.path.to_string_lossy());
-                    artwork = Image::from_bytes(new_uri, bytes);
-                    gem_player.ui.cached_artwork_track_path = Some(playing_track.path.clone());
-                } else {
-                    gem_player.ui.cached_artwork_track_path = None;
-                }
-            }
-        }
-    } else {
-        // Nothing playing -> clear cache
-        if let Some(old_path) = &gem_player.ui.cached_artwork_track_path {
-            let old_uri = format!("bytes://{}", old_path.to_string_lossy());
-            ui.ctx().forget_image(&old_uri);
-        }
-        gem_player.ui.cached_artwork_track_path = None;
+    if let (Some(track), Some(bytes)) = (&gem_player.player.playing, &gem_player.player.playing_artwork) {
+        // Use track path as a unique/stable key for egui
+        let uri = format!("bytes://{}", track.path.to_string_lossy());
+        artwork = Image::from_bytes(uri, bytes.clone());
     }
 
     ui.add(

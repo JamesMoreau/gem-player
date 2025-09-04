@@ -196,6 +196,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
 
             stream_handle,
             sink,
+            playing_artwork: None,
             visualizer: VisualizerState {
                 command_sender: visualizer_command_sender,
                 bands_receiver,
