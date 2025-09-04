@@ -1831,7 +1831,7 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if let Some(directory) = maybe_directory {
                             info!("Selected folder: {:?}", directory);
 
-                            let command = LibraryWatcherCommand::PathChange(directory.clone());
+                            let command = LibraryWatcherCommand::SetPath(directory.clone());
                             let result = gem_player.library_watcher.command_sender.send(command);
                             if result.is_err() {
                                 let message = "Failed to start watching library directory. Reverting back to old directory.";

@@ -13,7 +13,7 @@ use crate::{playlist::{load_playlists_from_directory, Playlist}, track::{load_tr
 
 pub enum LibraryWatcherCommand {
     Refresh,
-    PathChange(PathBuf),
+    SetPath(PathBuf),
     Shutdown,
 }
 
@@ -53,7 +53,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                         }
                     }
                 }
-                LibraryWatcherCommand::PathChange(new_path) => {
+                LibraryWatcherCommand::SetPath(new_path) => {
                     if let Some(ref old) = current_path {
                         let _ = debouncer.watcher().unwatch(old);
                     }
