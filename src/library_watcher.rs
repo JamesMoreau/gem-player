@@ -43,12 +43,12 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
         })
         .expect("Failed to create watcher");
 
-        let mut current_path: Option<PathBuf> = None; // TODO: could we just start a new debouncer instead?
+        let mut watcher_directory: Option<PathBuf> = None;
 
         while let Ok(command) = command_receiver.recv() {
             match command {
                 LibraryWatcherCommand::Load => {
-                    if let Some(path) = &current_path {
+                    if let Some(path) = &watcher_directory {
                         let library_and_playlists = load_library_and_playlists(path);
                         let update_result = update_sender.send(library_and_playlists);
                         if update_result.is_err() {
@@ -57,7 +57,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                     }
                 }
                 LibraryWatcherCommand::SetPath(new_path) => {
-                    if let Some(old) = &current_path {
+                    if let Some(old) = &watcher_directory {
                         let _ = debouncer.watcher().unwatch(old);
                     }
 
@@ -65,7 +65,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                     if let Err(e) = watch_result {
                         error!("Failed to watch new folder: {:?}", e);
                     } else {
-                        current_path = Some(new_path.clone());
+                        watcher_directory = Some(new_path.clone());
                         let _ = thread_cs.send(LibraryWatcherCommand::Load);
                     }
                 }
