@@ -2,7 +2,7 @@ use crate::{track::load_from_file, Track};
 use fully_pub::fully_pub;
 use log::error;
 use std::{
-    fs::{self, File},
+    fs::{metadata, read_to_string, File},
     io::{self, ErrorKind, Write},
     path::{Path, PathBuf},
     time::SystemTime,
@@ -124,7 +124,7 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
     }
 
     let directory = path.parent().unwrap_or_else(|| Path::new(""));
-    let file_contents = fs::read_to_string(path)?;
+    let file_contents = read_to_string(path)?;
     let mut tracks = Vec::new();
     for line in file_contents.lines() {
         let trimmed_line = line.trim();
@@ -149,7 +149,7 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
         }
     }
 
-    let creation_date_time = fs::metadata(path)
+    let creation_date_time = metadata(path)
         .and_then(|metadata| metadata.created())
         .unwrap_or_else(|_| SystemTime::now());
 
@@ -181,7 +181,7 @@ pub fn rename(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
         ));
     }
 
-    fs::rename(&playlist.m3u_path, &new_path)?;
+    std::fs::rename(&playlist.m3u_path, &new_path)?;
 
     playlist.name = sanitized_name;
     playlist.m3u_path = new_path;
@@ -209,7 +209,7 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
         ));
     }
 
-    fs::File::create(&file_path)?;
+    File::create(&file_path)?;
 
     let mut playlist = Playlist {
         name: sanitized_name,
