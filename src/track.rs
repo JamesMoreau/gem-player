@@ -122,22 +122,26 @@ pub fn is_relevant_media_file(path: &Path) -> bool {
 }
 
 pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
-    let mut tracks = Vec::new();
+    let entries: Vec<_> = WalkDir::new(directory)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|entry| {
+            let path = entry.path();
+            path.is_file() && is_relevant_media_file(path)
+        })
+        .map(|entry| entry.into_path())
+        .collect();
 
-    for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
-        let path = entry.path();
-
-        let what_we_want = path.is_file() && is_relevant_media_file(path);
-        if !what_we_want {
-            continue;
-        }
-
-        let result = load_from_file(path);
-        match result {
-            Err(e) => error!("{}", e),
-            Ok(track) => tracks.push(track),
-        }
-    }
+    let tracks: Vec<Track> = entries
+        .into_iter()
+        .filter_map(|path| match load_from_file(&path) {
+            Ok(track) => Some(track),
+            Err(e) => {
+                error!("{}", e);
+                None
+            }
+        })
+        .collect();
 
     Ok(tracks)
 }
