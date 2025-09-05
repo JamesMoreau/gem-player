@@ -5,6 +5,7 @@ use lofty::{
     tag::ItemKey,
 };
 use log::error;
+use rayon::prelude::*;
 use std::{
     fs::{self, File},
     io::{self, ErrorKind},
@@ -133,8 +134,8 @@ pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
         .collect();
 
     let tracks: Vec<Track> = entries
-        .into_iter()
-        .filter_map(|path| match load_from_file(&path) {
+        .par_iter()
+        .filter_map(|path| match load_from_file(path) {
             Ok(track) => Some(track),
             Err(e) => {
                 error!("{}", e);
