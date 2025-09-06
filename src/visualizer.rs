@@ -31,9 +31,9 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
         let mut sample_rate = 44100.0;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
-        loop {
-            match commands_receiver.recv() {
-                Ok(VisualizerCommand::Sample(sample)) => {
+        while let Ok(command) = commands_receiver.recv() {
+            match command {
+                VisualizerCommand::Sample(sample) => {
                     samples.push(sample);
 
                     if samples.len() == FFT_SIZE {
@@ -48,15 +48,14 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
                         samples.clear();
                     }
                 }
-                Ok(VisualizerCommand::SampleRate(sr)) => {
+                VisualizerCommand::SampleRate(sr) => {
                     sample_rate = sr;
                     samples.clear();
                 }
-                Ok(VisualizerCommand::Shutdown) => {
+                VisualizerCommand::Shutdown => {
                     info!("Received shutdown message. Shutting down the visualizer pipeline.");
                     return;
                 }
-                Err(_) => return,
             }
         }
     });

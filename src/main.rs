@@ -10,15 +10,17 @@ use player::{
     adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player, VisualizerState,
 };
 use playlist::{Playlist, PlaylistRetrieval};
+use rfd::FileDialog;
 use rodio::{OutputStreamBuilder, Sink};
 use std::{
     collections::{HashMap, HashSet},
     fs, io,
     path::{Path, PathBuf},
     sync::{
-        mpsc::{Receiver, Sender, TryRecvError},
+        mpsc::{channel, Receiver, Sender, TryRecvError},
         Arc,
     },
+    thread,
     time::Duration,
 };
 use track::{is_relevant_media_file, SortBy, SortOrder, Track, TrackRetrieval};
@@ -35,6 +37,7 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
+* debug statements: use periods if the message is a full sentence. omit periods for short phrases, titles, or single words 
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -49,6 +52,7 @@ pub struct GemPlayer {
     playlists: Vec<Playlist>,
 
     library_directory: Option<PathBuf>,
+    folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
     library_watcher: LibraryWatcher,
 
     player: Player,
@@ -133,7 +137,9 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
-        watcher_command_sender.send(command).expect("Failed to start watching library directory.");
+        watcher_command_sender
+            .send(command)
+            .expect("Failed to start watching library directory.");
         library_and_playlists_are_loading = true;
     }
 
@@ -177,6 +183,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
         playlists: Vec::new(),
 
         library_directory,
+        folder_picker_receiver: None,
         library_watcher: LibraryWatcher {
             update_receiver,
             command_sender: watcher_command_sender,
@@ -232,7 +239,8 @@ impl eframe::App for GemPlayer {
 
         // Update
         check_for_next_track(self);
-        handle_library_watcher_messages(self);
+        poll_library_watcher_messages(self);
+        poll_folder_picker(self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -249,7 +257,7 @@ impl eframe::App for GemPlayer {
     }
 }
 
-pub fn handle_library_watcher_messages(gem_player: &mut GemPlayer) {
+fn poll_library_watcher_messages(gem_player: &mut GemPlayer) {
     let update = gem_player.library_watcher.update_receiver.try_recv();
     match update {
         Ok((library, playlists)) => {
@@ -268,7 +276,54 @@ pub fn handle_library_watcher_messages(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn check_for_next_track(gem_player: &mut GemPlayer) {
+fn poll_folder_picker(gem_player: &mut GemPlayer) {
+    let Some(receiver) = &gem_player.folder_picker_receiver else {
+        return;
+    };
+
+    match receiver.try_recv() {
+        Ok(maybe_directory) => {
+            gem_player.folder_picker_receiver = None;
+
+            if let Some(directory) = maybe_directory {
+                info!("Selected folder: {:?}", directory);
+
+                let command = LibraryWatcherCommand::SetPath(directory.clone());
+                let result = gem_player.library_watcher.command_sender.send(command);
+                if result.is_err() {
+                    let message = "Failed to start watching library directory. Reverting back to old directory.";
+                    error!("{}", message);
+                    gem_player.ui.toasts.error(message);
+                } else {
+                    gem_player.library_directory = Some(directory);
+                    gem_player.ui.library_and_playlists_are_loading = true;
+                }
+            } else {
+                info!("No folder selected");
+            }
+        }
+        Err(std::sync::mpsc::TryRecvError::Empty) => {} // folder picker is still open.
+        Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+            error!("Folder picker channel disconnected unexpectedly.");
+            gem_player.folder_picker_receiver = None;
+        }
+    }
+}
+
+/// Spawns a folder picker in a background thread and returns the receiver where the selected folder will eventually be sent.
+fn spawn_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>> {
+    let (sender, receiver) = channel();
+    let start_dir = start_dir.to_path_buf();
+
+    thread::spawn(move || {
+        let maybe_directory = FileDialog::new().set_directory(start_dir).pick_folder().map(|p| p.to_path_buf());
+        let _ = sender.send(maybe_directory);
+    });
+
+    receiver
+}
+
+fn check_for_next_track(gem_player: &mut GemPlayer) {
     if !gem_player.player.sink.empty() {
         return; // If a track is still playing, do nothing
     }
@@ -280,7 +335,7 @@ pub fn check_for_next_track(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn maybe_play_next(gem_player: &mut GemPlayer) {
+fn maybe_play_next(gem_player: &mut GemPlayer) {
     let result = play_next(&mut gem_player.player);
     if let Err(e) = result {
         error!("{}", e);

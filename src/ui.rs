@@ -1,11 +1,11 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file,
-    library_watcher::LibraryWatcherCommand,
-    maybe_play_next, maybe_play_previous, play_library, play_playlist,
+    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library,
+    play_playlist,
     player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
+    spawn_folder_picker,
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
@@ -23,7 +23,6 @@ use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
-use rfd::FileDialog;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
@@ -627,7 +626,7 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
-    let placeholder= include_image!("../assets/music_note.svg");
+    let placeholder = include_image!("../assets/music_note.svg");
     let mut artwork = Image::new(placeholder);
 
     if let (Some(track), Some(bytes)) = (&gem_player.player.playing, &gem_player.player.playing_artwork) {
@@ -1824,28 +1823,15 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     ui.label(display_path).on_hover_text(full_path);
 
-                    let response = ui.button(icons::ICON_FOLDER_OPEN).on_hover_text("Change");
-                    if response.clicked() {
-                        let maybe_directory = FileDialog::new()
-                            .set_directory(gem_player.library_directory.as_deref().unwrap_or_else(|| Path::new("/")))
-                            .pick_folder();
+                    let start_dir = gem_player
+                        .library_directory
+                        .as_deref()
+                        .unwrap_or_else(|| Path::new("/"))
+                        .to_path_buf();
 
-                        if let Some(directory) = maybe_directory {
-                            info!("Selected folder: {:?}", directory);
-
-                            let command = LibraryWatcherCommand::SetPath(directory.clone());
-                            let result = gem_player.library_watcher.command_sender.send(command);
-                            if result.is_err() {
-                                let message = "Failed to start watching library directory. Reverting back to old directory.";
-                                error!("{}", message);
-                                gem_player.ui.toasts.error(message);
-                            } else {
-                                gem_player.library_directory = Some(directory);
-                                gem_player.ui.library_and_playlists_are_loading = true;
-                            }
-                        } else {
-                            info!("No folder selected")
-                        }
+                    if ui.button(icons::ICON_FOLDER_OPEN).on_hover_text("Change").clicked() {
+                        let receiver = spawn_folder_picker(&start_dir);
+                        gem_player.folder_picker_receiver = Some(receiver);
                     }
                 });
 
