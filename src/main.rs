@@ -522,7 +522,7 @@ pub fn load_system_fonts(fonts: &mut FontDefinitions) {
     // Iterate over each region and try to load a matching system font.
     for (region, font_names) in fontdb.iter() {
         if let Some(font_data) = load_font_family(font_names) {
-            info!("Inserting font fallback for region: {region}");
+            info!("Inserting font fallback for region: {region}.");
             fonts.font_data.insert(region.to_string(), FontData::from_owned(font_data).into());
 
             // Add the region key as a fallback font in the proportional family.

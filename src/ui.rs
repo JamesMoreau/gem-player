@@ -926,7 +926,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         match action {
             LibraryContextMenuAction::AddToPlaylist(playlist_key) => {
                 if gem_player.ui.library.selected_tracks.is_empty() {
-                    error!("No track(s) selected for adding to playlist");
+                    error!("No track(s) selected for adding to playlist.");
                     return;
                 }
 
@@ -945,7 +945,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 gem_player.ui.playlists.cached_playlist_tracks = None;
 
                 if added_count > 0 {
-                    let message = format!("Added {} track(s) to playlist '{}'", added_count, playlist.name);
+                    let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);
                     info!("{}", message);
                     gem_player.ui.toasts.success(message);
                 } else {
@@ -976,7 +976,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             }
             LibraryContextMenuAction::OpenFileLocation => {
                 let Some(first_track_key) = gem_player.ui.library.selected_tracks.iter().next() else {
-                    error!("No track(s) selected for opening file location");
+                    error!("No track(s) were selected for opening file location.");
                     return;
                 };
 
@@ -1290,7 +1290,7 @@ fn delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     let Some(playlist_key) = gem_player.ui.playlists.selected_playlist_key.clone() else {
-        error!("The delete playlist is open but no playlist is selected");
+        error!("The delete playlist is open but no playlist is selected.");
         return;
     };
 
@@ -1683,12 +1683,12 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         match action {
             PlaylistContextMenuAction::RemoveFromPlaylist => {
                 let Some(playlist_key) = &gem_player.ui.playlists.selected_playlist_key else {
-                    error!("No playlist selected for removing track from playlist");
+                    error!("No playlist selected for removing track from playlist.");
                     return;
                 };
 
                 if gem_player.ui.playlists.selected_tracks.is_empty() {
-                    error!("No track(s) selected for removing track from playlist next");
+                    error!("No track(s) selected for removing track from playlist next.");
                     return;
                 };
 

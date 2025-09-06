@@ -34,7 +34,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                 Err(e) => error!("watch error: {:?}", e),
                 Ok(events) => {
                     for e in events.iter() {
-                        info!("Event {:?} for {:?}", e.kind, e.path);
+                        info!("Event {:?} for {:?}.", e.kind, e.path);
                     }
 
                     let _ = debouncer_cs.send(LibraryWatcherCommand::Load);
