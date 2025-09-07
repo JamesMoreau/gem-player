@@ -37,7 +37,6 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
-* debug statements: use periods if the message is a full sentence. omit periods for short phrases, titles, or single words 
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
