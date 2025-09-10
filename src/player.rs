@@ -106,8 +106,7 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     let maybe_artwork = extract_artwork_from_file(&mut file)?;
     player.playing_artwork = maybe_artwork;
 
-    // Reset the file cursor since accessing artwork moves it forward.
-    file.seek(io::SeekFrom::Start(0))?;
+    file.seek(io::SeekFrom::Start(0))?; // Reset the file cursor since accessing artwork moves it forward.
 
     let decoder_result = Decoder::try_from(file);
     let decoder = match decoder_result {
@@ -134,7 +133,8 @@ pub fn toggle_shuffle(player: &mut Player) {
             player.queue = unshuffled_queue; // Restore the queue to its original order.
         }
         None => {
-            player.shuffle = Some(player.queue.clone()); // Save the original queue.
+            let original_queue = player.queue.clone();
+            player.shuffle = Some(original_queue);
             shuffle(&mut player.queue);
         }
     }

@@ -1,6 +1,6 @@
-use eframe::egui::{
-    Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, ThemePreference, Vec2, ViewportBuilder, Visuals,
-};
+use eframe::{egui::{
+    Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals
+}, icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -67,9 +67,9 @@ fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if run with `RUST_LOG=debug`).
     info!("Starting up Gem Player.");
 
-    let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("The icon data must be valid");
+    let icon_data = icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("The icon data must be valid");
 
-    let options = eframe::NativeOptions {
+    let options = NativeOptions {
         viewport: ViewportBuilder::default()
             .with_min_inner_size(Vec2::new(900.0, 500.0))
             .with_decorations(false)
@@ -77,10 +77,10 @@ fn main() -> eframe::Result {
             .with_icon(icon_data),
         ..Default::default()
     };
-    eframe::run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
+    run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
 }
 
-pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
+pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     egui_extras::install_image_loaders(&cc.egui_ctx);
     egui_material_icons::initialize(&cc.egui_ctx);
 
@@ -166,7 +166,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
             library_and_playlists_are_loading,
             toasts: Toasts::default()
                 .with_anchor(egui_notify::Anchor::BottomRight)
-                .with_shadow(eframe::egui::Shadow {
+                .with_shadow(Shadow {
                     offset: [0, 0],
                     blur: 1,
                     spread: 1,
@@ -212,7 +212,7 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     }
 }
 
-impl eframe::App for GemPlayer {
+impl App for GemPlayer {
     fn clear_color(&self, _visuals: &Visuals) -> [f32; 4] {
         Rgba::TRANSPARENT.to_array() // Make sure we don't paint anything behind the rounded corners
     }
@@ -222,7 +222,7 @@ impl eframe::App for GemPlayer {
         false
     }
 
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+    fn save(&mut self, storage: &mut dyn Storage) {
         if let Some(library_directory) = &self.library_directory {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
@@ -234,7 +234,7 @@ impl eframe::App for GemPlayer {
         storage.set_string(VOLUME_STORAGE_KEY, volume_ron_string);
     }
 
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         // Input
         handle_key_commands(ctx, self);
 
