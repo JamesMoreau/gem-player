@@ -1,4 +1,5 @@
 use fully_pub::fully_pub;
+use infer::{get_from_path, MatcherType};
 use lofty::{
     file::{AudioFile, TaggedFileExt},
     read_from, read_from_path,
@@ -7,7 +8,7 @@ use lofty::{
 use log::error;
 use rayon::prelude::*;
 use std::{
-    fs::{self, File},
+    fs::File,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
     time::Duration,
@@ -113,13 +114,8 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
 }
 
 pub fn is_relevant_media_file(path: &Path) -> bool {
-    if let Ok(data) = fs::read(path) {
-        if let Some(kind) = infer::get(&data) {
-            return matches!(kind.matcher_type(), infer::MatcherType::Audio | infer::MatcherType::Video);
-        }
-    }
-
-    false
+    let file_type = get_from_path(path).ok().flatten().map(|k| k.matcher_type());
+    matches!(file_type, Some(MatcherType::Audio) | Some(MatcherType::Video))
 }
 
 pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {

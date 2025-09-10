@@ -2004,6 +2004,7 @@ fn sort_and_order_by_ui(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut Sort
     let mut sort_order_changed = false;
 
     Popup::menu(&response)
+        .gap(4.0)
         .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
         .show(|ui| {
             for sb in SortBy::iter() {
