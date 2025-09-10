@@ -252,9 +252,9 @@ impl eframe::App for GemPlayer {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.player.sink.stop();
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
-        self.player.sink.stop();
     }
 }
 
