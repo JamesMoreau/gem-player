@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use log::{error, info};
+use log::{error, info, warn};
 use notify::RecursiveMode;
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult};
 
@@ -22,7 +22,7 @@ pub enum LibraryWatcherCommand {
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
 
-pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<LibraryAndPlaylists>), String> {
+pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<Option<LibraryAndPlaylists>>), String> {
     let (command_sender, command_receiver) = mpsc::channel();
     let (update_sender, update_receiver) = mpsc::channel();
 
@@ -33,10 +33,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
             move |res: DebounceEventResult| match res {
                 Err(e) => error!("watch error: {:?}", e),
                 Ok(events) => {
-                    for e in events.iter() {
-                        info!("Event {:?} for {:?}.", e.kind, e.path);
-                    }
-
+                    events.iter().for_each(|e| info!("Event for {:?}.", e.path));
                     let _ = debouncer_cs.send(LibraryWatcherCommand::Load);
                 }
             }
@@ -49,28 +46,45 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
             match command {
                 LibraryWatcherCommand::Load => {
                     if let Some(path) = &watcher_directory {
-                        let library_and_playlists = load_library_and_playlists(path);
-                        let update_result = update_sender.send(library_and_playlists);
-                        if update_result.is_err() {
-                            let _ = thread_cs.send(LibraryWatcherCommand::Shutdown);
+                        let is_valid = path.exists() && path.is_dir();
+                        if !is_valid {
+                            error!("Cannot load library: invalid path {:?}", path);
+                            let _ = update_sender.send(None);
+                            continue;
                         }
+
+                        let library_and_playlists = load_library_and_playlists(path);
+                        let _ = update_sender.send(Some(library_and_playlists));
+                    } else {
+                        warn!("Load command received with no watcher_directory set");
+                        let _ = update_sender.send(None);
                     }
                 }
-                LibraryWatcherCommand::SetPath(new_path) => {
+                LibraryWatcherCommand::SetPath(new_directory) => {
+                    let is_valid = new_directory.exists() && new_directory.is_dir();
+                    if !is_valid {
+                        warn!("Invalid library path: {:?}", new_directory);
+                        let _ = update_sender.send(None);
+                        continue;
+                    }
+
                     if let Some(old) = &watcher_directory {
                         let unwatch_result = debouncer.watcher().unwatch(old);
                         if let Err(e) = unwatch_result {
                             error!("Failed to unwatch old folder {:?}: {:?}", old, e);
+                            let _ = update_sender.send(None);
+                            continue;
                         }
                     }
 
-                    let watch_result = debouncer.watcher().watch(&new_path, RecursiveMode::Recursive);
-                    if let Err(e) = watch_result {
-                        error!("Failed to watch new folder: {:?}", e);
-                    } else {
-                        watcher_directory = Some(new_path.clone());
-                        let _ = thread_cs.send(LibraryWatcherCommand::Load);
+                    if let Err(e) = debouncer.watcher().watch(&new_directory, RecursiveMode::Recursive) {
+                        error!("Failed to watch new folder {:?}: {:?}", new_directory, e);
+                        let _ = update_sender.send(None);
+                        continue;
                     }
+
+                    watcher_directory = Some(new_directory.clone());
+                    let _ = thread_cs.send(LibraryWatcherCommand::Load);
                 }
                 LibraryWatcherCommand::Shutdown => {
                     info!("Received shutdown message. Shutting down the library watcher.");

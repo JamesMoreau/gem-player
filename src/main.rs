@@ -60,7 +60,7 @@ pub struct GemPlayer {
 #[fully_pub]
 struct LibraryWatcher {
     command_sender: Sender<LibraryWatcherCommand>,
-    update_receiver: Receiver<LibraryAndPlaylists>,
+    update_receiver: Receiver<Option<LibraryAndPlaylists>>,
 }
 
 fn main() -> eframe::Result {
@@ -136,10 +136,12 @@ pub fn init_gem_player(cc: &eframe::CreationContext<'_>) -> GemPlayer {
     let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
-        watcher_command_sender
-            .send(command)
-            .expect("Failed to start watching library directory.");
-        library_and_playlists_are_loading = true;
+        if let Err(e) = watcher_command_sender.send(command) {
+            error!("Failed to start watching library directory: {e}");
+            library_directory = None;
+        } else {
+            library_and_playlists_are_loading = true;
+        }
     }
 
     GemPlayer {
@@ -259,7 +261,7 @@ impl eframe::App for GemPlayer {
 fn poll_library_watcher_messages(gem_player: &mut GemPlayer) {
     let update = gem_player.library_watcher.update_receiver.try_recv();
     match update {
-        Ok((library, playlists)) => {
+        Ok(Some((library, playlists))) => {
             gem_player.library = library;
             gem_player.playlists = playlists;
 
@@ -268,9 +270,18 @@ fn poll_library_watcher_messages(gem_player: &mut GemPlayer) {
 
             gem_player.ui.library_and_playlists_are_loading = false;
         }
+        Ok(None) => {
+            let message = "Failed to load library folder.";
+            error!("{}", message);
+            gem_player.ui.toasts.error(message);
+
+            gem_player.library_directory = None;
+            gem_player.ui.library_and_playlists_are_loading = false;
+        }
         Err(TryRecvError::Empty) => {} // no update available this frame
         Err(TryRecvError::Disconnected) => {
-            error!("Library watcher has disconnected.")
+            error!("Library watcher has disconnected.");
+            gem_player.ui.library_and_playlists_are_loading = false;
         }
     }
 }
