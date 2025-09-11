@@ -320,12 +320,12 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 });
 
                 strip.cell(|ui| {
-                    track_info_ui(ui, gem_player, button_width, gap, artwork_width, slider_width);
+                    display_track_info(ui, gem_player, button_width, gap, artwork_width, slider_width);
                 });
 
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        visualizer_ui(ui, gem_player);
+                        display_visualizer(ui, gem_player);
 
                         ui.add_space(16.0);
 
@@ -423,7 +423,7 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-fn track_info_ui(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let available_height = ui.available_height();
 
@@ -520,7 +520,7 @@ fn track_info_ui(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap:
                             .size(Size::exact(slider_width * (1.0 / 5.0)))
                             .horizontal(|mut hstrip| {
                                 hstrip.cell(|ui| {
-                                    track_marquee_ui(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui.marquee);
+                                    display_track_marquee(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui.marquee);
                                 });
 
                                 hstrip.cell(|ui| {
@@ -544,7 +544,7 @@ fn track_info_ui(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap:
         });
 }
 
-fn track_marquee_ui(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
+fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
         let mut title = "None";
         let mut artist = "None";
@@ -644,7 +644,7 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     );
 }
 
-fn visualizer_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn display_visualizer(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let dt = ui.input(|i| i.stable_dt);
 
     let attack_rate = 12.0;
