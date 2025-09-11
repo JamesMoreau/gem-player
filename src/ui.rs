@@ -68,7 +68,7 @@ pub struct MarqueeState {
 
 #[fully_pub]
 struct LibraryViewState {
-    selected_tracks: HashSet<PathBuf>,
+    selected_tracks: Vec<PathBuf>,
     cached_library: Option<Vec<Track>>,
 
     sort_by: SortBy,
@@ -863,7 +863,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let response = ui.add(more_button).on_hover_text("More");
 
                         if response.clicked() {
-                            gem_player.ui.library.selected_tracks.insert(track.path.clone());
+                            gem_player.ui.library.selected_tracks.push(track.path.clone());
                         }
 
                         Popup::menu(&response).show(|ui| {
@@ -886,16 +886,27 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 if primary_clicked || secondary_clicked {
                     let selected_tracks = &mut gem_player.ui.library.selected_tracks;
+
                     if secondary_clicked {
                         if selected_tracks.is_empty() || !already_selected {
                             selected_tracks.clear();
-                            selected_tracks.insert(track.path.clone());
+                            selected_tracks.push(track.path.clone());
+                        }
+                    } else if shift_is_pressed && !selected_tracks.is_empty() {
+                        let last_selected = selected_tracks.last().unwrap();
+                        let last_index = cached_library.iter().position(|t| &t.path == last_selected).unwrap();
+                        let clicked_index = cached_library.iter().position(|t| t.path == track.path).unwrap();
+
+                        let start = last_index.min(clicked_index);
+                        let end = last_index.max(clicked_index);
+                        for t in &cached_library[start..=end] {
+                            if !selected_tracks.contains(&t.path) {
+                                selected_tracks.push(t.path.clone());
+                            }
                         }
                     } else {
-                        if !shift_is_pressed {
-                            selected_tracks.clear();
-                        }
-                        selected_tracks.insert(track.path.clone());
+                        selected_tracks.clear();
+                        selected_tracks.push(track.path.clone());
                     }
                 }
 
@@ -975,7 +986,8 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             }
             LibraryContextMenuAction::OpenFileLocation => {
-                let Some(first_track_key) = gem_player.ui.library.selected_tracks.iter().next() else {
+                // We just grab the first since we cannot reveal multiple file locations.
+                let Some(first_track_key) = gem_player.ui.library.selected_tracks.first() else {
                     error!("No track(s) were selected for opening file location.");
                     return;
                 };

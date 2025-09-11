@@ -152,7 +152,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             cached_artwork_track_path: None,
             library: LibraryViewState {
                 cached_library: None,
-                selected_tracks: HashSet::new(),
+                selected_tracks: Vec::new(),
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
             },
