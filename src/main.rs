@@ -1,6 +1,11 @@
-use eframe::{egui::{
-    Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals
-}, icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage};
+use dark_light::Mode;
+use eframe::{
+    egui::{
+        Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, Shadow, ThemePreference, Vec2,
+        ViewportBuilder, Visuals,
+    },
+    icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage,
+};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -130,8 +135,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    sink.set_volume(initial_volume);
-
     let mut library_and_playlists_are_loading = false;
     let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &library_directory {
@@ -143,6 +146,10 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             library_and_playlists_are_loading = true;
         }
     }
+
+    apply_theme(&cc.egui_ctx, theme_preference);
+
+    sink.set_volume(initial_volume);
 
     GemPlayer {
         ui: UIState {
@@ -164,14 +171,12 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 selected_tracks: Vec::new(),
             },
             library_and_playlists_are_loading,
-            toasts: Toasts::default()
-                .with_anchor(egui_notify::Anchor::BottomRight)
-                .with_shadow(Shadow {
-                    offset: [0, 0],
-                    blur: 1,
-                    spread: 1,
-                    color: Color32::BLACK,
-                }),
+            toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
+                offset: [0, 0],
+                blur: 1,
+                spread: 1,
+                color: Color32::BLACK,
+            }),
             marquee: MarqueeState {
                 position: 0.0,
                 track_key: None,
@@ -570,4 +575,17 @@ pub fn handle_dropped_file(dropped_file: &DroppedFile, gem_player: &mut GemPlaye
     fs::copy(path, destination)?;
 
     Ok(())
+}
+
+pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
+    let visuals = match preference {
+        ThemePreference::Dark => Visuals::dark(),
+        ThemePreference::Light => Visuals::light(),
+        ThemePreference::System => match dark_light::detect() {
+            Ok(Mode::Light) => Visuals::light(),
+            _ => Visuals::dark(),
+        },
+    };
+
+    ctx.set_visuals(visuals);
 }

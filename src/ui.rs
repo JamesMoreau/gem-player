@@ -1,6 +1,6 @@
 use crate::{
-    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library,
-    play_playlist,
+    apply_theme, format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous,
+    play_library, play_playlist,
     player::{
         clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
@@ -9,14 +9,13 @@ use crate::{
     track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
-use dark_light::Mode;
 use eframe::egui::{
     containers::{self},
     include_image,
     os::OperatingSystem,
     pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin,
     PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat,
-    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, Visuals, WidgetText,
+    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -83,20 +82,6 @@ struct PlaylistsViewState {
 
     rename_buffer: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_modal_open: bool,       // The menu is open for selected_playlist_path.
-}
-
-fn apply_theme(ctx: &Context, pref: ThemePreference) {
-    match pref {
-        ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
-        ThemePreference::Light => ctx.set_visuals(Visuals::light()),
-        ThemePreference::System => {
-            let visuals = match dark_light::detect() {
-                Ok(Mode::Light) => Visuals::light(),
-                _ => Visuals::dark(), // Covers both Mode::Dark, Mode::Unspecified, and errors
-            };
-            ctx.set_visuals(visuals);
-        }
-    }
 }
 
 pub fn gem_player_ui(gem_player: &mut GemPlayer, ctx: &Context) {
