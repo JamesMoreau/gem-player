@@ -24,7 +24,6 @@ use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
 use std::{
-    collections::HashSet,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -78,7 +77,7 @@ struct LibraryViewState {
 #[fully_pub]
 struct PlaylistsViewState {
     selected_playlist_key: Option<PathBuf>, // None: no playlist is selected. Some: the path of the selected playlist.
-    selected_tracks: HashSet<PathBuf>,
+    selected_tracks: Vec<PathBuf>,
 
     cached_playlist_tracks: Option<Vec<Track>>,
 
@@ -1664,16 +1663,27 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 if primary_clicked || secondary_clicked {
                     let selected_tracks = &mut gem_player.ui.playlists.selected_tracks;
+
                     if secondary_clicked {
                         if selected_tracks.is_empty() || !already_selected {
                             selected_tracks.clear();
-                            selected_tracks.insert(track.path.clone());
+                            selected_tracks.push(track.path.clone());
+                        }
+                    } else if shift_is_pressed && !selected_tracks.is_empty() {
+                        let last_selected_track = selected_tracks.last().unwrap();
+                        let last_index = cached_playlist_tracks.iter().position(|t| &t.path == last_selected_track).unwrap();
+                        let clicked_index = cached_playlist_tracks.iter().position(|t| t.path == track.path).unwrap();
+
+                        let start = last_index.min(clicked_index);
+                        let end = last_index.max(clicked_index);
+                        for t in &cached_playlist_tracks[start..=end] {
+                            if !selected_tracks.contains(&t.path) {
+                                selected_tracks.push(t.path.clone());
+                            }
                         }
                     } else {
-                        if !shift_is_pressed {
-                            selected_tracks.clear();
-                        }
-                        selected_tracks.insert(track.path.clone());
+                        selected_tracks.clear();
+                        selected_tracks.push(track.path.clone());
                     }
                 }
 
@@ -1750,7 +1760,8 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
             }
             PlaylistContextMenuAction::OpenFileLocation => {
-                let Some(first_track_key) = gem_player.ui.playlists.selected_tracks.iter().next() else {
+                // We take the first one since we cannot open / reveal multiple tracks.
+                let Some(first_track_key) = gem_player.ui.playlists.selected_tracks.first() else {
                     error!("No track(s) selected for opening file location");
                     return;
                 };
@@ -1969,7 +1980,9 @@ fn navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     if search_was_changed {
                         // We reset both caches since there is only one search text state variable.
                         gem_player.ui.library.cached_library = None;
+                        gem_player.ui.library.selected_tracks.clear();
                         gem_player.ui.playlists.cached_playlist_tracks = None;
+                        gem_player.ui.playlists.selected_tracks.clear();
                     }
 
                     let sort_was_changed =
@@ -1993,8 +2006,11 @@ fn navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 View::Playlists => {
                     let search_changed = search_ui(ui, &mut gem_player.ui.search);
                     if search_changed {
+                        // Same as above.
                         gem_player.ui.library.cached_library = None;
+                        gem_player.ui.library.selected_tracks.clear();
                         gem_player.ui.playlists.cached_playlist_tracks = None;
+                        gem_player.ui.playlists.selected_tracks.clear();
                     }
                 }
                 _ => {}

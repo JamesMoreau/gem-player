@@ -13,7 +13,7 @@ use playlist::{Playlist, PlaylistRetrieval};
 use rfd::FileDialog;
 use rodio::{OutputStreamBuilder, Sink};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs, io,
     path::{Path, PathBuf},
     sync::{
@@ -161,7 +161,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 cached_playlist_tracks: None,
                 rename_buffer: None,
                 delete_modal_open: false,
-                selected_tracks: HashSet::new(),
+                selected_tracks: Vec::new(),
             },
             library_and_playlists_are_loading,
             toasts: Toasts::default()
