@@ -631,25 +631,28 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
 
 fn display_visualizer(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let dt = ui.input(|i| i.stable_dt);
-
-    let attack_rate = 12.0;
-    let decay_rate = 4.0;
+    let smoothing = 12.0;
+    let step = smoothing * dt;
 
     let maybe_bands = gem_player.player.visualizer.bands_receiver.try_iter().last();
     let display_bands = &mut gem_player.player.visualizer.display_bands;
     let targets = maybe_bands.unwrap_or_else(|| vec![0.0; display_bands.len()]);
 
-    for (bar, &target) in display_bands.iter_mut().zip(&targets) {
-        let alpha = if target > *bar {
-            1.0 - (-attack_rate * dt).exp()
+    for (bar, &raw_target) in display_bands.iter_mut().zip(&targets) {
+        // clamp
+        let target = if raw_target < *bar {
+            (*bar - step).max(raw_target)
         } else {
-            1.0 - (-decay_rate * dt).exp()
+            raw_target
         };
+
+        // smoothing
+        let alpha = 1.0 - (-step).exp();
         *bar += (target - *bar) * alpha;
     }
 
     let desired_height = ui.available_height() * 0.6;
-    let desired_width = 91.0;
+    let desired_width = 91.0; // This value is specific so that each bar is exactly the same width in pixels.
     let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
 
     let bar_gap = 4.0;

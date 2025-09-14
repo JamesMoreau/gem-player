@@ -42,6 +42,7 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
+* add egui_logger crate for debugging.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
