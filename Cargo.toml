@@ -6,8 +6,8 @@ description = "A lightweight music player."
 
 [dependencies]
 dark-light = "2.0.0"
-eframe = { version = "0.32.2", features = ["default", "persistence"] }
-egui_extras = { version = "0.32.2", features = ["all_loaders"] }
+eframe = { version = "0.32.3", features = ["default", "persistence"] }
+egui_extras = { version = "0.32.3", features = ["all_loaders"] }
 egui_material_icons = "0.4.0"
 egui-notify = "0.20.0"
 env_logger = { version = "0.11.7", default-features = false, features = [
@@ -30,7 +30,7 @@ rodio = { version = "0.21.1", features = ["symphonia-all"] }
 ron = "0.11.0"
 rustfft = "6.4.0"
 sanitize-filename = "0.6.0"
-serde = "1.0.219"
+serde = "1.0.221"
 strum = "0.27.2"
 strum_macros = "0.27.2"
 trash = "5.2.3"
