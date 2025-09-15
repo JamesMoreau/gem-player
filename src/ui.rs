@@ -658,7 +658,7 @@ fn display_visualizer(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let min_bar_height = 3.0;
 
     let num_bars = display_bands.len() as f32;
-    let total_width = num_bars * bar_width + (num_bars - 1.0) * bar_gap;
+    let total_width = (num_bars * bar_width) + ((num_bars - 1.0) * bar_gap);
 
     let (rect, _response) = ui.allocate_exact_size(vec2(total_width, desired_height), Sense::hover());
 
