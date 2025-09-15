@@ -9,7 +9,7 @@ use std::{
 };
 
 const FFT_SIZE: usize = 1 << 10; // 1024
-pub const CENTER_FREQUENCIES: [f32; 7] = [63.0, 125.0, 250.0, 500.0, 1000.0, 3000.0, 8000.0];
+pub const CENTER_FREQUENCIES: [f32; 6] = [63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0];
 
 pub enum VisualizerCommand {
     Sample(f32),

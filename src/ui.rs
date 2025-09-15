@@ -652,21 +652,23 @@ fn display_visualizer(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     let desired_height = ui.available_height() * 0.6;
-    let desired_width = 91.0; // This value is specific so that each bar is exactly the same width in pixels.
-    let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
-
+    let bar_width = 10.0;
     let bar_gap = 4.0;
     let bar_radius = 1.0;
-    let bar_width = rect.width() / display_bands.len() as f32;
     let min_bar_height = 3.0;
+
+    let num_bars = display_bands.len() as f32;
+    let total_width = num_bars * bar_width + (num_bars - 1.0) * bar_gap;
+
+    let (rect, _response) = ui.allocate_exact_size(vec2(total_width, desired_height), Sense::hover());
 
     let painter = ui.painter();
     for (i, &value) in display_bands.iter().enumerate() {
         let height = (value * rect.height()).max(min_bar_height);
-        let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
+        let x = rect.left() + i as f32 * (bar_width + bar_gap);
         let y = rect.bottom();
 
-        let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
+        let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width, y));
         painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
     }
 }
