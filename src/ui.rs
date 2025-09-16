@@ -1895,8 +1895,21 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
                 ui.add_space(8.0);
-                let version = env!("CARGO_PKG_VERSION");
-                ui.add(unselectable_label(format!("Version: {version}")));
+                ui.horizontal_wrapped(|ui| {
+                    let repo_link = "https://github.com/JamesMoreau/gem-player";
+
+                    let version = env!("CARGO_PKG_VERSION");
+                    ui.add(unselectable_label(format!("Version: {version}")));
+
+                    ui.add(unselectable_label(" / "));
+
+                    let release_link = format!("{}/releases/tag/v{}", repo_link, version);
+                    ui.hyperlink_to("release notes", release_link);
+
+                    ui.add(unselectable_label(" / "));
+
+                    ui.hyperlink_to("source", repo_link);
+                });
                 let description = env!("CARGO_PKG_DESCRIPTION");
                 ui.add(unselectable_label(description));
 
