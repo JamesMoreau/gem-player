@@ -13,13 +13,30 @@ jobs:
   build-macos:
     runs-on: macos-latest
     env:
-      APPLE_NAME: ${{ secrets.APPLE_NAME }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      NOTARIZATION_KEYCHAIN_PROFILE: ${{ secrets.NOTARIZATION_KEYCHAIN_PROFILE }}
+      CERTIFICATE: ${{ secrets.CERTIFICATE }}
+      CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+      CERTIFICATE_NAME: ${{ secrets.CERTIFICATE_NAME }}
+      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-        # ...
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Codesign app bundle
+        run: |
+          # Turn our base64-encoded certificate back to a regular .p12 file
+          echo $CERTIFICATE | base64 --decode -input Certificates.base64 -output Certificates.p12
+
+          # We need to create a new keychain, otherwise using the certificate will prompt
+          # with a UI dialog asking for the certificate password, which we can't
+          # use in a headless CI environment
+          
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
