@@ -17,7 +17,7 @@ RUST_EXE="target/$WIN_TARGET/release/gem-player.exe"   # Rust output
 WIN_EXE="target/$WIN_TARGET/release/$APP_NAME.exe"     # Friendly name
 WIN_ZIP="target/$WIN_TARGET/release/$APP_NAME.zip"
 
-echo "🚀 Building Windows exe..."
+echo "🚀 Building Windows executable..."
 rustup target add $WIN_TARGET >/dev/null 2>&1 || true
 cargo build --release --target $WIN_TARGET
 
