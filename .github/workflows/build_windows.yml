@@ -34,14 +34,13 @@ jobs:
           Copy-Item -Path "target\$env:WIN_TARGET\release\gem_player.exe" `
                     -Destination "target\$env:WIN_TARGET\release\$env:WIN_EXE_NAME" -Force
 
-      - name: Package into ZIP
+      - name: Build MSI
         run: |
-          Remove-Item "target\$env:WIN_TARGET\release\$env:APP_NAME.zip" -ErrorAction Ignore
-          Compress-Archive -Path "target\$env:WIN_TARGET\release\$env:WIN_EXE_NAME*" `
-                           -DestinationPath "target\$env:WIN_TARGET\release\$env:APP_NAME.zip"
+          candle.exe installer.wxs -o installer.wixobj
+          light.exe installer.wixobj -o target/release/GemPlayerInstaller.msi
 
-      - name: Upload artifact
+      - name: Upload MSI
         uses: actions/upload-artifact@v3
         with:
-          name: "${{ env.APP_NAME }}-windows-zip"
-          path: "target/${{ env.WIN_TARGET }}/release/${{ env.APP_NAME }}.zip"
+          name: GemPlayer-windows-msi
+          path: target/release/GemPlayerInstaller.msi
