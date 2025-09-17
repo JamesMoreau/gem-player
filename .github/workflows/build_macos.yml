@@ -22,12 +22,6 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Import Code Signing Certificate
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.APPSTORE_CERTIFICATES_FILE_BASE64 }}
-          p12-password: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
-
       - name: Install cargo-bundle and create-dmg
         run: |
           cargo install cargo-bundle
@@ -35,6 +29,12 @@ jobs:
 
       - name: Build release app bundle
         run: cargo bundle --release
+
+      - name: Import Code Signing Certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPSTORE_CERTIFICATES_FILE_BASE64 }}
+          p12-password: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
 
       - name: Codesign app bundle
         run: |
@@ -51,18 +51,22 @@ jobs:
             "target/release/bundle/osx/$APP_NAME.dmg" \
             "target/release/bundle/osx/$APP_NAME.app"
 
-      # - name: Notarize app
-      #   run: |
-      #     xcrun notarytool submit "target/release/bundle/osx/$APP_NAME.dmg" \
-      #       --issuer "$APPLE_API_ISSUER_ID" \
-      #       --key-id "$APPLE_API_KEY_ID" \
-      #       --key AuthKey.p8 \
-      #       --wait
+      - name: Decode App Store Connect API key
+        run: |
+          echo ${{ secrets.APPLE_API_KEY_FILE_BASE64 }} | base64 --decode > AuthKey.p8
 
-      # - name: Staple notarization
-      #   run: |
-      #     xcrun stapler staple "target/release/bundle/osx/$APP_NAME.app"
-      #     xcrun stapler staple "target/release/bundle/osx/$APP_NAME.dmg"
+      - name: Notarize app
+        run: |
+          xcrun notarytool submit "target/release/bundle/osx/$APP_NAME.dmg" \
+            --issuer "$APPLE_API_ISSUER_ID" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --key AuthKey.p8 \
+            --wait
 
-      # - name: Verify
-      #   run: spctl --assess --type execute --verbose "target/release/bundle/osx/$APP_NAME.app"
+      - name: Staple notarization
+        run: |
+          xcrun stapler staple "target/release/bundle/osx/$APP_NAME.app"
+          xcrun stapler staple "target/release/bundle/osx/$APP_NAME.dmg"
+
+      - name: Verify
+        run: spctl --assess --type execute --verbose "target/release/bundle/osx/$APP_NAME.app"
