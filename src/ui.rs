@@ -129,13 +129,11 @@ pub fn gem_player_ui(gem_player: &mut GemPlayer, ctx: &Context) {
 }
 
 fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
-    let panel_frame = Frame {
-        fill: ctx.style().visuals.window_fill(),
-        corner_radius: 10.0.into(),
-        stroke: ctx.style().visuals.widgets.noninteractive.bg_stroke,
-        outer_margin: 0.5.into(), // so the stroke is within the bounds
-        ..Default::default()
-    };
+    let panel_frame = Frame::new()
+        .fill(ctx.style().visuals.window_fill())
+        .corner_radius(10.0)
+        .stroke(ctx.style().visuals.widgets.noninteractive.bg_stroke)
+        .outer_margin(1); // so the stroke is within the bounds
 
     CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
         let app_rect = ui.max_rect();
@@ -1947,6 +1945,9 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                     ui.hyperlink_to("source", repo_link);
                 });
+
+                ui.add_space(8.0);
+
                 let description = env!("CARGO_PKG_DESCRIPTION");
                 ui.add(unselectable_label(description));
 
