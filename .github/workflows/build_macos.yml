@@ -75,7 +75,7 @@ jobs:
         run: spctl --assess --type execute --verbose "target/release/bundle/osx/$APP_NAME.app"
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "$APP_NAME-dmg"
           path: "target/release/bundle/osx/$APP_NAME.dmg"

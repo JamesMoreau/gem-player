@@ -40,7 +40,7 @@ jobs:
           light.exe installer.wixobj -o target/release/GemPlayerInstaller.msi
 
       - name: Upload MSI
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: GemPlayer-windows-msi
           path: target/release/GemPlayerInstaller.msi
