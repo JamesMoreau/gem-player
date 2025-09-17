@@ -228,9 +228,9 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) 
                 minimize_button(ui);
                 fullscreen_button(ui);
             } else {
-                minimize_button(ui);
-                fullscreen_button(ui);
                 close_button(ui);
+                fullscreen_button(ui);
+                minimize_button(ui);
             }
         },
     );
