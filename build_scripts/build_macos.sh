@@ -2,7 +2,7 @@
 
 set -e  # Exit on any error
 
-# Load environment variables from .env file
+# Load environment variables
 source .env
 
 # Go to root directory
@@ -19,13 +19,13 @@ echo "🚀 Building macOS application..."
 cargo bundle --release
 
 echo "🔏 Signing the app..."
-codesign --force --deep --options runtime --sign "Developer ID Application: $NAME ($TEAM_ID)" "$BUNDLE_PATH"
+codesign --force --deep --options runtime --sign "Developer ID Application: $APPLE_NAME ($APPLE_TEAM_ID)" "$BUNDLE_PATH"
 
 echo "📦 Creating a DMG..."
 create-dmg \
   --volname "$APP_NAME Installer" \
   --app-drop-link 0 0 \
-  --codesign "Developer ID Application: $NAME ($TEAM_ID)" \
+  --codesign "Developer ID Application: $APPLE_NAME ($APPLE_TEAM_ID)" \
   "$DMG_PATH" \
   "$BUNDLE_PATH"
 
