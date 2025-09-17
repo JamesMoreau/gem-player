@@ -42,7 +42,6 @@ mod visualizer;
 /*
 TODO:
 * Make songs outside of library playable. Add "Open with" from filesystem functionality.
-* Sort functions.
 */
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
@@ -292,6 +291,32 @@ fn poll_library_watcher_messages(gem_player: &mut GemPlayer) {
     }
 }
 
+pub fn handle_dropped_file(dropped_file: &DroppedFile, gem_player: &mut GemPlayer) -> io::Result<()> {
+    let Some(path) = dropped_file.path.as_ref() else {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no path"));
+    };
+
+    let Some(library_path) = gem_player.library_directory.as_ref() else {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "No library directory set"));
+    };
+
+    let Some(file_name) = path.file_name() else {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no file name"));
+    };
+
+    if !is_relevant_media_file(path) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Dropped file is not a relevant media file",
+        ));
+    }
+
+    let destination = library_path.join(file_name);
+    fs::copy(path, destination)?;
+
+    Ok(())
+}
+
 fn poll_folder_picker(gem_player: &mut GemPlayer) {
     let Some(receiver) = &gem_player.folder_picker_receiver else {
         return;
@@ -464,24 +489,17 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
     });
 }
 
-pub fn format_duration_to_mmss(duration: std::time::Duration) -> String {
-    let total_seconds = duration.as_secs();
-    let seconds_per_minute = 60;
-    let minutes = total_seconds / seconds_per_minute;
-    let seconds = total_seconds % seconds_per_minute;
+pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
+    let visuals = match preference {
+        ThemePreference::Dark => Visuals::dark(),
+        ThemePreference::Light => Visuals::light(),
+        ThemePreference::System => match dark_light::detect() {
+            Ok(Mode::Light) => Visuals::light(),
+            _ => Visuals::dark(),
+        },
+    };
 
-    format!("{}:{:02}", minutes, seconds)
-}
-
-pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
-    let total_seconds = duration.as_secs();
-    let seconds_per_minute = 60;
-    let minutes_per_hour = 60;
-    let hours = total_seconds / (minutes_per_hour * seconds_per_minute);
-    let minutes = (total_seconds / seconds_per_minute) % minutes_per_hour;
-    let seconds = total_seconds % seconds_per_minute;
-
-    format!("{}:{:02}:{:02}", hours, minutes, seconds)
+    ctx.set_visuals(visuals);
 }
 
 fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
@@ -552,41 +570,23 @@ pub fn load_system_fonts(fonts: &mut FontDefinitions) {
     }
 }
 
-pub fn handle_dropped_file(dropped_file: &DroppedFile, gem_player: &mut GemPlayer) -> io::Result<()> {
-    let Some(path) = dropped_file.path.as_ref() else {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no path"));
-    };
+pub fn format_duration_to_mmss(duration: std::time::Duration) -> String {
+    let total_seconds = duration.as_secs();
+    let seconds_per_minute = 60;
+    let minutes = total_seconds / seconds_per_minute;
+    let seconds = total_seconds % seconds_per_minute;
 
-    let Some(library_path) = gem_player.library_directory.as_ref() else {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "No library directory set"));
-    };
-
-    let Some(file_name) = path.file_name() else {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no file name"));
-    };
-
-    if !is_relevant_media_file(path) {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Dropped file is not a relevant media file",
-        ));
-    }
-
-    let destination = library_path.join(file_name);
-    fs::copy(path, destination)?;
-
-    Ok(())
+    format!("{}:{:02}", minutes, seconds)
 }
 
-pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
-    let visuals = match preference {
-        ThemePreference::Dark => Visuals::dark(),
-        ThemePreference::Light => Visuals::light(),
-        ThemePreference::System => match dark_light::detect() {
-            Ok(Mode::Light) => Visuals::light(),
-            _ => Visuals::dark(),
-        },
-    };
+pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
+    let total_seconds = duration.as_secs();
+    let seconds_per_minute = 60;
+    let minutes_per_hour = 60;
+    let hours = total_seconds / (minutes_per_hour * seconds_per_minute);
+    let minutes = (total_seconds / seconds_per_minute) % minutes_per_hour;
+    let seconds = total_seconds % seconds_per_minute;
 
-    ctx.set_visuals(visuals);
+    format!("{}:{:02}:{:02}", hours, minutes, seconds)
 }
+

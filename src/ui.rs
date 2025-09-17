@@ -287,6 +287,43 @@ fn drop_files_area_ui(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
     drop_area_is_active
 }
 
+fn unselectable_label(text: impl Into<WidgetText>) -> Label {
+    Label::new(text).selectable(false)
+}
+
+fn table_label(text: impl Into<String>, color: Option<Color32>) -> Label {
+    let mut rich = RichText::new(text.into());
+    if let Some(c) = color {
+        rich = rich.color(c);
+    }
+    Label::new(rich).selectable(false).truncate()
+}
+
+/// Elide a path string to something like `/Users/user1/…/Music`
+/// Keeps both start and end parts if the path is too long.
+fn elide_path(path: &Path, max_len: usize) -> String {
+    let full = path.to_string_lossy();
+    let full_len = full.len();
+
+    if full_len <= max_len {
+        return full.into_owned();
+    }
+
+    // Split budget roughly in half: keep some start, some end
+    let keep_each_side = (max_len.saturating_sub(1)) / 2; // subtract 1 for the ellipsis
+
+    let start = &full[..keep_each_side];
+    let end = &full[full_len - keep_each_side..];
+
+    format!("{start}…{end}")
+}
+
+fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
+    let duration = calculate_total_duration(tracks);
+    let duration_string = format_duration_to_hhmmss(duration);
+    format!("{} tracks / {}", tracks.len(), duration_string)
+}
+
 fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
     let button_width = 20.0;
@@ -2022,12 +2059,6 @@ fn navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
     });
 }
 
-fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
-    let duration = calculate_total_duration(tracks);
-    let duration_string = format_duration_to_hhmmss(duration);
-    format!("{} tracks / {}", tracks.len(), duration_string)
-}
-
 fn sort_and_order_by_ui(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
     let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
 
@@ -2074,33 +2105,3 @@ fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
     changed
 }
 
-fn unselectable_label(text: impl Into<WidgetText>) -> Label {
-    Label::new(text).selectable(false)
-}
-
-fn table_label(text: impl Into<String>, color: Option<Color32>) -> Label {
-    let mut rich = RichText::new(text.into());
-    if let Some(c) = color {
-        rich = rich.color(c);
-    }
-    Label::new(rich).selectable(false).truncate()
-}
-
-/// Elide a path string to something like `/Users/user1/…/Music`
-/// Keeps both start and end parts if the path is too long.
-fn elide_path(path: &Path, max_len: usize) -> String {
-    let full = path.to_string_lossy();
-    let full_len = full.len();
-
-    if full_len <= max_len {
-        return full.into_owned();
-    }
-
-    // Split budget roughly in half: keep some start, some end
-    let keep_each_side = (max_len.saturating_sub(1)) / 2; // subtract 1 for the ellipsis
-
-    let start = &full[..keep_each_side];
-    let end = &full[full_len - keep_each_side..];
-
-    format!("{start}…{end}")
-}
