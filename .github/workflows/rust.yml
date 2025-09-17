@@ -1,0 +1,47 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    env:
+      APP_NAME: "Gem Player"
+      WIN_TARGET: "x86_64-pc-windows-gnu"
+      WIN_EXE_NAME: "Gem Player.exe"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Windows Rust target
+        run: rustup target add $env:WIN_TARGET
+
+      - name: Build release binary
+        run: cargo build --release --target $env:WIN_TARGET
+
+      - name: Rename EXE to friendly name
+        run: |
+          Copy-Item -Path "target\$env:WIN_TARGET\release\gem_player.exe" `
+                    -Destination "target\$env:WIN_TARGET\release\$env:WIN_EXE_NAME" -Force
+
+      - name: Package into ZIP
+        run: |
+          Remove-Item "target\$env:WIN_TARGET\release\$env:APP_NAME.zip" -ErrorAction Ignore
+          Compress-Archive -Path "target\$env:WIN_TARGET\release\$env:WIN_EXE_NAME*" `
+                           -DestinationPath "target\$env:WIN_TARGET\release\$env:APP_NAME.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: "${{ env.APP_NAME }}-windows-zip"
+          path: "target/${{ env.WIN_TARGET }}/release/${{ env.APP_NAME }}.zip"
