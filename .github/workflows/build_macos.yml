@@ -22,7 +22,6 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      #todo move this.
       - name: Import Code Signing Certificate
         uses: apple-actions/import-codesign-certs@v3
         with:
@@ -40,7 +39,7 @@ jobs:
       - name: Codesign app bundle
         run: |
           codesign --force --deep --options runtime \
-            --sign "$APPLE_SIGNING_IDENTITY" \
+            --sign "$APPLE_SIGNING_ID" \
             "target/release/bundle/osx/$APP_NAME.app"
             
       - name: Create DMG
@@ -48,7 +47,7 @@ jobs:
           create-dmg \
             --volname "$APP_NAME Installer" \
             --app-drop-link 0 0 \
-            --codesign "$APPLE_SIGNING_IDENTITY" \
+            --codesign "$APPLE_SIGNING_ID" \
             "target/release/bundle/osx/$APP_NAME.dmg" \
             "target/release/bundle/osx/$APP_NAME.app"
 
