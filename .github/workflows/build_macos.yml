@@ -1,10 +1,10 @@
-name: Build MacOS
+name: Build macOS
 
 on:
-  workflow_dispatch:   # allows manual trigger
+  workflow_dispatch:
   push:
     tags:
-      - 'v*'          # optional: run on version tags
+      - 'v*'
 
 env:
   CARGO_TERM_COLOR: always
@@ -13,30 +13,51 @@ jobs:
   build-macos:
     runs-on: macos-latest
     env:
-      CERTIFICATE: ${{ secrets.CERTIFICATE }}
-      CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-      CERTIFICATE_NAME: ${{ secrets.CERTIFICATE_NAME }}
-      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      APP_NAME: "Gem Player"
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+      APPLE_SIGNING_ID: ${{ secrets.APPLE_SIGNING_ID }}
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build release binary
-        run: cargo build --release
+      - name: Build release app bundle
+        run: cargo bundle --release
 
       - name: Codesign app bundle
         run: |
-          # Turn our base64-encoded certificate back to a regular .p12 file
-          echo $CERTIFICATE | base64 --decode -input Certificates.base64 -output Certificates.p12
+          codesign --force --deep --options runtime \
+            --sign "$APPLE_SIGNING_IDENTITY" \
+            "target/release/bundle/osx/$APP_NAME.app"
+            
+      - name: Create DMG
+        run: |
+          create-dmg \
+            --volname "$APP_NAME Installer" \
+            --app-drop-link 0 0 \
+            --codesign "$APPLE_SIGNING_IDENTITY" \
+            "target/release/bundle/osx/$APP_NAME.dmg" \
+            "target/release/bundle/osx/$APP_NAME.app"
 
-          # We need to create a new keychain, otherwise using the certificate will prompt
-          # with a UI dialog asking for the certificate password, which we can't
-          # use in a headless CI environment
-          
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+      - name: Write Apple API key file
+        run: echo "$APPLE_API_KEY" > AuthKey.p8
+
+      - name: Notarize app
+        run: |
+          xcrun notarytool submit "target/release/bundle/osx/$APP_NAME.dmg" \
+            --key AuthKey.p8 \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER_ID" \
+            --wait
+
+      - name: Staple notarization
+        run: |
+          xcrun stapler staple "target/release/bundle/osx/$APP_NAME.app"
+          xcrun stapler staple "target/release/bundle/osx/$APP_NAME.dmg"
+
+      - name: Verify
+        run: spctl --assess --type execute --verbose "target/release/bundle/osx/$APP_NAME.app"
