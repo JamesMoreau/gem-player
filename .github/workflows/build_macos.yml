@@ -25,6 +25,9 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install cargo bundle
+        run: cargo install cargo-bundle
+
       - name: Build release app bundle
         run: cargo bundle --release
 
