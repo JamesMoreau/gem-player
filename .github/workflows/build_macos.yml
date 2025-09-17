@@ -1,0 +1,25 @@
+name: Build MacOS
+
+on:
+  workflow_dispatch:   # allows manual trigger
+  push:
+    tags:
+      - 'v*'          # optional: run on version tags
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    env:
+      APPLE_NAME: ${{ secrets.APPLE_NAME }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      NOTARIZATION_KEYCHAIN_PROFILE: ${{ secrets.NOTARIZATION_KEYCHAIN_PROFILE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+        # ...
