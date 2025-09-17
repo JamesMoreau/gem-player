@@ -53,7 +53,7 @@ jobs:
 
       - name: Decode App Store Connect API key
         run: |
-          echo ${{ secrets.APPLE_API_KEY_FILE_BASE64 }} | base64 --decode > AuthKey.p8
+          printf "%s" "${{ secrets.APPLE_API_KEY_FILE_BASE64 }}" | base64 --decode > AuthKey.p8
 
       - name: Notarize app
         run: |
