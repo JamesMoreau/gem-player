@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="Gem Player" Language="1033" Version="0.1.0" Manufacturer="James Moreau" UpgradeCode="da0fc9f3-8a5f-4624-8cff-7fb3af748e13">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes"/>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Gem Player"/>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="fa4f8608-3de2-4b21-940f-a00fe0b25b02">
+        <File Source="target\x86_64-pc-windows-gnu\release\Gem Player.exe" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="MainFeature" Title="Gem Player" Level="1">
+      <ComponentRef Id="MainExecutable"/>
+    </Feature>
+  </Product>
+</Wix>
