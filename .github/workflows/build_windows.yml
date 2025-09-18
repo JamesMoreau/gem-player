@@ -29,6 +29,9 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target $env:WIN_TARGET
 
+      - name: List release folder
+        run: dir "target\$env:WIN_TARGET\release"
+
       - name: Rename EXE to friendly name
         run: |
           $targetDir = "target/$env:WIN_TARGET/release"

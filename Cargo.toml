@@ -30,7 +30,7 @@ rodio = { version = "0.21.1", features = ["symphonia-all"] }
 ron = "0.11.0"
 rustfft = "6.4.0"
 sanitize-filename = "0.6.0"
-serde = "1.0.221"
+serde = "1.0.225"
 strum = "0.27.2"
 strum_macros = "0.27.2"
 trash = "5.2.3"
