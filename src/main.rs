@@ -16,7 +16,10 @@ use player::{
 };
 use playlist::{Playlist, PlaylistRetrieval};
 use rfd::FileDialog;
-use rodio::{OutputStreamBuilder, Sink};
+use rodio::{
+    cpal::{self, default_host, traits::HostTrait},
+    OutputStreamBuilder, Sink,
+};
 use std::{
     collections::HashMap,
     fs, io,
@@ -105,21 +108,24 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     load_system_fonts(&mut fonts);
     cc.egui_ctx.set_fonts(fonts);
 
-    // let mut stream_builder_result = OutputStreamBuilder::open_default_stream();
-    // match stream_builder_result {
-    //     Ok(stream_handle) => {
-    //         let sink = Sink::connect_new(stream_handle.mixer());
-    //         sink.pause();
-    //     },
-    //     Err(e) => {
-    //         todo!();
-    //     },
-    // }
+    let mut device = None;
+    let mut sink = None;
+    let mut stream_handle = None;
 
-    let mut stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
-    stream_handle.log_on_drop(false);
-    let sink = Sink::connect_new(stream_handle.mixer());
-    sink.pause();
+    let host = default_host();
+    if let Some(d) = host.default_output_device() {
+        let builder = OutputStreamBuilder::from_device(d.clone()).expect("Failed to initialize audio output stream builder");
+        let stream = builder
+            .open_stream_or_fallback()
+            .expect("Failed to open output stream for the default device");
+
+        let s = Sink::connect_new(stream.mixer());
+        s.pause();
+
+        device = Some(d);
+        sink = Some(s);
+        stream_handle = Some(stream);
+    }
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
 
@@ -159,7 +165,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     apply_theme(&cc.egui_ctx, theme_preference);
 
-    sink.set_volume(initial_volume);
+    if let Some(s) = &sink {
+        s.set_volume(initial_volume);
+    }
 
     GemPlayer {
         ui: UIState {
@@ -215,8 +223,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             volume_before_mute: None,
             paused_before_scrubbing: None,
 
-            stream_handle,
+            stream: stream_handle,
             sink,
+            device,
             playing_artwork: None,
             visualizer: VisualizerState {
                 command_sender: visualizer_command_sender,
@@ -599,4 +608,3 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
 
     format!("{}:{:02}:{:02}", hours, minutes, seconds)
 }
-

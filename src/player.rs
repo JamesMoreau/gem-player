@@ -5,7 +5,7 @@ use crate::{
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
-use rodio::{Decoder, OutputStream, Sink, Source};
+use rodio::{Decoder, Device, OutputStream, Sink, Source};
 use std::{
     fs,
     io::{self, ErrorKind, Seek},
@@ -24,8 +24,9 @@ pub struct Player {
     volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
-    stream_handle: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink,                  // Controls playback (play, pause, stop, etc.)
+    device: Option<Device>,
+    stream: Option<OutputStream>, // Holds the OutputStream to keep it alive
+    sink: Option<Sink>,           // Controls playback (play, pause, stop, etc.)
 
     playing_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
