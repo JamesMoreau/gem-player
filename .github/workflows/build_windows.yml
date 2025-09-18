@@ -29,9 +29,6 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target $env:WIN_TARGET
 
-      - name: List release folder
-        run: dir "target\$env:WIN_TARGET\release"
-
       - name: Rename EXE to friendly name
         run: |
           $targetDir = "target/$env:WIN_TARGET/release"
@@ -45,9 +42,9 @@ jobs:
       - name: Build MSI
         run: |
           # Compile WiX installer
-          candle.exe installer.wxs -o installer.wixobj
+          candle.exe installer/installer.wxs -o target/release/installer.wixobj
           # Link MSI
-          light.exe installer.wixobj -o target/release/GemPlayerInstaller.msi
+          light.exe target/release/installer.wixobj -o target/release/GemPlayerInstaller.msi
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4
