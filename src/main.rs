@@ -105,6 +105,17 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     load_system_fonts(&mut fonts);
     cc.egui_ctx.set_fonts(fonts);
 
+    // let mut stream_builder_result = OutputStreamBuilder::open_default_stream();
+    // match stream_builder_result {
+    //     Ok(stream_handle) => {
+    //         let sink = Sink::connect_new(stream_handle.mixer());
+    //         sink.pause();
+    //     },
+    //     Err(e) => {
+    //         todo!();
+    //     },
+    // }
+
     let mut stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
     stream_handle.log_on_drop(false);
     let sink = Sink::connect_new(stream_handle.mixer());

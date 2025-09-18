@@ -13,15 +13,16 @@ use eframe::egui::{
     containers::{self},
     include_image,
     os::OperatingSystem,
-    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin,
-    PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat,
-    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
+    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, Direction, FontId, Frame, Id, Image, Label, Layout,
+    Margin, PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
+    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
+use rodio::{cpal::traits::HostTrait, DeviceTrait};
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -1885,6 +1886,25 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(32.0));
 
+                ui.add(unselectable_label(RichText::new("Audio").heading()));
+
+                ui.add_space(8.0);
+
+                ComboBox::from_label("Output device")
+                    // .selected_text(format!("{:?}", selected))
+                    .show_ui(ui, |ui| {
+                        let host = rodio::cpal::default_host();
+                        if let Ok(output_devices) = host.output_devices() {
+                            for device in output_devices {
+                                if let Ok(name) = device.name() {
+                                    ui.selectable_value(&mut 1, 1, name);
+                                }
+                            }
+                        }
+                    });
+
+                ui.add(Separator::default().spacing(32.0));
+
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
 
@@ -2105,4 +2125,3 @@ fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
 
     changed
 }
-
