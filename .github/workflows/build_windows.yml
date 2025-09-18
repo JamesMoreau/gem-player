@@ -31,9 +31,10 @@ jobs:
 
       - name: Rename EXE to friendly name
         run: |
-          $source = "target/$env:WIN_TARGET/release/gem_player.exe"
-          $dest   = "target/$env:WIN_TARGET/release/$env:WIN_EXE_NAME"
-          Copy-Item -Path $source -Destination $dest -Force
+          $targetDir = "target/$env:WIN_TARGET/release"
+          $exeFile = Get-ChildItem $targetDir -Filter "*.exe" | Where-Object { $_.Name -like "gem_player*.exe" } | Select-Object -First 1
+          $dest = Join-Path $targetDir $env:WIN_EXE_NAME
+          Copy-Item -Path $exeFile.FullName -Destination $dest -Force
 
       - name: Install WiX Toolset
         run: choco install wixtoolset -y
