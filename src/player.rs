@@ -13,7 +13,7 @@ use std::{
 };
 
 #[fully_pub]
-pub struct Player {
+struct Player {
     history: Vec<Track>, // In chronological order. The most recently played track is at the end.
     playing: Option<Track>,
     queue: Vec<Track>, // In the order the tracks will be played.
@@ -24,16 +24,21 @@ pub struct Player {
     volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
-    device: Option<Device>,
-    stream: Option<OutputStream>, // Holds the OutputStream to keep it alive
-    sink: Option<Sink>,           // Controls playback (play, pause, stop, etc.)
+    backend: Option<AudioBackend>,
 
     playing_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
 }
 
 #[fully_pub]
-pub struct VisualizerState {
+struct AudioBackend {
+    device: Device,
+    stream: OutputStream, // Holds the OutputStream to keep it alive
+    sink: Sink,           // Controls playback (play, pause, stop, etc.)
+}
+
+#[fully_pub]
+struct VisualizerState {
     command_sender: Sender<VisualizerCommand>,
     bands_receiver: Receiver<Vec<f32>>,
     display_bands: Vec<f32>,
@@ -46,11 +51,11 @@ pub fn clear_the_queue(player: &mut Player) {
     player.repeat = false;
 }
 
-pub fn play_or_pause(player: &mut Player) {
-    if player.sink.is_paused() {
-        player.sink.play()
+pub fn play_or_pause(sink: &mut Sink) {
+    if sink.is_paused() {
+        sink.play()
     } else {
-        player.sink.pause()
+        sink.pause()
     }
 }
 
@@ -100,7 +105,11 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 }
 
 pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
-    player.sink.stop(); // Stop the current track if any.
+    let Some(backend) = &player.backend else {
+        return Err(io::Error::new(io::ErrorKind::Other, "No audio backend available"));
+    };
+
+    backend.sink.stop(); // Stop the current track if any.
 
     let mut file = fs::File::open(&track.path)?;
 
@@ -122,8 +131,8 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     }
 
     let visualizer_source = visualizer_source(decoder, player.visualizer.command_sender.clone());
-    player.sink.append(visualizer_source);
-    player.sink.play();
+    backend.sink.append(visualizer_source);
+    backend.sink.play();
 
     Ok(())
 }
@@ -164,26 +173,30 @@ pub fn shuffle(queue: &mut [Track]) {
 }
 
 pub fn mute_or_unmute(player: &mut Player) {
-    let mut volume = player.sink.volume();
-
     player.muted = !player.muted;
 
+    let mut target_volume = 0.0;
+
     if player.muted {
-        player.volume_before_mute = Some(volume);
-        volume = 0.0;
+        if let Some(backend) = &player.backend {
+            player.volume_before_mute = Some(backend.sink.volume());
+        }
+        target_volume = 0.0;
     } else if let Some(v) = player.volume_before_mute {
-        volume = v;
+        target_volume = v;
     }
 
-    player.sink.set_volume(volume);
+    if let Some(backend) = &player.backend {
+        backend.sink.set_volume(target_volume);
+    }
 }
 
-pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
-    let current_volume = player.sink.volume();
+pub fn adjust_volume_by_percentage(sink: &mut Sink, percentage: f32) {
+    let current_volume = sink.volume();
 
     let min_volume = 0.0;
     let max_volume = 1.0;
 
     let new_volume = (current_volume + percentage).clamp(min_volume, max_volume);
-    player.sink.set_volume(new_volume);
+    sink.set_volume(new_volume);
 }

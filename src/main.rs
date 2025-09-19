@@ -12,12 +12,13 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use player::{
-    adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player, VisualizerState,
+    adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, AudioBackend, Player,
+    VisualizerState,
 };
 use playlist::{Playlist, PlaylistRetrieval};
 use rfd::FileDialog;
 use rodio::{
-    cpal::{self, default_host, traits::HostTrait},
+    cpal::{default_host, traits::HostTrait},
     OutputStreamBuilder, Sink,
 };
 use std::{
@@ -42,16 +43,12 @@ mod track;
 mod ui;
 mod visualizer;
 
-/*
-TODO:
-*/
-
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 pub const THEME_STORAGE_KEY: &str = "theme";
 pub const VOLUME_STORAGE_KEY: &str = "volume";
 
 #[fully_pub]
-pub struct GemPlayer {
+struct GemPlayer {
     ui: UIState,
 
     library: Vec<Track>,
@@ -108,23 +105,19 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     load_system_fonts(&mut fonts);
     cc.egui_ctx.set_fonts(fonts);
 
-    let mut device = None;
-    let mut sink = None;
-    let mut stream_handle = None;
+    let mut backend = None;
 
     let host = default_host();
-    if let Some(d) = host.default_output_device() {
-        let builder = OutputStreamBuilder::from_device(d.clone()).expect("Failed to initialize audio output stream builder");
+    if let Some(device) = host.default_output_device() {
+        let builder = OutputStreamBuilder::from_device(device.clone()).expect("Failed to initialize audio output stream builder");
         let stream = builder
             .open_stream_or_fallback()
             .expect("Failed to open output stream for the default device");
 
-        let s = Sink::connect_new(stream.mixer());
-        s.pause();
+        let sink = Sink::connect_new(stream.mixer());
+        sink.pause();
 
-        device = Some(d);
-        sink = Some(s);
-        stream_handle = Some(stream);
+        backend = Some(AudioBackend { device, sink, stream });
     }
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
@@ -165,8 +158,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     apply_theme(&cc.egui_ctx, theme_preference);
 
-    if let Some(s) = &sink {
-        s.set_volume(initial_volume);
+    if let Some(b) = &backend {
+        b.sink.set_volume(initial_volume);
     }
 
     GemPlayer {
@@ -223,9 +216,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             volume_before_mute: None,
             paused_before_scrubbing: None,
 
-            stream: stream_handle,
-            sink,
-            device,
+            backend,
             playing_artwork: None,
             visualizer: VisualizerState {
                 command_sender: visualizer_command_sender,
@@ -254,8 +245,10 @@ impl App for GemPlayer {
         let theme_ron_string = ron::to_string(&self.ui.theme_preference).unwrap();
         storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
 
-        let volume_ron_string = ron::to_string(&self.player.sink.volume()).unwrap();
-        storage.set_string(VOLUME_STORAGE_KEY, volume_ron_string);
+        if let Some(backend) = &self.player.backend {
+            let volume_ron_string = ron::to_string(&backend.sink.volume()).unwrap();
+            storage.set_string(VOLUME_STORAGE_KEY, volume_ron_string);
+        }
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
@@ -276,7 +269,9 @@ impl App for GemPlayer {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        self.player.sink.stop();
+        if let Some(backend) = &self.player.backend {
+            backend.sink.stop();
+        }
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
     }
@@ -384,7 +379,11 @@ fn spawn_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>> {
 }
 
 fn check_for_next_track(gem_player: &mut GemPlayer) {
-    if !gem_player.player.sink.empty() {
+    let Some(backend) = &gem_player.player.backend else {
+        return;
+    };
+
+    if !backend.sink.empty() {
         return; // If a track is still playing, do nothing
     }
 
@@ -407,10 +406,14 @@ fn maybe_play_next(gem_player: &mut GemPlayer) {
 // Otherwise, we seek to the beginning.
 // This is what actually gets called by the UI and key command.
 pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
-    let playback_position = gem_player.player.sink.get_pos().as_secs_f32();
     let rewind_threshold = 5.0;
+    let mut under_threshold = false;
 
-    let under_threshold = playback_position < rewind_threshold;
+    if let Some(backend) = &gem_player.player.backend {
+        let playback_position = backend.sink.get_pos().as_secs_f32();
+        under_threshold = playback_position < rewind_threshold;
+    }
+
     let previous_track_exists = !gem_player.player.history.is_empty();
 
     let can_go_previous = under_threshold && previous_track_exists;
@@ -419,11 +422,11 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
             error!("{}", e);
             gem_player.ui.toasts.error("Error playing the previous track");
         }
-    } else {
-        if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
+    } else if let Some(backend) = &gem_player.player.backend {
+        if let Err(e) = backend.sink.try_seek(Duration::ZERO) {
             error!("Error rewinding track: {:?}", e);
         }
-        gem_player.player.sink.play();
+        backend.sink.play();
     }
 }
 
@@ -495,11 +498,23 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
                 info!("Key pressed: {}", description);
 
                 match key {
-                    Key::Space => play_or_pause(&mut gem_player.player),
+                    Key::Space => {
+                        if let Some(backend) = &mut gem_player.player.backend {
+                            play_or_pause(&mut backend.sink);
+                        }
+                    }
                     Key::ArrowLeft => maybe_play_previous(gem_player),
                     Key::ArrowRight => maybe_play_next(gem_player),
-                    Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
-                    Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
+                    Key::ArrowUp => {
+                        if let Some(backend) = &mut gem_player.player.backend {
+                            adjust_volume_by_percentage(&mut backend.sink, 0.1);
+                        }
+                    }
+                    Key::ArrowDown => {
+                        if let Some(backend) = &mut gem_player.player.backend {
+                            adjust_volume_by_percentage(&mut backend.sink, -0.1);
+                        }
+                    }
                     Key::M => mute_or_unmute(&mut gem_player.player),
                     _ => {}
                 }

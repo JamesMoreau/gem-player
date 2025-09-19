@@ -39,7 +39,7 @@ pub enum View {
 }
 
 #[fully_pub]
-pub struct UIState {
+struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
     marquee: MarqueeState,
@@ -59,7 +59,7 @@ const MARQUEE_SPEED: f32 = 5.0; // chars per second
 const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 
 #[fully_pub]
-pub struct MarqueeState {
+struct MarqueeState {
     track_key: Option<PathBuf>, // We need to know when the track changes to reset.
     position: f32,
     pause_timer: Duration,
@@ -358,7 +358,9 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let volume_icon = match gem_player.player.sink.volume() {
+    let mut volume = gem_player.player.backend.as_ref().map(|b| b.sink.volume()).unwrap_or(0.0);
+
+    let volume_icon = match volume {
         0.0 => icons::ICON_VOLUME_OFF,
         v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
         _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
@@ -375,14 +377,16 @@ fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .align(RectAlign::RIGHT)
         .gap(4.0)
         .show(|ui| {
-            let mut volume = gem_player.player.sink.volume();
             let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
             let changed = ui.add(volume_slider).changed();
             if changed {
                 gem_player.player.muted = false;
-                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
+
+                if let Some(backend) = &gem_player.player.backend {
+                    backend.sink.set_volume(volume);
+                }
             }
-            gem_player.player.sink.set_volume(volume);
 
             if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
                 popup_is_hovered = true;
@@ -416,7 +420,7 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             maybe_play_previous(gem_player)
         }
 
-        let sink_is_paused = gem_player.player.sink.is_paused();
+        let sink_is_paused = gem_player.player.backend.as_ref().is_some_and(|b| b.sink.is_paused());
         let play_pause_icon = if sink_is_paused {
             icons::ICON_PLAY_ARROW
         } else {
@@ -429,7 +433,9 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .on_hover_text(tooltip)
             .on_disabled_hover_text("No current track");
         if response.clicked() {
-            play_or_pause(&mut gem_player.player);
+            if let Some(backend) = &mut gem_player.player.backend {
+                play_or_pause(&mut backend.sink);
+            }
         }
 
         let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
@@ -498,7 +504,7 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                 let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
                 if let Some(playing_track) = &gem_player.player.playing {
-                    position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
+                    position_as_secs = gem_player.player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
                     track_duration_as_secs = playing_track.duration.as_secs_f32();
                 }
 
@@ -512,21 +518,25 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                                 .step_by(1.0); // Step by 1 second.
                             let response = ui.add(playback_progress_slider);
 
+                            let Some(backend) = &gem_player.player.backend else {
+                                return;
+                            };
+
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
-                                gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
-                                gem_player.player.sink.pause(); // Pause playback during scrubbing
+                                gem_player.player.paused_before_scrubbing = Some(backend.sink.is_paused());
+                                backend.sink.pause(); // Pause playback during scrubbing
                             }
 
                             if response.drag_stopped() {
                                 let new_position = Duration::from_secs_f32(position_as_secs);
                                 info!("Seeking to {}", format_duration_to_mmss(new_position));
-                                if let Err(e) = gem_player.player.sink.try_seek(new_position) {
+                                if let Err(e) = backend.sink.try_seek(new_position) {
                                     error!("Error seeking to new position: {:?}", e);
                                 }
 
                                 // Resume playback if the player was not paused before scrubbing
                                 if gem_player.player.paused_before_scrubbing == Some(false) {
-                                    gem_player.player.sink.play();
+                                    backend.sink.play();
                                 }
 
                                 gem_player.player.paused_before_scrubbing = None;
@@ -1891,13 +1901,31 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
 
                 ComboBox::from_label("Output device")
-                    // .selected_text(format!("{:?}", selected))
+                    .selected_text(
+                        gem_player
+                            .player
+                            .backend
+                            .as_ref()
+                            .and_then(|b| b.device.name().ok())
+                            .unwrap_or_else(|| "No device".to_string()),
+                    )
                     .show_ui(ui, |ui| {
                         let host = rodio::cpal::default_host();
                         if let Ok(output_devices) = host.output_devices() {
                             for device in output_devices {
                                 if let Ok(name) = device.name() {
-                                    ui.selectable_value(&mut 1, 1, name);
+                                    let mut is_selected = gem_player
+                                        .player
+                                        .backend
+                                        .as_ref()
+                                        .is_some_and(|b| b.device.name().ok() == Some(name.clone()));
+
+                                    let response = ui.selectable_value(&mut is_selected, true, name.clone());
+
+                                    if response.clicked() {
+                                        // Switch to this device
+                                        todo!();
+                                    }
                                 }
                             }
                         }
