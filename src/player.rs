@@ -5,7 +5,7 @@ use crate::{
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
-use rodio::{Decoder, Device, OutputStream, Sink, Source};
+use rodio::{Decoder, Device, OutputStream, OutputStreamBuilder, Sink, Source};
 use std::{
     fs,
     io::{self, ErrorKind, Seek},
@@ -42,6 +42,29 @@ struct VisualizerState {
     command_sender: Sender<VisualizerCommand>,
     bands_receiver: Receiver<Vec<f32>>,
     display_bands: Vec<f32>,
+}
+
+pub fn build_audio_backend_from_device(device: Device) -> Option<AudioBackend> {
+    let builder = OutputStreamBuilder::from_device(device.clone())
+        .map_err(|e| {
+            error!("Failed to initialize audio output stream builder: {e}");
+            e
+        })
+        .ok()?;
+
+    let stream = builder
+        .open_stream_or_fallback()
+        .map_err(|e| {
+            error!("Failed to open output stream: {e}");
+            e
+        })
+        .ok()?;
+
+    let sink = Sink::connect_new(stream.mixer());
+
+    sink.pause();
+
+    Some(AudioBackend { device, sink, stream })
 }
 
 pub fn clear_the_queue(player: &mut Player) {

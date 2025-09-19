@@ -2,7 +2,8 @@ use crate::{
     apply_theme, format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous,
     play_library, play_playlist,
     player::{
-        clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
+        build_audio_backend_from_device, clear_the_queue, enqueue, enqueue_next, load_and_play, move_to_position, mute_or_unmute,
+        play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
     spawn_folder_picker,
@@ -1923,8 +1924,43 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let response = ui.selectable_value(&mut is_selected, true, name.clone());
 
                                     if response.clicked() {
-                                        // Switch to this device
-                                        todo!();
+                                        // In order to make the transition smooth, we need to reload the previous playback state onto the new backend.
+
+                                        let maybe_playing_track = gem_player.player.playing.clone();
+
+                                        let (was_paused, previous_volume, previous_playback_position) = gem_player
+                                            .player
+                                            .backend
+                                            .as_ref()
+                                            .map(|b| (b.sink.is_paused(), b.sink.volume(), b.sink.get_pos()))
+                                            .unwrap_or((true, 0.5, Duration::ZERO));
+
+                                        if let Some(new_backend) = build_audio_backend_from_device(device.clone()) {
+                                            gem_player.player.backend = Some(new_backend);
+
+                                            if let Some(playing) = maybe_playing_track {
+                                                let play_result = load_and_play(&mut gem_player.player, &playing);
+                                                if let Err(e) = play_result {
+                                                    error!("Unable to play previous sink's source: {}", e);
+                                                }
+
+                                                if let Some(backend) = &gem_player.player.backend {
+                                                    if was_paused {
+                                                        backend.sink.pause();
+                                                    }
+                                                    
+                                                    backend.sink.set_volume(previous_volume);
+                                                    
+                                                    if backend.sink.try_seek(previous_playback_position).is_err() {
+                                                        error!("Unable to seek to previous sink's position.");
+                                                    }
+                                                }
+                                            }
+
+                                            info!("Switched audio output to {}", name);
+                                        } else {
+                                            gem_player.ui.toasts.error("Failed to change audio devices.");
+                                        }
                                     }
                                 }
                             }

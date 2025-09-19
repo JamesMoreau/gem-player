@@ -12,15 +12,12 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use player::{
-    adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, AudioBackend, Player,
-    VisualizerState,
+    adjust_volume_by_percentage, build_audio_backend_from_device, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous,
+    Player, VisualizerState,
 };
 use playlist::{Playlist, PlaylistRetrieval};
 use rfd::FileDialog;
-use rodio::{
-    cpal::{default_host, traits::HostTrait},
-    OutputStreamBuilder, Sink,
-};
+use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
     fs, io,
@@ -109,15 +106,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let host = default_host();
     if let Some(device) = host.default_output_device() {
-        let builder = OutputStreamBuilder::from_device(device.clone()).expect("Failed to initialize audio output stream builder");
-        let stream = builder
-            .open_stream_or_fallback()
-            .expect("Failed to open output stream for the default device");
-
-        let sink = Sink::connect_new(stream.mixer());
-        sink.pause();
-
-        backend = Some(AudioBackend { device, sink, stream });
+        backend = build_audio_backend_from_device(device);
     }
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
