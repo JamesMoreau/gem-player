@@ -1901,37 +1901,30 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add_space(8.0);
 
+                let selected_device_text = gem_player
+                    .player
+                    .backend
+                    .as_ref()
+                    .and_then(|b| b.device.name().ok())
+                    .unwrap_or_else(|| "No device".to_string());
+
                 ComboBox::from_label("Output device")
-                    .selected_text(
-                        gem_player
-                            .player
-                            .backend
-                            .as_ref()
-                            .and_then(|b| b.device.name().ok())
-                            .unwrap_or_else(|| "No device".to_string()),
-                    )
+                    .selected_text(selected_device_text)
                     .show_ui(ui, |ui| {
                         let host = rodio::cpal::default_host();
                         if let Ok(output_devices) = host.output_devices() {
                             for device in output_devices {
                                 if let Ok(name) = device.name() {
-                                    let mut is_selected = gem_player
-                                        .player
-                                        .backend
-                                        .as_ref()
-                                        .is_some_and(|b| b.device.name().ok() == Some(name.clone()));
+                                    let maybe_backend = gem_player.player.backend.as_ref();
+                                    let mut is_selected = maybe_backend.is_some_and(|b| b.device.name().ok() == Some(name.clone()));
 
                                     let response = ui.selectable_value(&mut is_selected, true, name.clone());
 
                                     if response.clicked() {
                                         // In order to make the transition smooth, we need to reload the previous playback state onto the new backend.
-
                                         let maybe_playing_track = gem_player.player.playing.clone();
 
-                                        let (was_paused, previous_volume, previous_playback_position) = gem_player
-                                            .player
-                                            .backend
-                                            .as_ref()
+                                        let (was_paused, previous_volume, previous_playback_position) = maybe_backend
                                             .map(|b| (b.sink.is_paused(), b.sink.volume(), b.sink.get_pos()))
                                             .unwrap_or((true, 0.5, Duration::ZERO));
 
@@ -1948,9 +1941,9 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                                     if was_paused {
                                                         backend.sink.pause();
                                                     }
-                                                    
+
                                                     backend.sink.set_volume(previous_volume);
-                                                    
+
                                                     if backend.sink.try_seek(previous_playback_position).is_err() {
                                                         error!("Unable to seek to previous sink's position.");
                                                     }
