@@ -5,7 +5,10 @@ use crate::{
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
-use rodio::{Decoder, Device, OutputStream, OutputStreamBuilder, Sink, Source};
+use rodio::{
+    cpal::{default_host, traits::HostTrait},
+    Decoder, Device, DeviceTrait, OutputStream, OutputStreamBuilder, Sink, Source,
+};
 use std::{
     fs,
     io::{self, ErrorKind, Seek},
@@ -65,6 +68,22 @@ pub fn build_audio_backend_from_device(device: Device) -> Option<AudioBackend> {
     sink.pause();
 
     Some(AudioBackend { device, sink, stream })
+}
+
+pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
+    let mut output_devices_and_names = Vec::new();
+
+    let host = default_host();
+    let devices_result = host.output_devices();
+    if let Ok(devices) = devices_result {
+        for device in devices {
+            if let Ok(name) = device.name() {
+                output_devices_and_names.push((device, name));
+            }
+        }
+    }
+
+    output_devices_and_names
 }
 
 pub fn clear_the_queue(player: &mut Player) {
