@@ -106,7 +106,11 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let host = default_host();
     if let Some(device) = host.default_output_device() {
-        backend = build_audio_backend_from_device(device);
+        let backend_result = build_audio_backend_from_device(device);
+        match backend_result {
+            Ok(b) => backend = Some(b),
+            Err(e) => error!("Failed to start audio device: {}", e),
+        }
     }
     let audio_output_devices_cache = get_audio_output_devices_and_names();
 

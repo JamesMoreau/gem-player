@@ -1931,31 +1931,36 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     .map(|b| (b.sink.is_paused(), b.sink.volume(), b.sink.get_pos()))
                                     .unwrap_or((true, 0.5, Duration::ZERO));
 
-                                if let Some(new_backend) = build_audio_backend_from_device(device.clone()) {
-                                    gem_player.player.backend = Some(new_backend);
+                                let backend_result = build_audio_backend_from_device(device.clone());
+                                match backend_result {
+                                    Ok(new_backend) => {
+                                        gem_player.player.backend = Some(new_backend);
 
-                                    if let Some(playing) = maybe_playing_track {
-                                        let play_result = load_and_play(&mut gem_player.player, &playing);
-                                        if let Err(e) = play_result {
-                                            error!("Unable to play previous sink's source: {}", e);
-                                        }
-
-                                        if let Some(backend) = &gem_player.player.backend {
-                                            if was_paused {
-                                                backend.sink.pause();
+                                        if let Some(playing) = maybe_playing_track {
+                                            let play_result = load_and_play(&mut gem_player.player, &playing);
+                                            if let Err(e) = play_result {
+                                                error!("Unable to play previous sink's source: {}", e);
                                             }
 
-                                            backend.sink.set_volume(previous_volume);
+                                            if let Some(backend) = &gem_player.player.backend {
+                                                if was_paused {
+                                                    backend.sink.pause();
+                                                }
 
-                                            if backend.sink.try_seek(previous_playback_position).is_err() {
-                                                error!("Unable to seek to previous sink's position.");
+                                                backend.sink.set_volume(previous_volume);
+
+                                                if backend.sink.try_seek(previous_playback_position).is_err() {
+                                                    error!("Unable to seek to previous sink's position.");
+                                                }
                                             }
                                         }
+
+                                        info!("Switched audio output to {}", name);
                                     }
-
-                                    info!("Switched audio output to {}", name);
-                                } else {
-                                    gem_player.ui.toasts.error("Failed to change audio devices.");
+                                    Err(e) => {
+                                        error!("Failed to change audio devices: {}", e);
+                                        gem_player.ui.toasts.error("Failed to change audio devices.");
+                                    }
                                 }
                             }
                         }

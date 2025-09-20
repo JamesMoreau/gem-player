@@ -47,27 +47,19 @@ struct VisualizerState {
     display_bands: Vec<f32>,
 }
 
-pub fn build_audio_backend_from_device(device: Device) -> Option<AudioBackend> {
+pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend, String> {
     let builder = OutputStreamBuilder::from_device(device.clone())
-        .map_err(|e| {
-            error!("Failed to initialize audio output stream builder: {e}");
-            e
-        })
-        .ok()?;
+        .map_err(|e| e.to_string())?
+        .with_error_callback(|e| {
+            error!("Stream error: {}", e);
+        });
 
-    let stream = builder
-        .open_stream_or_fallback()
-        .map_err(|e| {
-            error!("Failed to open output stream: {e}");
-            e
-        })
-        .ok()?;
+    let stream = builder.open_stream_or_fallback().map_err(|e| e.to_string())?;
 
     let sink = Sink::connect_new(stream.mixer());
-
     sink.pause();
 
-    Some(AudioBackend { device, sink, stream })
+    Ok(AudioBackend { device, sink, stream })
 }
 
 pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
