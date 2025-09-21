@@ -2,8 +2,7 @@ use crate::{
     apply_theme, format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous,
     play_library, play_playlist,
     player::{
-        build_audio_backend_from_device, clear_the_queue, enqueue, enqueue_next, get_audio_output_devices_and_names, load_and_play,
-        move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
+        clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
     spawn_folder_picker,
@@ -14,16 +13,15 @@ use eframe::egui::{
     containers::{self},
     include_image,
     os::OperatingSystem,
-    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, Direction, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
-    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
+    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin,
+    PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat,
+    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
-use rodio::{Device, DeviceTrait};
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -50,7 +48,6 @@ struct UIState {
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
-    settings: SettingsViewState,
 
     library_and_playlists_are_loading: bool,
 
@@ -85,11 +82,6 @@ struct PlaylistsViewState {
 
     rename_buffer: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_modal_open: bool,       // The menu is open for selected_playlist_path.
-}
-
-#[fully_pub]
-struct SettingsViewState {
-    audio_output_devices_cache: Vec<(Device, String)>,
 }
 
 pub fn gem_player_ui(gem_player: &mut GemPlayer, ctx: &Context) {
@@ -1906,69 +1898,6 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(unselectable_label(RichText::new("Audio").heading()));
 
                 ui.add_space(8.0);
-
-                let selected_device_text = gem_player
-                    .player
-                    .backend
-                    .as_ref()
-                    .and_then(|b| b.device.name().ok())
-                    .unwrap_or_else(|| "No device".to_string());
-
-                let inner = ComboBox::from_label("Output device")
-                    .selected_text(selected_device_text)
-                    .show_ui(ui, |ui| {
-                        for (device, name) in &gem_player.ui.settings.audio_output_devices_cache {
-                            let maybe_backend = gem_player.player.backend.as_ref();
-                            let mut is_selected = maybe_backend.is_some_and(|b| b.device.name().ok() == Some(name.clone()));
-
-                            let response = ui.selectable_value(&mut is_selected, true, name.clone());
-
-                            if response.clicked() {
-                                // In order to make the transition smooth, we need to reload the previous playback state onto the new backend.
-                                let maybe_playing_track = gem_player.player.playing.clone();
-
-                                let (was_paused, previous_volume, previous_playback_position) = maybe_backend
-                                    .map(|b| (b.sink.is_paused(), b.sink.volume(), b.sink.get_pos()))
-                                    .unwrap_or((true, 0.5, Duration::ZERO));
-
-                                let backend_result = build_audio_backend_from_device(device.clone());
-                                match backend_result {
-                                    Ok(new_backend) => {
-                                        gem_player.player.backend = Some(new_backend);
-
-                                        if let Some(playing) = maybe_playing_track {
-                                            let play_result = load_and_play(&mut gem_player.player, &playing);
-                                            if let Err(e) = play_result {
-                                                error!("Unable to play previous sink's source: {}", e);
-                                            }
-
-                                            if let Some(backend) = &gem_player.player.backend {
-                                                if was_paused {
-                                                    backend.sink.pause();
-                                                }
-
-                                                backend.sink.set_volume(previous_volume);
-
-                                                if backend.sink.try_seek(previous_playback_position).is_err() {
-                                                    error!("Unable to seek to previous sink's position.");
-                                                }
-                                            }
-                                        }
-
-                                        info!("Switched audio output to {}", name);
-                                    }
-                                    Err(e) => {
-                                        error!("Failed to change audio devices: {}", e);
-                                        gem_player.ui.toasts.error("Failed to change audio devices.");
-                                    }
-                                }
-                            }
-                        }
-                    });
-
-                if inner.response.clicked() {
-                    gem_player.ui.settings.audio_output_devices_cache = get_audio_output_devices_and_names();
-                }
 
                 ui.add(Separator::default().spacing(32.0));
 
