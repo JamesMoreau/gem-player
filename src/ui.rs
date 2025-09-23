@@ -2,7 +2,8 @@ use crate::{
     apply_theme, format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous,
     play_library, play_playlist,
     player::{
-        clear_the_queue, enqueue, enqueue_next, get_audio_output_devices_and_names, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, switch_audio_devices, toggle_shuffle, Player
+        clear_the_queue, enqueue, enqueue_next, get_audio_output_devices_and_names, move_to_position, mute_or_unmute, play_or_pause,
+        remove_from_queue, switch_audio_devices, toggle_shuffle, Player,
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
     spawn_folder_picker,
@@ -2003,12 +2004,20 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let description = env!("CARGO_PKG_DESCRIPTION");
                 ui.add(unselectable_label(description));
 
-                ui.add(Separator::default().spacing(32.0));
+                ui.add_space(16.0);
 
-                ui.add(unselectable_label(RichText::new("Author").heading()));
-                ui.add_space(8.0);
-                ui.add(unselectable_label("James Moreau"));
-                ui.hyperlink_to("jamesmoreau.github.io", "https://jamesmoreau.github.io");
+                ui.horizontal_wrapped(|ui| {
+                    ui.add(unselectable_label("Author:"));
+
+                    ui.add(unselectable_label(" / "));
+
+                    ui.add(unselectable_label("James Moreau"));
+
+                    ui.add(unselectable_label(" / "));
+
+                    ui.hyperlink_to("jamesmoreau.github.io", "https://jamesmoreau.github.io");
+                });
+
                 ui.add_space(8.0);
 
                 ui.horizontal_wrapped(|ui| {
