@@ -881,7 +881,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    let label = table_label(track.album.as_deref().unwrap_or("Unknown"), text_color);
+                    let label = table_label(track.album.as_deref().unwrap_or("Unknown Album"), text_color);
                     ui.add(label);
                 });
 
@@ -1180,7 +1180,7 @@ fn queue_view(ui: &mut Ui, player: &mut Player) {
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown")));
+                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown Album")));
                 });
 
                 row.col(|ui| {
@@ -1663,7 +1663,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    let label = table_label(track.album.as_deref().unwrap_or("Unknown"), text_color);
+                    let label = table_label(track.album.as_deref().unwrap_or("Unknown Album"), text_color);
                     ui.add(label);
                 });
 
