@@ -663,7 +663,7 @@ fn display_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
-    let placeholder = include_image!("../assets/music_note.svg");
+    let placeholder = include_image!("../assets/icon.png");
     let mut artwork = Image::new(placeholder);
 
     if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
