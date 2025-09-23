@@ -12,8 +12,8 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use player::{
-    adjust_volume_by_percentage, build_audio_backend_from_device, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous,
-    Player, VisualizerState,
+    adjust_volume_by_percentage, build_audio_backend_from_device, clear_the_queue, get_audio_output_devices_and_names, mute_or_unmute,
+    play_next, play_or_pause, play_previous, Player, VisualizerState,
 };
 use playlist::{Playlist, PlaylistRetrieval};
 use rfd::FileDialog;
@@ -30,7 +30,7 @@ use std::{
     time::Duration,
 };
 use track::{is_relevant_media_file, SortBy, SortOrder, Track, TrackRetrieval};
-use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
+use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, SettingsViewState, UIState, View};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 mod library_watcher;
@@ -112,6 +112,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             Err(e) => error!("Failed to start audio device: {}", e),
         }
     }
+    let audio_output_devices_cache = get_audio_output_devices_and_names();
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
 
@@ -173,6 +174,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 rename_buffer: None,
                 delete_modal_open: false,
                 selected_tracks: Vec::new(),
+            },
+            settings: SettingsViewState {
+                audio_output_devices_cache,
             },
             library_and_playlists_are_loading,
             toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
