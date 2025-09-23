@@ -865,19 +865,19 @@ fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    let label = table_label(track.title.as_deref().unwrap_or("Unknown Title"), text_color);
+                    let label = table_label(track.title.as_deref().unwrap_or("-"), text_color);
                     ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    let label = table_label(track.artist.as_deref().unwrap_or("Unknown Artist"), text_color);
+                    let label = table_label(track.artist.as_deref().unwrap_or("-"), text_color);
                     ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    let label = table_label(track.album.as_deref().unwrap_or("Unknown Album"), text_color);
+                    let label = table_label(track.album.as_deref().unwrap_or("-"), text_color);
                     ui.add(label);
                 });
 
@@ -1166,17 +1166,17 @@ fn queue_view(ui: &mut Ui, player: &mut Player) {
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.title.as_deref().unwrap_or("Unknown Title")));
+                    ui.add(unselectable_label(track.title.as_deref().unwrap_or("-")));
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.artist.as_deref().unwrap_or("Unknown Artist")));
+                    ui.add(unselectable_label(track.artist.as_deref().unwrap_or("-")));
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("Unknown Album")));
+                    ui.add(unselectable_label(track.album.as_deref().unwrap_or("-")));
                 });
 
                 row.col(|ui| {
@@ -1647,19 +1647,19 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    let label = table_label(track.title.as_deref().unwrap_or("Unknown Title"), text_color);
+                    let label = table_label(track.title.as_deref().unwrap_or("-"), text_color);
                     ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    let label = table_label(track.artist.as_deref().unwrap_or("Unknown Artist"), text_color);
+                    let label = table_label(track.artist.as_deref().unwrap_or("-"), text_color);
                     ui.add(label);
                 });
 
                 row.col(|ui| {
                     ui.add_space(4.0);
-                    let label = table_label(track.album.as_deref().unwrap_or("Unknown Album"), text_color);
+                    let label = table_label(track.album.as_deref().unwrap_or("-"), text_color);
                     ui.add(label);
                 });
 
