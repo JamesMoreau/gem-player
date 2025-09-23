@@ -79,7 +79,7 @@ pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
     output_devices_and_names
 }
 
-/// Switches the audio backend to a new device while preserving state.
+/// Switches the audio backend to a new device while preserving playback state.
 pub fn switch_audio_devices(player: &mut Player, new_device: Device) -> Result<(), String> {
     let maybe_backend = player.backend.as_ref();
     let maybe_playing_track = player.playing.clone();
