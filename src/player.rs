@@ -13,6 +13,7 @@ use std::{
     fs,
     io::{self, ErrorKind, Seek},
     sync::mpsc::{Receiver, Sender},
+    time::Duration,
 };
 
 #[fully_pub]
@@ -76,6 +77,43 @@ pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
     }
 
     output_devices_and_names
+}
+
+/// Switches the audio backend to a new device while preserving state.
+pub fn switch_audio_devices(player: &mut Player, new_device: Device) -> Result<(), String> {
+    let maybe_backend = player.backend.as_ref();
+    let maybe_playing_track = player.playing.clone();
+
+    // In order to make the transition smooth, we need to reload the previous playback state onto the new backend.
+    let (was_paused, previous_volume, previous_playback_position) = maybe_backend
+        .map(|b| (b.sink.is_paused(), b.sink.volume(), b.sink.get_pos()))
+        .unwrap_or((true, 0.5, Duration::ZERO));
+
+    match build_audio_backend_from_device(new_device.clone()) {
+        Ok(new_backend) => {
+            player.backend = Some(new_backend);
+
+            if let Some(playing) = maybe_playing_track {
+                load_and_play(player, &playing).map_err(|e| format!("Unable to play previous sink's source: {}", e))?;
+
+                if let Some(backend) = &player.backend {
+                    if was_paused {
+                        backend.sink.pause();
+                    }
+
+                    backend.sink.set_volume(previous_volume);
+
+                    backend
+                        .sink
+                        .try_seek(previous_playback_position)
+                        .map_err(|_| "Unable to seek to previous sink's position.".to_string())?;
+                }
+            }
+
+            Ok(())
+        }
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 pub fn clear_the_queue(player: &mut Player) {
