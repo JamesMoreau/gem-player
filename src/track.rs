@@ -32,7 +32,7 @@ pub enum SortOrder {
 
 #[fully_pub]
 #[derive(Debug, Clone)]
-pub struct Track {
+struct Track {
     title: Option<String>,
     artist: Option<String>,
     album: Option<String>,

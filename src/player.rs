@@ -5,15 +5,19 @@ use crate::{
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
-use rodio::{Decoder, OutputStream, Sink, Source};
+use rodio::{
+    cpal::{default_host, traits::HostTrait},
+    Decoder, Device, DeviceTrait, OutputStream, OutputStreamBuilder, Sink, Source,
+};
 use std::{
     fs,
     io::{self, ErrorKind, Seek},
     sync::mpsc::{Receiver, Sender},
+    time::Duration,
 };
 
 #[fully_pub]
-pub struct Player {
+struct Player {
     history: Vec<Track>, // In chronological order. The most recently played track is at the end.
     playing: Option<Track>,
     queue: Vec<Track>, // In the order the tracks will be played.
@@ -24,18 +28,92 @@ pub struct Player {
     volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
-    stream_handle: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink,                  // Controls playback (play, pause, stop, etc.)
+    backend: Option<AudioBackend>,
 
     playing_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
 }
 
 #[fully_pub]
-pub struct VisualizerState {
+struct AudioBackend {
+    device: Device,
+    stream: OutputStream, // Holds the OutputStream to keep it alive
+    sink: Sink,           // Controls playback (play, pause, stop, etc.)
+}
+
+#[fully_pub]
+struct VisualizerState {
     command_sender: Sender<VisualizerCommand>,
     bands_receiver: Receiver<Vec<f32>>,
     display_bands: Vec<f32>,
+}
+
+pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend, String> {
+    let builder = OutputStreamBuilder::from_device(device.clone())
+        .map_err(|e| e.to_string())?
+        .with_error_callback(|e| {
+            error!("Stream error: {}", e);
+        });
+
+    let stream = builder.open_stream_or_fallback().map_err(|e| e.to_string())?;
+
+    let sink = Sink::connect_new(stream.mixer());
+    sink.pause();
+
+    Ok(AudioBackend { device, sink, stream })
+}
+
+pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
+    let mut output_devices_and_names = Vec::new();
+
+    let host = default_host();
+    let devices_result = host.output_devices();
+    if let Ok(devices) = devices_result {
+        for device in devices {
+            if let Ok(name) = device.name() {
+                output_devices_and_names.push((device, name));
+            }
+        }
+    }
+
+    output_devices_and_names
+}
+
+/// Switches the audio backend to a new device while preserving playback state.
+pub fn switch_audio_devices(player: &mut Player, new_device: Device) -> Result<(), String> {
+    let maybe_backend = player.backend.as_ref();
+    let maybe_playing_track = player.playing.clone();
+
+    // In order to make the transition smooth, we need to reload the previous playback state onto the new backend.
+    let (was_paused, previous_volume, previous_playback_position) = maybe_backend
+        .map(|b| (b.sink.is_paused(), b.sink.volume(), b.sink.get_pos()))
+        .unwrap_or((true, 0.5, Duration::ZERO));
+
+    match build_audio_backend_from_device(new_device.clone()) {
+        Ok(new_backend) => {
+            player.backend = Some(new_backend);
+
+            if let Some(playing) = maybe_playing_track {
+                load_and_play(player, &playing).map_err(|e| format!("Unable to play previous sink's source: {}", e))?;
+
+                if let Some(backend) = &player.backend {
+                    if was_paused {
+                        backend.sink.pause();
+                    }
+
+                    backend.sink.set_volume(previous_volume);
+
+                    backend
+                        .sink
+                        .try_seek(previous_playback_position)
+                        .map_err(|_| "Unable to seek to previous sink's position.".to_string())?;
+                }
+            }
+
+            Ok(())
+        }
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 pub fn clear_the_queue(player: &mut Player) {
@@ -45,11 +123,11 @@ pub fn clear_the_queue(player: &mut Player) {
     player.repeat = false;
 }
 
-pub fn play_or_pause(player: &mut Player) {
-    if player.sink.is_paused() {
-        player.sink.play()
+pub fn play_or_pause(sink: &mut Sink) {
+    if sink.is_paused() {
+        sink.play()
     } else {
-        player.sink.pause()
+        sink.pause()
     }
 }
 
@@ -99,7 +177,11 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 }
 
 pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
-    player.sink.stop(); // Stop the current track if any.
+    let Some(backend) = &player.backend else {
+        return Err(io::Error::new(io::ErrorKind::Other, "No audio backend available"));
+    };
+
+    backend.sink.stop(); // Stop the current track if any.
 
     let mut file = fs::File::open(&track.path)?;
 
@@ -121,8 +203,8 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     }
 
     let visualizer_source = visualizer_source(decoder, player.visualizer.command_sender.clone());
-    player.sink.append(visualizer_source);
-    player.sink.play();
+    backend.sink.append(visualizer_source);
+    backend.sink.play();
 
     Ok(())
 }
@@ -163,26 +245,30 @@ pub fn shuffle(queue: &mut [Track]) {
 }
 
 pub fn mute_or_unmute(player: &mut Player) {
-    let mut volume = player.sink.volume();
-
     player.muted = !player.muted;
 
+    let mut target_volume = 0.0;
+
     if player.muted {
-        player.volume_before_mute = Some(volume);
-        volume = 0.0;
+        if let Some(backend) = &player.backend {
+            player.volume_before_mute = Some(backend.sink.volume());
+        }
+        target_volume = 0.0;
     } else if let Some(v) = player.volume_before_mute {
-        volume = v;
+        target_volume = v;
     }
 
-    player.sink.set_volume(volume);
+    if let Some(backend) = &player.backend {
+        backend.sink.set_volume(target_volume);
+    }
 }
 
-pub fn adjust_volume_by_percentage(player: &mut Player, percentage: f32) {
-    let current_volume = player.sink.volume();
+pub fn adjust_volume_by_percentage(sink: &mut Sink, percentage: f32) {
+    let current_volume = sink.volume();
 
     let min_volume = 0.0;
     let max_volume = 1.0;
 
     let new_volume = (current_volume + percentage).clamp(min_volume, max_volume);
-    player.sink.set_volume(new_volume);
+    sink.set_volume(new_volume);
 }

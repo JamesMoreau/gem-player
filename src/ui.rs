@@ -2,7 +2,7 @@ use crate::{
     apply_theme, format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous,
     play_library, play_playlist,
     player::{
-        clear_the_queue, enqueue, enqueue_next, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, toggle_shuffle, Player,
+        clear_the_queue, enqueue, enqueue_next, get_audio_output_devices_and_names, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, switch_audio_devices, toggle_shuffle, Player
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
     spawn_folder_picker,
@@ -13,15 +13,16 @@ use eframe::egui::{
     containers::{self},
     include_image,
     os::OperatingSystem,
-    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, Context, Direction, FontId, Frame, Id, Image, Label, Layout, Margin,
-    PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat,
-    TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
+    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, Direction, FontId, Frame, Id, Image, Label, Layout,
+    Margin, PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
+    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use log::{error, info};
+use rodio::{Device, DeviceTrait};
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -38,7 +39,7 @@ pub enum View {
 }
 
 #[fully_pub]
-pub struct UIState {
+struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
     marquee: MarqueeState,
@@ -48,6 +49,7 @@ pub struct UIState {
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
+    settings: SettingsViewState,
 
     library_and_playlists_are_loading: bool,
 
@@ -58,7 +60,7 @@ const MARQUEE_SPEED: f32 = 5.0; // chars per second
 const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
 
 #[fully_pub]
-pub struct MarqueeState {
+struct MarqueeState {
     track_key: Option<PathBuf>, // We need to know when the track changes to reset.
     position: f32,
     pause_timer: Duration,
@@ -82,6 +84,11 @@ struct PlaylistsViewState {
 
     rename_buffer: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_modal_open: bool,       // The menu is open for selected_playlist_path.
+}
+
+#[fully_pub]
+struct SettingsViewState {
+    audio_output_devices_cache: Vec<(Device, String)>,
 }
 
 pub fn gem_player_ui(gem_player: &mut GemPlayer, ctx: &Context) {
@@ -357,7 +364,9 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 }
 
 fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let volume_icon = match gem_player.player.sink.volume() {
+    let mut volume = gem_player.player.backend.as_ref().map(|b| b.sink.volume()).unwrap_or(0.0);
+
+    let volume_icon = match volume {
         0.0 => icons::ICON_VOLUME_OFF,
         v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
         _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
@@ -374,14 +383,16 @@ fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .align(RectAlign::RIGHT)
         .gap(4.0)
         .show(|ui| {
-            let mut volume = gem_player.player.sink.volume();
             let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
             let changed = ui.add(volume_slider).changed();
             if changed {
                 gem_player.player.muted = false;
-                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) }
+                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
+
+                if let Some(backend) = &gem_player.player.backend {
+                    backend.sink.set_volume(volume);
+                }
             }
-            gem_player.player.sink.set_volume(volume);
 
             if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
                 popup_is_hovered = true;
@@ -415,7 +426,7 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             maybe_play_previous(gem_player)
         }
 
-        let sink_is_paused = gem_player.player.sink.is_paused();
+        let sink_is_paused = gem_player.player.backend.as_ref().is_some_and(|b| b.sink.is_paused());
         let play_pause_icon = if sink_is_paused {
             icons::ICON_PLAY_ARROW
         } else {
@@ -428,7 +439,9 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .on_hover_text(tooltip)
             .on_disabled_hover_text("No current track");
         if response.clicked() {
-            play_or_pause(&mut gem_player.player);
+            if let Some(backend) = &mut gem_player.player.backend {
+                play_or_pause(&mut backend.sink);
+            }
         }
 
         let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
@@ -497,7 +510,7 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                 let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
                 if let Some(playing_track) = &gem_player.player.playing {
-                    position_as_secs = gem_player.player.sink.get_pos().as_secs_f32();
+                    position_as_secs = gem_player.player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
                     track_duration_as_secs = playing_track.duration.as_secs_f32();
                 }
 
@@ -511,21 +524,25 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                                 .step_by(1.0); // Step by 1 second.
                             let response = ui.add(playback_progress_slider);
 
+                            let Some(backend) = &gem_player.player.backend else {
+                                return;
+                            };
+
                             if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
-                                gem_player.player.paused_before_scrubbing = Some(gem_player.player.sink.is_paused());
-                                gem_player.player.sink.pause(); // Pause playback during scrubbing
+                                gem_player.player.paused_before_scrubbing = Some(backend.sink.is_paused());
+                                backend.sink.pause(); // Pause playback during scrubbing
                             }
 
                             if response.drag_stopped() {
                                 let new_position = Duration::from_secs_f32(position_as_secs);
                                 info!("Seeking to {}", format_duration_to_mmss(new_position));
-                                if let Err(e) = gem_player.player.sink.try_seek(new_position) {
+                                if let Err(e) = backend.sink.try_seek(new_position) {
                                     error!("Error seeking to new position: {:?}", e);
                                 }
 
                                 // Resume playback if the player was not paused before scrubbing
                                 if gem_player.player.paused_before_scrubbing == Some(false) {
-                                    gem_player.player.sink.play();
+                                    backend.sink.play();
                                 }
 
                                 gem_player.player.paused_before_scrubbing = None;
@@ -1885,6 +1902,41 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(32.0));
 
+                ui.add(unselectable_label(RichText::new("Audio").heading()));
+
+                ui.add_space(8.0);
+
+                let selected_device_text = gem_player
+                    .player
+                    .backend
+                    .as_ref()
+                    .and_then(|b| b.device.name().ok())
+                    .unwrap_or_else(|| "No device".to_string());
+
+                let inner = ComboBox::from_label("Output device")
+                    .selected_text(selected_device_text)
+                    .show_ui(ui, |ui| {
+                        for (device, name) in &gem_player.ui.settings.audio_output_devices_cache {
+                            let maybe_backend = gem_player.player.backend.as_ref();
+                            let mut is_selected = maybe_backend.is_some_and(|b| b.device.name().ok() == Some(name.clone()));
+
+                            let response = ui.selectable_value(&mut is_selected, true, name.clone());
+
+                            if response.clicked() {
+                                if let Err(err) = switch_audio_devices(&mut gem_player.player, device.clone()) {
+                                    error!("Failed to switch device: {}", err);
+                                    gem_player.ui.toasts.error("Failed to switch audio device.");
+                                }
+                            }
+                        }
+                    });
+
+                if inner.response.clicked() {
+                    gem_player.ui.settings.audio_output_devices_cache = get_audio_output_devices_and_names();
+                }
+
+                ui.add(Separator::default().spacing(32.0));
+
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
 
@@ -2105,4 +2157,3 @@ fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
 
     changed
 }
-

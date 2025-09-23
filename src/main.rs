@@ -12,11 +12,12 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use player::{
-    adjust_volume_by_percentage, clear_the_queue, mute_or_unmute, play_next, play_or_pause, play_previous, Player, VisualizerState,
+    adjust_volume_by_percentage, build_audio_backend_from_device, clear_the_queue, get_audio_output_devices_and_names, mute_or_unmute,
+    play_next, play_or_pause, play_previous, Player, VisualizerState,
 };
 use playlist::{Playlist, PlaylistRetrieval};
 use rfd::FileDialog;
-use rodio::{OutputStreamBuilder, Sink};
+use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
     fs, io,
@@ -29,7 +30,7 @@ use std::{
     time::Duration,
 };
 use track::{is_relevant_media_file, SortBy, SortOrder, Track, TrackRetrieval};
-use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, UIState, View};
+use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, SettingsViewState, UIState, View};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 mod library_watcher;
@@ -39,16 +40,12 @@ mod track;
 mod ui;
 mod visualizer;
 
-/*
-TODO:
-*/
-
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 pub const THEME_STORAGE_KEY: &str = "theme";
 pub const VOLUME_STORAGE_KEY: &str = "volume";
 
 #[fully_pub]
-pub struct GemPlayer {
+struct GemPlayer {
     ui: UIState,
 
     library: Vec<Track>,
@@ -105,10 +102,17 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     load_system_fonts(&mut fonts);
     cc.egui_ctx.set_fonts(fonts);
 
-    let mut stream_handle = OutputStreamBuilder::open_default_stream().expect("Failed to initialize audio output");
-    stream_handle.log_on_drop(false);
-    let sink = Sink::connect_new(stream_handle.mixer());
-    sink.pause();
+    let mut backend = None;
+
+    let host = default_host();
+    if let Some(device) = host.default_output_device() {
+        let backend_result = build_audio_backend_from_device(device);
+        match backend_result {
+            Ok(b) => backend = Some(b),
+            Err(e) => error!("Failed to start audio device: {}", e),
+        }
+    }
+    let audio_output_devices_cache = get_audio_output_devices_and_names();
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
 
@@ -148,7 +152,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     apply_theme(&cc.egui_ctx, theme_preference);
 
-    sink.set_volume(initial_volume);
+    if let Some(b) = &backend {
+        b.sink.set_volume(initial_volume);
+    }
 
     GemPlayer {
         ui: UIState {
@@ -168,6 +174,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 rename_buffer: None,
                 delete_modal_open: false,
                 selected_tracks: Vec::new(),
+            },
+            settings: SettingsViewState {
+                audio_output_devices_cache,
             },
             library_and_playlists_are_loading,
             toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
@@ -204,8 +213,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             volume_before_mute: None,
             paused_before_scrubbing: None,
 
-            stream_handle,
-            sink,
+            backend,
             playing_artwork: None,
             visualizer: VisualizerState {
                 command_sender: visualizer_command_sender,
@@ -234,8 +242,10 @@ impl App for GemPlayer {
         let theme_ron_string = ron::to_string(&self.ui.theme_preference).unwrap();
         storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
 
-        let volume_ron_string = ron::to_string(&self.player.sink.volume()).unwrap();
-        storage.set_string(VOLUME_STORAGE_KEY, volume_ron_string);
+        if let Some(backend) = &self.player.backend {
+            let volume_ron_string = ron::to_string(&backend.sink.volume()).unwrap();
+            storage.set_string(VOLUME_STORAGE_KEY, volume_ron_string);
+        }
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
@@ -256,7 +266,9 @@ impl App for GemPlayer {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        self.player.sink.stop();
+        if let Some(backend) = &self.player.backend {
+            backend.sink.stop();
+        }
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
     }
@@ -364,7 +376,11 @@ fn spawn_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>> {
 }
 
 fn check_for_next_track(gem_player: &mut GemPlayer) {
-    if !gem_player.player.sink.empty() {
+    let Some(backend) = &gem_player.player.backend else {
+        return;
+    };
+
+    if !backend.sink.empty() {
         return; // If a track is still playing, do nothing
     }
 
@@ -387,10 +403,14 @@ fn maybe_play_next(gem_player: &mut GemPlayer) {
 // Otherwise, we seek to the beginning.
 // This is what actually gets called by the UI and key command.
 pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
-    let playback_position = gem_player.player.sink.get_pos().as_secs_f32();
     let rewind_threshold = 5.0;
+    let mut under_threshold = false;
 
-    let under_threshold = playback_position < rewind_threshold;
+    if let Some(backend) = &gem_player.player.backend {
+        let playback_position = backend.sink.get_pos().as_secs_f32();
+        under_threshold = playback_position < rewind_threshold;
+    }
+
     let previous_track_exists = !gem_player.player.history.is_empty();
 
     let can_go_previous = under_threshold && previous_track_exists;
@@ -399,11 +419,11 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
             error!("{}", e);
             gem_player.ui.toasts.error("Error playing the previous track");
         }
-    } else {
-        if let Err(e) = gem_player.player.sink.try_seek(Duration::ZERO) {
+    } else if let Some(backend) = &gem_player.player.backend {
+        if let Err(e) = backend.sink.try_seek(Duration::ZERO) {
             error!("Error rewinding track: {:?}", e);
         }
-        gem_player.player.sink.play();
+        backend.sink.play();
     }
 }
 
@@ -475,11 +495,23 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
                 info!("Key pressed: {}", description);
 
                 match key {
-                    Key::Space => play_or_pause(&mut gem_player.player),
+                    Key::Space => {
+                        if let Some(backend) = &mut gem_player.player.backend {
+                            play_or_pause(&mut backend.sink);
+                        }
+                    }
                     Key::ArrowLeft => maybe_play_previous(gem_player),
                     Key::ArrowRight => maybe_play_next(gem_player),
-                    Key::ArrowUp => adjust_volume_by_percentage(&mut gem_player.player, 0.1),
-                    Key::ArrowDown => adjust_volume_by_percentage(&mut gem_player.player, -0.1),
+                    Key::ArrowUp => {
+                        if let Some(backend) = &mut gem_player.player.backend {
+                            adjust_volume_by_percentage(&mut backend.sink, 0.1);
+                        }
+                    }
+                    Key::ArrowDown => {
+                        if let Some(backend) = &mut gem_player.player.backend {
+                            adjust_volume_by_percentage(&mut backend.sink, -0.1);
+                        }
+                    }
                     Key::M => mute_or_unmute(&mut gem_player.player),
                     _ => {}
                 }
@@ -588,4 +620,3 @@ pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
 
     format!("{}:{:02}:{:02}", hours, minutes, seconds)
 }
-
