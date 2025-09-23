@@ -274,40 +274,40 @@ impl App for GemPlayer {
     }
 }
 
-fn poll_library_watcher_messages(gem_player: &mut GemPlayer) {
-    let update = gem_player.library_watcher.update_receiver.try_recv();
+fn poll_library_watcher_messages(gem: &mut GemPlayer) {
+    let update = gem.library_watcher.update_receiver.try_recv();
     match update {
         Ok(Some((library, playlists))) => {
-            gem_player.library = library;
-            gem_player.playlists = playlists;
+            gem.library = library;
+            gem.playlists = playlists;
 
-            gem_player.ui.library.cached_library = None;
-            gem_player.ui.playlists.cached_playlist_tracks = None;
+            gem.ui.library.cached_library = None;
+            gem.ui.playlists.cached_playlist_tracks = None;
 
-            gem_player.ui.library_and_playlists_are_loading = false;
+            gem.ui.library_and_playlists_are_loading = false;
         }
         Ok(None) => {
             let message = "Failed to load library folder.";
             error!("{}", message);
-            gem_player.ui.toasts.error(message);
+            gem.ui.toasts.error(message);
 
-            gem_player.library_directory = None;
-            gem_player.ui.library_and_playlists_are_loading = false;
+            gem.library_directory = None;
+            gem.ui.library_and_playlists_are_loading = false;
         }
         Err(TryRecvError::Empty) => {} // no update available this frame
         Err(TryRecvError::Disconnected) => {
             error!("Library watcher has disconnected.");
-            gem_player.ui.library_and_playlists_are_loading = false;
+            gem.ui.library_and_playlists_are_loading = false;
         }
     }
 }
 
-pub fn handle_dropped_file(dropped_file: &DroppedFile, gem_player: &mut GemPlayer) -> io::Result<()> {
+pub fn handle_dropped_file(dropped_file: &DroppedFile, gem: &mut GemPlayer) -> io::Result<()> {
     let Some(path) = dropped_file.path.as_ref() else {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no path"));
     };
 
-    let Some(library_path) = gem_player.library_directory.as_ref() else {
+    let Some(library_path) = gem.library_directory.as_ref() else {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "No library directory set"));
     };
 
@@ -328,27 +328,27 @@ pub fn handle_dropped_file(dropped_file: &DroppedFile, gem_player: &mut GemPlaye
     Ok(())
 }
 
-fn poll_folder_picker(gem_player: &mut GemPlayer) {
-    let Some(receiver) = &gem_player.folder_picker_receiver else {
+fn poll_folder_picker(gem: &mut GemPlayer) {
+    let Some(receiver) = &gem.folder_picker_receiver else {
         return;
     };
 
     match receiver.try_recv() {
         Ok(maybe_directory) => {
-            gem_player.folder_picker_receiver = None;
+            gem.folder_picker_receiver = None;
 
             if let Some(directory) = maybe_directory {
                 info!("Selected folder: {:?}", directory);
 
                 let command = LibraryWatcherCommand::SetPath(directory.clone());
-                let result = gem_player.library_watcher.command_sender.send(command);
+                let result = gem.library_watcher.command_sender.send(command);
                 if result.is_err() {
                     let message = "Failed to start watching library directory. Reverting back to old directory.";
                     error!("{}", message);
-                    gem_player.ui.toasts.error(message);
+                    gem.ui.toasts.error(message);
                 } else {
-                    gem_player.library_directory = Some(directory);
-                    gem_player.ui.library_and_playlists_are_loading = true;
+                    gem.library_directory = Some(directory);
+                    gem.ui.library_and_playlists_are_loading = true;
                 }
             } else {
                 info!("No folder selected");
@@ -357,7 +357,7 @@ fn poll_folder_picker(gem_player: &mut GemPlayer) {
         Err(std::sync::mpsc::TryRecvError::Empty) => {} // folder picker is still open.
         Err(std::sync::mpsc::TryRecvError::Disconnected) => {
             error!("Folder picker channel disconnected unexpectedly.");
-            gem_player.folder_picker_receiver = None;
+            gem.folder_picker_receiver = None;
         }
     }
 }
@@ -375,8 +375,8 @@ fn spawn_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>> {
     receiver
 }
 
-fn check_for_next_track(gem_player: &mut GemPlayer) {
-    let Some(backend) = &gem_player.player.backend else {
+fn check_for_next_track(gem: &mut GemPlayer) {
+    let Some(backend) = &gem.player.backend else {
         return;
     };
 
@@ -384,42 +384,42 @@ fn check_for_next_track(gem_player: &mut GemPlayer) {
         return; // If a track is still playing, do nothing
     }
 
-    let result = play_next(&mut gem_player.player);
+    let result = play_next(&mut gem.player);
     if let Err(e) = result {
         error!("{}", e);
-        gem_player.ui.toasts.error("Error playing the next track");
+        gem.ui.toasts.error("Error playing the next track");
     }
 }
 
-fn maybe_play_next(gem_player: &mut GemPlayer) {
-    let result = play_next(&mut gem_player.player);
+fn maybe_play_next(gem: &mut GemPlayer) {
+    let result = play_next(&mut gem.player);
     if let Err(e) = result {
         error!("{}", e);
-        gem_player.ui.toasts.error("Error playing the next track");
+        gem.ui.toasts.error("Error playing the next track");
     }
 }
 
 // If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
 // This is what actually gets called by the UI and key command.
-pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
+pub fn maybe_play_previous(gem: &mut GemPlayer) {
     let rewind_threshold = 5.0;
     let mut under_threshold = false;
 
-    if let Some(backend) = &gem_player.player.backend {
+    if let Some(backend) = &gem.player.backend {
         let playback_position = backend.sink.get_pos().as_secs_f32();
         under_threshold = playback_position < rewind_threshold;
     }
 
-    let previous_track_exists = !gem_player.player.history.is_empty();
+    let previous_track_exists = !gem.player.history.is_empty();
 
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
-        if let Err(e) = play_previous(&mut gem_player.player) {
+        if let Err(e) = play_previous(&mut gem.player) {
             error!("{}", e);
-            gem_player.ui.toasts.error("Error playing the previous track");
+            gem.ui.toasts.error("Error playing the previous track");
         }
-    } else if let Some(backend) = &gem_player.player.backend {
+    } else if let Some(backend) = &gem.player.backend {
         if let Err(e) = backend.sink.try_seek(Duration::ZERO) {
             error!("Error rewinding track: {:?}", e);
         }
@@ -427,31 +427,31 @@ pub fn maybe_play_previous(gem_player: &mut GemPlayer) {
     }
 }
 
-pub fn play_library(gem_player: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
-    clear_the_queue(&mut gem_player.player);
+pub fn play_library(gem: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
+    clear_the_queue(&mut gem.player);
 
     let mut start_index = 0;
     if let Some(track) = starting_track {
-        start_index = gem_player.library.get_position_by_path(&track.path);
+        start_index = gem.library.get_position_by_path(&track.path);
     }
 
     // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
-    for i in start_index..gem_player.library.len() {
-        gem_player.player.queue.push(gem_player.library[i].clone());
+    for i in start_index..gem.library.len() {
+        gem.player.queue.push(gem.library[i].clone());
     }
     for i in 0..start_index {
-        gem_player.player.queue.push(gem_player.library[i].clone());
+        gem.player.queue.push(gem.library[i].clone());
     }
 
-    play_next(&mut gem_player.player)?;
+    play_next(&mut gem.player)?;
 
     Ok(())
 }
 
-pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
-    clear_the_queue(&mut gem_player.player);
+pub fn play_playlist(gem: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
+    clear_the_queue(&mut gem.player);
 
-    let playlist = gem_player.playlists.get_by_path(playlist_key);
+    let playlist = gem.playlists.get_by_path(playlist_key);
 
     let mut start_index = 0;
     if let Some(key) = starting_track_key {
@@ -460,13 +460,13 @@ pub fn play_playlist(gem_player: &mut GemPlayer, playlist_key: &Path, starting_t
 
     // Add tracks from the starting index to the end, then from the beginning up to the starting index.
     for i in start_index..playlist.tracks.len() {
-        gem_player.player.queue.push(playlist.tracks[i].clone());
+        gem.player.queue.push(playlist.tracks[i].clone());
     }
     for i in 0..start_index {
-        gem_player.player.queue.push(playlist.tracks[i].clone());
+        gem.player.queue.push(playlist.tracks[i].clone());
     }
 
-    play_next(&mut gem_player.player)?;
+    play_next(&mut gem.player)?;
 
     Ok(())
 }
@@ -480,7 +480,7 @@ const KEY_COMMANDS: &[(Key, &str)] = &[
     (Key::M, "Mute/Unmute"),
 ];
 
-pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
+pub fn handle_key_commands(ctx: &Context, gem: &mut GemPlayer) {
     if ctx.wants_keyboard_input() {
         return;
     }
@@ -496,23 +496,23 @@ pub fn handle_key_commands(ctx: &Context, gem_player: &mut GemPlayer) {
 
                 match key {
                     Key::Space => {
-                        if let Some(backend) = &mut gem_player.player.backend {
+                        if let Some(backend) = &mut gem.player.backend {
                             play_or_pause(&mut backend.sink);
                         }
                     }
-                    Key::ArrowLeft => maybe_play_previous(gem_player),
-                    Key::ArrowRight => maybe_play_next(gem_player),
+                    Key::ArrowLeft => maybe_play_previous(gem),
+                    Key::ArrowRight => maybe_play_next(gem),
                     Key::ArrowUp => {
-                        if let Some(backend) = &mut gem_player.player.backend {
+                        if let Some(backend) = &mut gem.player.backend {
                             adjust_volume_by_percentage(&mut backend.sink, 0.1);
                         }
                     }
                     Key::ArrowDown => {
-                        if let Some(backend) = &mut gem_player.player.backend {
+                        if let Some(backend) = &mut gem.player.backend {
                             adjust_volume_by_percentage(&mut backend.sink, -0.1);
                         }
                     }
-                    Key::M => mute_or_unmute(&mut gem_player.player),
+                    Key::M => mute_or_unmute(&mut gem.player),
                     _ => {}
                 }
             }

@@ -92,9 +92,9 @@ struct SettingsViewState {
     audio_output_devices_cache: Vec<(Device, String)>,
 }
 
-pub fn gem_player_ui(gem_player: &mut GemPlayer, ctx: &Context) {
+pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
     custom_window_frame(ctx, "", |ui| {
-        let is_dropping_files = drop_files_area_ui(ui, gem_player);
+        let is_dropping_files = drop_files_area_ui(ui, gem);
         if is_dropping_files {
             return; // Don't render anything else if files are being dropped.
         }
@@ -115,22 +115,22 @@ pub fn gem_player_ui(gem_player: &mut GemPlayer, ctx: &Context) {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| {
-                    control_panel_ui(ui, gem_player);
+                    control_panel_ui(ui, gem);
                 });
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
-                strip.cell(|ui| match gem_player.ui.current_view {
-                    View::Library => library_view(ui, gem_player),
-                    View::Queue => queue_view(ui, &mut gem_player.player),
-                    View::Playlists => playlists_view(ui, gem_player),
-                    View::Settings => settings_view(ui, gem_player),
+                strip.cell(|ui| match gem.ui.current_view {
+                    View::Library => library_view(ui, gem),
+                    View::Queue => queue_view(ui, &mut gem.player),
+                    View::Playlists => playlists_view(ui, gem),
+                    View::Settings => settings_view(ui, gem),
                 });
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
                 strip.cell(|ui| {
-                    navigation_bar(ui, gem_player);
+                    navigation_bar(ui, gem);
                 });
             });
     });
@@ -247,7 +247,7 @@ fn switch_view(ui: &mut UIState, view: View) {
     ui.current_view = view;
 }
 
-fn drop_files_area_ui(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
+fn drop_files_area_ui(ui: &mut Ui, gem: &mut GemPlayer) -> bool {
     let mut drop_area_is_active = false;
 
     let files_are_hovered = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
@@ -256,9 +256,9 @@ fn drop_files_area_ui(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
     if files_were_dropped {
         ui.ctx().input(|i| {
             for dropped_file in &i.raw.dropped_files {
-                let result = handle_dropped_file(dropped_file, gem_player);
+                let result = handle_dropped_file(dropped_file, gem);
                 if let Err(e) = result {
-                    gem_player.ui.toasts.error(format!("Error adding file: {}", e));
+                    gem.ui.toasts.error(format!("Error adding file: {}", e));
                 } else {
                     let file_name = dropped_file
                         .path
@@ -267,7 +267,7 @@ fn drop_files_area_ui(ui: &mut Ui, gem_player: &mut GemPlayer) -> bool {
                         .and_then(|f| f.to_str())
                         .unwrap_or("Unnamed file");
 
-                    gem_player.ui.toasts.success(format!("Added '{}' to Library.", file_name));
+                    gem.ui.toasts.success(format!("Added '{}' to Library.", file_name));
                 }
             }
         });
@@ -330,7 +330,7 @@ fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     format!("{} tracks / {}", tracks.len(), duration_string)
 }
 
-fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
     let button_width = 20.0;
     let gap = 10.0;
@@ -344,28 +344,28 @@ fn control_panel_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
-                    playback_controls_ui(ui, gem_player);
+                    playback_controls_ui(ui, gem);
                 });
 
                 strip.cell(|ui| {
-                    display_track_info(ui, gem_player, button_width, gap, artwork_width, slider_width);
+                    display_track_info(ui, gem, button_width, gap, artwork_width, slider_width);
                 });
 
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        display_visualizer(ui, gem_player);
+                        display_visualizer(ui, gem);
 
                         ui.add_space(16.0);
 
-                        volume_control_button(ui, gem_player);
+                        volume_control_button(ui, gem);
                     });
                 });
             });
     });
 }
 
-fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let mut volume = gem_player.player.backend.as_ref().map(|b| b.sink.volume()).unwrap_or(0.0);
+fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
+    let mut volume = gem.player.backend.as_ref().map(|b| b.sink.volume()).unwrap_or(0.0);
 
     let volume_icon = match volume {
         0.0 => icons::ICON_VOLUME_OFF,
@@ -380,17 +380,17 @@ fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
     let mut popup_is_hovered = false;
 
     Popup::menu(&response)
-        .open(gem_player.ui.volume_popup_is_open)
+        .open(gem.ui.volume_popup_is_open)
         .align(RectAlign::RIGHT)
         .gap(4.0)
         .show(|ui| {
             let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
             let changed = ui.add(volume_slider).changed();
             if changed {
-                gem_player.player.muted = false;
-                gem_player.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
+                gem.player.muted = false;
+                gem.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
 
-                if let Some(backend) = &gem_player.player.backend {
+                if let Some(backend) = &gem.player.backend {
                     backend.sink.set_volume(volume);
                 }
             }
@@ -404,19 +404,19 @@ fn volume_control_button(ui: &mut Ui, gem_player: &mut GemPlayer) {
         button_is_hovered = true;
     }
 
-    gem_player.ui.volume_popup_is_open = button_is_hovered || popup_is_hovered;
+    gem.ui.volume_popup_is_open = button_is_hovered || popup_is_hovered;
 
     if response.clicked() {
-        mute_or_unmute(&mut gem_player.player);
+        mute_or_unmute(&mut gem.player);
     }
 }
 
-fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-        let track_is_playing = gem_player.player.playing.is_some();
+        let track_is_playing = gem.player.playing.is_some();
 
         let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS).size(18.0));
-        let previous_track_exists = !gem_player.player.history.is_empty();
+        let previous_track_exists = !gem.player.history.is_empty();
         let is_previous_enabled = track_is_playing || previous_track_exists;
 
         let response = ui
@@ -424,10 +424,10 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .on_hover_text("Previous")
             .on_disabled_hover_text("No previous track");
         if response.clicked() {
-            maybe_play_previous(gem_player)
+            maybe_play_previous(gem)
         }
 
-        let sink_is_paused = gem_player.player.backend.as_ref().is_some_and(|b| b.sink.is_paused());
+        let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.sink.is_paused());
         let play_pause_icon = if sink_is_paused {
             icons::ICON_PLAY_ARROW
         } else {
@@ -440,24 +440,24 @@ fn playback_controls_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .on_hover_text(tooltip)
             .on_disabled_hover_text("No current track");
         if response.clicked() {
-            if let Some(backend) = &mut gem_player.player.backend {
+            if let Some(backend) = &mut gem.player.backend {
                 play_or_pause(&mut backend.sink);
             }
         }
 
         let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
-        let next_track_exists = !gem_player.player.queue.is_empty();
+        let next_track_exists = !gem.player.queue.is_empty();
         let response = ui
             .add_enabled(next_track_exists, next_button)
             .on_hover_text("Next")
             .on_disabled_hover_text("No next track");
         if response.clicked() {
-            maybe_play_next(gem_player);
+            maybe_play_next(gem);
         }
     });
 }
 
-fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn display_track_info(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let available_height = ui.available_height();
 
@@ -481,37 +481,37 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                     }
                 };
 
-                let color = get_button_color(ui, gem_player.player.repeat);
+                let color = get_button_color(ui, gem.player.repeat);
                 let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
                 let response = ui.add(repeat_button).on_hover_text("Repeat");
                 if response.clicked() {
-                    gem_player.player.repeat = !gem_player.player.repeat;
+                    gem.player.repeat = !gem.player.repeat;
                 }
 
                 ui.add_space(4.0);
 
-                let color = get_button_color(ui, gem_player.player.shuffle.is_some());
+                let color = get_button_color(ui, gem.player.shuffle.is_some());
                 let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
-                let queue_is_not_empty = !gem_player.player.queue.is_empty();
+                let queue_is_not_empty = !gem.player.queue.is_empty();
                 let response = ui
                     .add_enabled(queue_is_not_empty, shuffle_button)
                     .on_hover_text("Shuffle")
                     .on_disabled_hover_text("Queue is empty");
                 if response.clicked() {
-                    toggle_shuffle(&mut gem_player.player);
+                    toggle_shuffle(&mut gem.player);
                 }
             });
             strip.empty();
             strip.cell(|ui| {
-                display_artwork(ui, gem_player, artwork_width);
+                display_artwork(ui, gem, artwork_width);
             });
             strip.empty();
             strip.strip(|builder| {
                 let mut position_as_secs = 0.0;
                 let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
 
-                if let Some(playing_track) = &gem_player.player.playing {
-                    position_as_secs = gem_player.player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
+                if let Some(playing_track) = &gem.player.playing {
+                    position_as_secs = gem.player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
                     track_duration_as_secs = playing_track.duration.as_secs_f32();
                 }
 
@@ -525,12 +525,12 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                                 .step_by(1.0); // Step by 1 second.
                             let response = ui.add(playback_progress_slider);
 
-                            let Some(backend) = &gem_player.player.backend else {
+                            let Some(backend) = &gem.player.backend else {
                                 return;
                             };
 
-                            if response.dragged() && gem_player.player.paused_before_scrubbing.is_none() {
-                                gem_player.player.paused_before_scrubbing = Some(backend.sink.is_paused());
+                            if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
+                                gem.player.paused_before_scrubbing = Some(backend.sink.is_paused());
                                 backend.sink.pause(); // Pause playback during scrubbing
                             }
 
@@ -542,11 +542,11 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                                 }
 
                                 // Resume playback if the player was not paused before scrubbing
-                                if gem_player.player.paused_before_scrubbing == Some(false) {
+                                if gem.player.paused_before_scrubbing == Some(false) {
                                     backend.sink.play();
                                 }
 
-                                gem_player.player.paused_before_scrubbing = None;
+                                gem.player.paused_before_scrubbing = None;
                             }
                         });
                     });
@@ -558,7 +558,7 @@ fn display_track_info(ui: &mut Ui, gem_player: &mut GemPlayer, button_size: f32,
                             .size(Size::exact(slider_width * (1.0 / 5.0)))
                             .horizontal(|mut hstrip| {
                                 hstrip.cell(|ui| {
-                                    display_track_marquee(ui, gem_player.player.playing.as_ref(), &mut gem_player.ui.marquee);
+                                    display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee);
                                 });
 
                                 hstrip.cell(|ui| {
@@ -659,14 +659,14 @@ fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut
     });
 }
 
-fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) {
+fn display_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
     let placeholder = include_image!("../assets/music_note.svg");
     let mut artwork = Image::new(placeholder);
 
-    if let (Some(track), Some(bytes)) = (&gem_player.player.playing, &gem_player.player.playing_artwork) {
+    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
         // Use track path as a unique/stable key for egui
         let uri = format!("bytes://{}", track.path.to_string_lossy());
         artwork = Image::from_bytes(uri, bytes.clone());
@@ -682,13 +682,13 @@ fn display_artwork(ui: &mut Ui, gem_player: &mut GemPlayer, artwork_width: f32) 
     );
 }
 
-fn display_visualizer(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
     let dt = ui.input(|i| i.stable_dt);
     let smoothing = 12.0;
     let step = smoothing * dt;
 
-    let maybe_bands = gem_player.player.visualizer.bands_receiver.try_iter().last();
-    let display_bands = &mut gem_player.player.visualizer.display_bands;
+    let maybe_bands = gem.player.visualizer.bands_receiver.try_iter().last();
+    let display_bands = &mut gem.player.visualizer.display_bands;
     let targets = maybe_bands.unwrap_or_else(|| vec![0.0; display_bands.len()]);
 
     for (bar, &raw_target) in display_bands.iter_mut().zip(&targets) {
@@ -754,8 +754,8 @@ fn playing_indicator(ui: &mut Ui) {
     }
 }
 
-fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    if gem_player.ui.library_and_playlists_are_loading {
+fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
+    if gem.ui.library_and_playlists_are_loading {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -767,7 +767,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    if gem_player.library.is_empty() {
+    if gem.library.is_empty() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -781,14 +781,14 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let cached_library = gem_player.ui.library.cached_library.get_or_insert_with(|| {
+    let cached_library = gem.ui.library.cached_library.get_or_insert_with(|| {
         // Regenerate the cache.
 
-        let mut filtered_and_sorted: Vec<Track> = gem_player
+        let mut filtered_and_sorted: Vec<Track> = gem
             .library
             .iter()
             .filter(|track| {
-                let search_lower = gem_player.ui.search.to_lowercase();
+                let search_lower = gem.ui.search.to_lowercase();
 
                 let matches_search = |field: &Option<String>| {
                     field
@@ -802,11 +802,7 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             .cloned()
             .collect();
 
-        sort(
-            &mut filtered_and_sorted,
-            gem_player.ui.library.sort_by,
-            gem_player.ui.library.sort_order,
-        );
+        sort(&mut filtered_and_sorted, gem.ui.library.sort_by, gem.ui.library.sort_order);
 
         filtered_and_sorted
     });
@@ -856,9 +852,9 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .body(|body| {
             body.rows(26.0, cached_library.len(), |mut row| {
                 let track = &cached_library[row.index()];
-                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t == track);
+                let track_is_playing = gem.player.playing.as_ref().is_some_and(|t| t == track);
 
-                let row_is_selected = gem_player.ui.library.selected_tracks.contains(&track.path);
+                let row_is_selected = gem.ui.library.selected_tracks.contains(&track.path);
                 row.set_selected(row_is_selected);
 
                 let text_color = if track_is_playing && !row_is_selected {
@@ -905,12 +901,12 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let response = ui.add(more_button).on_hover_text("More");
 
                         if response.clicked() {
-                            gem_player.ui.library.selected_tracks.push(track.path.clone());
+                            gem.ui.library.selected_tracks.push(track.path.clone());
                         }
 
                         Popup::menu(&response).show(|ui| {
-                            let selected_tracks_count = gem_player.ui.library.selected_tracks.len();
-                            let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem_player.playlists);
+                            let selected_tracks_count = gem.ui.library.selected_tracks.len();
+                            let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem.playlists);
                             if let Some(action) = maybe_action {
                                 context_menu_action = Some(action);
                             }
@@ -924,10 +920,10 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let secondary_clicked = response.secondary_clicked();
                 let primary_clicked = response.clicked() || response.double_clicked();
-                let already_selected = gem_player.ui.library.selected_tracks.contains(&track.path);
+                let already_selected = gem.ui.library.selected_tracks.contains(&track.path);
 
                 if primary_clicked || secondary_clicked {
-                    let selected_tracks = &mut gem_player.ui.library.selected_tracks;
+                    let selected_tracks = &mut gem.ui.library.selected_tracks;
 
                     if secondary_clicked {
                         if selected_tracks.is_empty() || !already_selected {
@@ -957,8 +953,8 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 Popup::context_menu(&response).show(|ui| {
-                    let selected_tracks_count = gem_player.ui.library.selected_tracks.len();
-                    let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem_player.playlists);
+                    let selected_tracks_count = gem.ui.library.selected_tracks.len();
+                    let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem.playlists);
                     if let Some(action) = maybe_action {
                         context_menu_action = Some(action);
                     }
@@ -969,25 +965,25 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
     // Perform actions AFTER rendering the table to avoid borrow checker issues that come with mutating state inside closures.
 
     if let Some(track) = should_play_library {
-        if let Err(e) = play_library(gem_player, Some(&track)) {
+        if let Err(e) = play_library(gem, Some(&track)) {
             error!("{}", e);
-            gem_player.ui.toasts.error("Error playing from playlist");
+            gem.ui.toasts.error("Error playing from playlist");
         }
     }
 
     if let Some(action) = context_menu_action {
         match action {
             LibraryContextMenuAction::AddToPlaylist(playlist_key) => {
-                if gem_player.ui.library.selected_tracks.is_empty() {
+                if gem.ui.library.selected_tracks.is_empty() {
                     error!("No track(s) selected for adding to playlist.");
                     return;
                 }
 
-                let playlist = gem_player.playlists.get_by_path_mut(&playlist_key);
+                let playlist = gem.playlists.get_by_path_mut(&playlist_key);
 
                 let mut added_count = 0;
-                for track_key in &gem_player.ui.library.selected_tracks {
-                    let track = gem_player.library.get_by_path(track_key);
+                for track_key in &gem.ui.library.selected_tracks {
+                    let track = gem.library.get_by_path(track_key);
                     if let Err(e) = add_to_playlist(playlist, track.clone()) {
                         error!("Failed to add track to playlist: {}", e);
                     } else {
@@ -995,46 +991,46 @@ fn library_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 }
 
-                gem_player.ui.playlists.cached_playlist_tracks = None;
+                gem.ui.playlists.cached_playlist_tracks = None;
 
                 if added_count > 0 {
                     let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);
                     info!("{}", message);
-                    gem_player.ui.toasts.success(message);
+                    gem.ui.toasts.success(message);
                 } else {
-                    gem_player.ui.toasts.error("No tracks were added.");
+                    gem.ui.toasts.error("No tracks were added.");
                 }
             }
             LibraryContextMenuAction::EnqueueNext => {
-                if gem_player.ui.library.selected_tracks.is_empty() {
+                if gem.ui.library.selected_tracks.is_empty() {
                     error!("No track(s) selected for enqueue next");
                     return;
                 }
 
-                for track_key in &gem_player.ui.library.selected_tracks {
-                    let track = gem_player.library.get_by_path(track_key);
-                    enqueue_next(&mut gem_player.player, track.clone());
+                for track_key in &gem.ui.library.selected_tracks {
+                    let track = gem.library.get_by_path(track_key);
+                    enqueue_next(&mut gem.player, track.clone());
                 }
             }
             LibraryContextMenuAction::Enqueue => {
-                if gem_player.ui.library.selected_tracks.is_empty() {
+                if gem.ui.library.selected_tracks.is_empty() {
                     error!("No track(s) selected for enqueue");
                     return;
                 }
 
-                for track_key in &gem_player.ui.library.selected_tracks {
-                    let track = gem_player.library.get_by_path(track_key);
-                    enqueue(&mut gem_player.player, track.clone());
+                for track_key in &gem.ui.library.selected_tracks {
+                    let track = gem.library.get_by_path(track_key);
+                    enqueue(&mut gem.player, track.clone());
                 }
             }
             LibraryContextMenuAction::OpenFileLocation => {
                 // We just grab the first since we cannot reveal multiple file locations.
-                let Some(first_track_key) = gem_player.ui.library.selected_tracks.first() else {
+                let Some(first_track_key) = gem.ui.library.selected_tracks.first() else {
                     error!("No track(s) were selected for opening file location.");
                     return;
                 };
 
-                let first_track = gem_player.library.get_by_path(first_track_key);
+                let first_track = gem.library.get_by_path(first_track_key);
                 if let Err(e) = open_file_location(first_track) {
                     error!("Failed to open track location: {}", e);
                 } else {
@@ -1224,8 +1220,8 @@ fn queue_view(ui: &mut Ui, player: &mut Player) {
     }
 }
 
-fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    if gem_player.ui.library_and_playlists_are_loading {
+fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
+    if gem.ui.library_and_playlists_are_loading {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1237,7 +1233,7 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    if gem_player.library_directory.is_none() {
+    if gem.library_directory.is_none() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1249,7 +1245,7 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    delete_playlist_modal(ui, gem_player);
+    delete_playlist_modal(ui, gem);
 
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
@@ -1282,18 +1278,18 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                                     let add_button = Button::new(icons::ICON_ADD);
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
-                                        let directory = gem_player.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
-                                        let new_playlist_name = format!("Playlist {}", gem_player.playlists.len() + 1);
+                                        let directory = gem.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
+                                        let new_playlist_name = format!("Playlist {}", gem.playlists.len() + 1);
                                         let result = create(new_playlist_name, directory);
                                         match result {
                                             Err(e) => {
                                                 let error_message = format!("Failed to create: {}.", e);
                                                 error!("{}", &error_message);
-                                                gem_player.ui.toasts.error(&error_message);
+                                                gem.ui.toasts.error(&error_message);
                                             }
                                             Ok(new_playlist) => {
                                                 info!("Created and saved {} to {:?}", &new_playlist.name, &new_playlist.m3u_path);
-                                                gem_player.playlists.push(new_playlist);
+                                                gem.playlists.push(new_playlist);
                                             }
                                         }
                                     }
@@ -1302,10 +1298,10 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         });
                     })
                     .body(|body| {
-                        body.rows(36.0, gem_player.playlists.len(), |mut row| {
-                            let playlist = &mut gem_player.playlists[row.index()];
+                        body.rows(36.0, gem.playlists.len(), |mut row| {
+                            let playlist = &mut gem.playlists[row.index()];
 
-                            if let Some(playlist_key) = &gem_player.ui.playlists.selected_playlist_key {
+                            if let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key {
                                 let playlist_is_selected = playlist.m3u_path == *playlist_key;
                                 row.set_selected(playlist_is_selected);
                             }
@@ -1318,11 +1314,11 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             let response = row.response();
                             if response.clicked() {
                                 info!("Selected playlist: {}", playlist.name);
-                                gem_player.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
+                                gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
 
-                                gem_player.ui.playlists.rename_buffer = None; // In case we were currently editing
-                                gem_player.ui.playlists.cached_playlist_tracks = None;
-                                gem_player.ui.playlists.selected_tracks.clear();
+                                gem.ui.playlists.rename_buffer = None; // In case we were currently editing
+                                gem.ui.playlists.cached_playlist_tracks = None;
+                                gem.ui.playlists.selected_tracks.clear();
                             }
                         });
                     });
@@ -1333,17 +1329,17 @@ fn playlists_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
             });
 
             strip.cell(|ui| {
-                playlist_ui(ui, gem_player);
+                playlist_ui(ui, gem);
             });
         });
 }
 
-fn delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    if !gem_player.ui.playlists.delete_modal_open {
+fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
+    if !gem.ui.playlists.delete_modal_open {
         return;
     }
 
-    let Some(playlist_key) = gem_player.ui.playlists.selected_playlist_key.clone() else {
+    let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
         error!("The delete playlist is open but no playlist is selected.");
         return;
     };
@@ -1374,15 +1370,15 @@ fn delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if response.clicked() {
                             confirm_clicked = true;
 
-                            let result = delete(&playlist_key, &mut gem_player.playlists);
+                            let result = delete(&playlist_key, &mut gem.playlists);
                             if let Err(e) = result {
                                 error!("{}", e);
                             } else {
                                 let message =
                                     "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
                                 info!("{}", message);
-                                gem_player.ui.toasts.success(message);
-                                gem_player.ui.playlists.selected_playlist_key = None;
+                                gem.ui.toasts.success(message);
+                                gem.ui.playlists.selected_playlist_key = None;
                             }
                         }
                     },
@@ -1392,12 +1388,12 @@ fn delete_playlist_modal(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
     if confirm_clicked || cancel_clicked || modal.should_close() {
         // maybe just handle event inside completely or outside completely.
-        gem_player.ui.playlists.delete_modal_open = false;
+        gem.ui.playlists.delete_modal_open = false;
     }
 }
 
-fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(playlist_key) = gem_player.ui.playlists.selected_playlist_key.clone() else {
+fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+    let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
         return; // No playlist selected, do nothing
     };
 
@@ -1407,7 +1403,7 @@ fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         .vertical(|mut strip| {
             strip.cell(|ui| {
                 Frame::new().fill(ui.visuals().faint_bg_color).show(ui, |ui| {
-                    if let Some(name_buffer) = &mut gem_player.ui.playlists.rename_buffer {
+                    if let Some(name_buffer) = &mut gem.ui.playlists.rename_buffer {
                         // Editing mode
                         let mut discard_clicked = false;
                         let mut save_clicked = false;
@@ -1437,25 +1433,25 @@ fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
 
-                            let playlist = &mut gem_player.playlists.get_by_path_mut(&playlist_key);
+                            let playlist = &mut gem.playlists.get_by_path_mut(&playlist_key);
                             let result = rename(playlist, name_buffer_clone);
                             match result {
                                 Err(e) => {
                                     let message = format!("Error renaming playlist: {}", e);
                                     error!("{}", message);
-                                    gem_player.ui.toasts.error(message);
+                                    gem.ui.toasts.error(message);
                                 }
                                 Ok(_) => {
                                     // Update the selected playlist with the new path so that we remain selected.
-                                    gem_player.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
+                                    gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
                                 }
                             }
 
-                            gem_player.ui.playlists.rename_buffer = None;
+                            gem.ui.playlists.rename_buffer = None;
                         }
 
                         if discard_clicked {
-                            gem_player.ui.playlists.rename_buffer = None;
+                            gem.ui.playlists.rename_buffer = None;
                         }
                     } else {
                         // Not edit mode
@@ -1469,7 +1465,7 @@ fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             |ui| {
                                 ui.add_space(16.0);
 
-                                let name = &gem_player.playlists.get_by_path(&playlist_key).name;
+                                let name = &gem.playlists.get_by_path(&playlist_key).name;
                                 ui.add(unselectable_label(RichText::new(name).heading().strong()));
 
                                 if strip_contains_pointer {
@@ -1499,38 +1495,38 @@ fn playlist_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                             },
                         );
 
-                        // We have to do this pattern since we want to access gem_player across
+                        // We have to do this pattern since we want to access gem across
                         // the two captures used by containers::Sides.
                         if play_clicked {
-                            let path = &gem_player.playlists.get_by_path(&playlist_key).m3u_path;
-                            if let Err(e) = play_playlist(gem_player, &path.clone(), None) {
+                            let path = &gem.playlists.get_by_path(&playlist_key).m3u_path;
+                            if let Err(e) = play_playlist(gem, &path.clone(), None) {
                                 error!("{}", e);
-                                gem_player.ui.toasts.error("Error playing from playlist");
+                                gem.ui.toasts.error("Error playing from playlist");
                             }
                         }
 
                         if delete_clicked {
                             info!("Opening delete playlist modal");
-                            gem_player.ui.playlists.delete_modal_open = true;
+                            gem.ui.playlists.delete_modal_open = true;
                         }
 
                         if edit_clicked {
-                            let playlist = &mut gem_player.playlists.get_by_path(&playlist_key);
+                            let playlist = &mut gem.playlists.get_by_path(&playlist_key);
                             info!("Editing playlist name: {}", playlist.name);
-                            gem_player.ui.playlists.rename_buffer = Some(playlist.name.clone());
+                            gem.ui.playlists.rename_buffer = Some(playlist.name.clone());
                         }
                     }
                 });
             });
 
             strip.cell(|ui| {
-                playlist_tracks_ui(ui, gem_player);
+                playlist_tracks_ui(ui, gem);
             });
         });
 }
 
-fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
-    let Some(playlist_key) = gem_player.ui.playlists.selected_playlist_key.clone() else {
+fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+    let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
             .show(ui, |ui| {
@@ -1542,7 +1538,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     };
 
-    let playlist_length = gem_player.playlists.get_by_path(&playlist_key).tracks.len();
+    let playlist_length = gem.playlists.get_by_path(&playlist_key).tracks.len();
     if playlist_length == 0 {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
@@ -1555,16 +1551,16 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
         return;
     }
 
-    let cached_playlist_tracks = gem_player.ui.playlists.cached_playlist_tracks.get_or_insert_with(|| {
+    let cached_playlist_tracks = gem.ui.playlists.cached_playlist_tracks.get_or_insert_with(|| {
         // Regenerate the cache.
 
-        let filtered: Vec<Track> = gem_player
+        let filtered: Vec<Track> = gem
             .playlists
             .get_by_path(&playlist_key)
             .tracks
             .iter()
             .filter(|track| {
-                let search_lower = gem_player.ui.search.to_lowercase();
+                let search_lower = gem.ui.search.to_lowercase();
 
                 let matches_search = |field: &Option<String>| {
                     field
@@ -1632,9 +1628,9 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
             body.rows(26.0, cached_playlist_tracks.len(), |mut row| {
                 let index = row.index();
                 let track = &cached_playlist_tracks[index];
-                let track_is_playing = gem_player.player.playing.as_ref().is_some_and(|t| t == track);
+                let track_is_playing = gem.player.playing.as_ref().is_some_and(|t| t == track);
 
-                let row_is_selected = gem_player.ui.playlists.selected_tracks.contains(&track.path);
+                let row_is_selected = gem.ui.playlists.selected_tracks.contains(&track.path);
                 row.set_selected(row_is_selected);
 
                 let text_color = if track_is_playing && !row_is_selected {
@@ -1687,7 +1683,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         let response = ui.add(more_button).on_hover_text("More");
 
                         Popup::menu(&response).show(|ui| {
-                            let selected_tracks_count = gem_player.ui.playlists.selected_tracks.len();
+                            let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
                             let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
                             if let Some(action) = maybe_action {
                                 context_menu_action = Some(action);
@@ -1702,10 +1698,10 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 let secondary_clicked = response.secondary_clicked();
                 let primary_clicked = response.clicked() || response.double_clicked();
-                let already_selected = gem_player.ui.playlists.selected_tracks.contains(&track.path);
+                let already_selected = gem.ui.playlists.selected_tracks.contains(&track.path);
 
                 if primary_clicked || secondary_clicked {
-                    let selected_tracks = &mut gem_player.ui.playlists.selected_tracks;
+                    let selected_tracks = &mut gem.ui.playlists.selected_tracks;
 
                     if secondary_clicked {
                         if selected_tracks.is_empty() || !already_selected {
@@ -1735,7 +1731,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 }
 
                 Popup::context_menu(&response).show(|ui| {
-                    let selected_tracks_count = gem_player.ui.playlists.selected_tracks.len();
+                    let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
                     let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
                     if let Some(action) = maybe_action {
                         context_menu_action = Some(action);
@@ -1747,20 +1743,20 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     if let Some(action) = context_menu_action {
         match action {
             PlaylistContextMenuAction::RemoveFromPlaylist => {
-                let Some(playlist_key) = &gem_player.ui.playlists.selected_playlist_key else {
+                let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key else {
                     error!("No playlist selected for removing track from playlist.");
                     return;
                 };
 
-                if gem_player.ui.playlists.selected_tracks.is_empty() {
+                if gem.ui.playlists.selected_tracks.is_empty() {
                     error!("No track(s) selected for removing track from playlist next.");
                     return;
                 };
 
-                let playlist = gem_player.playlists.get_by_path_mut(playlist_key);
+                let playlist = gem.playlists.get_by_path_mut(playlist_key);
 
                 let mut added_count = 0;
-                for track_key in &gem_player.ui.playlists.selected_tracks {
+                for track_key in &gem.ui.playlists.selected_tracks {
                     if let Err(e) = remove_from_playlist(playlist, track_key) {
                         error!("Failed to remove track from playlist: {}", e);
                     } else {
@@ -1768,48 +1764,48 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
                     }
                 }
 
-                gem_player.ui.playlists.cached_playlist_tracks = None;
+                gem.ui.playlists.cached_playlist_tracks = None;
 
                 if added_count > 0 {
                     let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
                     info!("{}", message);
-                    gem_player.ui.toasts.success(message);
+                    gem.ui.toasts.success(message);
                 } else {
-                    gem_player.ui.toasts.error("No tracks were removed.");
+                    gem.ui.toasts.error("No tracks were removed.");
                 }
             }
             PlaylistContextMenuAction::EnqueueNext => {
-                if gem_player.ui.playlists.selected_tracks.is_empty() {
+                if gem.ui.playlists.selected_tracks.is_empty() {
                     error!("No track(s) selected for enqueue next");
                     return;
                 };
 
-                let playlist = gem_player.playlists.get_by_path(&playlist_key);
-                for track_key in &gem_player.ui.playlists.selected_tracks {
+                let playlist = gem.playlists.get_by_path(&playlist_key);
+                for track_key in &gem.ui.playlists.selected_tracks {
                     let track = playlist.tracks.get_by_path(track_key);
-                    enqueue_next(&mut gem_player.player, track.clone());
+                    enqueue_next(&mut gem.player, track.clone());
                 }
             }
             PlaylistContextMenuAction::Enqueue => {
-                if gem_player.ui.playlists.selected_tracks.is_empty() {
+                if gem.ui.playlists.selected_tracks.is_empty() {
                     error!("No track(s) selected for enqueue");
                     return;
                 };
 
-                let playlist = gem_player.playlists.get_by_path(&playlist_key);
-                for track_key in &gem_player.ui.playlists.selected_tracks {
+                let playlist = gem.playlists.get_by_path(&playlist_key);
+                for track_key in &gem.ui.playlists.selected_tracks {
                     let track = playlist.tracks.get_by_path(track_key);
-                    enqueue(&mut gem_player.player, track.clone());
+                    enqueue(&mut gem.player, track.clone());
                 }
             }
             PlaylistContextMenuAction::OpenFileLocation => {
                 // We take the first one since we cannot open / reveal multiple tracks.
-                let Some(first_track_key) = gem_player.ui.playlists.selected_tracks.first() else {
+                let Some(first_track_key) = gem.ui.playlists.selected_tracks.first() else {
                     error!("No track(s) selected for opening file location");
                     return;
                 };
 
-                let playlist = gem_player.playlists.get_by_path(&playlist_key);
+                let playlist = gem.playlists.get_by_path(&playlist_key);
                 let first_track = playlist.tracks.get_by_path(first_track_key);
                 if let Err(e) = open_file_location(first_track) {
                     error!("Failed to open track location: {}", e);
@@ -1821,9 +1817,9 @@ fn playlist_tracks_ui(ui: &mut Ui, gem_player: &mut GemPlayer) {
     }
 
     if let Some((playlist_key, track_key)) = should_play_playlist {
-        if let Err(e) = play_playlist(gem_player, &playlist_key, Some(&track_key)) {
+        if let Err(e) = play_playlist(gem, &playlist_key, Some(&track_key)) {
             error!("{}", e);
-            gem_player.ui.toasts.error("Error playing from playlist");
+            gem.ui.toasts.error("Error playing from playlist");
         }
     }
 }
@@ -1873,7 +1869,7 @@ fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option
     action
 }
 
-fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
         .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
         .show(ui, |ui| {
@@ -1882,22 +1878,18 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add_space(8.0);
                 ui.add(unselectable_label("Playlists are also stored here as m3u files."));
                 ui.horizontal(|ui| {
-                    let (display_path, full_path) = match gem_player.library_directory.as_ref() {
+                    let (display_path, full_path) = match gem.library_directory.as_ref() {
                         Some(p) => (elide_path(p, 80), p.to_string_lossy().to_string()),
                         None => ("No directory selected".to_string(), "No directory selected".to_string()),
                     };
 
                     ui.label(display_path).on_hover_text(full_path);
 
-                    let start_dir = gem_player
-                        .library_directory
-                        .as_deref()
-                        .unwrap_or_else(|| Path::new("/"))
-                        .to_path_buf();
+                    let start_dir = gem.library_directory.as_deref().unwrap_or_else(|| Path::new("/")).to_path_buf();
 
                     if ui.button(icons::ICON_FOLDER_OPEN).on_hover_text("Change").clicked() {
                         let receiver = spawn_folder_picker(&start_dir);
-                        gem_player.folder_picker_receiver = Some(receiver);
+                        gem.folder_picker_receiver = Some(receiver);
                     }
                 });
 
@@ -1907,7 +1899,7 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
 
                 ui.add_space(8.0);
 
-                let selected_device_text = gem_player
+                let selected_device_text = gem
                     .player
                     .backend
                     .as_ref()
@@ -1917,23 +1909,23 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 let inner = ComboBox::from_label("Output device")
                     .selected_text(selected_device_text)
                     .show_ui(ui, |ui| {
-                        for (device, name) in &gem_player.ui.settings.audio_output_devices_cache {
-                            let maybe_backend = gem_player.player.backend.as_ref();
+                        for (device, name) in &gem.ui.settings.audio_output_devices_cache {
+                            let maybe_backend = gem.player.backend.as_ref();
                             let mut is_selected = maybe_backend.is_some_and(|b| b.device.name().ok() == Some(name.clone()));
 
                             let response = ui.selectable_value(&mut is_selected, true, name.clone());
 
                             if response.clicked() {
-                                if let Err(err) = switch_audio_devices(&mut gem_player.player, device.clone()) {
+                                if let Err(err) = switch_audio_devices(&mut gem.player, device.clone()) {
                                     error!("Failed to switch device: {}", err);
-                                    gem_player.ui.toasts.error("Failed to switch audio device.");
+                                    gem.ui.toasts.error("Failed to switch audio device.");
                                 }
                             }
                         }
                     });
 
                 if inner.response.clicked() {
-                    gem_player.ui.settings.audio_output_devices_cache = get_audio_output_devices_and_names();
+                    gem.ui.settings.audio_output_devices_cache = get_audio_output_devices_and_names();
                 }
 
                 ui.add(Separator::default().spacing(32.0));
@@ -1941,9 +1933,9 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
 
-                let before = gem_player.ui.theme_preference;
-                ThemePreference::radio_buttons(&mut gem_player.ui.theme_preference, ui);
-                let after = gem_player.ui.theme_preference;
+                let before = gem.ui.theme_preference;
+                ThemePreference::radio_buttons(&mut gem.ui.theme_preference, ui);
+                let after = gem.ui.theme_preference;
 
                 let theme_was_changed = before != after;
                 if theme_was_changed {
@@ -2028,7 +2020,7 @@ fn settings_view(ui: &mut Ui, gem_player: &mut GemPlayer) {
         });
 }
 
-fn navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
+fn navigation_bar(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         ui.columns_const(|[left, center, right]| {
             left.with_layout(Layout::left_to_right(Align::Center), |ui| {
@@ -2042,59 +2034,56 @@ fn navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                 for view in View::iter() {
                     let icon = get_icon_and_tooltip(&view);
                     let response = ui
-                        .selectable_label(gem_player.ui.current_view == view, format!("  {icon}  "))
+                        .selectable_label(gem.ui.current_view == view, format!("  {icon}  "))
                         .on_hover_text(format!("{:?}", view));
                     if response.clicked() {
-                        switch_view(&mut gem_player.ui, view);
+                        switch_view(&mut gem.ui, view);
                     }
 
                     ui.add_space(4.0);
                 }
             });
 
-            center.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
-                match gem_player.ui.current_view {
-                    View::Library => {
-                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.library);
-                        ui.add(unselectable_label(tracks_count_and_duration));
-                    }
-                    View::Queue => {
-                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem_player.player.queue);
-                        ui.add(unselectable_label(tracks_count_and_duration));
-                    }
-                    View::Playlists => {
-                        let Some(playlist_key) = &gem_player.ui.playlists.selected_playlist_key else {
-                            return;
-                        };
-
-                        let playlist = gem_player.playlists.get_by_path(playlist_key);
-
-                        let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&playlist.tracks);
-                        ui.add(unselectable_label(tracks_count_and_duration));
-                    }
-                    View::Settings => {}
+            center.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| match gem.ui.current_view {
+                View::Library => {
+                    let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem.library);
+                    ui.add(unselectable_label(tracks_count_and_duration));
                 }
+                View::Queue => {
+                    let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&gem.player.queue);
+                    ui.add(unselectable_label(tracks_count_and_duration));
+                }
+                View::Playlists => {
+                    let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key else {
+                        return;
+                    };
+
+                    let playlist = gem.playlists.get_by_path(playlist_key);
+
+                    let tracks_count_and_duration = get_count_and_duration_string_from_tracks(&playlist.tracks);
+                    ui.add(unselectable_label(tracks_count_and_duration));
+                }
+                View::Settings => {}
             });
 
-            right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem_player.ui.current_view {
+            right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem.ui.current_view {
                 View::Library => {
-                    let search_was_changed = search_ui(ui, &mut gem_player.ui.search);
+                    let search_was_changed = search_ui(ui, &mut gem.ui.search);
                     if search_was_changed {
                         // We reset both caches since there is only one search text state variable.
-                        gem_player.ui.library.cached_library = None;
-                        gem_player.ui.library.selected_tracks.clear();
-                        gem_player.ui.playlists.cached_playlist_tracks = None;
-                        gem_player.ui.playlists.selected_tracks.clear();
+                        gem.ui.library.cached_library = None;
+                        gem.ui.library.selected_tracks.clear();
+                        gem.ui.playlists.cached_playlist_tracks = None;
+                        gem.ui.playlists.selected_tracks.clear();
                     }
 
-                    let sort_was_changed =
-                        sort_and_order_by_ui(ui, &mut gem_player.ui.library.sort_by, &mut gem_player.ui.library.sort_order);
+                    let sort_was_changed = sort_and_order_by_ui(ui, &mut gem.ui.library.sort_by, &mut gem.ui.library.sort_order);
                     if sort_was_changed {
-                        gem_player.ui.library.cached_library = None;
+                        gem.ui.library.cached_library = None;
                     }
                 }
                 View::Queue => {
-                    let queue_is_not_empty = !gem_player.player.queue.is_empty();
+                    let queue_is_not_empty = !gem.player.queue.is_empty();
 
                     let clear_button = Button::new(icons::ICON_CLEAR_ALL);
                     let response = ui
@@ -2102,17 +2091,17 @@ fn navigation_bar(ui: &mut Ui, gem_player: &mut GemPlayer) {
                         .on_hover_text("Clear")
                         .on_disabled_hover_text("Queue is empty");
                     if response.clicked() {
-                        clear_the_queue(&mut gem_player.player);
+                        clear_the_queue(&mut gem.player);
                     }
                 }
                 View::Playlists => {
-                    let search_changed = search_ui(ui, &mut gem_player.ui.search);
+                    let search_changed = search_ui(ui, &mut gem.ui.search);
                     if search_changed {
                         // Same as above.
-                        gem_player.ui.library.cached_library = None;
-                        gem_player.ui.library.selected_tracks.clear();
-                        gem_player.ui.playlists.cached_playlist_tracks = None;
-                        gem_player.ui.playlists.selected_tracks.clear();
+                        gem.ui.library.cached_library = None;
+                        gem.ui.library.selected_tracks.clear();
+                        gem.ui.playlists.cached_playlist_tracks = None;
+                        gem.ui.playlists.selected_tracks.clear();
                     }
                 }
                 _ => {}
