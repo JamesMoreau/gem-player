@@ -17,10 +17,10 @@ pub enum VisualizerCommand {
     Shutdown,
 }
 
-//   The visualizer pipeline is comprised of three components:
-//   1. A source wrapper that captures audio samples from the audio stream.
-//   2. A processing thread that receives the samples, performs FFT, and performs other processing.
-//   3. Visualization UI code in the main thread that displays the processed data.
+//  The visualizer pipeline is comprised of three components:
+//  - A source wrapper that captures audio samples from the audio stream.
+//  - A processing thread that receives the samples, performs FFT, and performs other processing.
+//  - Visualization UI code in the main thread that displays the processed data.
 
 pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f32>>) {
     let (command_sender, commands_receiver) = channel::<VisualizerCommand>();
