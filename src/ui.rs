@@ -343,13 +343,9 @@ fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
             .size(Size::exact(gap + button_width + gap + artwork_width + gap + slider_width + gap))
             .size(Size::remainder())
             .horizontal(|mut strip| {
-                strip.cell(|ui| {
-                    playback_controls_ui(ui, gem);
-                });
+                strip.cell(|ui| playback_controls_ui(ui, gem));
 
-                strip.cell(|ui| {
-                    display_track_info(ui, gem, button_width, gap, artwork_width, slider_width);
-                });
+                strip.cell(|ui| display_track_info(ui, gem, button_width, gap, artwork_width, slider_width));
 
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
