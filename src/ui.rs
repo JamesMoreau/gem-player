@@ -114,9 +114,7 @@ pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
-                strip.cell(|ui| {
-                    control_panel_ui(ui, gem);
-                });
+                strip.cell(|ui| control_panel_ui(ui, gem));
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
@@ -129,9 +127,7 @@ pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
-                strip.cell(|ui| {
-                    navigation_bar(ui, gem);
-                });
+                strip.cell(|ui| navigation_bar(ui, gem));
             });
     });
 }
@@ -557,9 +553,7 @@ fn display_track_info(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f
                                 .size(Size::exact(slider_width * (4.0 / 5.0)))
                                 .size(Size::exact(slider_width * (1.0 / 5.0)))
                                 .horizontal(|mut hstrip| {
-                                    hstrip.cell(|ui| {
-                                        display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee);
-                                    });
+                                    hstrip.cell(|ui| display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee));
 
                                     hstrip.cell(|ui| {
                                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -1330,9 +1324,7 @@ fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add(Separator::default().vertical());
             });
 
-            strip.cell(|ui| {
-                playlist_ui(ui, gem);
-            });
+            strip.cell(|ui| playlist_ui(ui, gem));
         });
 }
 
@@ -1521,9 +1513,7 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 });
             });
 
-            strip.cell(|ui| {
-                playlist_tracks_ui(ui, gem);
-            });
+            strip.cell(|ui| playlist_tracks_ui(ui, gem));
         });
 }
 
