@@ -334,7 +334,7 @@ fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
     let button_width = 20.0;
     let gap = 10.0;
-    let artwork_width = ui.available_height() - gap;
+    let artwork_width = ui.available_height() - 4.0; // leave some space for the track info frame background.
     let slider_width = 420.0;
 
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
@@ -503,9 +503,7 @@ fn display_track_info(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f
                 });
                 strip.empty();
                 strip.cell(|ui| {
-                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                        display_artwork(ui, gem, artwork_width);
-                    });
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| display_artwork(ui, gem, artwork_width));
                 });
                 strip.empty();
                 strip.strip(|builder| {
