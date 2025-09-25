@@ -99,7 +99,7 @@ pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
             return; // Don't render anything else if files are being dropped.
         }
 
-        let control_ui_height = 64.0;
+        let control_ui_height = 80.0;
         let navigation_ui_height = 32.0;
         let separator_space = 2.0; // Even numbers seem to work better for getting pixel perfect placements.
 
@@ -700,7 +700,7 @@ fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
         *bar += (target - *bar) * alpha;
     }
 
-    let desired_height = ui.available_height() * 0.6;
+    let desired_height = ui.available_height() * 0.5;
     let bar_width = 10.0;
     let bar_gap = 4.0;
     let bar_radius = 1.0;

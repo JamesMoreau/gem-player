@@ -1,5 +1,5 @@
 use log::info;
-use rodio::{source::SeekError, ChannelCount, SampleRate, Source};
+use rodio::{source::SeekError, ChannelCount, Sample, SampleRate, Source};
 use rustfft::{num_complex::Complex, FftPlanner};
 use std::{
     f32::consts::{PI, SQRT_2},
@@ -12,8 +12,8 @@ const FFT_SIZE: usize = 1 << 10; // 1024
 pub const CENTER_FREQUENCIES: [f32; 6] = [63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0];
 
 pub enum VisualizerCommand {
-    Sample(f32),
-    SampleRate(f32),
+    Sample(Sample),
+    SampleRate(SampleRate),
     Shutdown,
 }
 
@@ -28,7 +28,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 
     let cs = command_sender.clone();
     thread::spawn(move || {
-        let mut sample_rate = 44100.0;
+        let mut sample_rate = 44100;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
         while let Ok(command) = commands_receiver.recv() {
@@ -38,7 +38,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 
                     if samples.len() == FFT_SIZE {
                         let half_octave_bandwidth = SQRT_2;
-                        let bands = process_samples(&samples, sample_rate as u32, &CENTER_FREQUENCIES, half_octave_bandwidth);
+                        let bands = process_samples(&samples, sample_rate, &CENTER_FREQUENCIES, half_octave_bandwidth);
 
                         let result = bands_sender.send(bands);
                         if result.is_err() {
@@ -63,7 +63,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     (command_sender, bands_receiver)
 }
 
-pub fn process_samples(samples: &[f32], sample_rate: u32, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {
+pub fn process_samples(samples: &[Sample], sample_rate: SampleRate, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {
     let n = samples.len();
     let window = hann_window(n);
 
