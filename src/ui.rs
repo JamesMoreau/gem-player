@@ -1993,8 +1993,6 @@ fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.horizontal_wrapped(|ui| {
                     ui.add(unselectable_label("Author:"));
 
-                    ui.add(unselectable_label(" / "));
-
                     ui.add(unselectable_label("James Moreau"));
 
                     ui.add(unselectable_label(" / "));
