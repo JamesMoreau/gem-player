@@ -40,15 +40,13 @@ jobs:
           $dest = Join-Path $targetDir $env:WIN_EXE_NAME
           Copy-Item -Path $exeFile -Destination $dest -Force
 
-      - name: Install WiX Toolset
-        run: choco install wixtoolset -y
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
       - name: Build MSI
-        run: |
-          # Compile WiX installer
-          candle.exe installer/installer.wxs -o target/release/installer.wixobj
-          # Link MSI
-          light.exe target/release/installer.wixobj -o target/release/GemPlayerInstaller.msi
+        run: dotnet build installer/installer.wixproj -c Release
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4
