@@ -8,21 +8,20 @@
     <!-- Installation folder in Program Files -->
     <Directory Id="INSTALLFOLDER" Name="Gem Player" />
 
-    <!-- Main executable component -->
+    <!-- Component for main executable (per-machine) -->
     <Component Id="MainExecutable" Guid="3F2504E0-4F89-11D3-9A0C-0305E82C3301">
       <File Source="Gem Player.exe" KeyPath="yes"/>
     </Component>
 
-    <!-- Desktop shortcut component (per-user) -->
+    <!-- Component for desktop shortcut (per-user) -->
     <Component Id="DesktopShortcut" Guid="7F4E8D2A-2E4C-4D3F-8E34-123456789ABC">
-      <!-- The shortcut itself -->
       <Shortcut Id="DesktopShortcut"
                 Name="Gem Player"
                 Description="Gem Player Music Application"
                 Target="[INSTALLFOLDER]Gem Player.exe"
                 WorkingDirectory="INSTALLFOLDER"
                 Directory="DesktopFolder"/>
-      <!-- Registry key as KeyPath -->
+      <!-- Registry key as KeyPath for per-user component -->
       <RegistryValue Root="HKCU" Key="Software\Gem Player" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
     </Component>
 
