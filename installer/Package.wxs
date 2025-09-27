@@ -31,5 +31,6 @@
       <ComponentRef Id="DesktopShortcut"/>
     </Feature>
 
+	<MediaTemplate EmbedCab="yes" />
   </Package>
 </Wix>
