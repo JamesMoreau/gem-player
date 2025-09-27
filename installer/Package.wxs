@@ -1,31 +1,23 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Id="GemPlayer" Name="Gem Player"
+  <Package Id="GemPlayer"
+           Name="Gem Player"
            Manufacturer="James Moreau"
            Version="0.1.0"
-           Compressed="yes"> <!-- Embed all files inside MSI -->
+           Compressed="yes">
 
-    <!-- Root directory -->
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="Gem Player" />
-      </Directory>
-      <Directory Id="DesktopFolder" Name="Desktop" /> <!-- Standard Windows desktop -->
+    <!-- Install folder in Program Files -->
+    <Directory Id="INSTALLFOLDER" Name="Gem Player">
+      <Component Id="MainExecutable" Guid="9666B907-46F3-487A-8916-45A6C073D7C8">
+        <File Source="Gem Player.exe" KeyPath="yes"/>
+        <Shortcut Id="DesktopShortcut"
+                  Name="Gem Player"
+                  Description="Gem Player Music Application"
+                  Target="[INSTALLFOLDER]Gem Player.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Directory="DesktopFolder"/>
+      </Component>
     </Directory>
 
-    <!-- Main executable -->
-    <Component Id="MainExecutable" Guid="PUT-NEW-GUID-HERE">
-      <File Source="Gem Player.exe" KeyPath="yes"/>
-
-      <!-- Desktop shortcut -->
-      <Shortcut Id="DesktopShortcut"
-                Name="Gem Player"
-                Description="Gem Player Music Application"
-                Target="[INSTALLFOLDER]Gem Player.exe"
-                WorkingDirectory="INSTALLFOLDER"
-                Directory="DesktopFolder"/>
-    </Component>
-
-    <!-- Feature including the executable and shortcut -->
     <Feature Id="MainFeature" Title="Gem Player" Level="1">
       <ComponentRef Id="MainExecutable"/>
     </Feature>
