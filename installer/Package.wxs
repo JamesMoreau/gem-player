@@ -2,6 +2,6 @@
   <Package Id="GemPlayer" Name="Gem Player"
            Manufacturer="James Moreau" Version="0.1.0">
     <Directory Id="INSTALLFOLDER" Name="Gem Player" />
-    <File Source="target/x86_64-pc-windows-gnu/release/Gem Player.exe" />
+    <File Source="Gem Player.exe" />
   </Package>
 </Wix>

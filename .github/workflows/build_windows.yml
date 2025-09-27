@@ -17,9 +17,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     env:
-      APP_NAME: "Gem Player"
       WIN_TARGET: "x86_64-pc-windows-gnu"
-      WIN_EXE_NAME: "Gem Player.exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -33,12 +31,8 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target $env:WIN_TARGET
 
-      - name: Rename EXE to friendly name
-        run: |
-          $targetDir = "target/$env:WIN_TARGET/release"
-          $exeFile = Join-Path $targetDir "gem-player.exe"
-          $dest = Join-Path $targetDir $env:WIN_EXE_NAME
-          Copy-Item -Path $exeFile -Destination $dest -Force
+      - name: Copy EXE for installer
+        run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/Gem Player.exe" -Force
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -52,4 +46,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: GemPlayer-windows-msi
-          path: target/release/GemPlayerInstaller.msi
+          path: installer/bin/Release/*.msi
