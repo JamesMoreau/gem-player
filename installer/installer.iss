@@ -10,8 +10,7 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-; Copy your built binary into install directory
-Source: "target\x86_64-pc-windows-gnu\release\gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start menu shortcut
