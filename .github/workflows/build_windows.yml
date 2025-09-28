@@ -31,23 +31,14 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target $env:WIN_TARGET
 
-      - name: Copy EXE for installer
-        run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/Gem Player.exe" -Force
+      - name: Compile Inno Setup Installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/installer.iss
+          options: /O+
 
-      - name: Copy EXE for installer
-        run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/Gem Player.exe" -Force
-
-      - name: Install WiX Toolset v3
-        run: choco install wixtoolset --version=3.11.2 -y
-
-      - name: Build MSI with WiX v3
-        run: |
-          cd installer
-          candle.exe Product.wxs -o Product.wixobj
-          light.exe Product.wixobj -o GemPlayer.msi
-
-      - name: Upload MSI
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: GemPlayer-windows-msi
-          path: installer/bin/Release/*.msi
+          name: GemPlayer-windows-installer
+          path: GemPlayerInstaller.exe
