@@ -3,10 +3,17 @@
            Name="Gem Player"
            Manufacturer="James Moreau"
            Version="0.1.0"
-           Compressed="yes">
+           Compressed="yes"
+           InstallerVersion="500"
+           InstallScope="perMachine">
 
-    <!-- Installation folder in Program Files -->
-    <Directory Id="INSTALLFOLDER" Name="Gem Player" />
+    <!-- Default install path (Program Files\Gem Player) -->
+    <StandardDirectory Id="ProgramFilesFolder">
+      <Directory Id="INSTALLFOLDER" Name="Gem Player" />
+    </StandardDirectory>
+
+    <!-- Allow user to pick a different install folder -->
+    <Property Id="INSTALLFOLDER" Value="[ProgramFilesFolder]\Gem Player" />
 
     <!-- Component for main executable (per-machine) -->
     <Component Id="MainExecutable" Guid="3F2504E0-4F89-11D3-9A0C-0305E82C3301">
@@ -31,6 +38,12 @@
       <ComponentRef Id="DesktopShortcut"/>
     </Feature>
 
-	<MediaTemplate EmbedCab="yes" />
+    <!-- Generate embedded CAB automatically -->
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Hook up standard InstallDir UI -->
+    <UIRef Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
   </Package>
 </Wix>

@@ -963,77 +963,12 @@ fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     if let Some(track) = should_play_library {
         if let Err(e) = play_library(gem, Some(&track)) {
             error!("{}", e);
-            gem.ui.toasts.error("Error playing from playlist");
+            gem.ui.toasts.error("Error playing from library");
         }
     }
 
     if let Some(action) = context_menu_action {
-        match action {
-            LibraryContextMenuAction::AddToPlaylist(playlist_key) => {
-                if gem.ui.library.selected_tracks.is_empty() {
-                    error!("No track(s) selected for adding to playlist.");
-                    return;
-                }
-
-                let playlist = gem.playlists.get_by_path_mut(&playlist_key);
-
-                let mut added_count = 0;
-                for track_key in &gem.ui.library.selected_tracks {
-                    let track = gem.library.get_by_path(track_key);
-                    if let Err(e) = add_to_playlist(playlist, track.clone()) {
-                        error!("Failed to add track to playlist: {}", e);
-                    } else {
-                        added_count += 1;
-                    }
-                }
-
-                gem.ui.playlists.cached_playlist_tracks = None;
-
-                if added_count > 0 {
-                    let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);
-                    info!("{}", message);
-                    gem.ui.toasts.success(message);
-                } else {
-                    gem.ui.toasts.error("No tracks were added.");
-                }
-            }
-            LibraryContextMenuAction::EnqueueNext => {
-                if gem.ui.library.selected_tracks.is_empty() {
-                    error!("No track(s) selected for enqueue next");
-                    return;
-                }
-
-                for track_key in &gem.ui.library.selected_tracks {
-                    let track = gem.library.get_by_path(track_key);
-                    enqueue_next(&mut gem.player, track.clone());
-                }
-            }
-            LibraryContextMenuAction::Enqueue => {
-                if gem.ui.library.selected_tracks.is_empty() {
-                    error!("No track(s) selected for enqueue");
-                    return;
-                }
-
-                for track_key in &gem.ui.library.selected_tracks {
-                    let track = gem.library.get_by_path(track_key);
-                    enqueue(&mut gem.player, track.clone());
-                }
-            }
-            LibraryContextMenuAction::OpenFileLocation => {
-                // We just grab the first since we cannot reveal multiple file locations.
-                let Some(first_track_key) = gem.ui.library.selected_tracks.first() else {
-                    error!("No track(s) were selected for opening file location.");
-                    return;
-                };
-
-                let first_track = gem.library.get_by_path(first_track_key);
-                if let Err(e) = open_file_location(first_track) {
-                    error!("Failed to open track location: {}", e);
-                } else {
-                    info!("Opening track location: {}", first_track.path.display());
-                }
-            }
-        }
+        handle_library_context_menu_action(gem, action);
     }
 }
 
@@ -1043,6 +978,75 @@ enum LibraryContextMenuAction {
     EnqueueNext,
     Enqueue,
     OpenFileLocation,
+}
+
+fn handle_library_context_menu_action(gem: &mut GemPlayer, action: LibraryContextMenuAction) {
+    match action {
+        LibraryContextMenuAction::AddToPlaylist(playlist_key) => {
+            if gem.ui.library.selected_tracks.is_empty() {
+                error!("No track(s) selected for adding to playlist.");
+                return;
+            }
+
+            let playlist = gem.playlists.get_by_path_mut(&playlist_key);
+
+            let mut added_count = 0;
+            for track_key in &gem.ui.library.selected_tracks {
+                let track = gem.library.get_by_path(track_key);
+                if let Err(e) = add_to_playlist(playlist, track.clone()) {
+                    error!("Failed to add track to playlist: {}", e);
+                } else {
+                    added_count += 1;
+                }
+            }
+
+            gem.ui.playlists.cached_playlist_tracks = None;
+
+            if added_count > 0 {
+                let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);
+                info!("{}", message);
+                gem.ui.toasts.success(message);
+            } else {
+                gem.ui.toasts.error("No tracks were added.");
+            }
+        }
+        LibraryContextMenuAction::EnqueueNext => {
+            if gem.ui.library.selected_tracks.is_empty() {
+                error!("No track(s) selected for enqueue next");
+                return;
+            }
+
+            for track_key in &gem.ui.library.selected_tracks {
+                let track = gem.library.get_by_path(track_key);
+                enqueue_next(&mut gem.player, track.clone());
+            }
+        }
+        LibraryContextMenuAction::Enqueue => {
+            if gem.ui.library.selected_tracks.is_empty() {
+                error!("No track(s) selected for enqueue");
+                return;
+            }
+
+            for track_key in &gem.ui.library.selected_tracks {
+                let track = gem.library.get_by_path(track_key);
+                enqueue(&mut gem.player, track.clone());
+            }
+        }
+        LibraryContextMenuAction::OpenFileLocation => {
+            // We just grab the first since we cannot reveal multiple file locations.
+            let Some(first_track_key) = gem.ui.library.selected_tracks.first() else {
+                error!("No track(s) were selected for opening file location.");
+                return;
+            };
+
+            let first_track = gem.library.get_by_path(first_track_key);
+            if let Err(e) = open_file_location(first_track) {
+                error!("Failed to open track location: {}", e);
+            } else {
+                info!("Opening track location: {}", first_track.path.display());
+            }
+        }
+    }
 }
 
 fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists: &[Playlist]) -> Option<LibraryContextMenuAction> {
@@ -1733,79 +1737,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         });
 
     if let Some(action) = context_menu_action {
-        match action {
-            PlaylistContextMenuAction::RemoveFromPlaylist => {
-                let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key else {
-                    error!("No playlist selected for removing track from playlist.");
-                    return;
-                };
-
-                if gem.ui.playlists.selected_tracks.is_empty() {
-                    error!("No track(s) selected for removing track from playlist next.");
-                    return;
-                };
-
-                let playlist = gem.playlists.get_by_path_mut(playlist_key);
-
-                let mut added_count = 0;
-                for track_key in &gem.ui.playlists.selected_tracks {
-                    if let Err(e) = remove_from_playlist(playlist, track_key) {
-                        error!("Failed to remove track from playlist: {}", e);
-                    } else {
-                        added_count += 1;
-                    }
-                }
-
-                gem.ui.playlists.cached_playlist_tracks = None;
-
-                if added_count > 0 {
-                    let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
-                    info!("{}", message);
-                    gem.ui.toasts.success(message);
-                } else {
-                    gem.ui.toasts.error("No tracks were removed.");
-                }
-            }
-            PlaylistContextMenuAction::EnqueueNext => {
-                if gem.ui.playlists.selected_tracks.is_empty() {
-                    error!("No track(s) selected for enqueue next");
-                    return;
-                };
-
-                let playlist = gem.playlists.get_by_path(&playlist_key);
-                for track_key in &gem.ui.playlists.selected_tracks {
-                    let track = playlist.tracks.get_by_path(track_key);
-                    enqueue_next(&mut gem.player, track.clone());
-                }
-            }
-            PlaylistContextMenuAction::Enqueue => {
-                if gem.ui.playlists.selected_tracks.is_empty() {
-                    error!("No track(s) selected for enqueue");
-                    return;
-                };
-
-                let playlist = gem.playlists.get_by_path(&playlist_key);
-                for track_key in &gem.ui.playlists.selected_tracks {
-                    let track = playlist.tracks.get_by_path(track_key);
-                    enqueue(&mut gem.player, track.clone());
-                }
-            }
-            PlaylistContextMenuAction::OpenFileLocation => {
-                // We take the first one since we cannot open / reveal multiple tracks.
-                let Some(first_track_key) = gem.ui.playlists.selected_tracks.first() else {
-                    error!("No track(s) selected for opening file location");
-                    return;
-                };
-
-                let playlist = gem.playlists.get_by_path(&playlist_key);
-                let first_track = playlist.tracks.get_by_path(first_track_key);
-                if let Err(e) = open_file_location(first_track) {
-                    error!("Failed to open track location: {}", e);
-                } else {
-                    info!("Opening track location: {}", first_track.path.display());
-                }
-            }
-        }
+        handle_playlist_context_menu_action(gem, action, &playlist_key);
     }
 
     if let Some((playlist_key, track_key)) = should_play_playlist {
@@ -1822,6 +1754,82 @@ enum PlaylistContextMenuAction {
     EnqueueNext,
     Enqueue,
     OpenFileLocation,
+}
+
+fn handle_playlist_context_menu_action(gem: &mut GemPlayer, action: PlaylistContextMenuAction, playlist_key: &Path) {
+    match action {
+        PlaylistContextMenuAction::RemoveFromPlaylist => {
+            let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key else {
+                error!("No playlist selected for removing track from playlist.");
+                return;
+            };
+
+            if gem.ui.playlists.selected_tracks.is_empty() {
+                error!("No track(s) selected for removing track from playlist next.");
+                return;
+            };
+
+            let playlist = gem.playlists.get_by_path_mut(playlist_key);
+
+            let mut added_count = 0;
+            for track_key in &gem.ui.playlists.selected_tracks {
+                if let Err(e) = remove_from_playlist(playlist, track_key) {
+                    error!("Failed to remove track from playlist: {}", e);
+                } else {
+                    added_count += 1;
+                }
+            }
+
+            gem.ui.playlists.cached_playlist_tracks = None;
+
+            if added_count > 0 {
+                let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
+                info!("{}", message);
+                gem.ui.toasts.success(message);
+            } else {
+                gem.ui.toasts.error("No tracks were removed.");
+            }
+        }
+        PlaylistContextMenuAction::EnqueueNext => {
+            if gem.ui.playlists.selected_tracks.is_empty() {
+                error!("No track(s) selected for enqueue next");
+                return;
+            };
+
+            let playlist = gem.playlists.get_by_path(playlist_key);
+            for track_key in &gem.ui.playlists.selected_tracks {
+                let track = playlist.tracks.get_by_path(track_key);
+                enqueue_next(&mut gem.player, track.clone());
+            }
+        }
+        PlaylistContextMenuAction::Enqueue => {
+            if gem.ui.playlists.selected_tracks.is_empty() {
+                error!("No track(s) selected for enqueue");
+                return;
+            };
+
+            let playlist = gem.playlists.get_by_path(playlist_key);
+            for track_key in &gem.ui.playlists.selected_tracks {
+                let track = playlist.tracks.get_by_path(track_key);
+                enqueue(&mut gem.player, track.clone());
+            }
+        }
+        PlaylistContextMenuAction::OpenFileLocation => {
+            // We take the first one since we cannot open / reveal multiple tracks.
+            let Some(first_track_key) = gem.ui.playlists.selected_tracks.first() else {
+                error!("No track(s) selected for opening file location");
+                return;
+            };
+
+            let playlist = gem.playlists.get_by_path(playlist_key);
+            let first_track = playlist.tracks.get_by_path(first_track_key);
+            if let Err(e) = open_file_location(first_track) {
+                error!("Failed to open track location: {}", e);
+            } else {
+                info!("Opening track location: {}", first_track.path.display());
+            }
+        }
+    }
 }
 
 fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option<PlaylistContextMenuAction> {

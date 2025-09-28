@@ -3,6 +3,7 @@ name = "gem-player"
 version = "0.2.0"
 edition = "2021"
 description = "A lightweight music player."
+build = "build.rs"
 
 [dependencies]
 dark-light = "2.0.0"
@@ -37,7 +38,13 @@ trash = "5.2.3"
 walkdir = "2.5.0"
 rayon = "1.11.0"
 
+[build-dependencies]
+winres = "0.1.12"
+
 [package.metadata.bundle]
 name = "Gem Player"
 identifier = "io.github.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
+
+[package.metadata.windows]
+subsystem = "windows"
