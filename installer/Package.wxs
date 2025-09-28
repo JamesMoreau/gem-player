@@ -5,20 +5,18 @@
            Version="0.1.0"
            Compressed="yes">
 
-    <!-- Default install path -->
-    <StandardDirectory Id="ProgramFilesFolder">
+    <!-- Install directories -->
+    <Directory Id="ProgramFilesFolder">
       <Directory Id="INSTALLFOLDER" Name="Gem Player" />
-    </StandardDirectory>
-
-    <Property Id="INSTALLFOLDER" Value="[ProgramFilesFolder]\Gem Player" />
+    </Directory>
 
     <!-- Main executable component -->
-    <Component Id="MainExecutable" Guid="3F2504E0-4F89-11D3-9A0C-0305E82C3301" PerMachine="yes">
+    <Component Id="MainExecutable" Guid="3F2504E0-4F89-11D3-9A0C-0305E82C3301">
       <File Source="Gem Player.exe" KeyPath="yes"/>
     </Component>
 
     <!-- Desktop shortcut component -->
-    <Component Id="DesktopShortcut" Guid="7F4E8D2A-2E4C-4D3F-8E34-123456789ABC" PerUser="yes">
+    <Component Id="DesktopShortcut" Guid="7F4E8D2A-2E4C-4D3F-8E34-123456789ABC">
       <Shortcut Id="DesktopShortcut"
                 Name="Gem Player"
                 Description="Gem Player Music Application"
@@ -28,6 +26,7 @@
       <RegistryValue Root="HKCU" Key="Software\Gem Player" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
     </Component>
 
+    <!-- Features -->
     <Feature Id="MainFeature" Title="Gem Player" Level="1">
       <ComponentRef Id="MainExecutable"/>
       <ComponentRef Id="DesktopShortcut"/>
