@@ -1,42 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" 
-           Name="Gem Player" 
-           Language="1033" 
-           Version="0.2.0" 
-           Manufacturer="James Moreau" 
-           UpgradeCode="PUT-GUID-HERE">
-           
+  <Product
+      Id="*"
+      Name="Gem Player"
+      Language="1033"
+      Version="1.0.0"
+      Manufacturer="James Moreau"
+      UpgradeCode="05EBFD4D-1CC5-429C-9A03-64B7D145A8F9">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
-    <MediaTemplate EmbedCab="yes" />
 
-    <!-- Install folder under Program Files -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate />
+
+    <Feature Id="ProductFeature" Title="YourApp" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
+
+  <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="Gem Player" />
       </Directory>
-      <Directory Id="DesktopFolder" />
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Gem Player" />
+      </Directory>
     </Directory>
+  </Fragment>
 
-    <!-- Main exe -->
-    <Component Id="MainExecutable" Guid="PUT-GUID-HERE-1">
-      <File Id="GemPlayerExe" Source="Gem Player.exe" KeyPath="yes" />
-    </Component>
-
-    <!-- Desktop shortcut -->
-    <Component Id="DesktopShortcut" Guid="PUT-GUID-HERE-2">
-      <Shortcut Id="DesktopShortcut"
-                Name="Gem Player"
-                Description="Gem Player Music Application"
-                Target="[INSTALLFOLDER]Gem Player.exe"
-                WorkingDirectory="INSTALLFOLDER"
-                Directory="DesktopFolder" />
-      <RegistryValue Root="HKCU" Key="Software\Gem Player" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
-    </Component>
-
-    <Feature Id="MainFeature" Title="Gem Player" Level="1">
-      <ComponentRef Id="MainExecutable"/>
-      <ComponentRef Id="DesktopShortcut"/>
-    </Feature>
-  </Product>
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="67F62C95-FD06-40DA-8D81-036455F2D327">
+        <File Id="YourAppExe" Source="$(var.ProjectDir)..\target\release\your-app.exe" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
 </Wix>
