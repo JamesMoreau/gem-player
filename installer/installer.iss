@@ -3,7 +3,7 @@
 [Setup]
 AppName=Gem Player
 AppVersion=0.2.0
-DefaultDirName={pf}\Gem Player
+DefaultDirName={commonpf}\Gem Player
 DefaultGroupName=Gem Player
 OutputBaseFilename=GemPlayerInstaller
 Compression=lzma

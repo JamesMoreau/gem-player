@@ -40,8 +40,8 @@ jobs:
           path: installer/installer.iss
           options: /O+
 
-      - name: Upload installer
+      - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
           name: GemPlayer-windows-installer
-          path: GemPlayerInstaller.exe
+          path: installer/Output/GemPlayerInstaller.exe
