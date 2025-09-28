@@ -3,45 +3,39 @@
            Name="Gem Player"
            Manufacturer="James Moreau"
            Version="0.1.0"
-           Compressed="yes"
-           InstallerVersion="500"
-           InstallScope="perMachine">
+           Compressed="yes">
 
-    <!-- Default install path (Program Files\Gem Player) -->
+    <!-- Default install path -->
     <StandardDirectory Id="ProgramFilesFolder">
       <Directory Id="INSTALLFOLDER" Name="Gem Player" />
     </StandardDirectory>
 
-    <!-- Allow user to pick a different install folder -->
     <Property Id="INSTALLFOLDER" Value="[ProgramFilesFolder]\Gem Player" />
 
-    <!-- Component for main executable (per-machine) -->
-    <Component Id="MainExecutable" Guid="3F2504E0-4F89-11D3-9A0C-0305E82C3301">
+    <!-- Main executable component -->
+    <Component Id="MainExecutable" Guid="3F2504E0-4F89-11D3-9A0C-0305E82C3301" PerMachine="yes">
       <File Source="Gem Player.exe" KeyPath="yes"/>
     </Component>
 
-    <!-- Component for desktop shortcut (per-user) -->
-    <Component Id="DesktopShortcut" Guid="7F4E8D2A-2E4C-4D3F-8E34-123456789ABC">
+    <!-- Desktop shortcut component -->
+    <Component Id="DesktopShortcut" Guid="7F4E8D2A-2E4C-4D3F-8E34-123456789ABC" PerUser="yes">
       <Shortcut Id="DesktopShortcut"
                 Name="Gem Player"
                 Description="Gem Player Music Application"
                 Target="[INSTALLFOLDER]Gem Player.exe"
                 WorkingDirectory="INSTALLFOLDER"
                 Directory="DesktopFolder"/>
-      <!-- Registry key as KeyPath for per-user component -->
       <RegistryValue Root="HKCU" Key="Software\Gem Player" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
     </Component>
 
-    <!-- Feature including both components -->
     <Feature Id="MainFeature" Title="Gem Player" Level="1">
       <ComponentRef Id="MainExecutable"/>
       <ComponentRef Id="DesktopShortcut"/>
     </Feature>
 
-    <!-- Generate embedded CAB automatically -->
     <MediaTemplate EmbedCab="yes" />
 
-    <!-- Hook up standard InstallDir UI -->
+    <!-- UI for choosing install directory -->
     <UIRef Id="WixUI_InstallDir" />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
 
