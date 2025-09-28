@@ -34,13 +34,17 @@ jobs:
       - name: Copy EXE for installer
         run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/Gem Player.exe" -Force
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+      - name: Copy EXE for installer
+        run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/Gem Player.exe" -Force
 
-      - name: Build MSI
-        run: dotnet build installer/installer.wixproj -c Release
+      - name: Install WiX Toolset v3
+        run: choco install wixtoolset --version=3.11.2 -y
+
+      - name: Build MSI with WiX v3
+        run: |
+          cd installer
+          candle.exe Product.wxs -o Product.wixobj
+          light.exe Product.wixobj -o GemPlayer.msi
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4
