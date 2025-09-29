@@ -34,10 +34,15 @@ jobs:
       - name: Copy EXE into installer directory
         run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/gem-player.exe" -Force
 
+      - name: Print working directory and contents
+        run: |
+          echo "PWD: $PWD"
+          dir $PWD /s
+
       - name: Compile Inno Setup Installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
-          path: installer/setup.iss
+          path: installer/tiny.iss
           options: /O+
 
       - name: Upload Installer
