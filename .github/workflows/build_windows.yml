@@ -34,11 +34,6 @@ jobs:
       - name: Copy EXE into installer directory
         run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/gem-player.exe" -Force
 
-      - name: Debug paths
-        run: |
-          echo "Workspace: ${{ github.workspace }}"
-          dir ${{ github.workspace }}/installer
-
       - name: Compile Inno Setup Installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
