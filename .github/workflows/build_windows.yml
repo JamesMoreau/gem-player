@@ -35,8 +35,11 @@ jobs:
       - name: Copy EXE into root
         run: Copy-Item "target/$env:WIN_TARGET/debug/gem-player.exe" -Destination "gem-player.exe" -Force
 
+      - name: List current directory
+        run: dir
+
       - name: Compile .ISS to .EXE Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.1
         with:
           path: setup.iss
           options: /O+
