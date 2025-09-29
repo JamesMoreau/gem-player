@@ -28,20 +28,19 @@ jobs:
       - name: Add Windows Rust target
         run: rustup target add $env:WIN_TARGET
 
-      - name: Build release binary
-        run: cargo build --release --target $env:WIN_TARGET
+        # TODO: CHANGE BACK TO RELEASE
+      - name: Build debug binary
+        run: cargo build --target $env:WIN_TARGET 
 
       - name: Copy EXE into installer directory
-        run: Copy-Item "target/$env:WIN_TARGET/release/gem-player.exe" -Destination "installer/gem-player.exe" -Force
+        run: Copy-Item "target/$env:WIN_TARGET/debug/gem-player.exe" -Destination "installer/gem-player.exe" -Force
 
       - name: Compile Inno Setup Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: installer/setup.iss
-          options: /O+
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/setup.iss /O+
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
           name: GemPlayer-windows-installer
-          path: installer/Output/GemPlayerInstaller.exe
+          path: installer/GemPlayerInstaller.exe

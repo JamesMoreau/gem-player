@@ -2,15 +2,12 @@
 
 [Setup]
 AppName=Gem Player
-; AppVersion=0.2.0
-; DefaultDirName={commonpf}\Gem Player
-; DefaultGroupName=Gem Player
-; OutputBaseFilename=GemPlayerInstaller
-; Compression=lzma
-; SolidCompression=yes
+AppVersion=0.2.0
+OutputDir=.
+OutputBaseFilename=GemPlayerInstaller
 
 ; [Files]
-; Source: "gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; [Icons]
 ; ; Start menu shortcut
