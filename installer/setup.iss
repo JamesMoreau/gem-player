@@ -10,7 +10,7 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "installer/gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start menu shortcut
