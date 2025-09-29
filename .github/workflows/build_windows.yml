@@ -35,9 +35,9 @@ jobs:
       - name: Copy EXE into installer directory
         run: Copy-Item "target/$env:WIN_TARGET/debug/gem-player.exe" -Destination "installer/gem-player.exe" -Force
 
-      - name: Compile Inno Setup Installer
+      - name: Compile Inno Setup Installer manually
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer/setup.iss" /O+
+          & "$Env:PROGRAMFILES(X86)\Inno Setup 6\ISCC.exe" "$Env:GITHUB_WORKSPACE\installer\setup.iss" /O+
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
