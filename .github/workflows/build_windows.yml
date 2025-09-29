@@ -36,9 +36,9 @@ jobs:
 
       - name: Print working directory and contents
         run: |
-          echo "PWD: $PWD"
-          dir $PWD /s
-
+          Write-Host "PWD: $PWD"
+          ls $PWD -Recurse
+          
       - name: Compile Inno Setup Installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
