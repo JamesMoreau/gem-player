@@ -45,6 +45,3 @@ winres = "0.1.12"
 name = "Gem Player"
 identifier = "io.github.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
-
-[package.metadata.windows]
-subsystem = "windows"

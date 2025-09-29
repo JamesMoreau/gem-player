@@ -1,3 +1,5 @@
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 use dark_light::Mode;
 use eframe::{
     egui::{
