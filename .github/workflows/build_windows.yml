@@ -44,10 +44,10 @@ jobs:
       #     path: setup.iss
       #     options: /O+
 
-      - name: compile iss  
+      - name: Compile .ISS
         uses: zhuzichu520/inno-setup-action@v1.0.1
         with: 
-            filepath: 'setup.iss'
+          filepath: 'setup.iss'
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
