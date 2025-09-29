@@ -37,12 +37,12 @@ jobs:
       - name: Debug paths
         run: |
           echo "Workspace: ${{ github.workspace }}"
-          dir ${{ github.workspace }}\installer
+          dir ${{ github.workspace }}/installer
 
       - name: Compile Inno Setup Installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
-          path: ${{ github.workspace }}/installer/installer.iss
+          path: /installer/installer.iss
           options: /O+
 
       - name: Upload Installer
