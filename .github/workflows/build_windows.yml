@@ -32,31 +32,19 @@ jobs:
       - name: Build debug binary
         run: cargo build --target $env:WIN_TARGET 
 
-      - name: Copy EXE into root
-        run: Copy-Item "target/$env:WIN_TARGET/debug/gem-player.exe" -Destination "gem-player.exe" -Force
-
-      - name: List current directory
-        run: dir
+      - name: Prepare dist folder
+        run: |
+          New-Item -ItemType Directory -Force dist
+          Copy-Item "target/$env:WIN_TARGET/debug/gem-player.exe" -Destination "dist/gem-player.exe" -Force
 
       - name: Install Inno Setup
         run: choco install innosetup --yes
 
       - name: Compile installer
-        run: iscc setup.iss
-
-      # - name: Compile .ISS to .EXE Installer
-      #   uses: Minionguyjpro/Inno-Setup-Action@v1.2.1
-      #   with:
-      #     path: setup.iss
-      #     options: /O+
-
-      # - name: Compile .ISS
-      #   uses: zhuzichu520/inno-setup-action@v1.0.1
-      #   with: 
-      #     filepath: 'setup.iss'
+        run: iscc installer/setup.iss
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
           name: GemPlayer-windows-installer
-          path: GemPlayerInstaller.exe
+          path: dist/GemPlayerInstaller.exe
