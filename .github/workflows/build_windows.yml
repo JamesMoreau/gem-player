@@ -38,16 +38,22 @@ jobs:
       - name: List current directory
         run: dir
 
+      - name: Install Inno Setup
+        run: choco install innosetup --yes
+
+      - name: Compile installer
+        run: iscc setup.iss
+
       # - name: Compile .ISS to .EXE Installer
       #   uses: Minionguyjpro/Inno-Setup-Action@v1.2.1
       #   with:
       #     path: setup.iss
       #     options: /O+
 
-      - name: Compile .ISS
-        uses: zhuzichu520/inno-setup-action@v1.0.1
-        with: 
-          filepath: 'setup.iss'
+      # - name: Compile .ISS
+      #   uses: zhuzichu520/inno-setup-action@v1.0.1
+      #   with: 
+      #     filepath: 'setup.iss'
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
