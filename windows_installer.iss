@@ -4,7 +4,7 @@
 AppName=Gem Player
 AppVersion=0.2.0
 DefaultDirName={commonpf}\Gem Player
-OutputDir=installer\output
+OutputDir=target\x86_64-pc-windows-gnu\debug
 OutputBaseFilename=GemPlayerInstaller
 
 [Files]
