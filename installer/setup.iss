@@ -3,6 +3,7 @@
 [Setup]
 AppName=Gem Player
 AppVersion=0.2.0
+DefaultDirName={commonpf}\Gem Player
 OutputDir=target\x86_64-pc-windows-gnu\debug
 OutputBaseFilename=GemPlayerInstaller
 
@@ -11,7 +12,7 @@ Source: "target\x86_64-pc-windows-gnu\debug\gem-player.exe"; DestDir: "{app}"; F
 
 [Icons]
 ; Start menu shortcut
-; Name: "{group}\Gem Player"; Filename: "{app}\gem-player.exe"
+Name: "{group}\Gem Player"; Filename: "{app}\gem-player.exe"
 
 ; Desktop shortcut
-; Name: "{commondesktop}\Gem Player"; Filename: "{app}\gem-player.exe"
+Name: "{commondesktop}\Gem Player"; Filename: "{app}\gem-player.exe"
