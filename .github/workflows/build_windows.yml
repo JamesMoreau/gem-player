@@ -30,12 +30,7 @@ jobs:
 
       # TODO: Change back to release build when ready
       - name: Build debug binary
-        run: cargo build --target $env:WIN_TARGET 
-
-      - name: Prepare dist folder
-        run: |
-          New-Item -ItemType Directory -Force dist
-          Copy-Item "target/$env:WIN_TARGET/debug/gem-player.exe" -Destination "dist/gem-player.exe" -Force
+        run: cargo build --target $env:WIN_TARGET
 
       - name: Install Inno Setup
         run: choco install innosetup --yes
@@ -47,4 +42,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: GemPlayer-windows-installer
-          path: dist/GemPlayerInstaller.exe
+          path: target/x86_64-pc-windows-gnu/debug/GemPlayerInstaller.exe
