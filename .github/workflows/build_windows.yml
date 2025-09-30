@@ -12,12 +12,11 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  WIN_TARGET: x86_64-pc-windows-gnu
 
 jobs:
   build-windows:
     runs-on: windows-latest
-    env:
-      WIN_TARGET: "x86_64-pc-windows-gnu"
 
     steps:
       - uses: actions/checkout@v4
@@ -28,9 +27,8 @@ jobs:
       - name: Add Windows Rust target
         run: rustup target add $env:WIN_TARGET
 
-      # TODO: Change back to release build when ready
-      - name: Build debug binary
-        run: cargo build --target $env:WIN_TARGET
+      - name: Build release binary
+        run: cargo build --release --target $env:WIN_TARGET
 
       - name: Install Inno Setup
         run: choco install innosetup --yes
@@ -42,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: GemPlayer-windows-installer
-          path: target/x86_64-pc-windows-gnu/debug/GemPlayerInstaller.exe
+          path: target/${{ env.WIN_TARGET }}/release/GemPlayerInstaller.exe

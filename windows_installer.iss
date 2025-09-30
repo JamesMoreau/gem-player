@@ -8,7 +8,7 @@ OutputDir=target\x86_64-pc-windows-gnu\debug
 OutputBaseFilename=GemPlayerInstaller
 
 [Files]
-Source: "target\x86_64-pc-windows-gnu\debug\gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "target\x86_64-pc-windows-gnu\release\gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start menu shortcut
