@@ -12,7 +12,7 @@ Source: "target\x86_64-pc-windows-gnu\release\gem-player.exe"; DestDir: "{app}";
 
 [Icons]
 ; Start menu shortcut
-Name: "{group}\Gem Player"; Filename: "{app}\gem-player.exe"
+Name: "{group}\Gem Player"; Filename: "{app}\gem-player.exe"; IconFilename: "{app}\gem-player.exe"
 
 ; Desktop shortcut
-Name: "{commondesktop}\Gem Player"; Filename: "{app}\gem-player.exe"
+Name: "{commondesktop}\Gem Player"; Filename: "{app}\gem-player.exe"; IconFilename: "{app}\gem-player.exe"
