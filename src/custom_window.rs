@@ -44,12 +44,13 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
-    let is_macos = ui.ctx().os() == OperatingSystem::Mac;
-    let layout = if is_macos {
-        Layout::left_to_right(Align::Center)
-    } else {
-        Layout::right_to_left(Align::Center)
+    let os = ui.ctx().os();
+
+    let layout = match os {
+        OperatingSystem::Mac => Layout::left_to_right(Align::Center),
+        _ => Layout::right_to_left(Align::Center),
     };
+
     ui.scope_builder(UiBuilder::new().max_rect(title_bar_rect).layout(layout), |ui| {
         ui.add_space(8.0);
 
@@ -85,14 +86,17 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
             }
         };
 
-        if is_macos {
-            close_button(ui);
-            minimize_button(ui);
-            fullscreen_button(ui);
-        } else {
-            close_button(ui);
-            fullscreen_button(ui);
-            minimize_button(ui);
+        match os {
+            OperatingSystem::Mac => {
+                close_button(ui);
+                minimize_button(ui);
+                fullscreen_button(ui);
+            }
+            _ => {
+                close_button(ui);
+                fullscreen_button(ui);
+                minimize_button(ui);
+            }
         }
     });
 }
