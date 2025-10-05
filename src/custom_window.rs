@@ -1,6 +1,5 @@
 use eframe::egui::{
-    os::OperatingSystem, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, RichText, Sense, Ui,
-    UiBuilder, Vec2, ViewportCommand,
+    os::OperatingSystem, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui, UiBuilder, Vec2, ViewportCommand
 };
 use egui_material_icons::icons;
 
@@ -24,12 +23,10 @@ pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce
     });
 }
 
-fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
-    let painter = ui.painter();
+fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
+    let response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
 
-    let title_bar_response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
-
-    painter.text(
+    ui.painter().text(
         title_bar_rect.center(),
         Align2::CENTER_CENTER,
         title,
@@ -37,22 +34,23 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) 
         ui.style().visuals.text_color(),
     );
 
-    if title_bar_response.double_clicked() {
+    if response.double_clicked() {
         let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
         ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
     }
 
-    if title_bar_response.drag_started_by(PointerButton::Primary) {
+    if response.drag_started_by(PointerButton::Primary) {
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
     let is_macos = ui.ctx().os() == OperatingSystem::Mac;
+	let layout = if is_macos {
+        Layout::left_to_right(Align::Center)
+    } else {
+        Layout::right_to_left(Align::Center)
+    };
     ui.scope_builder(
-        UiBuilder::new().max_rect(title_bar_rect).layout(if is_macos {
-            Layout::left_to_right(Align::Center)
-        } else {
-            Layout::right_to_left(Align::Center)
-        }),
+        UiBuilder::new().max_rect(title_bar_rect).layout(layout),
         |ui| {
             ui.add_space(8.0);
 
