@@ -35,6 +35,7 @@ use track::{is_relevant_media_file, SortBy, SortOrder, Track, TrackRetrieval};
 use ui::{gem_player_ui, LibraryViewState, MarqueeState, PlaylistsViewState, SettingsViewState, UIState, View};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
+mod custom_window;
 mod library_watcher;
 mod player;
 mod playlist;

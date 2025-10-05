@@ -1,6 +1,8 @@
 use crate::{
-    apply_theme, format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous,
-    play_library, play_playlist,
+    apply_theme,
+    custom_window::custom_window_frame,
+    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library,
+    play_playlist,
     player::{
         clear_the_queue, enqueue, enqueue_next, get_audio_output_devices_and_names, move_to_position, mute_or_unmute, play_or_pause,
         remove_from_queue, switch_audio_devices, toggle_shuffle, Player,
@@ -12,11 +14,9 @@ use crate::{
 };
 use eframe::egui::{
     containers::{self},
-    include_image,
-    os::OperatingSystem,
-    pos2, text, vec2, Align, Align2, Button, CentralPanel, Color32, ComboBox, Context, Direction, FontId, Frame, Id, Image, Label, Layout,
-    Margin, PointerButton, Popup, PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit,
-    TextFormat, TextStyle, TextureFilter, TextureOptions, ThemePreference, Ui, UiBuilder, Vec2, ViewportCommand, WidgetText,
+    include_image, pos2, text, vec2, Align, Button, Color32, ComboBox, Context, Direction, Frame, Id, Image, Label, Layout, Margin, Popup,
+    PopupCloseBehavior, Rect, RectAlign, RichText, ScrollArea, Sense, Separator, Slider, TextEdit, TextFormat, TextStyle, TextureFilter,
+    TextureOptions, ThemePreference, Ui, Vec2, WidgetText,
 };
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
@@ -130,112 +130,6 @@ pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
                 strip.cell(|ui| navigation_bar(ui, gem));
             });
     });
-}
-
-fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
-    let panel_frame = Frame::new()
-        .fill(ctx.style().visuals.window_fill())
-        .corner_radius(10.0)
-        .stroke(ctx.style().visuals.widgets.noninteractive.bg_stroke)
-        .outer_margin(1); // so the stroke is within the bounds
-
-    CentralPanel::default().frame(panel_frame).show(ctx, |ui| {
-        let app_rect = ui.max_rect();
-
-        let title_bar_height = 24.0;
-        let title_bar_rect = {
-            let mut rect = app_rect;
-            rect.max.y = rect.min.y + title_bar_height;
-            rect
-        };
-        title_bar_ui(ui, title_bar_rect, title);
-
-        let content_rect = {
-            let mut rect = app_rect;
-            rect.min.y = title_bar_rect.max.y;
-            rect
-        }
-        .shrink2(Vec2::new(2.0, 0.0));
-        let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
-        add_contents(&mut content_ui);
-    });
-}
-
-fn title_bar_ui(ui: &mut Ui, title_bar_rect: eframe::epaint::Rect, title: &str) {
-    let painter = ui.painter();
-
-    let title_bar_response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
-
-    painter.text(
-        title_bar_rect.center(),
-        Align2::CENTER_CENTER,
-        title,
-        FontId::proportional(20.0),
-        ui.style().visuals.text_color(),
-    );
-
-    if title_bar_response.double_clicked() {
-        let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
-        ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
-    }
-
-    if title_bar_response.drag_started_by(PointerButton::Primary) {
-        ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
-    }
-
-    let is_macos = ui.ctx().os() == OperatingSystem::Mac;
-    ui.scope_builder(
-        UiBuilder::new().max_rect(title_bar_rect).layout(if is_macos {
-            Layout::left_to_right(Align::Center)
-        } else {
-            Layout::right_to_left(Align::Center)
-        }),
-        |ui| {
-            ui.add_space(8.0);
-
-            ui.visuals_mut().button_frame = false;
-            let button_height = 12.0;
-
-            let close_button = |ui: &mut Ui| {
-                let response = ui
-                    .add(Button::new(RichText::new(icons::ICON_CLOSE).size(button_height)))
-                    .on_hover_text("Close the window");
-                if response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Close);
-                }
-            };
-
-            let fullscreen_button = |ui: &mut Ui| {
-                let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
-                let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
-                let response = ui
-                    .add(Button::new(RichText::new(icons::ICON_SQUARE).size(button_height)))
-                    .on_hover_text(tooltip);
-                if response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
-                }
-            };
-
-            let minimize_button = |ui: &mut Ui| {
-                let response = ui
-                    .add(Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_height)))
-                    .on_hover_text("Minimize the window");
-                if response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
-                }
-            };
-
-            if is_macos {
-                close_button(ui);
-                minimize_button(ui);
-                fullscreen_button(ui);
-            } else {
-                close_button(ui);
-                fullscreen_button(ui);
-                minimize_button(ui);
-            }
-        },
-    );
 }
 
 fn switch_view(ui: &mut UIState, view: View) {
