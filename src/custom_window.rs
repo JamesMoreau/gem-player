@@ -4,7 +4,7 @@ use eframe::egui::{
 };
 use egui_material_icons::icons;
 
-pub fn custom_window_frame(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
+pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
     let frame = Frame::new()
         .fill(ctx.style().visuals.window_fill())
         .corner_radius(10.0)

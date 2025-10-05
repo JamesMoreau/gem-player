@@ -1,6 +1,6 @@
 use crate::{
     apply_theme,
-    custom_window::custom_window_frame,
+    custom_window::custom_window,
     format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library,
     play_playlist,
     player::{
@@ -93,7 +93,7 @@ struct SettingsViewState {
 }
 
 pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
-    custom_window_frame(ctx, "", |ui| {
+    custom_window(ctx, "", |ui| {
         let is_dropping_files = drop_files_area_ui(ui, gem);
         if is_dropping_files {
             return; // Don't render anything else if files are being dropped.
