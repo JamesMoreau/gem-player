@@ -1,5 +1,6 @@
 use eframe::egui::{
-    os::OperatingSystem, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui, UiBuilder, Vec2, ViewportCommand
+    os::OperatingSystem, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui,
+    UiBuilder, Vec2, ViewportCommand,
 };
 use egui_material_icons::icons;
 
@@ -44,59 +45,56 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
     }
 
     let is_macos = ui.ctx().os() == OperatingSystem::Mac;
-	let layout = if is_macos {
+    let layout = if is_macos {
         Layout::left_to_right(Align::Center)
     } else {
         Layout::right_to_left(Align::Center)
     };
-    ui.scope_builder(
-        UiBuilder::new().max_rect(title_bar_rect).layout(layout),
-        |ui| {
-            ui.add_space(8.0);
+    ui.scope_builder(UiBuilder::new().max_rect(title_bar_rect).layout(layout), |ui| {
+        ui.add_space(8.0);
 
-            ui.visuals_mut().button_frame = false;
-            let button_height = 12.0;
+        ui.visuals_mut().button_frame = false;
+        let button_height = 12.0;
 
-            let close_button = |ui: &mut Ui| {
-                let response = ui
-                    .add(Button::new(RichText::new(icons::ICON_CLOSE).size(button_height)))
-                    .on_hover_text("Close the window");
-                if response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Close);
-                }
-            };
-
-            let fullscreen_button = |ui: &mut Ui| {
-                let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
-                let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
-                let response = ui
-                    .add(Button::new(RichText::new(icons::ICON_SQUARE).size(button_height)))
-                    .on_hover_text(tooltip);
-                if response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
-                }
-            };
-
-            let minimize_button = |ui: &mut Ui| {
-                let response = ui
-                    .add(Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_height)))
-                    .on_hover_text("Minimize the window");
-                if response.clicked() {
-                    ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
-                }
-            };
-
-            if is_macos {
-                close_button(ui);
-                minimize_button(ui);
-                fullscreen_button(ui);
-            } else {
-                close_button(ui);
-                fullscreen_button(ui);
-                minimize_button(ui);
+        let close_button = |ui: &mut Ui| {
+            let response = ui
+                .add(Button::new(RichText::new(icons::ICON_CLOSE).size(button_height)))
+                .on_hover_text("Close the window");
+            if response.clicked() {
+                ui.ctx().send_viewport_cmd(ViewportCommand::Close);
             }
-        },
-    );
+        };
+
+        let fullscreen_button = |ui: &mut Ui| {
+            let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
+            let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
+            let response = ui
+                .add(Button::new(RichText::new(icons::ICON_SQUARE).size(button_height)))
+                .on_hover_text(tooltip);
+            if response.clicked() {
+                ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
+            }
+        };
+
+        let minimize_button = |ui: &mut Ui| {
+            let response = ui
+                .add(Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_height)))
+                .on_hover_text("Minimize the window");
+            if response.clicked() {
+                ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
+            }
+        };
+
+        if is_macos {
+            close_button(ui);
+            minimize_button(ui);
+            fullscreen_button(ui);
+        } else {
+            close_button(ui);
+            fullscreen_button(ui);
+            minimize_button(ui);
+        }
+    });
 }
 
 // Resize handles
