@@ -1869,6 +1869,12 @@ fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
                 ui.add_space(8.0);
+
+                let description = env!("CARGO_PKG_DESCRIPTION");
+                ui.add(unselectable_label(description));
+
+                ui.add_space(8.0);
+
                 ui.horizontal_wrapped(|ui| {
                     let repo_link = "https://github.com/JamesMoreau/gem-player";
 
@@ -1886,11 +1892,6 @@ fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 });
 
                 ui.add_space(8.0);
-
-                let description = env!("CARGO_PKG_DESCRIPTION");
-                ui.add(unselectable_label(description));
-
-                ui.add_space(16.0);
 
                 ui.horizontal_wrapped(|ui| {
                     ui.add(unselectable_label("Author:"));
