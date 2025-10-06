@@ -58,9 +58,8 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
         let button_size = 12.0;
 
         let close_button = |ui: &mut Ui| {
-            let response = ui
-                .add(Button::new(RichText::new(icons::ICON_CLOSE).size(button_size)))
-                .on_hover_text("Close the window");
+            let button = Button::new(RichText::new(icons::ICON_CLOSE).size(button_size));
+            let response = ui.add(button).on_hover_text("Close the window");
             if response.clicked() {
                 ui.ctx().send_viewport_cmd(ViewportCommand::Close);
             }
@@ -69,18 +68,16 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
         let fullscreen_button = |ui: &mut Ui| {
             let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
             let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
-            let response = ui
-                .add(Button::new(RichText::new(icons::ICON_SQUARE).size(button_size)))
-                .on_hover_text(tooltip);
+            let button = Button::new(RichText::new(icons::ICON_SQUARE).size(button_size));
+            let response = ui.add(button).on_hover_text(tooltip);
             if response.clicked() {
                 ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
             }
         };
 
         let minimize_button = |ui: &mut Ui| {
-            let response = ui
-                .add(Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_size)))
-                .on_hover_text("Minimize the window");
+            let button = Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_size));
+            let response = ui.add(button).on_hover_text("Minimize the window");
             if response.clicked() {
                 ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
             }
