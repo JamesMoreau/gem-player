@@ -44,58 +44,50 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
         ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
-    let os = ui.ctx().os();
+    let close_button = |ui: &mut Ui| {
+        let button = Button::new(RichText::new(icons::ICON_CLOSE).size(12.0));
+        let response = ui.add(button).on_hover_text("Close the window");
+        if response.clicked() {
+            ui.ctx().send_viewport_cmd(ViewportCommand::Close);
+        }
+    };
 
-    let layout = match os {
-        OperatingSystem::Mac => Layout::left_to_right(Align::Center),
-        OperatingSystem::Windows => Layout::right_to_left(Align::Center),
-        _ => panic!("Unsupported operating system"),
+    let fullscreen_button = |ui: &mut Ui| {
+        let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
+        let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
+        let button = Button::new(RichText::new(icons::ICON_SQUARE).size(12.0));
+        let response = ui.add(button).on_hover_text(tooltip);
+        if response.clicked() {
+            ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
+        }
+    };
+
+    let minimize_button = |ui: &mut Ui| {
+        let button = Button::new(RichText::new(icons::ICON_MINIMIZE).size(12.0));
+        let response = ui.add(button).on_hover_text("Minimize the window");
+        if response.clicked() {
+            ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
+        }
+    };
+
+    let (layout, button_order): (Layout, &[fn(&mut Ui)]) = match ui.ctx().os() {
+        OperatingSystem::Mac => (
+            Layout::left_to_right(Align::Center),
+            &[close_button, minimize_button, fullscreen_button],
+        ),
+        OperatingSystem::Windows => (
+            Layout::right_to_left(Align::Center),
+            &[close_button, fullscreen_button, minimize_button],
+        ),
+        other => panic!("Unsupported operating system: {:?}", other),
     };
 
     ui.scope_builder(UiBuilder::new().max_rect(title_bar_rect).layout(layout), |ui| {
         ui.add_space(8.0);
-
         ui.visuals_mut().button_frame = false;
-        let button_size = 12.0;
 
-        let close_button = |ui: &mut Ui| {
-            let button = Button::new(RichText::new(icons::ICON_CLOSE).size(button_size));
-            let response = ui.add(button).on_hover_text("Close the window");
-            if response.clicked() {
-                ui.ctx().send_viewport_cmd(ViewportCommand::Close);
-            }
-        };
-
-        let fullscreen_button = |ui: &mut Ui| {
-            let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
-            let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
-            let button = Button::new(RichText::new(icons::ICON_SQUARE).size(button_size));
-            let response = ui.add(button).on_hover_text(tooltip);
-            if response.clicked() {
-                ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
-            }
-        };
-
-        let minimize_button = |ui: &mut Ui| {
-            let button = Button::new(RichText::new(icons::ICON_MINIMIZE).size(button_size));
-            let response = ui.add(button).on_hover_text("Minimize the window");
-            if response.clicked() {
-                ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
-            }
-        };
-
-        match os {
-            OperatingSystem::Mac => {
-                close_button(ui);
-                minimize_button(ui);
-                fullscreen_button(ui);
-            }
-            OperatingSystem::Windows => {
-                close_button(ui);
-                fullscreen_button(ui);
-                minimize_button(ui);
-            }
-            _ => panic!("Unsupported operating system"),
+        for button in button_order {
+            button(ui);
         }
     });
 }
