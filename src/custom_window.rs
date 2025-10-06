@@ -5,6 +5,8 @@ use eframe::egui::{
 use egui_material_icons::icons;
 
 pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
+    let os = ctx.os();
+
     let frame = Frame::new()
         .fill(ctx.style().visuals.window_fill())
         .corner_radius(10.0)
@@ -16,8 +18,6 @@ pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut 
 
         let title_bar_height = 24.0;
         let title_bar_rect = app_rect.with_max_y(app_rect.min.y + title_bar_height);
-        let os = ui.ctx().os();
-
         title_bar_ui(ui, title, os, title_bar_rect);
 
         let content_rect = app_rect.with_min_y(title_bar_rect.max.y).shrink2(Vec2::new(2.0, 0.0));
@@ -25,10 +25,10 @@ pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut 
         add_contents(&mut content_ui);
     });
 
-    // 🪟 Add resize handles only on Windows
-    if matches!(ctx.os(), OperatingSystem::Windows) {
-        let app_rect = ctx.screen_rect(); // use full window rect, not panel rect
-        add_resize_handles(ctx, app_rect);
+    let is_windows = matches!(os, OperatingSystem::Windows);
+    if is_windows {
+        let window_rect = ctx.screen_rect();
+        add_resize_handles(ctx, window_rect);
     }
 }
 
