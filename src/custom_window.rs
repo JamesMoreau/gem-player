@@ -1,6 +1,6 @@
 use eframe::egui::{
-    os::OperatingSystem, Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui,
-    UiBuilder, Vec2, ViewportCommand,
+    os::OperatingSystem, Align, Align2, Area, Button, CentralPanel, Context, CursorIcon, FontId, Frame, Id, Layout, PointerButton, Pos2,
+    Rect, ResizeDirection, RichText, Sense, Ui, UiBuilder, Vec2, ViewportCommand,
 };
 use egui_material_icons::icons;
 
@@ -16,15 +16,23 @@ pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut 
 
         let title_bar_height = 24.0;
         let title_bar_rect = app_rect.with_max_y(app_rect.min.y + title_bar_height);
-        title_bar_ui(ui, title_bar_rect, title);
+        let os = ui.ctx().os();
+
+        title_bar_ui(ui, title, os, title_bar_rect);
 
         let content_rect = app_rect.with_min_y(title_bar_rect.max.y).shrink2(Vec2::new(2.0, 0.0));
         let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
         add_contents(&mut content_ui);
     });
+
+    // 🪟 Add resize handles only on Windows
+    if matches!(ctx.os(), OperatingSystem::Windows) {
+        let app_rect = ctx.screen_rect(); // use full window rect, not panel rect
+        add_resize_handles(ctx, app_rect);
+    }
 }
 
-fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
+fn title_bar_ui(ui: &mut Ui, title: &str, os: OperatingSystem, title_bar_rect: Rect) {
     let response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
 
     ui.painter().text(
@@ -70,7 +78,7 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
         }
     };
 
-    let (layout, button_order): (Layout, &[fn(&mut Ui)]) = match ui.ctx().os() {
+    let (layout, button_order): (Layout, &[fn(&mut Ui)]) = match os {
         OperatingSystem::Mac => (
             Layout::left_to_right(Align::Center),
             &[close_button, minimize_button, fullscreen_button],
@@ -92,62 +100,60 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
     });
 }
 
-// Resize handles
-//     let thickness = 8.0;
+fn add_resize_handles(ctx: &Context, app_rect: Rect) {
+    let thickness = 4.0;
 
-//     create_resize_handle(
-//         ctx,
-//         "resize_right",
-//         "resize_right_handle",
-//         Pos2::new(app_rect.max.x - thickness, app_rect.min.y + thickness),
-//         Vec2::new(thickness, app_rect.height() - 2.0 * thickness),
-//         CursorIcon::ZoomIn,
-//         ResizeDirection::East,
-//     );
+    create_resize_handle(
+        ctx,
+        "resize_right",
+        "resize_right_handle",
+        Pos2::new(app_rect.max.x - thickness, app_rect.min.y + thickness),
+        Vec2::new(thickness, app_rect.height() - 2.0 * thickness),
+        CursorIcon::ZoomIn,
+        ResizeDirection::East,
+    );
 
-//     // Bottom edge
-//     create_resize_handle(
-//         ctx,
-//         "resize_bottom",
-//         "resize_bottom_handle",
-//         Pos2::new(app_rect.min.x + thickness, app_rect.max.y - thickness),
-//         Vec2::new(app_rect.width() - 2.0 * thickness, thickness),
-//         CursorIcon::ZoomIn,
-//         ResizeDirection::South,
-//     );
+    create_resize_handle(
+        ctx,
+        "resize_bottom",
+        "resize_bottom_handle",
+        Pos2::new(app_rect.min.x + thickness, app_rect.max.y - thickness),
+        Vec2::new(app_rect.width() - 2.0 * thickness, thickness),
+        CursorIcon::ZoomIn,
+        ResizeDirection::South,
+    );
 
-//     // Bottom-right corner
-//     create_resize_handle(
-//         ctx,
-//         "resize_br_area",
-//         "resize_br",
-//         app_rect.max - Vec2::splat(thickness),
-//         Vec2::splat(thickness),
-//         CursorIcon::ZoomIn,
-//         ResizeDirection::SouthEast,
-//     );
-// });
+    create_resize_handle(
+        ctx,
+        "resize_bottom_right_area",
+        "resize_bottom_right",
+        app_rect.max - Vec2::splat(thickness),
+        Vec2::splat(thickness),
+        CursorIcon::ZoomIn,
+        ResizeDirection::SouthEast,
+    );
+}
 
-// 	fn create_resize_handle(
-//     ctx: &Context,
-//     area_id: &str,
-//     handle_id: &str,
-//     position: Pos2,
-//     size: Vec2,
-//     cursor_icon: CursorIcon,
-//     resize_direction: ResizeDirection,
-// ) {
-//     Area::new(Id::new(area_id)).fixed_pos(position).show(ctx, |ui| {
-//         ui.set_min_size(size);
-//         let (_id, response) = ui.allocate_space(size);
-//         let interaction_response = ui.interact(response, Id::new(handle_id), Sense::click_and_drag());
+fn create_resize_handle(
+    ctx: &Context,
+    area_id: &str,
+    handle_id: &str,
+    position: Pos2,
+    size: Vec2,
+    cursor_icon: CursorIcon,
+    resize_direction: ResizeDirection,
+) {
+    Area::new(Id::new(area_id)).fixed_pos(position).show(ctx, |ui| {
+        ui.set_min_size(size);
+        let (_id, response) = ui.allocate_space(size);
+        let interaction_response = ui.interact(response, Id::new(handle_id), Sense::click_and_drag());
 
-//         if interaction_response.hovered() {
-//             ctx.set_cursor_icon(cursor_icon);
-//         }
+        if interaction_response.hovered() {
+            ctx.set_cursor_icon(cursor_icon);
+        }
 
-//         if interaction_response.drag_started_by(PointerButton::Primary) {
-//             ctx.send_viewport_cmd(ViewportCommand::BeginResize(resize_direction));
-//         }
-//     });
-// }
+        if interaction_response.drag_started_by(PointerButton::Primary) {
+            ctx.send_viewport_cmd(ViewportCommand::BeginResize(resize_direction));
+        }
+    });
+}
