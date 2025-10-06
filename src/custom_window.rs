@@ -101,36 +101,88 @@ fn title_bar_ui(ui: &mut Ui, title: &str, os: OperatingSystem, title_bar_rect: R
 }
 
 fn add_resize_handles(ctx: &Context, app_rect: Rect) {
-    let thickness = 4.0;
+    let thickness = 6.0;
 
+    // Corners
     create_resize_handle(
         ctx,
-        "resize_right",
-        "resize_right_handle",
-        Pos2::new(app_rect.max.x - thickness, app_rect.min.y + thickness),
-        Vec2::new(thickness, app_rect.height() - 2.0 * thickness),
-        CursorIcon::ZoomIn,
-        ResizeDirection::East,
+        "resize_nw_area",
+        "resize_nw_handle",
+        app_rect.min,
+        Vec2::splat(thickness),
+        CursorIcon::ResizeNorthWest,
+        ResizeDirection::NorthWest,
     );
 
     create_resize_handle(
         ctx,
-        "resize_bottom",
-        "resize_bottom_handle",
+        "resize_ne_area",
+        "resize_ne_handle",
+        Pos2::new(app_rect.max.x - thickness, app_rect.min.y),
+        Vec2::splat(thickness),
+        CursorIcon::ResizeNorthEast,
+        ResizeDirection::NorthEast,
+    );
+
+    create_resize_handle(
+        ctx,
+        "resize_sw_area",
+        "resize_sw_handle",
+        Pos2::new(app_rect.min.x, app_rect.max.y - thickness),
+        Vec2::splat(thickness),
+        CursorIcon::ResizeSouthWest,
+        ResizeDirection::SouthWest,
+    );
+
+    create_resize_handle(
+        ctx,
+        "resize_se_area",
+        "resize_se_handle",
+        app_rect.max - Vec2::splat(thickness),
+        Vec2::splat(thickness),
+        CursorIcon::ResizeSouthEast,
+        ResizeDirection::SouthEast,
+    );
+
+    // Edges
+    create_resize_handle(
+        ctx,
+        "resize_north_area",
+        "resize_north_handle",
+        app_rect.min + Vec2::new(thickness, 0.0),
+        Vec2::new(app_rect.width() - 2.0 * thickness, thickness),
+        CursorIcon::ResizeVertical,
+        ResizeDirection::North,
+    );
+
+    create_resize_handle(
+        ctx,
+        "resize_south_area",
+        "resize_south_handle",
         Pos2::new(app_rect.min.x + thickness, app_rect.max.y - thickness),
         Vec2::new(app_rect.width() - 2.0 * thickness, thickness),
-        CursorIcon::ZoomIn,
+        CursorIcon::ResizeVertical,
         ResizeDirection::South,
     );
 
     create_resize_handle(
         ctx,
-        "resize_bottom_right_area",
-        "resize_bottom_right",
-        app_rect.max - Vec2::splat(thickness),
-        Vec2::splat(thickness),
-        CursorIcon::ZoomIn,
-        ResizeDirection::SouthEast,
+        "resize_west_area",
+        "resize_west_handle",
+        app_rect.min + Vec2::new(0.0, thickness),
+        Vec2::new(thickness, app_rect.height() - 2.0 * thickness),
+        CursorIcon::ResizeHorizontal,
+        ResizeDirection::West,
+    );
+
+    create_resize_handle(
+        ctx,
+        "resize_east_area",
+        "resize_east_handle",
+        Pos2::new(app_rect.max.x - thickness, app_rect.min.y + thickness),
+        Vec2::new(thickness, app_rect.height() - 2.0 * thickness),
+        CursorIcon::ResizeHorizontal,
+        ResizeDirection::East,
     );
 }
 
