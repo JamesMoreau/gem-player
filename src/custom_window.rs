@@ -48,7 +48,8 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
 
     let layout = match os {
         OperatingSystem::Mac => Layout::left_to_right(Align::Center),
-        _ => Layout::right_to_left(Align::Center),
+        OperatingSystem::Windows => Layout::right_to_left(Align::Center),
+        _ => panic!("Unsupported operating system"),
     };
 
     ui.scope_builder(UiBuilder::new().max_rect(title_bar_rect).layout(layout), |ui| {
@@ -89,11 +90,12 @@ fn title_bar_ui(ui: &mut Ui, title_bar_rect: Rect, title: &str) {
                 minimize_button(ui);
                 fullscreen_button(ui);
             }
-            _ => {
+            OperatingSystem::Windows => {
                 close_button(ui);
                 fullscreen_button(ui);
                 minimize_button(ui);
             }
+            _ => panic!("Unsupported operating system"),
         }
     });
 }

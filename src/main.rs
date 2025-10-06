@@ -1,5 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // Hides console for Windows release
 
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+compile_error!("Gem Player only supports macOS and Windows.");
+
 use dark_light::Mode;
 use eframe::{
     egui::{
