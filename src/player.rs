@@ -11,7 +11,7 @@ use rodio::{
 };
 use std::{
     fs,
-    io::{self, ErrorKind, Seek},
+    io::{self, Seek},
     sync::mpsc::{Receiver, Sender},
     time::Duration,
 };
@@ -178,7 +178,7 @@ pub fn play_previous(player: &mut Player) -> Result<(), String> {
 
 pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     let Some(backend) = &player.backend else {
-        return Err(io::Error::new(io::ErrorKind::Other, "No audio backend available"));
+        return Err(io::Error::other("No audio backend available"));
     };
 
     backend.sink.stop(); // Stop the current track if any.
@@ -192,7 +192,7 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
 
     let decoder_result = Decoder::try_from(file);
     let decoder = match decoder_result {
-        Err(e) => return Err(io::Error::new(ErrorKind::Other, e.to_string())),
+        Err(e) => return Err(io::Error::other(e.to_string())),
         Ok(d) => d,
     };
 

@@ -152,7 +152,7 @@ pub fn open_file_location(track: &Track) -> io::Result<()> {
 
     let result = opener::reveal(path);
     if let Err(e) = result {
-        return Err(io::Error::new(ErrorKind::Other, format!("Failed to open file location: {}", e)));
+        return Err(io::Error::other(format!("Failed to open file location: {}", e)));
     }
 
     Ok(())

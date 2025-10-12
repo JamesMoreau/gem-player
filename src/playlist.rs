@@ -41,9 +41,8 @@ impl PlaylistRetrieval for Vec<Playlist> {
 }
 
 pub fn add_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
-    if playlist.tracks.iter().any(|s| *s == track) {
-        return Err(io::Error::new(
-            ErrorKind::Other,
+    if playlist.tracks.contains(&track) {
+        return Err(io::Error::other(
             "The track is already in the playlist. Duplicates are not allowed.",
         ));
     }
