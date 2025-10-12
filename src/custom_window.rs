@@ -101,63 +101,22 @@ fn title_bar_ui(ui: &mut Ui, title: &str, os: OperatingSystem, title_bar_rect: R
 }
 
 fn add_resize_handles(ctx: &Context, window_rect: Rect) {
-    let handle_thickness = 8.0;
-
-    let top_left = window_rect.min;
-    let bottom_right = window_rect.max;
+    let left = window_rect.left();
+    let right = window_rect.right();
+    let top = window_rect.top();
+    let bottom = window_rect.bottom();
     let width = window_rect.width();
     let height = window_rect.height();
 
-    // Edges
-    create_resize_handle(
-        ctx,
-        "top_edge_area",
-        "top_edge_handle",
-        Pos2::new(top_left.x + handle_thickness, top_left.y - handle_thickness / 2.0),
-        Vec2::new(width - 2.0 * handle_thickness, handle_thickness),
-        CursorIcon::ResizeVertical,
-        ResizeDirection::North,
-    );
-
-    create_resize_handle(
-        ctx,
-        "bottom_edge_area",
-        "bottom_edge_handle",
-        Pos2::new(top_left.x + handle_thickness, bottom_right.y - handle_thickness / 2.0),
-        Vec2::new(width - 2.0 * handle_thickness, handle_thickness),
-        CursorIcon::ResizeVertical,
-        ResizeDirection::South,
-    );
-
-    create_resize_handle(
-        ctx,
-        "left_edge_area",
-        "left_edge_handle",
-        Pos2::new(top_left.x - handle_thickness / 2.0, top_left.y + handle_thickness),
-        Vec2::new(handle_thickness, height - 2.0 * handle_thickness),
-        CursorIcon::ResizeHorizontal,
-        ResizeDirection::West,
-    );
-
-    create_resize_handle(
-        ctx,
-        "right_edge_area",
-        "right_edge_handle",
-        Pos2::new(bottom_right.x - handle_thickness / 2.0, top_left.y + handle_thickness),
-        Vec2::new(handle_thickness, height - 2.0 * handle_thickness),
-        CursorIcon::ResizeHorizontal,
-        ResizeDirection::East,
-    );
-
     // Corners
-    let corner_size = Vec2::splat(handle_thickness);
+    let corner_size = 6.0;
 
     create_resize_handle(
         ctx,
         "top_left_corner_area",
         "top_left_corner_handle",
-        Pos2::new(top_left.x - handle_thickness / 2.0, top_left.y - handle_thickness / 2.0),
-        corner_size,
+        Pos2::new(left, top),
+        Vec2::splat(corner_size),
         CursorIcon::ResizeNorthWest,
         ResizeDirection::NorthWest,
     );
@@ -166,8 +125,8 @@ fn add_resize_handles(ctx: &Context, window_rect: Rect) {
         ctx,
         "top_right_corner_area",
         "top_right_corner_handle",
-        Pos2::new(bottom_right.x - handle_thickness / 2.0, top_left.y - handle_thickness / 2.0),
-        corner_size,
+        Pos2::new(right - corner_size, top),
+        Vec2::splat(corner_size),
         CursorIcon::ResizeNorthEast,
         ResizeDirection::NorthEast,
     );
@@ -176,8 +135,8 @@ fn add_resize_handles(ctx: &Context, window_rect: Rect) {
         ctx,
         "bottom_left_corner_area",
         "bottom_left_corner_handle",
-        Pos2::new(top_left.x - handle_thickness / 2.0, bottom_right.y - handle_thickness / 2.0),
-        corner_size,
+        Pos2::new(left, bottom - corner_size),
+        Vec2::splat(corner_size),
         CursorIcon::ResizeSouthWest,
         ResizeDirection::SouthWest,
     );
@@ -186,10 +145,53 @@ fn add_resize_handles(ctx: &Context, window_rect: Rect) {
         ctx,
         "bottom_right_corner_area",
         "bottom_right_corner_handle",
-        Pos2::new(bottom_right.x - handle_thickness / 2.0, bottom_right.y - handle_thickness / 2.0),
-        corner_size,
+        Pos2::new(right - corner_size, bottom - corner_size),
+        Vec2::splat(corner_size),
         CursorIcon::ResizeSouthEast,
         ResizeDirection::SouthEast,
+    );
+
+    // Edges
+    let edge_thickness = 4.0;
+
+    create_resize_handle(
+        ctx,
+        "top_edge_area",
+        "top_edge_handle",
+        Pos2::new(left + corner_size, top),
+        Vec2::new(width - 2.0 * corner_size, edge_thickness),
+        CursorIcon::ResizeVertical,
+        ResizeDirection::North,
+    );
+
+    create_resize_handle(
+        ctx,
+        "bottom_edge_area",
+        "bottom_edge_handle",
+        Pos2::new(left + corner_size, bottom - edge_thickness),
+        Vec2::new(width - 2.0 * corner_size, edge_thickness),
+        CursorIcon::ResizeVertical,
+        ResizeDirection::South,
+    );
+
+    create_resize_handle(
+        ctx,
+        "left_edge_area",
+        "left_edge_handle",
+        Pos2::new(left, top + corner_size),
+        Vec2::new(edge_thickness, height - 2.0 * corner_size),
+        CursorIcon::ResizeHorizontal,
+        ResizeDirection::West,
+    );
+
+    create_resize_handle(
+        ctx,
+        "right_edge_area",
+        "right_edge_handle",
+        Pos2::new(right - edge_thickness, top + corner_size),
+        Vec2::new(edge_thickness, height - 2.0 * corner_size),
+        CursorIcon::ResizeHorizontal,
+        ResizeDirection::East,
     );
 }
 
