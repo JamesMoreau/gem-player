@@ -21,6 +21,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get Cargo package info
+        id: info
+        uses: rabbitson87/get-cargo-package-info@v1
+        with:
+          file_name: Cargo.toml
+          package: |
+            name
+            version
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -36,8 +45,15 @@ jobs:
       - name: Compile installer
         run: iscc windows_installer.iss
 
+      - name: Rename installer with version
+        run: |
+          $version = "${{ fromJson(steps.info.outputs.object).package.version }}"
+          Rename-Item `
+            -Path "target\$env:WIN_TARGET\release\GemPlayerInstaller.exe" `
+            -NewName "GemPlayerInstaller-v$version.exe"
+
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
-          name: GemPlayer-windows-installer
-          path: target/${{ env.WIN_TARGET }}/release/GemPlayerInstaller.exe
+          name: GemPlayer-windows-installer-v${{ fromJson(steps.info.outputs.object).package.version }}
+          path: target/${{ env.WIN_TARGET }}/release/GemPlayerInstaller-v${{ fromJson(steps.info.outputs.object).package.version }}.exe
