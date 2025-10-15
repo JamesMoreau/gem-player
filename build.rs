@@ -7,7 +7,11 @@ use std::{
 extern crate winres;
 
 fn main() {
-    if cfg!(target_os = "windows") {
+    let is_windows = cfg!(target_os = "windows");
+    let profile = std::env::var("PROFILE").unwrap_or_default();
+    let is_release = profile == "release";
+
+    if is_windows && is_release {
         let mut res = winres::WindowsResource::new();
         res.set_icon("assets/icon.ico");
         res.set_manifest_file("manifest.xml");
