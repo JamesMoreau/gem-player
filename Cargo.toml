@@ -1,9 +1,11 @@
 [package]
 name = "gem-player"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "A lightweight music player."
 build = "build.rs"
+repository = "https://github.com/JamesMoreau/gem-player"
+authors = ["James Moreau"]
 
 [dependencies]
 dark-light = "2.0.0"
@@ -41,7 +43,18 @@ rayon = "1.11.0"
 [build-dependencies]
 winres = "0.1.12"
 
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
 [package.metadata.bundle]
 name = "Gem Player"
 identifier = "io.github.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
+
+[package.metadata.wix]
+upgrade-guid = "CAA34119-3C64-435C-863A-4FE597C40412"
+path-guid = "AEE473CB-5BDF-4867-B5EB-381139FF9A46"
+license = false
+eula = false
