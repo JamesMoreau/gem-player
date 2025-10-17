@@ -42,8 +42,10 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --yes
 
-      - name: Compile installer
-        run: iscc target/$env:WIN_TARGET/release/installer/windows_installer.iss
+      - name: Run Inno Setup Compiler
+        run: |
+          cd target/$env:WIN_TARGET/release/installer
+          iscc windows_installer.iss
 
       - name: Rename installer with version
         run: |

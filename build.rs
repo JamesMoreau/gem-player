@@ -57,10 +57,6 @@ fn generate_inno_script() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     // Keep paths relative or absolute but do not canonicalize to avoid \\?\ prefix
-    let installer_dir_str = installer_dir
-        .to_str()
-        .ok_or("Failed to convert installer_dir to string")?
-        .replace('/', "\\");
     let exe_path_str = PathBuf::from("..\\gem-player.exe")
         .to_str()
         .ok_or("Failed to convert exe_path to string")?
@@ -68,7 +64,7 @@ fn generate_inno_script() -> Result<(), String> {
 
     let data = InnoSetupScriptData {
         version,
-        installer_dir: installer_dir_str,
+        installer_dir: ".".into(),
         exe_path: exe_path_str,
     };
 
