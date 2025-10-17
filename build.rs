@@ -59,7 +59,7 @@ fn generate_inno_script() -> Result<(), String> {
         .register_template_string("installer", &template)
         .map_err(|e| e.to_string())?;
 
-    let exe_path = out_dir.join("gem-player.exe").canonicalize().map_err(|e| e.to_string())?;
+    let exe_path = out_dir.join("gem-player.exe");
 
     let data = InnoSetupScriptData {
         version,
