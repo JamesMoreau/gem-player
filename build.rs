@@ -46,18 +46,25 @@ fn generate_inno_script() -> Result<(), String> {
     let installer_dir = out_dir.join("installer");
     create_dir_all(&installer_dir).map_err(|e| e.to_string())?;
 
-    let template_path = "windows_installer.iss.hbs";
-    let template = read_to_string(template_path).map_err(|e| e.to_string())?;
+    let out_dir = out_dir.canonicalize().map_err(|e| e.to_string())?;
+    let installer_dir = installer_dir.canonicalize().map_err(|e| e.to_string())?;
+
+    let template_path = PathBuf::from("windows_installer.iss.hbs")
+        .canonicalize()
+        .map_err(|e| e.to_string())?;
+    let template = read_to_string(&template_path).map_err(|e| e.to_string())?;
 
     let mut handlebars = Handlebars::new();
     handlebars
         .register_template_string("installer", &template)
         .map_err(|e| e.to_string())?;
 
+    let exe_path = out_dir.join("gem-player.exe").canonicalize().map_err(|e| e.to_string())?;
+
     let data = InnoSetupScriptData {
         version,
         installer_dir: installer_dir.display().to_string(),
-        exe_path: out_dir.join("gem-player.exe").display().to_string(),
+        exe_path: exe_path.display().to_string(),
     };
 
     let rendered = handlebars.render("installer", &data).map_err(|e| e.to_string())?;
