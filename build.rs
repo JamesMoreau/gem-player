@@ -46,9 +46,6 @@ fn generate_inno_script() -> Result<(), String> {
     let installer_dir = out_dir.join("installer");
     create_dir_all(&installer_dir).map_err(|e| e.to_string())?;
 
-    let out_dir = out_dir.canonicalize().map_err(|e| e.to_string())?;
-    let installer_dir = installer_dir.canonicalize().map_err(|e| e.to_string())?;
-
     let template_path = PathBuf::from("windows_installer.iss.hbs")
         .canonicalize()
         .map_err(|e| e.to_string())?;
@@ -59,14 +56,24 @@ fn generate_inno_script() -> Result<(), String> {
         .register_template_string("installer", &template)
         .map_err(|e| e.to_string())?;
 
-    let exe_path = out_dir.join("gem-player.exe");
+    // Keep paths relative or absolute but do not canonicalize to avoid \\?\ prefix
+    let installer_dir_str = installer_dir
+        .to_str()
+        .ok_or("Failed to convert installer_dir to string")?
+        .replace('/', "\\");
+    let exe_path_str = out_dir
+        .join("gem-player.exe")
+        .to_str()
+        .ok_or("Failed to convert exe_path to string")?
+        .replace('/', "\\");
 
     let data = InnoSetupScriptData {
         version,
-        installer_dir: installer_dir.display().to_string(),
-        exe_path: exe_path.display().to_string(),
+        installer_dir: installer_dir_str,
+        exe_path: exe_path_str,
     };
 
+    // Render .iss file
     let rendered = handlebars.render("installer", &data).map_err(|e| e.to_string())?;
 
     let output_path = installer_dir.join("windows_installer.iss");
