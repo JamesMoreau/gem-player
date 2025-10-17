@@ -43,7 +43,7 @@ jobs:
         run: choco install innosetup --yes
 
       - name: Compile installer
-        run: target\$env:WIN_TARGET\release\installer\windows_installer.iss
+        run: iscc target/$env:WIN_TARGET/release/installer/windows_installer.iss
 
       - name: Rename installer with version
         run: |
