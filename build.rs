@@ -61,8 +61,7 @@ fn generate_inno_script() -> Result<(), String> {
         .to_str()
         .ok_or("Failed to convert installer_dir to string")?
         .replace('/', "\\");
-    let exe_path_str = out_dir
-        .join("gem-player.exe")
+    let exe_path_str = PathBuf::from("..\\gem-player.exe")
         .to_str()
         .ok_or("Failed to convert exe_path to string")?
         .replace('/', "\\");
