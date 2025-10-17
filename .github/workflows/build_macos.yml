@@ -17,10 +17,17 @@ jobs:
   build-macos:
     runs-on: macos-latest
     env:
-      APP_NAME: "Gem Player"
+      APP_NAME: "Gem Player"   # Human-friendly app name
+      BUILD_NAME: "gem_player" # File-safe build name
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Get version from Cargo.toml
+        id: version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed -E 's/version\s*=\s*"([^"]+)"/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -44,15 +51,19 @@ jobs:
           codesign --force --deep --options runtime \
             --sign "${{ secrets.APPLE_SIGNING_ID }}" \
             "target/release/bundle/osx/$APP_NAME.app"
-            
+
       - name: Create DMG
         run: |
           create-dmg \
             --volname "$APP_NAME Installer" \
             --app-drop-link 0 0 \
             --codesign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/$APP_NAME.dmg" \
+            "target/release/bundle/osx/$BUILD_NAME.dmg" \
             "target/release/bundle/osx/$APP_NAME.app"
+
+          # Rename DMG to include version and platform
+          mv "target/release/bundle/osx/$BUILD_NAME.dmg" \
+             "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg"
 
       - name: Decode App Store Connect API key
         run: |
@@ -60,7 +71,7 @@ jobs:
 
       - name: Notarize app
         run: |
-          xcrun notarytool submit "target/release/bundle/osx/$APP_NAME.dmg" \
+          xcrun notarytool submit "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg" \
             --issuer "${{ secrets.APPLE_API_ISSUER_ID }}" \
             --key-id "${{ secrets.APPLE_API_KEY_ID }}" \
             --key AuthKey.p8 \
@@ -69,7 +80,7 @@ jobs:
       - name: Staple notarization
         run: |
           xcrun stapler staple "target/release/bundle/osx/$APP_NAME.app"
-          xcrun stapler staple "target/release/bundle/osx/$APP_NAME.dmg"
+          xcrun stapler staple "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg"
 
       - name: Verify
         run: spctl --assess --type execute --verbose "target/release/bundle/osx/$APP_NAME.app"
@@ -77,5 +88,5 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.APP_NAME }}-dmg"
-          path: "target/release/bundle/osx/${{ env.APP_NAME }}.dmg"
+          name: "${BUILD_NAME}_${VERSION}_macos"
+          path: "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg"
