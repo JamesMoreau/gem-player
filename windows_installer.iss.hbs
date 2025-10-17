@@ -2,13 +2,13 @@
 
 [Setup]
 AppName=Gem Player
-AppVersion=0.2.0
+AppVersion={{version}}
 DefaultDirName={commonpf}\Gem Player
-OutputDir=target\x86_64-pc-windows-gnu\release
+OutputDir={{installer_dir}}
 OutputBaseFilename=GemPlayerInstaller
 
 [Files]
-Source: "target\x86_64-pc-windows-gnu\release\gem-player.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{{exe_path}}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start menu shortcut
