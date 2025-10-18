@@ -18,7 +18,8 @@ jobs:
     runs-on: macos-latest
     env:
       BUILD_NAME: "gem_player"
-      APP_NAME: Gem Player
+      BUNDLE_NAME: "gem-player"
+      APP_NAME: "Gem Player"
 
     steps:
       - uses: actions/checkout@v4
@@ -48,18 +49,17 @@ jobs:
         run: |
           codesign --force --deep --options runtime \
             --sign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/${APP_NAME}.app"
+            "target/release/bundle/osx/${BUNDLE_NAME}.app"
 
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "${{ steps.metadata.outputs.package_name }} Installer" \
+            --volname "${APP_NAME} Installer" \
             --app-drop-link 0 0 \
             --codesign "${{ secrets.APPLE_SIGNING_ID }}" \
             "target/release/bundle/osx/${BUILD_NAME}.dmg" \
-            "target/release/bundle/osx/${{ steps.metadata.outputs.package_name }}.app"
+            "target/release/bundle/osx/${BUNDLE_NAME}.app"
 
-          # Rename DMG to include version and platform
           mv "target/release/bundle/osx/${BUILD_NAME}.dmg" \
              "target/release/bundle/osx/${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
 
@@ -77,11 +77,11 @@ jobs:
 
       - name: Staple notarization
         run: |
-          xcrun stapler staple "target/release/bundle/osx/${APP_NAME}.app"
+          xcrun stapler staple "target/release/bundle/osx/${BUNDLE_NAME}.app"
           xcrun stapler staple "target/release/bundle/osx/${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
 
       - name: Verify
-        run: spctl --assess --type execute --verbose "target/release/bundle/osx/${{ steps.metadata.outputs.package_name }}.app"
+        run: spctl --assess --type execute --verbose "target/release/bundle/osx/${BUNDLE_NAME}.app"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
