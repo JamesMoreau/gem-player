@@ -1,12 +1,13 @@
 use eframe::egui::{
-    os::OperatingSystem, Align, Align2, Area, Button, CentralPanel, Context, CursorIcon, FontId, Frame, Id, Layout, PointerButton, Pos2,
-    Rect, ResizeDirection, RichText, Sense, Ui, UiBuilder, Vec2, ViewportCommand,
+    Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui, UiBuilder, Vec2,
+    ViewportCommand,
 };
+#[cfg(target_os = "windows")]
+use eframe::egui::{Area, CursorIcon, Pos2, ResizeDirection};
+
 use egui_material_icons::icons;
 
 pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
-    let os = ctx.os();
-
     let frame = Frame::new()
         .fill(ctx.style().visuals.window_fill())
         .corner_radius(10.0)
@@ -18,21 +19,21 @@ pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut 
 
         let title_bar_height = 24.0;
         let title_bar_rect = app_rect.with_max_y(app_rect.min.y + title_bar_height);
-        title_bar_ui(ui, title, os, title_bar_rect);
+        title_bar_ui(ui, title, title_bar_rect);
 
         let content_rect = app_rect.with_min_y(title_bar_rect.max.y).shrink2(Vec2::new(2.0, 0.0));
         let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
         add_contents(&mut content_ui);
     });
 
-    let is_windows = matches!(os, OperatingSystem::Windows);
-    if is_windows {
-        let window_rect = ctx.screen_rect();
+    #[cfg(target_os = "windows")]
+    {
+        let window_rect = ctx.viewport_rect();
         add_resize_handles(ctx, window_rect);
     }
 }
 
-fn title_bar_ui(ui: &mut Ui, title: &str, os: OperatingSystem, title_bar_rect: Rect) {
+fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
     let response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
 
     ui.painter().text(
@@ -78,17 +79,17 @@ fn title_bar_ui(ui: &mut Ui, title: &str, os: OperatingSystem, title_bar_rect: R
         }
     };
 
-    let (layout, button_order): (Layout, &[fn(&mut Ui)]) = match os {
-        OperatingSystem::Mac => (
-            Layout::left_to_right(Align::Center),
-            &[close_button, minimize_button, fullscreen_button],
-        ),
-        OperatingSystem::Windows => (
-            Layout::right_to_left(Align::Center),
-            &[close_button, fullscreen_button, minimize_button],
-        ),
-        other => panic!("Unsupported operating system: {:?}", other),
-    };
+    #[cfg(target_os = "macos")]
+    let (layout, button_order): (Layout, &[fn(&mut Ui)]) = (
+        Layout::left_to_right(Align::Center),
+        &[close_button, minimize_button, fullscreen_button],
+    );
+
+    #[cfg(target_os = "windows")]
+    let (layout, button_order): (Layout, &[fn(&mut Ui)]) = (
+        Layout::right_to_left(Align::Center),
+        &[close_button, fullscreen_button, minimize_button],
+    );
 
     ui.scope_builder(UiBuilder::new().max_rect(title_bar_rect).layout(layout), |ui| {
         ui.add_space(8.0);
@@ -100,6 +101,7 @@ fn title_bar_ui(ui: &mut Ui, title: &str, os: OperatingSystem, title_bar_rect: R
     });
 }
 
+#[cfg(target_os = "windows")]
 fn add_resize_handles(ctx: &Context, window_rect: Rect) {
     let left = window_rect.left();
     let right = window_rect.right();
@@ -195,6 +197,7 @@ fn add_resize_handles(ctx: &Context, window_rect: Rect) {
     );
 }
 
+#[cfg(target_os = "windows")]
 fn create_resize_handle(
     ctx: &Context,
     area_id: &str,

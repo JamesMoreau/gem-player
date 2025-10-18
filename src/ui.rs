@@ -505,7 +505,7 @@ fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut
             job
         };
 
-        let galley = ui.fonts(|fonts| fonts.layout_job(format_colored_marquee_text(&text)));
+        let galley = ui.ctx().fonts_mut(|fonts| fonts.layout_job(format_colored_marquee_text(&text)));
 
         let text_width = galley.size().x;
         let available_width = ui.available_width();

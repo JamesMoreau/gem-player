@@ -19,7 +19,6 @@ jobs:
     env:
       BUILD_NAME: "gem_player"        # file-safe artifact name
       BUNDLE_NAME: "Gem Player"       # .app folder name and DMG volume
-      PACKAGE_NAME: "gem-player"      # Cargo package name
 
     steps:
       - uses: actions/checkout@v4
