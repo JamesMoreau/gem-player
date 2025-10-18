@@ -607,7 +607,7 @@ pub fn load_system_fonts(fonts: &mut FontDefinitions) {
     }
 }
 
-pub fn format_duration_to_mmss(duration: std::time::Duration) -> String {
+pub fn format_duration_to_mmss(duration: Duration) -> String {
     let total_seconds = duration.as_secs();
     let seconds_per_minute = 60;
     let minutes = total_seconds / seconds_per_minute;
@@ -616,7 +616,7 @@ pub fn format_duration_to_mmss(duration: std::time::Duration) -> String {
     format!("{}:{:02}", minutes, seconds)
 }
 
-pub fn format_duration_to_hhmmss(duration: std::time::Duration) -> String {
+pub fn format_duration_to_hhmmss(duration: Duration) -> String {
     let total_seconds = duration.as_secs();
     let seconds_per_minute = 60;
     let minutes_per_hour = 60;
