@@ -18,6 +18,7 @@ jobs:
     runs-on: macos-latest
     env:
       BUILD_NAME: "gem_player"
+      APP_NAME: Gem Player
 
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +48,7 @@ jobs:
         run: |
           codesign --force --deep --options runtime \
             --sign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/${{ steps.metadata.outputs.package_name }}.app"
+            "target/release/bundle/osx/${APP_NAME}.app"
 
       - name: Create DMG
         run: |
