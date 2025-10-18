@@ -77,7 +77,7 @@ jobs:
 
       - name: Staple notarization
         run: |
-          xcrun stapler staple "target/release/bundle/osx/${{ steps.metadata.outputs.package_name }}.app"
+          xcrun stapler staple "target/release/bundle/osx/${APP_NAME}.app"
           xcrun stapler staple "target/release/bundle/osx/${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
 
       - name: Verify
