@@ -17,9 +17,9 @@ jobs:
   build-macos:
     runs-on: macos-latest
     env:
-      BUILD_NAME: "gem_player"
-      BUNDLE_NAME: "gem-player"
-      APP_NAME: "Gem Player"
+      BUILD_NAME: "gem_player"        # file-safe artifact name
+      BUNDLE_NAME: "Gem Player"       # .app folder name and DMG volume
+      PACKAGE_NAME: "gem-player"      # Cargo package name
 
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "${APP_NAME} Installer" \
+            --volname "${BUNDLE_NAME} Installer" \
             --app-drop-link 0 0 \
             --codesign "${{ secrets.APPLE_SIGNING_ID }}" \
             "target/release/bundle/osx/${BUILD_NAME}.dmg" \
@@ -86,5 +86,5 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.BUILD_NAME }}_${{ steps.metadata.outputs.package_version }}_macos"
-          path: "target/release/bundle/osx/${{ env.BUILD_NAME }}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
+          name: "${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos"
+          path: "target/release/bundle/osx/${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
