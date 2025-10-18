@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,17 +17,18 @@ jobs:
   build-macos:
     runs-on: macos-latest
     env:
-      APP_NAME: "Gem Player"   # Human-friendly app name
-      BUILD_NAME: "gem_player" # File-safe build name
+      BUILD_NAME: "gem_player"
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from Cargo.toml
-        id: version
-        run: |
-          VERSION=$(grep '^version' Cargo.toml | head -1 | sed -E 's/version\s*=\s*"([^"]+)"/\1/')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Get package info
+        id: info
+        uses: rabbitson87/get-cargo-package-info@v1
+        with:
+          package: |
+            name
+            version
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -50,20 +51,20 @@ jobs:
         run: |
           codesign --force --deep --options runtime \
             --sign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/$APP_NAME.app"
+            "target/release/bundle/osx/${{ fromJson(steps.info.outputs.object).package.name }}.app"
 
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "$APP_NAME Installer" \
+            --volname "${{ fromJson(steps.info.outputs.object).package.name }} Installer" \
             --app-drop-link 0 0 \
             --codesign "${{ secrets.APPLE_SIGNING_ID }}" \
             "target/release/bundle/osx/$BUILD_NAME.dmg" \
-            "target/release/bundle/osx/$APP_NAME.app"
+            "target/release/bundle/osx/${{ fromJson(steps.info.outputs.object).package.name }}.app"
 
           # Rename DMG to include version and platform
           mv "target/release/bundle/osx/$BUILD_NAME.dmg" \
-             "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg"
+             "target/release/bundle/osx/${BUILD_NAME}_${{ fromJson(steps.info.outputs.object).package.version }}_macos.dmg"
 
       - name: Decode App Store Connect API key
         run: |
@@ -71,7 +72,7 @@ jobs:
 
       - name: Notarize app
         run: |
-          xcrun notarytool submit "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg" \
+          xcrun notarytool submit "target/release/bundle/osx/${BUILD_NAME}_${{ fromJson(steps.info.outputs.object).package.version }}_macos.dmg" \
             --issuer "${{ secrets.APPLE_API_ISSUER_ID }}" \
             --key-id "${{ secrets.APPLE_API_KEY_ID }}" \
             --key AuthKey.p8 \
@@ -79,14 +80,14 @@ jobs:
 
       - name: Staple notarization
         run: |
-          xcrun stapler staple "target/release/bundle/osx/$APP_NAME.app"
-          xcrun stapler staple "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg"
+          xcrun stapler staple "target/release/bundle/osx/${{ fromJson(steps.info.outputs.object).package.name }}.app"
+          xcrun stapler staple "target/release/bundle/osx/${BUILD_NAME}_${{ fromJson(steps.info.outputs.object).package.version }}_macos.dmg"
 
       - name: Verify
-        run: spctl --assess --type execute --verbose "target/release/bundle/osx/$APP_NAME.app"
+        run: spctl --assess --type execute --verbose "target/release/bundle/osx/${{ fromJson(steps.info.outputs.object).package.name }}.app"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "${BUILD_NAME}_${VERSION}_macos"
-          path: "target/release/bundle/osx/${BUILD_NAME}_${VERSION}_macos.dmg"
+          name: ${{ env.BUILD_NAME }}_${{ fromJson(steps.info.outputs.object).package.version }}_macos
+          path: target/release/bundle/osx/${{ env.BUILD_NAME }}_${{ fromJson(steps.info.outputs.object).package.version }}_macos.dmg
