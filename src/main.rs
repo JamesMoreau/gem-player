@@ -132,13 +132,13 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
 
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY) {
-            if let Ok(theme) = ron::from_str(&theme_string) {
+            if let Ok(theme) = serde_json::from_str(&theme_string) {
                 theme_preference = theme;
             }
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY) {
-            if let Ok(volume) = ron::from_str::<f32>(&volume_string) {
+            if let Ok(volume) = serde_json::from_str::<f32>(&volume_string) {
                 initial_volume = volume.clamp(0.0, 1.0);
             }
         }
@@ -245,12 +245,12 @@ impl App for GemPlayer {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
 
-        let theme_ron_string = ron::to_string(&self.ui.theme_preference).unwrap();
-        storage.set_string(THEME_STORAGE_KEY, theme_ron_string);
+        let theme_json_string = serde_json::to_string(&self.ui.theme_preference).unwrap();
+        storage.set_string(THEME_STORAGE_KEY, theme_json_string);
 
         if let Some(backend) = &self.player.backend {
-            let volume_ron_string = ron::to_string(&backend.sink.volume()).unwrap();
-            storage.set_string(VOLUME_STORAGE_KEY, volume_ron_string);
+            let volume_json_string = serde_json::to_string(&backend.sink.volume()).unwrap();
+            storage.set_string(VOLUME_STORAGE_KEY, volume_json_string);
         }
     }
 
