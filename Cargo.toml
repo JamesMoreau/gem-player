@@ -52,7 +52,7 @@ icon = ["assets/icon.png"]
 # This is used by cargo-packager
 [package.metadata.packager]
 before-packaging-command = "cargo build --release"
-product-name = "Egui example"
-identifier = "com.egui.example"
+product-name = "Gem Player"
+identifier = "com.gemplayer.app"
 resources = ["Cargo.toml", "src", "assets/icon.png"]
 icons = ["assets/icon.png"]
