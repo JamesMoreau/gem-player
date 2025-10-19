@@ -1,5 +1,8 @@
+#[cfg(target_os = "windows")]
 use handlebars::Handlebars;
+#[cfg(target_os = "windows")]
 use serde::Serialize;
+#[cfg(target_os = "windows")]
 use std::{
     env,
     fs::{create_dir_all, read_to_string, File},
@@ -8,28 +11,27 @@ use std::{
 };
 
 fn main() -> Result<(), ()> {
-    let is_windows = cfg!(target_os = "windows");
-    let profile = env::var("PROFILE").unwrap_or_default();
-    let is_release = profile == "release";
-
-    if is_windows && is_release {
+    #[cfg(all(target_os = "windows", not(debug_assertions)))]
+    {
         let mut res = winres::WindowsResource::new();
         res.set_icon("assets/icon.ico");
         res.set_manifest_file("manifest.xml");
-        if let Err(e) = res.compile() {
-            println!("Could not package resources for Windows: {}", e);
+        let compile_result = res.compile();
+        if let Err(e) = compile_result {
+            eprintln!("⚠️  Failed to package Windows resources: {e}");
             return Err(());
         }
 
-        if let Err(e) = generate_inno_script() {
-            println!("Could not generate the inno setup script: {}", e);
-            return Err(());
-        }
+        // if let Err(e) = generate_inno_script() {
+        //     eprintln!("⚠️  Failed to generate Inno Setup script: {e}");
+        //     return Err(());
+        // }
     }
 
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
 #[derive(Serialize)]
 struct InnoSetupScriptData {
     version: String,
@@ -38,6 +40,7 @@ struct InnoSetupScriptData {
     exe_path: String,
 }
 
+#[cfg(target_os = "windows")]
 fn generate_inno_script() -> Result<(), String> {
     let version = env::var("CARGO_PKG_VERSION").map_err(|e| e.to_string())?;
     let target = env::var("CARGO_BUILD_TARGET").unwrap_or_else(|_| "x86_64-pc-windows-gnu".into());
