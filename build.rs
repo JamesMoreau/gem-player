@@ -22,7 +22,7 @@ fn main() -> Result<(), ()> {
             return Err(());
         }
 
-        if let Err(e) = generate_inno_script() {
+        if let Err(e) = generate_inno_setup_script() {
             eprintln!("⚠️  Failed to generate Inno Setup script: {e}");
             return Err(());
         }
@@ -41,7 +41,7 @@ struct InnoSetupScriptData {
 }
 
 #[cfg(target_os = "windows")]
-fn generate_inno_script() -> Result<(), String> {
+fn generate_inno_setup_script() -> Result<(), String> {
     let version = env::var("CARGO_PKG_VERSION").map_err(|e| e.to_string())?;
     let target = env::var("CARGO_BUILD_TARGET").unwrap_or_else(|_| "x86_64-pc-windows-gnu".into());
     let profile = env::var("PROFILE").unwrap_or_else(|_| "release".into());
