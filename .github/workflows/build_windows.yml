@@ -36,6 +36,7 @@ jobs:
       - name: Add Windows Rust target
         run: rustup target add $env:WIN_TARGET
 
+      # The build.rs script also generates the necessary inno setup script using the template file windows_installer.iss.hbs
       - name: Build release binary
         run: cargo build --release --target $env:WIN_TARGET
 

@@ -66,12 +66,9 @@ fn generate_inno_script() -> Result<(), String> {
         .ok_or("Failed to convert exe_path to string")?
         .replace('/', "\\");
 
-    let output_name = format!("GemPlayer-{}-windows-x64", version);
-
     let data = InnoSetupScriptData {
         version,
         output_name,
-        installer_dir: ".".into(),
         exe_path: exe_path_str,
     };
 
