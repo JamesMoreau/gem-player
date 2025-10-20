@@ -22,10 +22,10 @@ fn main() -> Result<(), ()> {
             return Err(());
         }
 
-        // if let Err(e) = generate_inno_script() {
-        //     eprintln!("⚠️  Failed to generate Inno Setup script: {e}");
-        //     return Err(());
-        // }
+        if let Err(e) = generate_inno_script() {
+            eprintln!("⚠️  Failed to generate Inno Setup script: {e}");
+            return Err(());
+        }
     }
 
     Ok(())
