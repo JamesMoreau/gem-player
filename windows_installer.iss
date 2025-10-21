@@ -9,7 +9,7 @@ OutputDir=.
 OutputBaseFilename=GemPlayerInstaller
 
 [Files]
-Source: "{{exe_path}}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ExePath}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start menu shortcut
