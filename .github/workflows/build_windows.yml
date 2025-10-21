@@ -42,8 +42,10 @@ jobs:
           ls target/release/installer
 
       - name: Run Inno Setup Compiler
-        run: |
-          iscc "windows_installer.iss" /DAppVersion=${{ steps.metadata.outputs.package_version }} /DExePath="target/release/GemPlayer.exe"
+        run: >
+          iscc "windows_installer.iss" 
+          /DAppVersion=${{ steps.metadata.outputs.package_version }} 
+          /DExePath="target/release/${{ steps.metadata.outputs.package_name }}.exe"
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
