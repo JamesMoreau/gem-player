@@ -2,7 +2,7 @@
 
 [Setup]
 AppName=Gem Player
-AppVersion={{version}}
+AppVersion={#AppVersion}
 DefaultDirName={commonpf}\Gem Player
 ; Current directory.
 OutputDir=.

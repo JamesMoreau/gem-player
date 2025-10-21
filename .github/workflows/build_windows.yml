@@ -12,7 +12,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  WIN_TARGET: x86_64-pc-windows-gnu
 
 jobs:
   build-windows:
@@ -21,35 +20,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Cargo package info
-        id: info
-        uses: rabbitson87/get-cargo-package-info@v1
-        with:
-          file_name: Cargo.toml
-          package: |
-            name
-            version
+      - name: Get Metadata
+        id: metadata
+        uses: nicolaiunrein/cargo-get@master
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Add Windows Rust target
-        run: rustup target add $env:WIN_TARGET
-
-      # The build.rs script also generates the necessary inno setup script using the template file windows_installer.iss.hbs
       - name: Build release binary
-        run: cargo build --release --target $env:WIN_TARGET
+        run: cargo build --release
 
       - name: Install Inno Setup
         run: choco install innosetup --yes
 
       - name: Run Inno Setup Compiler
         run: |
-          cd target/$env:WIN_TARGET/release/installer
-          iscc windows_installer.iss
+          cd target/release/installer
+          iscc "windows_installer.iss" /DAppVersion=${{ steps.metadata.outputs.package_version }}
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
-          name: GemPlayer-windows-${{ fromJson(steps.info.outputs.object).package.version }}
-          path: target/${{ env.WIN_TARGET }}/release/installer/GemPlayer-${{ fromJson(steps.info.outputs.object).package.version }}-windows-x64.exe
+          name: GemPlayer-windows-${{ steps.metadata.outputs.package_version }}
+          path: target/release/installer/GemPlayer-${{ steps.metadata.outputs.package_version }}-windows-x64.exe
