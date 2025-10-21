@@ -83,5 +83,5 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "gem_player_${{ steps.metadata.outputs.package_version }}_macos"
+          name: "gem_player_${{ steps.metadata.outputs.package_version }}_macos.dmg"
           path: "target/release/bundle/osx/gem_player_${{ steps.metadata.outputs.package_version }}_macos.dmg"
