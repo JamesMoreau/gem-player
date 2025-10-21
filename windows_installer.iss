@@ -10,7 +10,7 @@ Source: "{#ExePath}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start menu shortcut
-Name: "{group}\Gem Player"; Filename: "{app}\gem-player.exe"; IconFilename: "{app}\gem-player.exe"
+Name: "{group}\Gem Player"; Filename: "{app}\gem_player.exe"; IconFilename: "{app}\gem_player.exe"
 
 ; Desktop shortcut
-Name: "{commondesktop}\Gem Player"; Filename: "{app}\gem-player.exe"; IconFilename: "{app}\gem-player.exe"
+Name: "{commondesktop}\Gem Player"; Filename: "{app}\gem_player.exe"; IconFilename: "{app}\gem_player.exe"
