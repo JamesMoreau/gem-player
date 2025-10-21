@@ -4,9 +4,6 @@
 AppName=Gem Player
 AppVersion={#AppVersion}
 DefaultDirName={commonpf}\Gem Player
-; Current directory.
-; OutputDir=.
-; OutputBaseFilename=GemPlayerInstaller
 
 [Files]
 Source: "{#ExePath}"; DestDir: "{app}"; Flags: ignoreversion
