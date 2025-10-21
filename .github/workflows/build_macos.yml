@@ -16,9 +16,6 @@ env:
 jobs:
   build-macos:
     runs-on: macos-latest
-    env:
-      BUILD_NAME: "gem_player"        # file-safe artifact name
-      BUNDLE_NAME: "Gem Player"       # .app folder name and DMG volume
 
     steps:
       - uses: actions/checkout@v4
@@ -30,10 +27,11 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install cargo-bundle and create-dmg
-        run: |
-          cargo install cargo-bundle
-          brew install create-dmg
+      - name: Install cargo-bundle
+        run: cargo install cargo-bundle
+      
+      - name: Install create-dmg
+        run: brew install create-dmg
 
       - name: Build release app bundle
         run: cargo bundle --release
@@ -48,19 +46,19 @@ jobs:
         run: |
           codesign --force --deep --options runtime \
             --sign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/${BUNDLE_NAME}.app"
+            "target/release/bundle/osx/Gem Player.app"
 
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "${BUNDLE_NAME} Installer" \
+            --volname "Gem Player Installer" \
             --app-drop-link 0 0 \
             --codesign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/${BUILD_NAME}.dmg" \
-            "target/release/bundle/osx/${BUNDLE_NAME}.app"
+            "target/release/bundle/osx/gem_player.dmg" \
+            "target/release/bundle/osx/Gem Player.app"
 
-          mv "target/release/bundle/osx/${BUILD_NAME}.dmg" \
-             "target/release/bundle/osx/${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
+          mv "target/release/bundle/osx/gem_player.dmg" \
+             "target/release/bundle/osx/gem_player_${{ steps.metadata.outputs.package_version }}_macos.dmg"
 
       - name: Decode App Store Connect API key
         run: |
@@ -68,7 +66,7 @@ jobs:
 
       - name: Notarize app
         run: |
-          xcrun notarytool submit "target/release/bundle/osx/${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos.dmg" \
+          xcrun notarytool submit "target/release/bundle/osx/gem_player_${{ steps.metadata.outputs.package_version }}_macos.dmg" \
             --issuer "${{ secrets.APPLE_API_ISSUER_ID }}" \
             --key-id "${{ secrets.APPLE_API_KEY_ID }}" \
             --key AuthKey.p8 \
@@ -76,14 +74,14 @@ jobs:
 
       - name: Staple notarization
         run: |
-          xcrun stapler staple "target/release/bundle/osx/${BUNDLE_NAME}.app"
-          xcrun stapler staple "target/release/bundle/osx/${BUILD_NAME}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
+          xcrun stapler staple "target/release/bundle/osx/Gem Player.app"
+          xcrun stapler staple "target/release/bundle/osx/gem_player_${{ steps.metadata.outputs.package_version }}_macos.dmg"
 
       - name: Verify
-        run: spctl --assess --type execute --verbose "target/release/bundle/osx/${BUNDLE_NAME}.app"
+        run: spctl --assess --type execute --verbose "target/release/bundle/osx/Gem Player.app"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.BUILD_NAME }}_${{ steps.metadata.outputs.package_version }}_macos"
-          path: "target/release/bundle/osx/${{ env.BUILD_NAME }}_${{ steps.metadata.outputs.package_version }}_macos.dmg"
+          name: "gem_player_${{ steps.metadata.outputs.package_version }}_macos"
+          path: "target/release/bundle/osx/gem_player_${{ steps.metadata.outputs.package_version }}_macos.dmg"
