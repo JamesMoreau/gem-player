@@ -46,7 +46,7 @@ jobs:
         run: |
           codesign --force --deep --options runtime \
             --sign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/Gem Player.app"
+            "target/release/bundle/osx/gem-player.app"
 
       - name: Create DMG
         run: |
@@ -55,7 +55,7 @@ jobs:
             --app-drop-link 0 0 \
             --codesign "${{ secrets.APPLE_SIGNING_ID }}" \
             "target/release/bundle/osx/gem_player.dmg" \
-            "target/release/bundle/osx/Gem Player.app"
+            "target/release/bundle/osx/gem-player.app"
 
       - name: Decode App Store Connect API key
         run: |
@@ -71,11 +71,11 @@ jobs:
 
       - name: Staple notarization
         run: |
-          xcrun stapler staple "target/release/bundle/osx/Gem Player.app"
+          xcrun stapler staple "target/release/bundle/osx/gem-player.app"
           xcrun stapler staple "target/release/bundle/osx/gem_player.dmg"
 
       - name: Verify
-        run: spctl --assess --type execute --verbose "target/release/bundle/osx/Gem Player.app"
+        run: spctl --assess --type execute --verbose "target/release/bundle/osx/gem-player.app"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4

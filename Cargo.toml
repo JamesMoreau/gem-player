@@ -46,6 +46,5 @@ serde = { version = "1.0.228", features = ["derive"]}
 
 # This is used by cargo-bundle in the build_macos github workflow.
 [package.metadata.bundle]
-name = "Gem Player"
 identifier = "io.github.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
