@@ -90,5 +90,5 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "gem_player_${VERSION}_macos_arm64.dmg"
-          path: "target/release/bundle/osx/gem_player_${VERSION}_macos_arm64.dmg"
+          name: "gem_player_${{ env.VERSION }}_macos_arm64.dmg"
+          path: "target/release/bundle/osx/gem_player_${{ env.VERSION }}_macos_arm64.dmg"
