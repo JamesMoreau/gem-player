@@ -54,7 +54,7 @@ jobs:
             --volname "Gem Player Installer" \
             --app-drop-link 0 0 \
             --codesign "${{ secrets.APPLE_SIGNING_ID }}" \
-            "target/release/bundle/osx/gem_player.dmg" \
+            "target/release/bundle/osx/gem-player.dmg" \
             "target/release/bundle/osx/gem-player.app"
 
       - name: Decode App Store Connect API key
@@ -63,7 +63,7 @@ jobs:
 
       - name: Notarize app
         run: |
-          xcrun notarytool submit "target/release/bundle/osx/gem_player.dmg" \
+          xcrun notarytool submit "target/release/bundle/osx/gem-player.dmg" \
             --issuer "${{ secrets.APPLE_API_ISSUER_ID }}" \
             --key-id "${{ secrets.APPLE_API_KEY_ID }}" \
             --key AuthKey.p8 \
@@ -72,13 +72,18 @@ jobs:
       - name: Staple notarization
         run: |
           xcrun stapler staple "target/release/bundle/osx/gem-player.app"
-          xcrun stapler staple "target/release/bundle/osx/gem_player.dmg"
+          xcrun stapler staple "target/release/bundle/osx/gem-player.dmg"
 
       - name: Verify
         run: spctl --assess --type execute --verbose "target/release/bundle/osx/gem-player.app"
+
+      - name: Rename final DMG
+        run: |
+          mv "target/release/bundle/osx/gem-player.dmg" \
+            "target/release/bundle/osx/gem_player_${{ steps.metadata.outputs.package_version }}_macos_arm64.dmg"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
           name: "gem_player_${{ steps.metadata.outputs.package_version }}_macos_arm64.dmg"
-          path: "target/release/bundle/osx/gem_player.dmg"
+          path: "target/release/bundle/osx/gem_player_${{ steps.metadata.outputs.package_version }}_macos_arm64.dmg"
