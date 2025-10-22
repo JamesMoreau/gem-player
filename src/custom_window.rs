@@ -26,6 +26,8 @@ pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut 
         add_contents(&mut content_ui);
     });
 
+    // On Windows, removing the default window decorations in order to use a custom window frame also removes
+    // the hit-test areas for resizing. To resolve this, we manually re-create and add back in the resize handles.
     #[cfg(target_os = "windows")]
     {
         let window_rect = ctx.viewport_rect();
