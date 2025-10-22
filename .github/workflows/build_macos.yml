@@ -80,10 +80,10 @@ jobs:
       - name: Rename Installer
         run: |
           mv "target/release/bundle/osx/gem-player.dmg" \
-            "target/release/bundle/osx/gem_player_${{steps.metadata.outputs.package_version}}_macos_arm64.dmg"
+            "target/release/bundle/osx/gem_player_${{steps.metadata.outputs.package_version}}_macos_arm64_installer.dmg"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "gem_player_${{steps.metadata.outputs.package_version}}_macos_arm64.dmg"
-          path: "target/release/bundle/osx/gem_player_${{steps.metadata.outputs.package_version}}_macos_arm64.dmg"
+          name: "gem_player_${{steps.metadata.outputs.package_version}}_macos_arm64_installer.dmg"
+          path: "target/release/bundle/osx/gem_player_${{steps.metadata.outputs.package_version}}_macos_arm64_installer.dmg"
