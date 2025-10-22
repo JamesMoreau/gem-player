@@ -3,7 +3,7 @@
 [Setup]
 AppName=Gem Player
 AppVersion={#AppVersion}
-DefaultDirName={commonpf}\Gem Player
+DefaultDirName={autopf}\Gem Player
 
 [Files]
 Source: "{#ExePath}"; DestDir: "{app}"; Flags: ignoreversion
@@ -13,4 +13,4 @@ Source: "{#ExePath}"; DestDir: "{app}"; Flags: ignoreversion
 Name: "{group}\Gem Player"; Filename: "{app}\gem_player.exe"; IconFilename: "{app}\gem_player.exe"
 
 ; Desktop shortcut
-Name: "{commondesktop}\Gem Player"; Filename: "{app}\gem_player.exe"; IconFilename: "{app}\gem_player.exe"
+Name: "{userdesktop}\Gem Player"; Filename: "{app}\gem_player.exe"; IconFilename: "{app}\gem_player.exe"
