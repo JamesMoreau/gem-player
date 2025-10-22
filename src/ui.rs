@@ -1876,7 +1876,7 @@ fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add_space(8.0);
 
                 ui.horizontal_wrapped(|ui| {
-                    let repo_link = "https://github.com/JamesMoreau/gem-player";
+                    let repo_link = env!("CARGO_PKG_REPOSITORY");
 
                     let version = env!("CARGO_PKG_VERSION");
                     ui.add(unselectable_label(format!("Version: {version}")));
