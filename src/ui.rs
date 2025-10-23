@@ -1875,9 +1875,9 @@ fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.add_space(8.0);
 
-                ui.horizontal_wrapped(|ui| {
-                    let repo_link = env!("CARGO_PKG_REPOSITORY");
+                let repo_link = env!("CARGO_PKG_REPOSITORY");
 
+                ui.horizontal_wrapped(|ui| {
                     let version = env!("CARGO_PKG_VERSION");
                     ui.add(unselectable_label(format!("Version: {version}")));
 
@@ -1889,6 +1889,14 @@ fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.add(unselectable_label(" / "));
 
                     ui.hyperlink_to("source", repo_link);
+                });
+
+                ui.add_space(8.0);
+
+                ui.horizontal(|ui| {
+                    ui.add(unselectable_label("Bug reports, feature requests, and feedback may be submitted to the"));
+                    let issue_link = format!("{}/issues", repo_link);
+                    ui.hyperlink_to("issue tracker", issue_link);
                 });
 
                 ui.add_space(8.0);
