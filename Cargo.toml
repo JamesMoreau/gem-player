@@ -41,8 +41,9 @@ serde_json = "1.0.145"
 
 [build-dependencies]
 winres = "0.1.12"
-handlebars = "6.3.2"
-serde = { version = "1.0.228", features = ["derive"]}
+ico = "0.4.0"
+image = "0.25.6"
+
 
 # This is used by cargo-bundle in the build_macos github workflow.
 [package.metadata.bundle]
