@@ -1279,7 +1279,6 @@ fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
         });
 
     if confirm_clicked || cancel_clicked || modal.should_close() {
-        // maybe just handle event inside completely or outside completely.
         gem.ui.playlists.delete_modal_open = false;
     }
 }
