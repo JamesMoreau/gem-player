@@ -287,8 +287,17 @@ fn poll_library_watcher_messages(gem: &mut GemPlayer) {
             gem.library = library;
             gem.playlists = playlists;
 
+            // Reset the relevant ui state so that we don't become out of sync. 
+            // For example, have selected a playlist that has since been deleted.
+            // Perhaps this is too heavy-handed? An alternative solution would be
+            // to check if the current selection still exists, and only reset if not.
             gem.ui.library.cached_library = None;
+            gem.ui.library.selected_tracks.clear();
             gem.ui.playlists.cached_playlist_tracks = None;
+            gem.ui.playlists.selected_playlist_key = None;
+            gem.ui.playlists.selected_tracks.clear();
+            gem.ui.playlists.rename_buffer = None;
+            gem.ui.playlists.delete_modal_open = false;
 
             gem.ui.library_and_playlists_are_loading = false;
         }

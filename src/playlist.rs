@@ -25,6 +25,7 @@ impl PartialEq for Playlist {
     }
 }
 
+//TODO: maybe get rid of these and just have a function?
 pub trait PlaylistRetrieval {
     fn get_by_path(&self, path: &Path) -> &Playlist;
     fn get_by_path_mut(&mut self, path: &Path) -> &mut Playlist;
