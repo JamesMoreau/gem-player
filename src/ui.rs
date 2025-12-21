@@ -951,7 +951,7 @@ fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists:
 
     ui.separator();
 
-    let mut action: Option<LibraryContextMenuAction> = None;
+    let mut action = None;
 
     let add_to_playlists_enabled = !playlists.is_empty();
     ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
