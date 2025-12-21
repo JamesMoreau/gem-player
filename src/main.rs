@@ -284,22 +284,7 @@ fn poll_library_watcher_messages(gem: &mut GemPlayer) {
     let update = gem.library_watcher.update_receiver.try_recv();
     match update {
         Ok(Some((library, playlists))) => {
-            gem.library = library;
-            gem.playlists = playlists;
-
-            // Reset the relevant ui state so that we don't become out of sync. 
-            // For example, have selected a playlist that has since been deleted.
-            // Perhaps this is too heavy-handed? An alternative solution would be
-            // to check if the current selection still exists, and only reset if not.
-            gem.ui.library.cached_library = None;
-            gem.ui.library.selected_tracks.clear();
-            gem.ui.playlists.cached_playlist_tracks = None;
-            gem.ui.playlists.selected_playlist_key = None;
-            gem.ui.playlists.selected_tracks.clear();
-            gem.ui.playlists.rename_buffer = None;
-            gem.ui.playlists.delete_modal_open = false;
-
-            gem.ui.library_and_playlists_are_loading = false;
+            on_library_reloaded(gem, library, playlists);
         }
         Ok(None) => {
             let message = "Failed to load library folder.";
@@ -315,6 +300,44 @@ fn poll_library_watcher_messages(gem: &mut GemPlayer) {
             gem.ui.library_and_playlists_are_loading = false;
         }
     }
+}
+
+// Reset / reconcile the relevant ui state so that we don't become out of sync.
+// For example, have selected a playlist that has since been deleted.
+pub fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists: Vec<Playlist>) {
+    gem.library = new_library;
+    gem.playlists = new_playlists;
+
+    gem.ui.library.cached_library = None;
+    gem.ui.playlists.cached_playlist_tracks = None;
+
+    // Reconcile the selected tracks in the library view.
+    gem.ui
+        .library
+        .selected_tracks
+        .retain(|track_id| gem.library.iter().any(|t| &t.path == track_id));
+
+    // Reconcile the playlist selection + playlist-selected tracks in the playlist view.
+    if let Some(selected_playlist_key) = &gem.ui.playlists.selected_playlist_key {
+        let maybe_playlist = gem.playlists.iter().find(|p| &p.m3u_path == selected_playlist_key);
+        if let Some(playlist) = maybe_playlist {
+            // Playlist still exists -> reconcile selected tracks
+            gem.ui
+                .playlists
+                .selected_tracks
+                .retain(|track_id| playlist.tracks.iter().any(|t| &t.path == track_id));
+        } else {
+            // Playlist no longer exists -> reset playlist UI state
+            gem.ui.playlists.selected_playlist_key = None;
+            gem.ui.playlists.selected_tracks.clear();
+            gem.ui.playlists.rename_buffer = None;
+            gem.ui.playlists.delete_modal_open = false;
+        }
+    } else {
+        gem.ui.playlists.selected_tracks.clear();
+    }
+
+    gem.ui.library_and_playlists_are_loading = false;
 }
 
 pub fn handle_dropped_file(dropped_file: &DroppedFile, gem: &mut GemPlayer) -> io::Result<()> {
