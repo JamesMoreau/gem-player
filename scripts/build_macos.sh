@@ -19,13 +19,13 @@ echo "🚀 Building macOS application..."
 cargo bundle --release
 
 echo "🔏 Signing the app..."
-codesign --force --options runtime --sign "Developer ID Application: $APPLE_NAME ($APPLE_TEAM_ID)" "$BUNDLE_PATH"
+codesign --force --options runtime --sign "$SIGNING_IDENTITY" "$BUNDLE_PATH"
 
 echo "📦 Creating a DMG..."
 create-dmg \
   --volname "$APP_NAME Installer" \
   --app-drop-link 0 0 \
-  --codesign "Developer ID Application: $APPLE_NAME ($APPLE_TEAM_ID)" \
+  --codesign "$SIGNING_IDENTITY" \
   "$DMG_PATH" \
   "$BUNDLE_PATH"
 
