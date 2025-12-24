@@ -8,13 +8,16 @@ source .env
 # Go to root directory
 cd "$(dirname "$0")/.."
 
-APP_NAME="Gem Player"
+APP_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].metadata.bundle.name')
 EXECUTABLE_NAME="gem-player"
+APP_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
 
 INTEL_APP="target/x86_64-apple-darwin/release/bundle/osx/$APP_NAME.app"
 ARM_APP="target/aarch64-apple-darwin/release/bundle/osx/$APP_NAME.app"
 UNIVERSAL_APP="target/release/bundle/osx/$APP_NAME.app"
-DMG_PATH="target/release/bundle/osx/$APP_NAME.dmg"
+
+DMG_FILENAME="gem_player_${APP_VERSION}_macos_universal_installer.dmg"
+DMG_PATH="target/release/bundle/osx/$DMG_FILENAME"
 
 echo "🧹 Cleaning up previous builds..."
 cargo clean
