@@ -13,7 +13,6 @@ EXECUTABLE_NAME="gem-player"
 
 INTEL_APP="target/x86_64-apple-darwin/release/bundle/osx/$APP_NAME.app"
 ARM_APP="target/aarch64-apple-darwin/release/bundle/osx/$APP_NAME.app"
-
 UNIVERSAL_APP="target/release/bundle/osx/$APP_NAME.app"
 DMG_PATH="target/release/bundle/osx/$APP_NAME.dmg"
 
