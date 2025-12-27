@@ -196,8 +196,8 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
         Ok(d) => d,
     };
 
-    let sample_rate = decoder.sample_rate() as f32;
-    let result = player.visualizer.command_sender.send(VisualizerCommand::Sample(sample_rate));
+    let sample_rate = decoder.sample_rate();
+    let result = player.visualizer.command_sender.send(VisualizerCommand::SampleRate(sample_rate));
     if let Err(e) = result {
         error!("Visualizer channel error: {e}. Continuing playback anyway.");
     }
