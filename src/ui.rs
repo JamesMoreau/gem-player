@@ -443,11 +443,11 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, sl
                 display_playback_slider(ui, gem, &mut position_as_secs, track_duration_as_secs, slider_width)
             });
         });
-        strip.cell(|ui| layout_marquee_and_playback_position_and_metadata(ui, gem, &mut position_as_secs, track_duration_as_secs));
+        strip.cell(|ui| layout_marquee_and_playback_position_and_metadata(ui, gem, position_as_secs, track_duration_as_secs));
     });
 }
 
-fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32, duration: f32) {
+fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemPlayer, position: f32, duration: f32) {
     // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
     // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
     StripBuilder::new(ui)
@@ -459,7 +459,7 @@ fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemP
                 StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
                     strip.cell(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                            let position = Duration::from_secs_f32(*position);
+                            let position = Duration::from_secs_f32(position);
                             let track_duration = Duration::from_secs_f32(duration);
                             let time_label_text = format!(
                                 "{} / {}",
@@ -489,7 +489,9 @@ fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemP
 }
 
 fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32, duration: f32, slider_width: f32) {
+    let previous_slider_width = ui.style_mut().spacing.slider_width;
     ui.style_mut().spacing.slider_width = slider_width;
+
     let playback_progress_slider = Slider::new(position, 0.0..=duration)
         .trailing_fill(true)
         .show_value(false)
@@ -520,6 +522,8 @@ fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32,
 
         gem.player.paused_before_scrubbing = None;
     }
+
+    ui.style_mut().spacing.slider_width = previous_slider_width;
 }
 
 fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
