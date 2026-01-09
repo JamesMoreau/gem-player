@@ -1,12 +1,13 @@
 use fully_pub::fully_pub;
 use infer::{get_from_path, MatcherType};
 use lofty::{
-    file::{AudioFile, TaggedFileExt},
+    file::{AudioFile, FileType, TaggedFileExt},
     read_from, read_from_path,
     tag::ItemKey,
 };
 use log::error;
 use rayon::prelude::*;
+use rodio::SampleRate;
 use std::{
     fs::File,
     io::{self, ErrorKind},
@@ -38,6 +39,8 @@ struct Track {
     album: Option<String>,
     duration: Duration,
     path: PathBuf,
+    sample_rate: Option<SampleRate>,
+    codec: FileType,
 }
 
 impl PartialEq for Track {
@@ -94,15 +97,16 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         .get_string(&ItemKey::TrackTitle)
         .map(|t| t.to_owned())
         .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
-
     let artist = tag.get_string(&ItemKey::TrackArtist).map(|a| a.to_owned());
-
     let album = tag.get_string(&ItemKey::AlbumTitle).map(|a| a.to_owned());
 
     let properties = tagged_file.properties();
     let duration = properties.duration();
+    let sample_rate = properties.sample_rate();
 
     let file_path = path.to_path_buf();
+    
+    let codec = tagged_file.file_type();
 
     Ok(Track {
         title,
@@ -110,6 +114,8 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         album,
         duration,
         path: file_path,
+        sample_rate,
+        codec,
     })
 }
 

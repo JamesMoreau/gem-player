@@ -235,7 +235,7 @@ fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
             .horizontal(|mut strip| {
                 strip.cell(|ui| playback_controls_ui(ui, gem));
 
-                strip.cell(|ui| display_track_info(ui, gem, button_width, gap, artwork_width, slider_width));
+                strip.cell(|ui| layout_playing_track_ui(ui, gem, button_width, gap, artwork_width, slider_width));
 
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -343,9 +343,8 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     });
 }
 
-fn display_track_info(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn layout_playing_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
-    let available_height = ui.available_height();
 
     Frame::new().corner_radius(4.0).fill(ui.visuals().faint_bg_color).show(ui, |ui| {
         StripBuilder::new(ui)
@@ -358,118 +357,168 @@ fn display_track_info(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f
             .size(Size::exact(gap))
             .horizontal(|mut strip| {
                 strip.empty();
-                strip.cell(|ui| {
-                    ui.spacing_mut().item_spacing = Vec2::splat(0.0);
-                    let starting_point = (ui.available_height() / 2.0) - button_size; // this is how we align the buttons vertically center.
-                    ui.add_space(starting_point);
-
-                    let get_button_color = |ui: &Ui, is_enabled: bool| {
-                        if is_enabled {
-                            ui.visuals().selection.bg_fill
-                        } else {
-                            ui.visuals().text_color()
-                        }
-                    };
-
-                    let color = get_button_color(ui, gem.player.repeat);
-                    let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
-                    let response = ui.add(repeat_button).on_hover_text("Repeat");
-                    if response.clicked() {
-                        gem.player.repeat = !gem.player.repeat;
-                    }
-
-                    ui.add_space(4.0);
-
-                    let color = get_button_color(ui, gem.player.shuffle.is_some());
-                    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
-                    let queue_is_not_empty = !gem.player.queue.is_empty();
-                    let response = ui
-                        .add_enabled(queue_is_not_empty, shuffle_button)
-                        .on_hover_text("Shuffle")
-                        .on_disabled_hover_text("Queue is empty");
-                    if response.clicked() {
-                        toggle_shuffle(&mut gem.player);
-                    }
-                });
+                strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, gem, button_size));
                 strip.empty();
                 strip.cell(|ui| {
-                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| display_artwork(ui, gem, artwork_width));
-                });
-                strip.empty();
-                strip.strip(|builder| {
-                    let mut position_as_secs = 0.0;
-                    let mut track_duration_as_secs = 0.1; // We set to 0.1 so that when no track is playing, the slider is at the start.
-
-                    if let Some(playing_track) = &gem.player.playing {
-                        position_as_secs = gem.player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
-                        track_duration_as_secs = playing_track.duration.as_secs_f32();
-                    }
-
-                    builder.sizes(Size::exact(available_height / 2.0), 2).vertical(|mut strip| {
-                        strip.cell(|ui| {
-                            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                ui.style_mut().spacing.slider_width = slider_width;
-                                let playback_progress_slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs)
-                                    .trailing_fill(true)
-                                    .show_value(false)
-                                    .step_by(1.0); // Step by 1 second.
-                                let response = ui.add(playback_progress_slider);
-
-                                let Some(backend) = &gem.player.backend else {
-                                    return;
-                                };
-
-                                if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
-                                    gem.player.paused_before_scrubbing = Some(backend.sink.is_paused());
-                                    backend.sink.pause(); // Pause playback during scrubbing
-                                }
-
-                                if response.drag_stopped() {
-                                    let new_position = Duration::from_secs_f32(position_as_secs);
-                                    info!("Seeking to {}", format_duration_to_mmss(new_position));
-                                    if let Err(e) = backend.sink.try_seek(new_position) {
-                                        error!("Error seeking to new position: {:?}", e);
-                                    }
-
-                                    // Resume playback if the player was not paused before scrubbing
-                                    if gem.player.paused_before_scrubbing == Some(false) {
-                                        backend.sink.play();
-                                    }
-
-                                    gem.player.paused_before_scrubbing = None;
-                                }
-                            });
-                        });
-                        strip.strip(|builder| {
-                            // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
-                            // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-                            builder
-                                .size(Size::exact(slider_width * (4.0 / 5.0)))
-                                .size(Size::exact(slider_width * (1.0 / 5.0)))
-                                .horizontal(|mut hstrip| {
-                                    hstrip.cell(|ui| display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee));
-
-                                    hstrip.cell(|ui| {
-                                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                            let position = Duration::from_secs_f32(position_as_secs);
-                                            let track_duration = Duration::from_secs_f32(track_duration_as_secs);
-                                            let time_label_text = format!(
-                                                "{} / {}",
-                                                format_duration_to_mmss(position),
-                                                format_duration_to_mmss(track_duration)
-                                            );
-
-                                            let time_label = unselectable_label(time_label_text);
-                                            ui.add(time_label);
-                                        });
-                                    });
-                                });
-                        });
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                        display_playing_artwork(ui, gem, artwork_width)
                     });
                 });
                 strip.empty();
+                strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, gem, slider_width));
+                strip.empty();
             });
     });
+}
+
+fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32) {
+    ui.spacing_mut().item_spacing = Vec2::splat(0.0);
+    let starting_point = (ui.available_height() / 2.0) - button_size; // this is how we align the buttons vertically center.
+    ui.add_space(starting_point);
+
+    let get_button_color = |ui: &Ui, is_enabled: bool| {
+        if is_enabled {
+            ui.visuals().selection.bg_fill
+        } else {
+            ui.visuals().text_color()
+        }
+    };
+
+    let color = get_button_color(ui, gem.player.repeat);
+    let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
+    let response = ui.add(repeat_button).on_hover_text("Repeat");
+    if response.clicked() {
+        gem.player.repeat = !gem.player.repeat;
+    }
+
+    ui.add_space(4.0);
+
+    let color = get_button_color(ui, gem.player.shuffle.is_some());
+    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
+    let shuffle_enabled = !gem.player.queue.is_empty();
+    let response = ui
+        .add_enabled(shuffle_enabled, shuffle_button)
+        .on_hover_text("Shuffle")
+        .on_disabled_hover_text("Queue is empty");
+    if response.clicked() {
+        toggle_shuffle(&mut gem.player);
+    }
+}
+
+fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
+    let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
+    let artwork_size = Vec2::splat(artwork_width);
+
+    let placeholder = include_image!("../assets/icon.png");
+    let mut artwork = Image::new(placeholder);
+
+    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
+        // Use track path as a unique/stable key for egui
+        let uri = format!("bytes://{}", track.path.to_string_lossy());
+        artwork = Image::from_bytes(uri, bytes.clone());
+    }
+
+    ui.add(
+        artwork
+            .texture_options(artwork_texture_options)
+            .show_loading_spinner(false)
+            .fit_to_exact_size(artwork_size)
+            .maintain_aspect_ratio(false)
+            .corner_radius(2.0),
+    );
+}
+
+fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, slider_width: f32) {
+    let (mut position_as_secs, track_duration_as_secs) = if let Some(track) = &gem.player.playing {
+        let pos = gem.player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
+        (pos, track.duration.as_secs_f32())
+    } else {
+        (0.0, 0.1) // We set to 0.1 so that when no track is playing, the slider is at the start.
+    };
+
+    StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
+        strip.cell(|ui| {
+            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                display_playback_slider(ui, gem, &mut position_as_secs, track_duration_as_secs, slider_width)
+            });
+        });
+        strip.cell(|ui| layout_marquee_and_playback_position_and_metadata(ui, gem, &mut position_as_secs, track_duration_as_secs));
+    });
+}
+
+fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32, duration: f32) {
+    // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
+    // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
+    StripBuilder::new(ui)
+        .size(Size::relative(4.0 / 5.0))
+        .size(Size::relative(1.0 / 5.0))
+        .horizontal(|mut hstrip| {
+            hstrip.cell(|ui| display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee));
+            hstrip.cell(|ui| {
+                StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
+                    strip.cell(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                            let position = Duration::from_secs_f32(*position);
+                            let track_duration = Duration::from_secs_f32(duration);
+                            let time_label_text = format!(
+                                "{} / {}",
+                                format_duration_to_mmss(position),
+                                format_duration_to_mmss(track_duration)
+                            );
+
+                            let time_label = unselectable_label(time_label_text);
+                            ui.add(time_label);
+                        });
+                    });
+
+                    strip.cell(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            Frame::new().fill(Color32::LIGHT_BLUE).show(ui, |ui| {
+                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                    metadata_chip(ui, "48.0 kHz");
+                                    ui.add_space(4.0);
+                                    metadata_chip(ui, "MP3");
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+}
+
+fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32, duration: f32, slider_width: f32) {
+    ui.style_mut().spacing.slider_width = slider_width;
+    let playback_progress_slider = Slider::new(position, 0.0..=duration)
+        .trailing_fill(true)
+        .show_value(false)
+        .step_by(1.0); // Step by 1 second.
+    let response = ui.add(playback_progress_slider);
+
+    let Some(backend) = &gem.player.backend else {
+        // TODO: is this correct?
+        return;
+    };
+
+    if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
+        gem.player.paused_before_scrubbing = Some(backend.sink.is_paused());
+        backend.sink.pause(); // Pause playback during scrubbing
+    }
+
+    if response.drag_stopped() {
+        let new_position = Duration::from_secs_f32(*position);
+        info!("Seeking to {}", format_duration_to_mmss(new_position));
+        if let Err(e) = backend.sink.try_seek(new_position) {
+            error!("Error seeking to new position: {:?}", e);
+        }
+
+        // Resume playback if the player was not paused before scrubbing
+        if gem.player.paused_before_scrubbing == Some(false) {
+            backend.sink.play();
+        }
+
+        gem.player.paused_before_scrubbing = None;
+    }
 }
 
 fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
@@ -549,29 +598,21 @@ fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut
     });
 }
 
-fn display_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
-    let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-    let artwork_size = Vec2::splat(artwork_width);
-
-    let placeholder = include_image!("../assets/icon.png");
-    let mut artwork = Image::new(placeholder);
-
-    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
-        // Use track path as a unique/stable key for egui
-        let uri = format!("bytes://{}", track.path.to_string_lossy());
-        artwork = Image::from_bytes(uri, bytes.clone());
-    }
-
-    ui.add(
-        artwork
-            .texture_options(artwork_texture_options)
-            .show_loading_spinner(false)
-            .fit_to_exact_size(artwork_size)
-            .maintain_aspect_ratio(false)
-            .corner_radius(2.0),
-    );
+fn metadata_chip(ui: &mut Ui, text: &str) {
+    Frame::new()
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .corner_radius(4.0)
+        .inner_margin(Margin::same(2))
+        .outer_margin(Margin::same(2))
+        .show(ui, |ui| {
+            // ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+            let label = Label::new(RichText::new(text).small().weak()).selectable(false);
+            ui.add(label);
+            // });
+        });
 }
 
+// TODO: split this out into something like "calculate_bands()" and put it in visualizer.rs .
 fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
     let dt = ui.input(|i| i.stable_dt);
     let smoothing = 12.0;
@@ -1893,7 +1934,9 @@ fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add_space(8.0);
 
                 ui.horizontal(|ui| {
-                    ui.add(unselectable_label("Bug reports, feature requests, and feedback may be submitted to the"));
+                    ui.add(unselectable_label(
+                        "Bug reports, feature requests, and feedback may be submitted to the",
+                    ));
                     let issue_link = format!("{}/issues", repo_link);
                     ui.hyperlink_to("issue tracker", issue_link);
                 });
