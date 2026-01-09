@@ -105,7 +105,7 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
     let sample_rate = properties.sample_rate();
 
     let file_path = path.to_path_buf();
-    
+
     let codec = tagged_file.file_type();
 
     Ok(Track {
@@ -173,4 +173,23 @@ pub fn extract_artwork_from_file(file: &mut File) -> io::Result<Option<Vec<u8>>>
         .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, "No tags found"))?;
 
     Ok(tag.pictures().first().map(|pic| pic.data().to_vec()))
+}
+
+pub fn file_type_name(ft: FileType) -> &'static str {
+    match ft {
+        FileType::Aac => "AAC",
+        FileType::Aiff => "AIFF",
+        FileType::Ape => "APE",
+        FileType::Flac => "FLAC",
+        FileType::Mpeg => "MPEG",
+        FileType::Mp4 => "MP4",
+        FileType::Mpc => "MPC",
+        FileType::Opus => "OPUS",
+        FileType::Vorbis => "VORBIS",
+        FileType::Speex => "SPEEX",
+        FileType::Wav => "WAV",
+        FileType::WavPack => "WAVPACK",
+        FileType::Custom(s) => s,
+        _ => "Unknown",
+    }
 }

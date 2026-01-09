@@ -9,7 +9,7 @@ use crate::{
     },
     playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
     spawn_folder_picker,
-    track::{calculate_total_duration, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
+    track::{calculate_total_duration, file_type_name, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
     GemPlayer, Track, KEY_COMMANDS,
 };
 use eframe::egui::{
@@ -447,47 +447,6 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, sl
     });
 }
 
-fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemPlayer, position: f32, duration: f32) {
-    // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
-    // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
-    StripBuilder::new(ui)
-        .size(Size::relative(4.0 / 5.0))
-        .size(Size::relative(1.0 / 5.0))
-        .horizontal(|mut hstrip| {
-            hstrip.cell(|ui| display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee));
-            hstrip.cell(|ui| {
-                StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
-                    strip.cell(|ui| {
-                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                            let position = Duration::from_secs_f32(position);
-                            let track_duration = Duration::from_secs_f32(duration);
-                            let time_label_text = format!(
-                                "{} / {}",
-                                format_duration_to_mmss(position),
-                                format_duration_to_mmss(track_duration)
-                            );
-
-                            let time_label = unselectable_label(time_label_text);
-                            ui.add(time_label);
-                        });
-                    });
-
-                    strip.cell(|ui| {
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            Frame::new().fill(Color32::LIGHT_BLUE).show(ui, |ui| {
-                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    metadata_chip(ui, "48.0 kHz");
-                                    ui.add_space(4.0);
-                                    metadata_chip(ui, "MP3");
-                                });
-                            });
-                        });
-                    });
-                });
-            });
-        });
-}
-
 fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32, duration: f32, slider_width: f32) {
     let previous_slider_width = ui.style_mut().spacing.slider_width;
     ui.style_mut().spacing.slider_width = slider_width;
@@ -524,6 +483,34 @@ fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32,
     }
 
     ui.style_mut().spacing.slider_width = previous_slider_width;
+}
+
+fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemPlayer, position: f32, duration: f32) {
+    // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
+    // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
+    StripBuilder::new(ui)
+        .size(Size::relative(4.0 / 5.0))
+        .size(Size::relative(1.0 / 5.0))
+        .horizontal(|mut hstrip| {
+            hstrip.cell(|ui| display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee));
+            hstrip.cell(|ui| {
+                StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
+                    strip.cell(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                            display_playback_time(ui, position, duration);
+                        });
+                    });
+
+                    strip.cell(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if let Some(playing) = &gem.player.playing {
+                                display_track_metadata(ui, playing);
+                            }
+                        });
+                    });
+                });
+            });
+        });
 }
 
 fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
@@ -603,6 +590,31 @@ fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut
     });
 }
 
+fn display_playback_time(ui: &mut Ui, position: f32, duration: f32) {
+    let position = Duration::from_secs_f32(position);
+    let track_duration = Duration::from_secs_f32(duration);
+    let time_label_text = format!(
+        "{} / {}",
+        format_duration_to_mmss(position),
+        format_duration_to_mmss(track_duration)
+    );
+
+    let time_label = unselectable_label(time_label_text);
+    ui.add(time_label);
+}
+
+fn display_track_metadata(ui: &mut Ui, track: &Track) {
+    let codec_string = file_type_name(track.codec);
+    metadata_chip(ui, codec_string);
+
+    ui.add_space(4.0);
+
+    if let Some(sr) = track.sample_rate {
+        let sample_rate_string = format!("{:.1} kHz", sr as f32 / 1000.0);
+        metadata_chip(ui, &sample_rate_string);
+    }
+}
+
 fn metadata_chip(ui: &mut Ui, text: &str) {
     Frame::new()
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
@@ -610,10 +622,8 @@ fn metadata_chip(ui: &mut Ui, text: &str) {
         .inner_margin(Margin::same(2))
         .outer_margin(Margin::same(2))
         .show(ui, |ui| {
-            // ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
             let label = Label::new(RichText::new(text).small().weak()).selectable(false);
             ui.add(label);
-            // });
         });
 }
 
