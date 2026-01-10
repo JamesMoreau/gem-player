@@ -521,8 +521,8 @@ fn layout_marquee_and_playback_position_and_metadata(
     // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
     // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
     StripBuilder::new(ui)
-        .size(Size::relative(4.0 / 5.0))
-        .size(Size::relative(1.0 / 5.0))
+        .size(Size::relative(7.0 / 10.0))
+        .size(Size::relative(3.0 / 10.0))
         .horizontal(|mut hstrip| {
             hstrip.cell(|ui| display_track_marquee(ui, playing, marquee));
             hstrip.cell(|ui| {
