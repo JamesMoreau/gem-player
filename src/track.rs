@@ -185,11 +185,11 @@ pub fn file_type_name(ft: FileType) -> &'static str {
         FileType::Mp4 => "MP4",
         FileType::Mpc => "MPC",
         FileType::Opus => "OPUS",
-        FileType::Vorbis => "VORBIS",
-        FileType::Speex => "SPEEX",
+        FileType::Vorbis => "VORB",
+        FileType::Speex => "SPX",
         FileType::Wav => "WAV",
-        FileType::WavPack => "WAVPACK",
-        FileType::Custom(s) => s,
-        _ => "Unknown",
+        FileType::WavPack => "WVPK",
+        FileType::Custom(_) => "CSTM",
+        _ => "UNK",
     }
 }

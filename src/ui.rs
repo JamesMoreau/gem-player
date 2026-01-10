@@ -358,10 +358,10 @@ fn layout_playing_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, g
             .size(Size::exact(gap))
             .horizontal(|mut strip| {
                 strip.empty();
-                strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, gem, button_size));
+                strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, &mut gem.player, button_size));
                 strip.empty();
                 strip.cell(|ui| {
-                    ui.centered_and_justified(|ui| display_playing_artwork(ui, gem, artwork_width));
+                    ui.centered_and_justified(|ui| display_playing_artwork(ui, &mut gem.player, artwork_width));
                 });
                 strip.empty();
                 strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, gem, slider_width));
@@ -372,7 +372,7 @@ fn layout_playing_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, g
     ui.spacing_mut().item_spacing = previous_item_spacing;
 }
 
-fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32) {
+fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_size: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
     let starting_point = (ui.available_height() / 2.0) - button_size; // this is how we align the buttons vertically center.
     ui.add_space(starting_point);
@@ -385,35 +385,35 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_s
         }
     };
 
-    let color = get_button_color(ui, gem.player.repeat);
+    let color = get_button_color(ui, player.repeat);
     let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
     let response = ui.add(repeat_button).on_hover_text("Repeat");
     if response.clicked() {
-        gem.player.repeat = !gem.player.repeat;
+        player.repeat = !player.repeat;
     }
 
     ui.add_space(4.0);
 
-    let color = get_button_color(ui, gem.player.shuffle.is_some());
+    let color = get_button_color(ui, player.shuffle.is_some());
     let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
-    let shuffle_enabled = !gem.player.queue.is_empty();
+    let shuffle_enabled = !player.queue.is_empty();
     let response = ui
         .add_enabled(shuffle_enabled, shuffle_button)
         .on_hover_text("Shuffle")
         .on_disabled_hover_text("Queue is empty");
     if response.clicked() {
-        toggle_shuffle(&mut gem.player);
+        toggle_shuffle(player);
     }
 }
 
-fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
+fn display_playing_artwork(ui: &mut Ui, player: &mut Player, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
     let placeholder = include_image!("../assets/icon.png");
     let mut artwork = Image::new(placeholder);
 
-    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
+    if let (Some(track), Some(bytes)) = (&player.playing, &player.playing_artwork) {
         // Use track path as a unique/stable key for egui
         let uri = format!("bytes://{}", track.path.to_string_lossy());
         artwork = Image::from_bytes(uri, bytes.clone());
@@ -443,7 +443,15 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, sl
                 display_playback_slider(ui, gem, &mut position_as_secs, track_duration_as_secs, slider_width)
             });
         });
-        strip.cell(|ui| layout_marquee_and_playback_position_and_metadata(ui, gem, position_as_secs, track_duration_as_secs));
+        strip.cell(|ui| {
+            layout_marquee_and_playback_position_and_metadata(
+                ui,
+                gem.player.playing.as_ref(),
+                &mut gem.ui.marquee,
+                position_as_secs,
+                track_duration_as_secs,
+            )
+        });
     });
 }
 
@@ -485,14 +493,20 @@ fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32,
     ui.style_mut().spacing.slider_width = previous_slider_width;
 }
 
-fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemPlayer, position: f32, duration: f32) {
+fn layout_marquee_and_playback_position_and_metadata(
+    ui: &mut Ui,
+    playing: Option<&Track>,
+    marquee: &mut MarqueeState,
+    position: f32,
+    duration: f32,
+) {
     // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
     // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
     StripBuilder::new(ui)
         .size(Size::relative(4.0 / 5.0))
         .size(Size::relative(1.0 / 5.0))
         .horizontal(|mut hstrip| {
-            hstrip.cell(|ui| display_track_marquee(ui, gem.player.playing.as_ref(), &mut gem.ui.marquee));
+            hstrip.cell(|ui| display_track_marquee(ui, playing, marquee));
             hstrip.cell(|ui| {
                 StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
                     strip.cell(|ui| {
@@ -503,7 +517,7 @@ fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, gem: &mut GemP
 
                     strip.cell(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if let Some(playing) = &gem.player.playing {
+                            if let Some(playing) = playing {
                                 display_track_metadata(ui, playing);
                             }
                         });
