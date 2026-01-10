@@ -440,7 +440,7 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, sl
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                display_playback_slider(ui, gem, &mut position_as_secs, track_duration_as_secs, slider_width)
+                display_playback_slider(ui, &mut gem.player, &mut position_as_secs, track_duration_as_secs, slider_width)
             });
         });
         strip.cell(|ui| {
@@ -455,7 +455,7 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, sl
     });
 }
 
-fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32, duration: f32, slider_width: f32) {
+fn display_playback_slider(ui: &mut Ui, player: &mut Player, position: &mut f32, duration: f32, slider_width: f32) {
     let previous_slider_width = ui.style_mut().spacing.slider_width;
     ui.style_mut().spacing.slider_width = slider_width;
 
@@ -465,13 +465,13 @@ fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32,
         .step_by(1.0); // Step by 1 second.
     let response = ui.add(playback_progress_slider);
 
-    let Some(backend) = &gem.player.backend else {
+    let Some(backend) = &player.backend else {
         // TODO: is this correct?
         return;
     };
 
-    if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
-        gem.player.paused_before_scrubbing = Some(backend.sink.is_paused());
+    if response.dragged() && player.paused_before_scrubbing.is_none() {
+        player.paused_before_scrubbing = Some(backend.sink.is_paused());
         backend.sink.pause(); // Pause playback during scrubbing
     }
 
@@ -483,11 +483,11 @@ fn display_playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut f32,
         }
 
         // Resume playback if the player was not paused before scrubbing
-        if gem.player.paused_before_scrubbing == Some(false) {
+        if player.paused_before_scrubbing == Some(false) {
             backend.sink.play();
         }
 
-        gem.player.paused_before_scrubbing = None;
+        player.paused_before_scrubbing = None;
     }
 
     ui.style_mut().spacing.slider_width = previous_slider_width;
