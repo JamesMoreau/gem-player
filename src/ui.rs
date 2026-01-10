@@ -364,7 +364,7 @@ fn layout_playing_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, g
                     ui.centered_and_justified(|ui| display_playing_artwork(ui, &mut gem.player, artwork_width));
                 });
                 strip.empty();
-                strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, gem, slider_width));
+                strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
                 strip.empty();
             });
     });
@@ -429,9 +429,9 @@ fn display_playing_artwork(ui: &mut Ui, player: &mut Player, artwork_width: f32)
     );
 }
 
-fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, slider_width: f32) {
-    let (mut position_as_secs, track_duration_as_secs) = if let Some(track) = &gem.player.playing {
-        let pos = gem.player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
+fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, marquee: &mut MarqueeState, slider_width: f32) {
+    let (mut position_as_secs, track_duration_as_secs) = if let Some(track) = &player.playing {
+        let pos = player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
         (pos, track.duration.as_secs_f32())
     } else {
         (0.0, 0.1) // We set to 0.1 so that when no track is playing, the slider is at the start.
@@ -440,14 +440,14 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, gem: &mut GemPlayer, sl
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                display_playback_slider(ui, &mut gem.player, &mut position_as_secs, track_duration_as_secs, slider_width)
+                display_playback_slider(ui, player, &mut position_as_secs, track_duration_as_secs, slider_width)
             });
         });
         strip.cell(|ui| {
             layout_marquee_and_playback_position_and_metadata(
                 ui,
-                gem.player.playing.as_ref(),
-                &mut gem.ui.marquee,
+                player.playing.as_ref(),
+                marquee,
                 position_as_secs,
                 track_duration_as_secs,
             )
