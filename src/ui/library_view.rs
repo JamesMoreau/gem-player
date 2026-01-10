@@ -6,7 +6,14 @@ use egui_material_icons::icons;
 use fully_pub::fully_pub;
 use log::{error, info};
 
-use crate::{GemPlayer, format_duration_to_mmss, play_library, player::{enqueue, enqueue_next}, playlist::{Playlist, PlaylistRetrieval, add_to_playlist}, track::{SortBy, SortOrder, Track, TrackRetrieval, open_file_location, sort}, ui::root::{playing_indicator, table_label, unselectable_label}};
+use crate::{
+    format_duration_to_mmss, play_library,
+    player::{enqueue, enqueue_next},
+    playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
+    track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
+    ui::root::{playing_indicator, table_label, unselectable_label},
+    GemPlayer,
+};
 
 #[fully_pub]
 struct LibraryViewState {

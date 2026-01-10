@@ -1,13 +1,25 @@
 use std::path::PathBuf;
 
-use eframe::egui::{Color32, Context, Frame, Label, Margin, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText, pos2, vec2};
+use eframe::egui::{pos2, vec2, Color32, Context, Frame, Label, Margin, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
-use crate::{GemPlayer, custom_window::custom_window, handle_dropped_file, ui::{control_panel::{MarqueeState, control_panel_ui}, library_view::{LibraryViewState, library_view}, navigation_bar::navigation_bar, playlist_view::{PlaylistsViewState, playlists_view}, queue_view::queue_view, settings_view::{SettingsViewState, settings_view}}};
+use crate::{
+    custom_window::custom_window,
+    handle_dropped_file,
+    ui::{
+        control_panel::{control_panel_ui, MarqueeState},
+        library_view::{library_view, LibraryViewState},
+        navigation_bar::navigation_bar,
+        playlist_view::{playlists_view, PlaylistsViewState},
+        queue_view::queue_view,
+        settings_view::{settings_view, SettingsViewState},
+    },
+    GemPlayer,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
 pub enum View {

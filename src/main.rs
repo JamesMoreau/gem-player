@@ -37,7 +37,13 @@ use std::{
 use track::{is_relevant_media_file, SortBy, SortOrder, Track, TrackRetrieval};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
-use crate::ui::{control_panel::MarqueeState, library_view::LibraryViewState, playlist_view::PlaylistsViewState, settings_view::SettingsViewState, root::{UIState, View, gem_player_ui}};
+use crate::ui::{
+    control_panel::MarqueeState,
+    library_view::LibraryViewState,
+    playlist_view::PlaylistsViewState,
+    root::{gem_player_ui, UIState, View},
+    settings_view::SettingsViewState,
+};
 
 mod custom_window;
 mod library_watcher;

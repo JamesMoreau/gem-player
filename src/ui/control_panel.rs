@@ -1,12 +1,22 @@
 use std::{path::PathBuf, time::Duration};
 
-use eframe::egui::{Align, Button, Frame, Image, Label, Layout, Margin, Popup, Rect, RectAlign, RichText, Sense, Slider, TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, Vec2, include_image, pos2, text, vec2};
+use eframe::egui::{
+    include_image, pos2, text, vec2, Align, Button, Frame, Image, Label, Layout, Margin, Popup, Rect, RectAlign, RichText, Sense, Slider,
+    TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, Vec2,
+};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
 use log::{error, info};
 
-use crate::{GemPlayer, format_duration_to_mmss, maybe_play_next, maybe_play_previous, player::{Player, mute_or_unmute, play_or_pause, toggle_shuffle}, track::{Track, file_type_name}, ui::root::unselectable_label, visualizer::calculate_bands};
+use crate::{
+    format_duration_to_mmss, maybe_play_next, maybe_play_previous,
+    player::{mute_or_unmute, play_or_pause, toggle_shuffle, Player},
+    track::{file_type_name, Track},
+    ui::root::unselectable_label,
+    visualizer::calculate_bands,
+    GemPlayer,
+};
 
 const MARQUEE_SPEED: f32 = 5.0; // chars per second
 const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);

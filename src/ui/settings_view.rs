@@ -1,12 +1,18 @@
 use std::path::Path;
 
-use eframe::egui::{ComboBox, Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui, containers};
+use eframe::egui::{containers, ComboBox, Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
 use log::error;
 use rodio::{Device, DeviceTrait};
 
-use crate::{GemPlayer, KEY_COMMANDS, apply_theme, player::{get_audio_output_devices_and_names, switch_audio_devices}, spawn_folder_picker, ui::root::{unselectable_label}};
+use crate::{
+    apply_theme,
+    player::{get_audio_output_devices_and_names, switch_audio_devices},
+    spawn_folder_picker,
+    ui::root::unselectable_label,
+    GemPlayer, KEY_COMMANDS,
+};
 
 #[fully_pub]
 struct SettingsViewState {

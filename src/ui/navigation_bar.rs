@@ -3,7 +3,14 @@ use egui_material_icons::icons;
 use log::info;
 use strum::IntoEnumIterator;
 
-use crate::{GemPlayer, format_duration_to_hhmmss, player::clear_the_queue, playlist::PlaylistRetrieval, track::{SortBy, SortOrder, Track, calculate_total_duration}, ui::root::{UIState, View, unselectable_label}};
+use crate::{
+    format_duration_to_hhmmss,
+    player::clear_the_queue,
+    playlist::PlaylistRetrieval,
+    track::{calculate_total_duration, SortBy, SortOrder, Track},
+    ui::root::{unselectable_label, UIState, View},
+    GemPlayer,
+};
 
 pub fn navigation_bar(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {

@@ -2,7 +2,11 @@ use eframe::egui::{Align, Button, Frame, Layout, Margin, RichText, Sense, Ui};
 use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 
-use crate::{format_duration_to_mmss, player::{Player, move_to_position, remove_from_queue}, ui::root::unselectable_label};
+use crate::{
+    format_duration_to_mmss,
+    player::{move_to_position, remove_from_queue, Player},
+    ui::root::unselectable_label,
+};
 
 pub fn queue_view(ui: &mut Ui, player: &mut Player) {
     if player.queue.is_empty() {

@@ -1,13 +1,18 @@
 use std::path::{Path, PathBuf};
 
-use eframe::egui::{Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui, containers};
+use eframe::egui::{containers, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui};
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    GemPlayer, format_duration_to_mmss, play_playlist, player::{enqueue, enqueue_next}, playlist::{PlaylistRetrieval, create, delete, remove_from_playlist, rename}, track::{Track, TrackRetrieval, open_file_location}, ui::root::{playing_indicator, table_label, unselectable_label}
+    format_duration_to_mmss, play_playlist,
+    player::{enqueue, enqueue_next},
+    playlist::{create, delete, remove_from_playlist, rename, PlaylistRetrieval},
+    track::{open_file_location, Track, TrackRetrieval},
+    ui::root::{playing_indicator, table_label, unselectable_label},
+    GemPlayer,
 };
 
 #[fully_pub]
