@@ -22,6 +22,26 @@ pub enum VisualizerCommand {
 //  - A processing thread that receives the samples, performs FFT, and performs other processing.
 //  - Visualization UI code in the main thread that displays the processed data.
 
+pub fn calculate_bands(display_bands: &mut [f32], targets: Option<&[f32]>, dt: f32) {
+    let smoothing = 12.0;
+    let step = smoothing * dt;
+    let alpha = 1.0 - (-step).exp();
+
+    for (i, bar) in display_bands.iter_mut().enumerate() {
+        let raw_target = targets.and_then(|t| t.get(i)).copied().unwrap_or(0.0);
+
+        // clamp downward movement
+        let target = if raw_target < *bar {
+            (*bar - step).max(raw_target)
+        } else {
+            raw_target
+        };
+
+        // smoothing
+        *bar += (target - *bar) * alpha;
+    }
+}
+
 pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f32>>) {
     let (command_sender, commands_receiver) = channel::<VisualizerCommand>();
     let (bands_sender, bands_receiver) = channel::<Vec<f32>>();

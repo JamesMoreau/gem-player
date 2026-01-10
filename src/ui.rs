@@ -1,16 +1,7 @@
 use crate::{
-    apply_theme,
-    custom_window::custom_window,
-    format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library,
-    play_playlist,
-    player::{
-        clear_the_queue, enqueue, enqueue_next, get_audio_output_devices_and_names, move_to_position, mute_or_unmute, play_or_pause,
-        remove_from_queue, switch_audio_devices, toggle_shuffle, Player,
-    },
-    playlist::{add_to_playlist, create, delete, remove_from_playlist, rename, Playlist, PlaylistRetrieval},
-    spawn_folder_picker,
-    track::{calculate_total_duration, file_type_name, open_file_location, sort, SortBy, SortOrder, TrackRetrieval},
-    GemPlayer, Track, KEY_COMMANDS,
+    GemPlayer, KEY_COMMANDS, Track, apply_theme, custom_window::custom_window, format_duration_to_hhmmss, format_duration_to_mmss, handle_dropped_file, maybe_play_next, maybe_play_previous, play_library, play_playlist, player::{
+        Player, clear_the_queue, enqueue, enqueue_next, get_audio_output_devices_and_names, move_to_position, mute_or_unmute, play_or_pause, remove_from_queue, switch_audio_devices, toggle_shuffle
+    }, playlist::{Playlist, PlaylistRetrieval, add_to_playlist, create, delete, remove_from_playlist, rename}, spawn_folder_picker, track::{SortBy, SortOrder, TrackRetrieval, calculate_total_duration, file_type_name, open_file_location, sort}, visualizer::calculate_bands
 };
 use eframe::egui::{
     containers::{self},
@@ -659,28 +650,14 @@ fn metadata_chip(ui: &mut Ui, text: &str) {
         });
 }
 
-// TODO: split this out into something like "calculate_bands()" and put it in visualizer.rs .
 fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
     let dt = ui.input(|i| i.stable_dt);
-    let smoothing = 12.0;
-    let step = smoothing * dt;
 
-    let maybe_bands = gem.player.visualizer.bands_receiver.try_iter().last();
-    let display_bands = &mut gem.player.visualizer.display_bands;
-    let targets = maybe_bands.unwrap_or_else(|| vec![0.0; display_bands.len()]);
+    let targets = gem.player.visualizer.bands_receiver.try_iter().last();
 
-    for (bar, &raw_target) in display_bands.iter_mut().zip(&targets) {
-        // clamp
-        let target = if raw_target < *bar {
-            (*bar - step).max(raw_target)
-        } else {
-            raw_target
-        };
+    calculate_bands(&mut gem.player.visualizer.display_bands, targets.as_deref(), dt);
 
-        // smoothing
-        let alpha = 1.0 - (-step).exp();
-        *bar += (target - *bar) * alpha;
-    }
+    let display_bands = &gem.player.visualizer.display_bands;
 
     let desired_height = ui.available_height() * 0.5;
     let bar_width = 10.0;
@@ -691,7 +668,7 @@ fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
     let num_bars = display_bands.len() as f32;
     let total_width = (num_bars * bar_width) + ((num_bars - 1.0) * bar_gap);
 
-    let (rect, _response) = ui.allocate_exact_size(vec2(total_width, desired_height), Sense::hover());
+    let (rect, _) = ui.allocate_exact_size(vec2(total_width, desired_height), Sense::hover());
 
     let painter = ui.painter();
     for (i, &value) in display_bands.iter().enumerate() {
