@@ -41,7 +41,9 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
             .size(Size::exact(gap + button_width + gap + artwork_width + gap + slider_width + gap))
             .size(Size::remainder())
             .horizontal(|mut strip| {
-                strip.cell(|ui| playback_controls_ui(ui, gem));
+                strip.cell(|ui| {
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| playback_controls_ui(ui, gem));
+                });
 
                 strip.cell(|ui| {
                     layout_playing_track_ui(
@@ -116,49 +118,47 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
 }
 
 fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
-    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-        let track_is_playing = gem.player.playing.is_some();
+    let track_is_playing = gem.player.playing.is_some();
 
-        let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS).size(18.0));
-        let previous_track_exists = !gem.player.history.is_empty();
-        let is_previous_enabled = track_is_playing || previous_track_exists;
+    let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS).size(18.0));
+    let previous_track_exists = !gem.player.history.is_empty();
+    let is_previous_enabled = track_is_playing || previous_track_exists;
 
-        let response = ui
-            .add_enabled(is_previous_enabled, previous_button)
-            .on_hover_text("Previous")
-            .on_disabled_hover_text("No previous track");
-        if response.clicked() {
-            maybe_play_previous(gem)
+    let response = ui
+        .add_enabled(is_previous_enabled, previous_button)
+        .on_hover_text("Previous")
+        .on_disabled_hover_text("No previous track");
+    if response.clicked() {
+        maybe_play_previous(gem)
+    }
+
+    let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.sink.is_paused());
+    let play_pause_icon = if sink_is_paused {
+        icons::ICON_PLAY_ARROW
+    } else {
+        icons::ICON_PAUSE
+    };
+    let tooltip = if sink_is_paused { "Play" } else { "Pause" };
+    let play_pause_button = Button::new(RichText::new(play_pause_icon).size(28.0));
+    let response = ui
+        .add_enabled(track_is_playing, play_pause_button)
+        .on_hover_text(tooltip)
+        .on_disabled_hover_text("No current track");
+    if response.clicked() {
+        if let Some(backend) = &mut gem.player.backend {
+            play_or_pause(&mut backend.sink);
         }
+    }
 
-        let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.sink.is_paused());
-        let play_pause_icon = if sink_is_paused {
-            icons::ICON_PLAY_ARROW
-        } else {
-            icons::ICON_PAUSE
-        };
-        let tooltip = if sink_is_paused { "Play" } else { "Pause" };
-        let play_pause_button = Button::new(RichText::new(play_pause_icon).size(28.0));
-        let response = ui
-            .add_enabled(track_is_playing, play_pause_button)
-            .on_hover_text(tooltip)
-            .on_disabled_hover_text("No current track");
-        if response.clicked() {
-            if let Some(backend) = &mut gem.player.backend {
-                play_or_pause(&mut backend.sink);
-            }
-        }
-
-        let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
-        let next_track_exists = !gem.player.queue.is_empty();
-        let response = ui
-            .add_enabled(next_track_exists, next_button)
-            .on_hover_text("Next")
-            .on_disabled_hover_text("No next track");
-        if response.clicked() {
-            maybe_play_next(gem);
-        }
-    });
+    let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
+    let next_track_exists = !gem.player.queue.is_empty();
+    let response = ui
+        .add_enabled(next_track_exists, next_button)
+        .on_hover_text("Next")
+        .on_disabled_hover_text("No next track");
+    if response.clicked() {
+        maybe_play_next(gem);
+    }
 }
 
 fn layout_playing_track_ui(
