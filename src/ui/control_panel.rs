@@ -84,37 +84,37 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
     let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
     let response = ui.add_enabled(has_backend, volume_button);
 
-	if !has_backend {
-		// In case the backend disappears while the popup is already open, cleanup.
-		gem.ui.volume_popup_is_open = false;
+    if !has_backend {
+        // In case the backend disappears while the popup is already open, cleanup.
+        gem.ui.volume_popup_is_open = false;
 
-		// Since there is no backend, no popup or interaction can occur.
-		return;
-	}
+        // Since there is no backend, no popup or interaction can occur.
+        return;
+    }
 
     let mut button_is_hovered = false;
     let mut popup_is_hovered = false;
 
-	Popup::menu(&response)
-		.open(gem.ui.volume_popup_is_open)
-		.align(RectAlign::RIGHT)
-		.gap(4.0)
-		.show(|ui| {
-			let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-			let changed = ui.add(volume_slider).changed();
-			if changed {
-				gem.player.muted = false;
-				gem.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
+    Popup::menu(&response)
+        .open(gem.ui.volume_popup_is_open)
+        .align(RectAlign::RIGHT)
+        .gap(4.0)
+        .show(|ui| {
+            let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+            let changed = ui.add(volume_slider).changed();
+            if changed {
+                gem.player.muted = false;
+                gem.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
 
-				if let Some(backend) = &gem.player.backend {
-					backend.sink.set_volume(volume);
-				}
-			}
+                if let Some(backend) = &gem.player.backend {
+                    backend.sink.set_volume(volume);
+                }
+            }
 
-			if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
-				popup_is_hovered = true;
-			}
-		});
+            if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
+                popup_is_hovered = true;
+            }
+        });
 
     if ui.rect_contains_pointer(response.rect.expand(8.0)) {
         button_is_hovered = true;
@@ -128,14 +128,15 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
 }
 
 fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+    let has_backend = gem.player.backend.is_some();
     let track_is_playing = gem.player.playing.is_some();
 
     let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS).size(18.0));
     let previous_track_exists = !gem.player.history.is_empty();
-    let is_previous_enabled = track_is_playing || previous_track_exists;
+    let previous_enabled = has_backend && (track_is_playing || previous_track_exists);
 
     let response = ui
-        .add_enabled(is_previous_enabled, previous_button)
+        .add_enabled(previous_enabled, previous_button)
         .on_hover_text("Previous")
         .on_disabled_hover_text("No previous track");
     if response.clicked() {
@@ -149,9 +150,10 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         icons::ICON_PAUSE
     };
     let tooltip = if sink_is_paused { "Play" } else { "Pause" };
+    let play_pause_enabled = has_backend && track_is_playing;
     let play_pause_button = Button::new(RichText::new(play_pause_icon).size(28.0));
     let response = ui
-        .add_enabled(track_is_playing, play_pause_button)
+        .add_enabled(play_pause_enabled, play_pause_button)
         .on_hover_text(tooltip)
         .on_disabled_hover_text("No current track");
     if response.clicked() {
@@ -161,9 +163,9 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 
     let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
-    let next_track_exists = !gem.player.queue.is_empty();
+    let next_enabled = has_backend && !gem.player.queue.is_empty();
     let response = ui
-        .add_enabled(next_track_exists, next_button)
+        .add_enabled(next_enabled, next_button)
         .on_hover_text("Next")
         .on_disabled_hover_text("No next track");
     if response.clicked() {
