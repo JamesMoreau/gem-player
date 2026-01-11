@@ -11,7 +11,7 @@ use log::{error, info};
 
 use crate::{
     format_duration_to_mmss, maybe_play_next, maybe_play_previous,
-    player::{mute_or_unmute, play_or_pause, toggle_shuffle, Player},
+    player::{mute_or_unmute, play_or_pause, toggle_shuffle, AudioBackend, Player},
     track::{file_type_name, Track},
     ui::root::unselectable_label,
     visualizer::calculate_bands,
@@ -266,7 +266,14 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, ma
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                display_playback_slider(ui, player, &mut position_as_secs, track_duration_as_secs, slider_width)
+                display_playback_slider(
+                    ui,
+                    player.backend.as_mut(),
+                    &mut player.paused_before_scrubbing,
+                    &mut position_as_secs,
+                    track_duration_as_secs,
+                    slider_width,
+                )
             });
         });
         strip.cell(|ui| {
@@ -281,23 +288,33 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, ma
     });
 }
 
-fn display_playback_slider(ui: &mut Ui, player: &mut Player, position: &mut f32, duration: f32, slider_width: f32) {
+fn display_playback_slider(
+    ui: &mut Ui,
+    maybe_backend: Option<&mut AudioBackend>,
+    paused_before_scrubbing: &mut Option<bool>,
+    position: &mut f32,
+    duration: f32,
+    slider_width: f32,
+) {
     let previous_slider_width = ui.style_mut().spacing.slider_width;
     ui.style_mut().spacing.slider_width = slider_width;
+
+    // TODO: later extend to: let slider_enabled = backend.is_some() && has_playing_track;
+    let slider_enabled = maybe_backend.is_some();
 
     let playback_progress_slider = Slider::new(position, 0.0..=duration)
         .trailing_fill(true)
         .show_value(false)
         .step_by(1.0); // Step by 1 second.
-    let response = ui.add(playback_progress_slider);
+    let response = ui.add_enabled(slider_enabled, playback_progress_slider);
 
-    let Some(backend) = &player.backend else {
-        // TODO: is this correct?
+    let Some(backend) = maybe_backend else {
+        ui.style_mut().spacing.slider_width = previous_slider_width;
         return;
     };
 
-    if response.dragged() && player.paused_before_scrubbing.is_none() {
-        player.paused_before_scrubbing = Some(backend.sink.is_paused());
+    if response.dragged() && paused_before_scrubbing.is_none() {
+        *paused_before_scrubbing = Some(backend.sink.is_paused());
         backend.sink.pause(); // Pause playback during scrubbing
     }
 
@@ -309,11 +326,11 @@ fn display_playback_slider(ui: &mut Ui, player: &mut Player, position: &mut f32,
         }
 
         // Resume playback if the player was not paused before scrubbing
-        if player.paused_before_scrubbing == Some(false) {
+        if *paused_before_scrubbing == Some(false) {
             backend.sink.play();
         }
 
-        player.paused_before_scrubbing = None;
+        *paused_before_scrubbing = None;
     }
 
     ui.style_mut().spacing.slider_width = previous_slider_width;
