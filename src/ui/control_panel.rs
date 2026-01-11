@@ -71,6 +71,8 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 }
 
 fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
+    let has_backend = gem.player.backend.is_some();
+
     let mut volume = gem.player.backend.as_ref().map(|b| b.sink.volume()).unwrap_or(0.0);
 
     let volume_icon = match volume {
@@ -80,31 +82,39 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
     };
 
     let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
-    let response = ui.add(volume_button);
+    let response = ui.add_enabled(has_backend, volume_button);
+
+	if !has_backend {
+		// In case the backend disappears while the popup is already open, cleanup.
+		gem.ui.volume_popup_is_open = false;
+
+		// Since there is no backend, no popup or interaction can occur.
+		return;
+	}
 
     let mut button_is_hovered = false;
     let mut popup_is_hovered = false;
 
-    Popup::menu(&response)
-        .open(gem.ui.volume_popup_is_open)
-        .align(RectAlign::RIGHT)
-        .gap(4.0)
-        .show(|ui| {
-            let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
-            let changed = ui.add(volume_slider).changed();
-            if changed {
-                gem.player.muted = false;
-                gem.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
+	Popup::menu(&response)
+		.open(gem.ui.volume_popup_is_open)
+		.align(RectAlign::RIGHT)
+		.gap(4.0)
+		.show(|ui| {
+			let volume_slider = Slider::new(&mut volume, 0.0..=1.0).trailing_fill(true).show_value(false);
+			let changed = ui.add(volume_slider).changed();
+			if changed {
+				gem.player.muted = false;
+				gem.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
 
-                if let Some(backend) = &gem.player.backend {
-                    backend.sink.set_volume(volume);
-                }
-            }
+				if let Some(backend) = &gem.player.backend {
+					backend.sink.set_volume(volume);
+				}
+			}
 
-            if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
-                popup_is_hovered = true;
-            }
-        });
+			if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {
+				popup_is_hovered = true;
+			}
+		});
 
     if ui.rect_contains_pointer(response.rect.expand(8.0)) {
         button_is_hovered = true;
