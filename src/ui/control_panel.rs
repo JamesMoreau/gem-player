@@ -269,6 +269,7 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, ma
                 display_playback_slider(
                     ui,
                     player.backend.as_mut(),
+                    player.playing.is_some(),
                     &mut player.paused_before_scrubbing,
                     &mut position_as_secs,
                     track_duration_as_secs,
@@ -291,6 +292,7 @@ fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, ma
 fn display_playback_slider(
     ui: &mut Ui,
     maybe_backend: Option<&mut AudioBackend>,
+    is_playing: bool,
     paused_before_scrubbing: &mut Option<bool>,
     position: &mut f32,
     duration: f32,
@@ -299,8 +301,7 @@ fn display_playback_slider(
     let previous_slider_width = ui.style_mut().spacing.slider_width;
     ui.style_mut().spacing.slider_width = slider_width;
 
-    // TODO: later extend to: let slider_enabled = backend.is_some() && has_playing_track;
-    let slider_enabled = maybe_backend.is_some();
+    let slider_enabled = maybe_backend.is_some() && is_playing;
 
     let playback_progress_slider = Slider::new(position, 0.0..=duration)
         .trailing_fill(true)
