@@ -1,4 +1,4 @@
-use eframe::egui::{Align, Button, Frame, Layout, Margin, RichText, Sense, Ui};
+use egui::{Align, Button, Frame, Layout, Margin, RichText, Sense, Ui};
 use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 

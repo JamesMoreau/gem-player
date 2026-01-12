@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use eframe::egui::{pos2, vec2, Color32, Context, Frame, Label, Margin, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
+use egui::{pos2, vec2, Color32, Context, Frame, Label, Margin, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
 use egui_notify::Toasts;

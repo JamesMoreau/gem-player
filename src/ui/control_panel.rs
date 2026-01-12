@@ -1,6 +1,6 @@
 use std::{path::PathBuf, time::Duration};
 
-use eframe::egui::{
+use egui::{
     include_image, pos2, text, vec2, Align, Button, Frame, Image, Label, Layout, Margin, Popup, Rect, RectAlign, RichText, Sense, Slider,
     TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, Vec2,
 };

@@ -1,4 +1,4 @@
-use eframe::egui::{Align, Button, Direction, Frame, Layout, Margin, Popup, PopupCloseBehavior, TextEdit, Ui};
+use egui::{Align, Button, Direction, Frame, Layout, Margin, Popup, PopupCloseBehavior, TextEdit, Ui};
 use egui_material_icons::icons;
 use log::info;
 use strum::IntoEnumIterator;

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use eframe::egui::{containers, ComboBox, Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
+use egui::{containers, ComboBox, Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
 use log::error;

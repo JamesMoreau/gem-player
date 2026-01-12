@@ -1,9 +1,9 @@
-use eframe::egui::{
+use egui::{
     Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui, UiBuilder, Vec2,
     ViewportCommand,
 };
 #[cfg(target_os = "windows")]
-use eframe::egui::{Area, CursorIcon, Pos2, ResizeDirection};
+use egui::{Area, CursorIcon, Pos2, ResizeDirection};
 
 use egui_material_icons::icons;
 

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use eframe::egui::{containers, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui};
+use egui::{containers, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui};
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
