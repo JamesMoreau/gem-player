@@ -7,8 +7,8 @@ use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    format_duration_to_mmss, play_library,
-    player::{enqueue, enqueue_next},
+    format_duration_to_mmss,
+    player::{clear_the_queue, enqueue, enqueue_next, play_next},
     playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
     track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
     ui::root::{playing_indicator, table_label, unselectable_label},
@@ -369,4 +369,25 @@ fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists:
     }
 
     action
+}
+
+fn play_library(gem: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
+    clear_the_queue(&mut gem.player);
+
+    let mut start_index = 0;
+    if let Some(track) = starting_track {
+        start_index = gem.library.get_position_by_path(&track.path);
+    }
+
+    // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
+    for i in start_index..gem.library.len() {
+        gem.player.queue.push(gem.library[i].clone());
+    }
+    for i in 0..start_index {
+        gem.player.queue.push(gem.library[i].clone());
+    }
+
+    play_next(&mut gem.player)?;
+
+    Ok(())
 }

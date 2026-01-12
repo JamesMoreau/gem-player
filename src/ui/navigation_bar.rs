@@ -153,7 +153,7 @@ fn switch_view(ui: &mut UIState, view: View) {
     ui.current_view = view;
 }
 
-pub fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
+fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     let duration = calculate_total_duration(tracks);
     let duration_string = format_duration_to_hhmmss(duration);
     format!("{} tracks / {}", tracks.len(), duration_string)

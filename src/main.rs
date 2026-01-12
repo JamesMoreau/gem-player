@@ -17,10 +17,10 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use player::{
-    adjust_volume_by_percentage, build_audio_backend_from_device, clear_the_queue, get_audio_output_devices_and_names, mute_or_unmute,
-    play_next, play_or_pause, play_previous, Player, VisualizerState,
+    adjust_volume_by_percentage, build_audio_backend_from_device, get_audio_output_devices_and_names, mute_or_unmute, play_next,
+    play_or_pause, play_previous, Player, VisualizerState,
 };
-use playlist::{Playlist, PlaylistRetrieval};
+use playlist::Playlist;
 use rfd::FileDialog;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
@@ -34,7 +34,7 @@ use std::{
     thread,
     time::Duration,
 };
-use track::{is_relevant_media_file, SortBy, SortOrder, Track, TrackRetrieval};
+use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 use crate::ui::{
@@ -470,50 +470,6 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
         }
         backend.sink.play();
     }
-}
-
-pub fn play_library(gem: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
-    clear_the_queue(&mut gem.player);
-
-    let mut start_index = 0;
-    if let Some(track) = starting_track {
-        start_index = gem.library.get_position_by_path(&track.path);
-    }
-
-    // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
-    for i in start_index..gem.library.len() {
-        gem.player.queue.push(gem.library[i].clone());
-    }
-    for i in 0..start_index {
-        gem.player.queue.push(gem.library[i].clone());
-    }
-
-    play_next(&mut gem.player)?;
-
-    Ok(())
-}
-
-pub fn play_playlist(gem: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
-    clear_the_queue(&mut gem.player);
-
-    let playlist = gem.playlists.get_by_path(playlist_key);
-
-    let mut start_index = 0;
-    if let Some(key) = starting_track_key {
-        start_index = playlist.tracks.get_position_by_path(key);
-    }
-
-    // Add tracks from the starting index to the end, then from the beginning up to the starting index.
-    for i in start_index..playlist.tracks.len() {
-        gem.player.queue.push(playlist.tracks[i].clone());
-    }
-    for i in 0..start_index {
-        gem.player.queue.push(playlist.tracks[i].clone());
-    }
-
-    play_next(&mut gem.player)?;
-
-    Ok(())
 }
 
 const KEY_COMMANDS: &[(Key, &str)] = &[
