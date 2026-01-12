@@ -8,10 +8,10 @@ use log::{error, info};
 
 use crate::{
     format_duration_to_mmss,
-    player::{clear_the_queue, enqueue, enqueue_next, play_next},
+    player::{enqueue, enqueue_next},
     playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
     track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
-    ui::root::{playing_indicator, table_label, unselectable_label},
+    ui::root::{play_from_view, playing_indicator, table_label, unselectable_label},
     GemPlayer,
 };
 
@@ -219,7 +219,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    should_play_library = Some(track.clone());
+                    should_play_library = Some(track.path.clone());
                 }
 
                 Popup::context_menu(&response).show(|ui| {
@@ -234,8 +234,8 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
     // Perform actions AFTER rendering the table to avoid borrow checker issues that come with mutating state inside closures.
 
-    if let Some(track) = should_play_library {
-        if let Err(e) = play_library(gem, Some(&track)) {
+    if let Some(track_key) = should_play_library {
+        if let Err(e) = play_from_view(&mut gem.player, cached_library, &track_key) {
             error!("{}", e);
             gem.ui.toasts.error("Error playing from library");
         }
@@ -369,25 +369,4 @@ fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists:
     }
 
     action
-}
-
-fn play_library(gem: &mut GemPlayer, starting_track: Option<&Track>) -> Result<(), String> {
-    clear_the_queue(&mut gem.player);
-
-    let mut start_index = 0;
-    if let Some(track) = starting_track {
-        start_index = gem.library.get_position_by_path(&track.path);
-    }
-
-    // Add tracks from the starting index to the end. Then add tracks from the beginning up to the starting index.
-    for i in start_index..gem.library.len() {
-        gem.player.queue.push(gem.library[i].clone());
-    }
-    for i in 0..start_index {
-        gem.player.queue.push(gem.library[i].clone());
-    }
-
-    play_next(&mut gem.player)?;
-
-    Ok(())
 }

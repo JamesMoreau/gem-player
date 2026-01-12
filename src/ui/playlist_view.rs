@@ -11,7 +11,7 @@ use crate::{
     player::{clear_the_queue, enqueue, enqueue_next, play_next},
     playlist::{create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     track::{open_file_location, Track, TrackRetrieval},
-    ui::root::{playing_indicator, table_label, unselectable_label},
+    ui::root::{play_from_view, playing_indicator, table_label, unselectable_label},
     GemPlayer,
 };
 
@@ -528,7 +528,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 }
 
                 if response.double_clicked() {
-                    should_play_playlist = Some((playlist_key.clone(), track.path.clone()));
+                    should_play_playlist = Some(track.path.clone());
                 }
 
                 Popup::context_menu(&response).show(|ui| {
@@ -541,15 +541,15 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
             });
         });
 
-    if let Some(action) = context_menu_action {
-        handle_playlist_context_menu_action(gem, action, &playlist_key);
-    }
-
-    if let Some((playlist_key, track_key)) = should_play_playlist {
-        if let Err(e) = play_playlist(gem, &playlist_key, Some(&track_key)) {
+    if let Some(track_key) = should_play_playlist {
+        if let Err(e) = play_from_view(&mut gem.player, cached_playlist_tracks, &track_key) {
             error!("{}", e);
             gem.ui.toasts.error("Error playing from playlist");
         }
+    }
+
+    if let Some(action) = context_menu_action {
+        handle_playlist_context_menu_action(gem, action, &playlist_key);
     }
 }
 
@@ -674,7 +674,7 @@ fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option
     action
 }
 
-pub fn play_playlist(gem: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
+fn play_playlist(gem: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
     clear_the_queue(&mut gem.player);
 
     let playlist = gem.playlists.get_by_path(playlist_key);
