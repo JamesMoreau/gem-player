@@ -4,11 +4,10 @@ use log::info;
 use strum::IntoEnumIterator;
 
 use crate::{
-    format_duration_to_hhmmss,
     player::clear_the_queue,
     playlist::PlaylistRetrieval,
     track::{calculate_total_duration, SortBy, SortOrder, Track},
-    ui::root::{unselectable_label, UIState, View},
+    ui::root::{format_duration_to_hhmmss, unselectable_label, UIState, View},
     GemPlayer,
 };
 

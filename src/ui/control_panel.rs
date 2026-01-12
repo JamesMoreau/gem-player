@@ -10,10 +10,10 @@ use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    format_duration_to_mmss, maybe_play_next, maybe_play_previous,
+    maybe_play_next, maybe_play_previous,
     player::{mute_or_unmute, play_or_pause, toggle_shuffle, AudioBackend, Player},
     track::{file_type_name, Track},
-    ui::root::unselectable_label,
+    ui::root::{format_duration_to_mmss, unselectable_label},
     visualizer::calculate_bands,
     GemPlayer,
 };

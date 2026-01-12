@@ -7,11 +7,10 @@ use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    format_duration_to_mmss,
     player::{enqueue, enqueue_next, play_in_order},
     playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
     track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
-    ui::root::{playing_indicator, table_label, unselectable_label},
+    ui::root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
     GemPlayer,
 };
 

@@ -601,23 +601,3 @@ pub fn load_system_fonts(fonts: &mut FontDefinitions) {
         }
     }
 }
-
-pub fn format_duration_to_mmss(duration: Duration) -> String {
-    let total_seconds = duration.as_secs();
-    let seconds_per_minute = 60;
-    let minutes = total_seconds / seconds_per_minute;
-    let seconds = total_seconds % seconds_per_minute;
-
-    format!("{}:{:02}", minutes, seconds)
-}
-
-pub fn format_duration_to_hhmmss(duration: Duration) -> String {
-    let total_seconds = duration.as_secs();
-    let seconds_per_minute = 60;
-    let minutes_per_hour = 60;
-    let hours = total_seconds / (minutes_per_hour * seconds_per_minute);
-    let minutes = (total_seconds / seconds_per_minute) % minutes_per_hour;
-    let seconds = total_seconds % seconds_per_minute;
-
-    format!("{}:{:02}:{:02}", hours, minutes, seconds)
-}

@@ -3,9 +3,8 @@ use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 
 use crate::{
-    format_duration_to_mmss,
     player::{move_to_position, remove_from_queue, Player},
-    ui::root::unselectable_label,
+    ui::root::{format_duration_to_mmss, unselectable_label},
 };
 
 pub fn queue_view(ui: &mut Ui, player: &mut Player) {

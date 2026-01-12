@@ -121,7 +121,6 @@ pub fn clear_the_queue(player: &mut Player) {
     player.history.clear();
     player.queue.clear();
     player.shuffle = None;
-    player.repeat = false;
 }
 
 pub fn play_or_pause(sink: &mut Sink) {
@@ -136,9 +135,6 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
     if player.repeat {
         if let Some(playing) = player.playing.clone() {
             return load_and_play(player, &playing).map_err(|e| e.to_string());
-        } else {
-            player.repeat = false;
-            return Err("Repeat enabled but no track is playing".to_string());
         }
     }
 
