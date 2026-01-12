@@ -12,6 +12,7 @@ use rodio::{
 use std::{
     fs,
     io::{self, Seek},
+    path::Path,
     sync::mpsc::{Receiver, Sender},
     time::Duration,
 };
@@ -207,6 +208,23 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     backend.sink.play();
 
     Ok(())
+}
+
+pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) -> Result<(), String> {
+    clear_the_queue(player);
+
+    let start_index = starting_track
+        .and_then(|path| tracks.iter().position(|track| track.path == path))
+        .unwrap_or(0);
+
+    // Queue tracks from the starting track, wrapping around to the beginning.
+    let ordered = tracks[start_index..].iter().chain(&tracks[..start_index]);
+
+    for track in ordered {
+        player.queue.push(track.clone());
+    }
+
+    play_next(player)
 }
 
 pub fn toggle_shuffle(player: &mut Player) {

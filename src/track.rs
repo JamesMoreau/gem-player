@@ -52,16 +52,11 @@ impl PartialEq for Track {
 
 pub trait TrackRetrieval {
     fn get_by_path(&self, path: &Path) -> &Track;
-    fn get_position_by_path(&self, path: &Path) -> usize;
 }
 
 impl TrackRetrieval for Vec<Track> {
     fn get_by_path(&self, path: &Path) -> &Track {
         self.iter().find(|t| t.path == path).expect("Track not found")
-    }
-
-    fn get_position_by_path(&self, path: &Path) -> usize {
-        self.iter().position(|t| t.path == path).expect("Track not found")
     }
 }
 

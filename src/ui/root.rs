@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use egui::{pos2, vec2, Color32, Context, Frame, Label, Margin, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
@@ -10,8 +10,6 @@ use strum_macros::EnumIter;
 use crate::{
     custom_window::custom_window,
     handle_dropped_file,
-    player::{clear_the_queue, play_next, Player},
-    track::Track,
     ui::{
         control_panel::{control_panel_ui, MarqueeState},
         library_view::{library_view, LibraryViewState},
@@ -173,22 +171,4 @@ pub fn table_label(text: impl Into<String>, color: Option<Color32>) -> Label {
         rich = rich.color(c);
     }
     Label::new(rich).selectable(false).truncate()
-}
-
-pub fn play_from_view(player: &mut Player, view_tracks: &[Track], starting_track: &Path) -> Result<(), String> {
-    clear_the_queue(player);
-
-    let start_index = view_tracks
-        .iter()
-        .position(|track| track.path == starting_track)
-        .ok_or("Track does not exist in view")?;
-
-    // Queue tracks from the starting track, wrapping around to the beginning.
-    let ordered = view_tracks[start_index..].iter().chain(&view_tracks[..start_index]);
-
-    for track in ordered {
-        player.queue.push(track.clone());
-    }
-
-    play_next(player)
 }

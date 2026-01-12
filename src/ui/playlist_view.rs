@@ -8,10 +8,10 @@ use log::{error, info};
 
 use crate::{
     format_duration_to_mmss,
-    player::{clear_the_queue, enqueue, enqueue_next, play_next},
+    player::{enqueue, enqueue_next, play_in_order},
     playlist::{create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     track::{open_file_location, Track, TrackRetrieval},
-    ui::root::{play_from_view, playing_indicator, table_label, unselectable_label},
+    ui::root::{playing_indicator, table_label, unselectable_label},
     GemPlayer,
 };
 
@@ -301,8 +301,9 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                         // We have to do this pattern since we want to access gem across
                         // the two captures used by containers::Sides.
                         if play_clicked {
-                            let path = &gem.playlists.get_by_path(&playlist_key).m3u_path;
-                            if let Err(e) = play_playlist(gem, &path.clone(), None) {
+                            let playlist = gem.playlists.get_by_path(&playlist_key);
+
+                            if let Err(e) = play_in_order(&mut gem.player, &playlist.tracks, None) {
                                 error!("{}", e);
                                 gem.ui.toasts.error("Error playing from playlist");
                             }
@@ -542,7 +543,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         });
 
     if let Some(track_key) = should_play_playlist {
-        if let Err(e) = play_from_view(&mut gem.player, cached_playlist_tracks, &track_key) {
+        if let Err(e) = play_in_order(&mut gem.player, cached_playlist_tracks, Some(&track_key)) {
             error!("{}", e);
             gem.ui.toasts.error("Error playing from playlist");
         }
@@ -674,25 +675,25 @@ fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option
     action
 }
 
-fn play_playlist(gem: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
-    clear_the_queue(&mut gem.player);
+// fn play_playlist(gem: &mut GemPlayer, playlist_key: &Path, starting_track_key: Option<&Path>) -> Result<(), String> {
+//     clear_the_queue(&mut gem.player);
 
-    let playlist = gem.playlists.get_by_path(playlist_key);
+//     let playlist = gem.playlists.get_by_path(playlist_key);
 
-    let mut start_index = 0;
-    if let Some(key) = starting_track_key {
-        start_index = playlist.tracks.get_position_by_path(key);
-    }
+//     let mut start_index = 0;
+//     if let Some(key) = starting_track_key {
+//         start_index = playlist.tracks.get_position_by_path(key);
+//     }
 
-    // Add tracks from the starting index to the end, then from the beginning up to the starting index.
-    for i in start_index..playlist.tracks.len() {
-        gem.player.queue.push(playlist.tracks[i].clone());
-    }
-    for i in 0..start_index {
-        gem.player.queue.push(playlist.tracks[i].clone());
-    }
+//     // Add tracks from the starting index to the end, then from the beginning up to the starting index.
+//     for i in start_index..playlist.tracks.len() {
+//         gem.player.queue.push(playlist.tracks[i].clone());
+//     }
+//     for i in 0..start_index {
+//         gem.player.queue.push(playlist.tracks[i].clone());
+//     }
 
-    play_next(&mut gem.player)?;
+//     play_next(&mut gem.player)?;
 
-    Ok(())
-}
+//     Ok(())
+// }
