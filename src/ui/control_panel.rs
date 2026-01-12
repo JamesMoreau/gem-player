@@ -46,7 +46,7 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 });
 
                 strip.cell(|ui| {
-                    layout_playing_track_ui(
+                    layout_track_ui(
                         ui,
                         &mut gem.player,
                         &mut gem.ui.marquee,
@@ -173,7 +173,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn layout_playing_track_ui(
+fn layout_track_ui(
     ui: &mut Ui,
     player: &mut Player,
     marquee: &mut MarqueeState,
