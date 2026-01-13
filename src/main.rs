@@ -16,6 +16,7 @@ use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, 
 use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
+use mimalloc::MiMalloc;
 use player::{
     adjust_volume_by_percentage, build_audio_backend_from_device, get_audio_output_devices_and_names, mute_or_unmute, play_next,
     play_or_pause, play_previous, Player, VisualizerState,
@@ -52,6 +53,9 @@ mod playlist;
 mod track;
 mod ui;
 mod visualizer;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 pub const THEME_STORAGE_KEY: &str = "theme";
