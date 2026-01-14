@@ -30,7 +30,7 @@ struct MarqueeState {
 
 pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
-    let button_width = 20.0;
+    let button_size = 20.0;
     let gap = 10.0;
     let artwork_width = ui.available_height() - 4.0; // leave some space for the track info frame background.
     let slider_width = 420.0;
@@ -38,7 +38,7 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         StripBuilder::new(ui)
             .size(Size::remainder())
-            .size(Size::exact(gap + button_width + gap + artwork_width + gap + slider_width + gap))
+            .size(Size::exact(gap + button_size + gap + artwork_width + gap + slider_width + gap))
             .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
@@ -50,7 +50,7 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                         ui,
                         &mut gem.player,
                         &mut gem.ui.marquee,
-                        button_width,
+                        button_size,
                         gap,
                         artwork_width,
                         slider_width,
