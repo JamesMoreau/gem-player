@@ -100,6 +100,18 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
         for button in button_order {
             button(ui);
         }
+
+        #[cfg(debug_assertions)]
+        {
+            use crate::ui::root::unselectable_label;
+            use egui::Color32;
+
+            ui.add_space(16.0);
+
+            let debug = format!("{} Debug Build", icons::ICON_BUG_REPORT);
+            let label = unselectable_label(RichText::new(debug).color(Color32::YELLOW));
+            ui.add(label);
+        }
     });
 }
 
