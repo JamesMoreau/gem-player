@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use crate::{
     player::clear_the_queue,
     playlist::PlaylistRetrieval,
-    track::{calculate_total_duration, SortBy, SortOrder, Track},
+    track::{calculate_total_duration, sort_by_label, SortBy, SortOrder, Track},
     ui::root::{format_duration_to_hhmmss, unselectable_label, UIState, View},
     GemPlayer,
 };
@@ -112,7 +112,7 @@ fn sort_and_order_by_ui(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut Sort
         .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
         .show(|ui| {
             for sb in SortBy::iter() {
-                sort_by_changed |= ui.radio_value(sort_by, sb, format!("{:?}", sb)).changed();
+                sort_by_changed |= ui.radio_value(sort_by, sb, sort_by_label(sb)).changed();
             }
             ui.separator();
             for so in SortOrder::iter() {

@@ -9,10 +9,10 @@ use log::error;
 use rayon::prelude::*;
 use rodio::SampleRate;
 use std::{
-    fs::File,
+    fs::{metadata, File},
     io::{self, ErrorKind},
     path::{Path, PathBuf},
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 use strum_macros::EnumIter;
 use walkdir::WalkDir;
@@ -23,6 +23,17 @@ pub enum SortBy {
     Artist,
     Album,
     Time,
+    DateAdded,
+}
+
+pub fn sort_by_label(sort_by: SortBy) -> &'static str {
+    match sort_by {
+        SortBy::Title => "Title",
+        SortBy::Artist => "Artist",
+        SortBy::Album => "Album",
+        SortBy::Time => "Time",
+        SortBy::DateAdded => "Date Added",
+    }
 }
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
@@ -41,6 +52,7 @@ struct Track {
     path: PathBuf,
     sample_rate: Option<SampleRate>,
     codec: FileType,
+    date_added: SystemTime,
 }
 
 impl PartialEq for Track {
@@ -67,6 +79,7 @@ pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
             SortBy::Artist => a.artist.as_deref().unwrap_or("").cmp(b.artist.as_deref().unwrap_or("")),
             SortBy::Album => a.album.as_deref().unwrap_or("").cmp(b.album.as_deref().unwrap_or("")),
             SortBy::Time => a.duration.cmp(&b.duration),
+            SortBy::DateAdded => a.date_added.cmp(&b.date_added),
         };
 
         match sort_order {
@@ -103,6 +116,9 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
 
     let codec = tagged_file.file_type();
 
+    let file_metadata = metadata(path)?;
+    let date_added = file_metadata.created().or_else(|_| file_metadata.modified())?;
+
     Ok(Track {
         title,
         artist,
@@ -111,6 +127,7 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
         path: file_path,
         sample_rate,
         codec,
+        date_added,
     })
 }
 
