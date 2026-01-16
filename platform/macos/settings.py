@@ -15,7 +15,11 @@ appname = os.path.basename(application)
 files = [application]
 symlinks = {"Applications": "/Applications"}
 
-icon_locations = {appname: (140, 120), "Applications": (500, 120)}
+# Coordinates for app and Applications folder in the window
+icon_locations = {
+    appname: (180, 120),       # App icon
+    "Applications": (460, 120) # Applications folder symlink
+}
 
 # -------------------------------------------------------------------
 # Volume & window
@@ -24,7 +28,7 @@ icon_locations = {appname: (140, 120), "Applications": (500, 120)}
 volume_name = defines.get("volume_name", appname.replace(".app", ""))
 format = "UDBZ"
 
-window_rect = ((100, 100), (640, 280))
+window_rect = ((200, 120), (640, 360))
 default_view = "icon-view"
 
 show_status_bar = False
@@ -37,7 +41,6 @@ show_sidebar = False
 # Background
 # -------------------------------------------------------------------
 
-# background = "platform/macos/installer_background.png"
 background = "builtin-arrow"
 
 # -------------------------------------------------------------------
@@ -48,4 +51,4 @@ arrange_by = None
 grid_spacing = 100
 label_pos = "bottom"
 text_size = 16
-icon_size = 128
+icon_size = 100
