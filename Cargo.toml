@@ -1,6 +1,6 @@
 [package]
 name = "gem-player"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "A lightweight music player."
 build = "build.rs"
