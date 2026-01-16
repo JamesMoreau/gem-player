@@ -12,16 +12,18 @@ APP_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].met
 EXECUTABLE_NAME="gem-player"
 APP_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
 
+BUNDLE_DIR="target/release/bundle/osx"
+
 INTEL_APP="target/x86_64-apple-darwin/release/bundle/osx/$APP_NAME.app"
 ARM_APP="target/aarch64-apple-darwin/release/bundle/osx/$APP_NAME.app"
-UNIVERSAL_APP="target/release/bundle/osx/$APP_NAME.app"
+UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
 
 DMG_FILENAME="gem_player_${APP_VERSION}_macos_universal_installer.dmg"
-DMG_PATH="target/release/bundle/osx/$DMG_FILENAME"
+DMG_PATH="$BUNDLE_DIR/$DMG_FILENAME"
 
 echo "🧹 Cleaning up previous builds..."
 cargo clean
-rm -rf target/release/bundle/osx
+rm -rf $BUNDLE_DIR
 
 echo "🚀 Building macOS application (Intel)..."
 cargo bundle --release --target x86_64-apple-darwin
@@ -50,10 +52,9 @@ codesign --force --options runtime --timestamp \
 echo "📦 Creating a DMG..."
 create-dmg \
   --volname "$APP_NAME Installer" \
-  --app-drop-link 0 0 \
   --codesign "$SIGNING_IDENTITY" \
   "$DMG_PATH" \
-  "$UNIVERSAL_APP"
+  "$BUNDLE_DIR"
 
 echo "📝 Notarizing the app..."
 xcrun notarytool submit "$DMG_PATH" \
