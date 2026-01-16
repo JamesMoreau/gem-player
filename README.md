@@ -1,6 +1,6 @@
 # Gem Player
 
-A lightweight music player built in Rust using [egui](https://github.com/emilk/egui) and [rodio](https://github.com/RustAudio/rodio).
+An open-source, lightweight music player built in Rust using [egui](https://github.com/emilk/egui) and [rodio](https://github.com/RustAudio/rodio).
 
 ![kapture](assets/kapture.gif)
 
@@ -15,6 +15,7 @@ A lightweight music player built in Rust using [egui](https://github.com/emilk/e
 - Cross-platform (MacOS and Windows).
 - Key controls.
 - Automatic library reloading.
+- Privacy first. No anaylytics. All data stays on your machine.
 
 # Installation
 

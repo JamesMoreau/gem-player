@@ -21,10 +21,6 @@ UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
 DMG_FILENAME="gem_player_${APP_VERSION}_macos_universal_installer.dmg"
 DMG_PATH="$BUNDLE_DIR/$DMG_FILENAME"
 
-echo "🧹 Cleaning up previous builds..."
-cargo clean
-rm -rf $BUNDLE_DIR
-
 echo "🚀 Building macOS application (Intel)..."
 cargo bundle --release --target x86_64-apple-darwin
 
@@ -49,12 +45,11 @@ codesign --force --options runtime --timestamp \
   --sign "$SIGNING_IDENTITY" \
   "$UNIVERSAL_APP"
 
-echo "📦 Creating a DMG..."
-create-dmg \
-  --volname "$APP_NAME Installer" \
-  --codesign "$SIGNING_IDENTITY" \
-  "$DMG_PATH" \
-  "$BUNDLE_DIR"
+dmgbuild \
+  -s platform/macos/settings.py \
+  -D app="$BUNDLE_DIR/$APP_NAME.app" \
+  "$APP_NAME Installer" \
+  $DMG_PATH
 
 echo "📝 Notarizing the app..."
 xcrun notarytool submit "$DMG_PATH" \
