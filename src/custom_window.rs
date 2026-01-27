@@ -2,7 +2,7 @@ use egui::{
     Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui, UiBuilder, Vec2,
     ViewportCommand,
 };
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows",target_os = "linux"))]
 use egui::{Area, CursorIcon, Pos2, ResizeDirection};
 
 use egui_material_icons::icons;
@@ -28,7 +28,7 @@ pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut 
 
     // On Windows, removing the default window decorations in order to use a custom window frame also removes
     // the hit-test areas for resizing. To resolve this, we manually re-create and add back in the resize handles.
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows",target_os = "linux"))]
     {
         let window_rect = ctx.viewport_rect();
         add_resize_handles(ctx, window_rect);
@@ -87,7 +87,7 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
         &[close_button, minimize_button, fullscreen_button],
     );
 
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows",target_os = "linux"))]
     let (layout, button_order): (Layout, &[fn(&mut Ui)]) = (
         Layout::right_to_left(Align::Center),
         &[close_button, fullscreen_button, minimize_button],
@@ -115,7 +115,7 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
     });
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows",target_os = "linux"))]
 fn add_resize_handles(ctx: &Context, window_rect: Rect) {
     let left = window_rect.left();
     let right = window_rect.right();
@@ -211,7 +211,7 @@ fn add_resize_handles(ctx: &Context, window_rect: Rect) {
     );
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows",target_os = "linux"))]
 fn create_resize_handle(
     ctx: &Context,
     area_id: &str,
