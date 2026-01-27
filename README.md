@@ -12,7 +12,7 @@ An open-source, lightweight music player built in Rust using [egui](https://gith
 - Sorting and filtering.
 - Queue management. Shuffle and repeat.
 - Dark and light mode.
-- Cross-platform (MacOS and Windows).
+- Cross-platform (MacOS, Linux and Windows).
 - Key controls.
 - Automatic library reloading.
 - Privacy first. No anaylytics. All data stays on your machine.
