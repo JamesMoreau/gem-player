@@ -20,7 +20,7 @@ pub enum VisualizerCommand {
 //  The visualizer pipeline is comprised of three components:
 //  - A source wrapper that captures audio samples from the audio stream.
 //  - A processing thread that receives the samples, performs FFT, and performs other processing.
-//  - Visualization UI code in the main thread that displays the processed data.
+//  - Visualization function to apply smoothing between frames.
 
 pub fn calculate_bands(display_bands: &mut [f32], targets: Option<&[f32]>, dt: f32) {
     let smoothing = 12.0;

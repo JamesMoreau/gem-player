@@ -15,7 +15,7 @@ An open-source, lightweight music player built in Rust using [egui](https://gith
 - Cross-platform (MacOS and Windows).
 - Key controls.
 - Automatic library reloading.
-- Privacy first. No anaylytics. All data stays on your machine.
+- Privacy first. No analytics. All data stays on your machine.
 
 # Installation
 
