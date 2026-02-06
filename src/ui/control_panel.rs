@@ -1,4 +1,7 @@
-use std::{path::PathBuf, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 use egui::{
     include_image, pos2, text, vec2, Align, Button, Frame, Image, Label, Layout, Margin, Popup, Rect, RectAlign, RichText, Sense, Slider,
@@ -226,6 +229,11 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     }
 }
 
+// Use track path as a unique/stable key for egui
+fn compute_uri(path: &Path) -> String {
+    format!("bytes://{}", path.to_string_lossy())
+}
+
 fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
@@ -233,24 +241,21 @@ fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32)
     let placeholder = include_image!("../../assets/icon.png");
     let mut artwork = Image::new(placeholder);
 
-    // Use track path as a unique/stable key for egui
-    let playing_uri = gem
-        .player
-        .playing
-        .as_ref()
-        .map(|track| format!("bytes://{}", track.path.to_string_lossy()));
+    let playing_track_key = gem.player.playing.as_ref().map(|t| &t.path);
 
-    if gem.ui.cached_artwork_uri != playing_uri {
+    if gem.ui.cached_track_key.as_ref() != playing_track_key {
         // Cache miss
-        if let Some(old_uri) = gem.ui.cached_artwork_uri.take() {
+        if let Some(old_path) = &gem.ui.cached_track_key {
+            let old_uri = compute_uri(old_path);
             ui.ctx().forget_image(&old_uri);
         }
 
-        gem.ui.cached_artwork_uri = playing_uri.clone();
+        gem.ui.cached_track_key = playing_track_key.cloned();
     }
 
-    if let (Some(uri), Some(bytes)) = (&gem.ui.cached_artwork_uri, &gem.player.playing_artwork) {
-        artwork = Image::from_bytes(uri.clone(), bytes.clone());
+    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
+        let uri = compute_uri(&track.path);
+        artwork = Image::from_bytes(uri, bytes.clone());
     }
 
     ui.add(

@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use egui::{pos2, vec2, Color32, Context, Frame, Label, Margin, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
@@ -35,7 +35,7 @@ pub struct UIState {
     theme_preference: ThemePreference,
     marquee: MarqueeState,
     search: String,
-    cached_artwork_uri: Option<String>, // The uri pointing to the cached texture for the artwork of the currently playing track.
+    cached_track_key: Option<PathBuf>, // Let's us know if the playing track has changed.
     volume_popup_is_open: bool,
 
     library: LibraryViewState,
