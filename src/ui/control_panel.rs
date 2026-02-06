@@ -45,17 +45,7 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| playback_controls_ui(ui, gem));
                 });
 
-                strip.cell(|ui| {
-                    layout_track_ui(
-                        ui,
-                        &mut gem.player,
-                        &mut gem.ui.marquee,
-                        button_size,
-                        gap,
-                        artwork_width,
-                        slider_width,
-                    )
-                });
+                strip.cell(|ui| layout_track_ui(ui, gem, button_size, gap, artwork_width, slider_width));
 
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -173,15 +163,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn layout_track_ui(
-    ui: &mut Ui,
-    player: &mut Player,
-    marquee: &mut MarqueeState,
-    button_size: f32,
-    gap: f32,
-    artwork_width: f32,
-    slider_width: f32,
-) {
+fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     let previous_item_spacing = ui.spacing().item_spacing;
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
@@ -196,13 +178,13 @@ fn layout_track_ui(
             .size(Size::exact(gap))
             .horizontal(|mut strip| {
                 strip.empty();
-                strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, player, button_size));
+                strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, &mut gem.player, button_size));
                 strip.empty();
                 strip.cell(|ui| {
-                    ui.centered_and_justified(|ui| display_playing_artwork(ui, player, artwork_width));
+                    ui.centered_and_justified(|ui| display_playing_artwork(ui, gem, artwork_width));
                 });
                 strip.empty();
-                strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, player, marquee, slider_width));
+                strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
                 strip.empty();
             });
     });
@@ -244,17 +226,31 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     }
 }
 
-fn display_playing_artwork(ui: &mut Ui, player: &mut Player, artwork_width: f32) {
+fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
     let placeholder = include_image!("../../assets/icon.png");
     let mut artwork = Image::new(placeholder);
 
-    if let (Some(track), Some(bytes)) = (&player.playing, &player.playing_artwork) {
-        // Use track path as a unique/stable key for egui
-        let uri = format!("bytes://{}", track.path.to_string_lossy());
-        artwork = Image::from_bytes(uri, bytes.clone());
+    // Use track path as a unique/stable key for egui
+    let playing_uri = gem
+        .player
+        .playing
+        .as_ref()
+        .map(|track| format!("bytes://{}", track.path.to_string_lossy()));
+
+    if gem.ui.cached_artwork_uri != playing_uri {
+        // Cache miss
+        if let Some(old_uri) = gem.ui.cached_artwork_uri.take() {
+            ui.ctx().forget_image(&old_uri);
+        }
+
+        gem.ui.cached_artwork_uri = playing_uri.clone();
+    }
+
+    if let (Some(uri), Some(bytes)) = (&gem.ui.cached_artwork_uri, &gem.player.playing_artwork) {
+        artwork = Image::from_bytes(uri.clone(), bytes.clone());
     }
 
     ui.add(
