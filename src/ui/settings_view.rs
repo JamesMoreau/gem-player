@@ -172,7 +172,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add_space(8.0);
 
                 ui.horizontal_wrapped(|ui| {
-                    ui.add(unselectable_label("If you like this project, consider supporting me:"));
+                    ui.add(unselectable_label("If you like this project, consider supporting the author:"));
                     ui.hyperlink_to("Ko-fi", "https://ko-fi.com/jamesmoreau");
                 });
             });
