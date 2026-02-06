@@ -241,20 +241,17 @@ fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32)
     let placeholder = include_image!("../../assets/icon.png");
     let mut artwork = Image::new(placeholder);
 
-    let playing_track_artwork_uri = gem.player.playing.as_ref().map(|t| compute_uri(&t.path));
+    let playing_path = gem.player.playing.as_ref().map(|t| &t.path);
 
-    if gem.ui.cached_artwork_uri.as_ref() != playing_track_artwork_uri.as_ref() {
+    if gem.ui.cached_artwork_track_key.as_ref() != playing_path {
         // Cache miss. Evict old image.
-        if let Some(old_uri) = &gem.ui.cached_artwork_uri {
-            ui.ctx().forget_image(old_uri);
+        if let Some(old_track_key) = &gem.ui.cached_artwork_track_key {
+            let old_uri = compute_uri(old_track_key);
+            ui.ctx().forget_image(&old_uri);
         }
 
-        gem.ui.cached_artwork_uri = playing_track_artwork_uri;
+        gem.ui.cached_artwork_track_key = playing_path.cloned();
     }
-
-    // if let Some(uri) = &gem.ui.cached_artwork_uri { // TODO: put back
-    //     artwork = Image::from_uri(uri);
-    // }
 
     if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
         // Use the track's path as a unique/stable key for egui

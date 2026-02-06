@@ -178,7 +178,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
-            cached_artwork_uri: None,
+            cached_artwork_track_key: None,
             library: LibraryViewState {
                 cached_library: None,
                 selected_tracks: Vec::new(),
