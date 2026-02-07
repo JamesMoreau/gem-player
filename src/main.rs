@@ -39,11 +39,11 @@ use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 use crate::ui::{
-    control_panel::MarqueeState,
     library_view::LibraryViewState,
     playlist_view::PlaylistsViewState,
     root::{gem_player_ui, UIState, View},
     settings_view::SettingsViewState,
+    widgets::marquee::Marquee,
 };
 
 mod custom_window;
@@ -202,11 +202,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 spread: 1,
                 color: Color32::BLACK,
             }),
-            marquee: MarqueeState {
-                position: 0.0,
-                track_key: None,
-                pause_timer: Duration::ZERO,
-            },
+            marquee: Marquee::new(),
             volume_popup_is_open: false,
         },
 

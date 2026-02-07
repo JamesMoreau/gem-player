@@ -1,15 +1,11 @@
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{path::Path, time::Duration};
 
 use egui::{
-    include_image, text, Align, Button, Frame, Image, Label, Layout, Margin, Popup, RectAlign, RichText, Slider, TextFormat, TextStyle,
-    TextureFilter, TextureOptions, Ui, Vec2,
+    include_image, Align, Button, Frame, Image, Label, Layout, Margin, Popup, RectAlign, RichText, Slider, TextureFilter, TextureOptions,
+    Ui, Vec2,
 };
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
-use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
@@ -18,21 +14,14 @@ use crate::{
     track::{file_type_name, Track},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
-        widgets::bar_display::BarDisplay,
+        widgets::{
+            bar_display::BarDisplay,
+            marquee::{marquee_ui, Marquee},
+        },
     },
     visualizer::smooth_bars,
     GemPlayer,
 };
-
-const MARQUEE_SPEED: f32 = 5.0; // chars per second
-const MARQUEE_PAUSE_DURATION: Duration = Duration::from_secs(2);
-
-#[fully_pub]
-struct MarqueeState {
-    track_key: Option<PathBuf>, // We need to know when the track changes to reset.
-    position: f32,
-    pause_timer: Duration,
-}
 
 pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
@@ -271,7 +260,7 @@ fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32)
     );
 }
 
-fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, marquee: &mut MarqueeState, slider_width: f32) {
+fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
     let (mut position_as_secs, track_duration_as_secs) = if let Some(track) = &player.playing {
         let pos = player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
         (pos, track.duration.as_secs_f32())
@@ -356,7 +345,7 @@ fn display_playback_slider(
 fn layout_marquee_and_playback_position_and_metadata(
     ui: &mut Ui,
     playing: Option<&Track>,
-    marquee: &mut MarqueeState,
+    marquee: &mut Marquee,
     position: f32,
     duration: f32,
 ) {
@@ -387,81 +376,21 @@ fn layout_marquee_and_playback_position_and_metadata(
         });
 }
 
-fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut MarqueeState) {
-    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-        let mut title = "None";
-        let mut artist = "None";
-        let mut album = "None";
-        let mut track_key = Some(PathBuf::from("none"));
+fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marquee) {
+    let mut title = "None";
+    let mut artist = "None";
+    let mut album = "None";
 
-        if let Some(playing_track) = maybe_track {
-            title = playing_track.title.as_deref().unwrap_or("Unknown Title");
-            artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
-            album = playing_track.album.as_deref().unwrap_or("Unknown Album");
-            track_key = Some(playing_track.path.clone());
-        }
+    if let Some(playing_track) = maybe_track {
+        title = playing_track.title.as_deref().unwrap_or("Unknown Title");
+        artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
+        album = playing_track.album.as_deref().unwrap_or("Unknown Album");
+    }
 
-        let padding = "        ";
-        let text = format!("{} / {} / {}{}", title, artist, album, padding);
-        let text_color = ui.visuals().text_color();
-        let divider_color = ui.visuals().weak_text_color();
-        let style = ui.style();
+    let padding = "        ";
+    let text = format!("{} / {} / {}{}", title, artist, album, padding);
 
-        let format_colored_marquee_text = |s: &str| {
-            let mut job = text::LayoutJob::default();
-
-            for (i, part) in s.split(" / ").enumerate() {
-                if i > 0 {
-                    job.append(" / ", 0.0, TextFormat::simple(TextStyle::Body.resolve(style), divider_color));
-                }
-                job.append(part, 0.0, TextFormat::simple(TextStyle::Body.resolve(style), text_color));
-            }
-
-            job
-        };
-
-        let galley = ui.ctx().fonts_mut(|fonts| fonts.layout_job(format_colored_marquee_text(&text)));
-
-        let text_width = galley.size().x;
-        let available_width = ui.available_width();
-        let character_count = text.chars().count();
-        let average_char_width = text_width / character_count as f32;
-        let visible_chars = (available_width / average_char_width).floor() as usize;
-
-        // If everything fits, no marquee needed
-        if character_count <= visible_chars {
-            ui.add(Label::new(format_colored_marquee_text(&text)).selectable(false).truncate());
-            return;
-        }
-
-        // Reset marquee state if track changes.
-        if marquee.track_key != track_key || marquee.track_key.is_none() {
-            marquee.track_key = track_key.clone();
-            marquee.position = 0.0;
-            marquee.pause_timer = MARQUEE_PAUSE_DURATION;
-        }
-
-        let dt = ui.input(|i| i.stable_dt);
-
-        if marquee.pause_timer > Duration::ZERO {
-            marquee.pause_timer = marquee.pause_timer.saturating_sub(Duration::from_secs_f32(dt));
-        } else {
-            marquee.position += MARQUEE_SPEED * dt;
-
-            if marquee.position >= character_count as f32 {
-                marquee.position = 0.0;
-                marquee.pause_timer = MARQUEE_PAUSE_DURATION;
-            }
-        }
-
-        let display_text: String = text
-            .chars()
-            .chain(text.chars())
-            .skip(marquee.position.floor() as usize)
-            .take(visible_chars)
-            .collect();
-        ui.add(Label::new(format_colored_marquee_text(&display_text)).selectable(false).truncate());
-    });
+    marquee_ui(ui, marquee, &text);
 }
 
 fn display_playback_time(ui: &mut Ui, position: f32, duration: f32) {

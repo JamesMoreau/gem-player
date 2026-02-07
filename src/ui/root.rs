@@ -11,12 +11,13 @@ use crate::{
     custom_window::custom_window,
     handle_dropped_file,
     ui::{
-        control_panel::{control_panel_ui, MarqueeState},
+        control_panel::control_panel_ui,
         library_view::{library_view, LibraryViewState},
         navigation_bar::navigation_bar,
         playlist_view::{playlists_view, PlaylistsViewState},
         queue_view::queue_view,
         settings_view::{settings_view, SettingsViewState},
+        widgets::marquee::Marquee,
     },
     GemPlayer,
 };
@@ -33,7 +34,7 @@ pub enum View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
-    marquee: MarqueeState,
+    marquee: Marquee,
     search: String,
     cached_track_key: Option<PathBuf>, // Let's us clear the old artwork texture on track change.
     volume_popup_is_open: bool,
