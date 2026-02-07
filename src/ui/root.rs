@@ -13,7 +13,7 @@ use crate::{
     ui::{
         control_panel::control_panel_ui,
         library_view::{library_view, LibraryViewState},
-        navigation_bar::navigation_bar,
+        bottom_bar::bottom_bar,
         playlist_view::{playlists_view, PlaylistsViewState},
         queue_view::queue_view,
         settings_view::{settings_view, SettingsViewState},
@@ -83,7 +83,7 @@ pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
-                strip.cell(|ui| navigation_bar(ui, gem));
+                strip.cell(|ui| bottom_bar(ui, gem));
             });
     });
 }

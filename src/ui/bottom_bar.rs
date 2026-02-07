@@ -11,11 +11,11 @@ use crate::{
     GemPlayer,
 };
 
-pub fn navigation_bar(ui: &mut Ui, gem: &mut GemPlayer) {
+pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         ui.columns_const(|[left, center, right]| {
             left.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                let get_icon_and_tooltip = |view: &View| match view {
+                let get_icon = |view: &View| match view {
                     View::Library => icons::ICON_LIBRARY_MUSIC,
                     View::Queue => icons::ICON_QUEUE_MUSIC,
                     View::Playlists => icons::ICON_STAR,
@@ -23,7 +23,7 @@ pub fn navigation_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                 };
 
                 for view in View::iter() {
-                    let icon = get_icon_and_tooltip(&view);
+                    let icon = get_icon(&view);
                     let response = ui
                         .selectable_label(gem.ui.current_view == view, format!("  {icon}  "))
                         .on_hover_text(format!("{:?}", view));
