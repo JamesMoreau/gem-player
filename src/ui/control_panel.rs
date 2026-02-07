@@ -9,18 +9,12 @@ use egui_material_icons::icons;
 use log::{error, info};
 
 use crate::{
-    maybe_play_next, maybe_play_previous,
-    player::{mute_or_unmute, play_or_pause, toggle_shuffle, AudioBackend, Player},
-    track::{file_type_name, Track},
-    ui::{
+    GemPlayer, maybe_play_next, maybe_play_previous, player::{AudioBackend, Player, mute_or_unmute, play_or_pause, toggle_shuffle}, track::{Track, file_type_name}, ui::{
         root::{format_duration_to_mmss, unselectable_label},
         widgets::{
-            bar_display::BarDisplay,
-            marquee::{marquee_ui, Marquee},
+            bar_display::BarDisplay, chip::MetadataChip, marquee::{Marquee, marquee_ui}
         },
-    },
-    visualizer::smooth_bars,
-    GemPlayer,
+    }, visualizer::smooth_bars
 };
 
 pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
@@ -408,26 +402,14 @@ fn display_playback_time(ui: &mut Ui, position: f32, duration: f32) {
 
 fn display_track_metadata(ui: &mut Ui, track: &Track) {
     let codec_string = file_type_name(track.codec);
-    metadata_chip(ui, codec_string);
+    ui.add(MetadataChip::new(codec_string));
 
     ui.add_space(4.0);
 
     if let Some(sr) = track.sample_rate {
         let sample_rate_string = format!("{:.1} kHz", sr as f32 / 1000.0);
-        metadata_chip(ui, &sample_rate_string);
+        ui.add(MetadataChip::new(&sample_rate_string));
     }
-}
-
-fn metadata_chip(ui: &mut Ui, text: &str) {
-    Frame::new()
-        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
-        .corner_radius(4.0)
-        .inner_margin(Margin::same(2))
-        .outer_margin(Margin::same(2))
-        .show(ui, |ui| {
-            let label = Label::new(RichText::new(text).small().weak()).selectable(false);
-            ui.add(label);
-        });
 }
 
 fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
