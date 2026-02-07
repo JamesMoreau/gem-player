@@ -15,17 +15,9 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         ui.columns_const(|[left, center, right]| {
             left.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                let get_icon = |view: &View| match view {
-                    View::Library => icons::ICON_LIBRARY_MUSIC,
-                    View::Queue => icons::ICON_QUEUE_MUSIC,
-                    View::Playlists => icons::ICON_STAR,
-                    View::Settings => icons::ICON_SETTINGS,
-                };
-
                 for view in View::iter() {
-                    let icon = get_icon(&view);
                     let response = ui
-                        .selectable_label(gem.ui.current_view == view, format!("  {icon}  "))
+                        .selectable_label(gem.ui.current_view == view, format!("  {}  ", view.icon()))
                         .on_hover_text(format!("{:?}", view));
                     if response.clicked() {
                         switch_view(&mut gem.ui, view);

@@ -30,6 +30,17 @@ pub enum View {
     Settings,
 }
 
+impl View {
+    pub fn icon(&self) -> &'static str {
+        match self {
+            View::Library => icons::ICON_LIBRARY_MUSIC,
+            View::Queue => icons::ICON_QUEUE_MUSIC,
+            View::Playlists => icons::ICON_STAR,
+            View::Settings => icons::ICON_SETTINGS,
+        }
+    }
+}
+
 #[fully_pub]
 pub struct UIState {
     current_view: View,
