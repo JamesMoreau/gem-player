@@ -3,7 +3,6 @@ use std::time::Duration;
 use egui::{Align, Label, Layout, TextStyle, Ui};
 
 pub struct Marquee {
-    // TODO: direction left right.
     position: f32,
     speed: f32, // chars per second
 
