@@ -4,8 +4,8 @@ use std::{
 };
 
 use egui::{
-    include_image, pos2, text, vec2, Align, Button, Frame, Image, Label, Layout, Margin, Popup, Rect, RectAlign, RichText, Sense, Slider,
-    TextFormat, TextStyle, TextureFilter, TextureOptions, Ui, Vec2,
+    include_image, text, Align, Button, Frame, Image, Label, Layout, Margin, Popup, RectAlign, RichText, Slider, TextFormat, TextStyle,
+    TextureFilter, TextureOptions, Ui, Vec2,
 };
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
@@ -16,8 +16,11 @@ use crate::{
     maybe_play_next, maybe_play_previous,
     player::{mute_or_unmute, play_or_pause, toggle_shuffle, AudioBackend, Player},
     track::{file_type_name, Track},
-    ui::root::{format_duration_to_mmss, unselectable_label},
-    visualizer::calculate_bands,
+    ui::{
+        root::{format_duration_to_mmss, unselectable_label},
+        widgets::bar_display::BarDisplay,
+    },
+    visualizer::smooth_bars,
     GemPlayer,
 };
 
@@ -503,28 +506,11 @@ fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
 
     let targets = gem.player.visualizer.bands_receiver.try_iter().last();
 
-    calculate_bands(&mut gem.player.visualizer.display_bands, targets.as_deref(), dt);
+    smooth_bars(&mut gem.player.visualizer.display_bands, targets.as_deref(), dt);
 
     let display_bands = &gem.player.visualizer.display_bands;
 
-    let desired_height = ui.available_height() * 0.5;
-    let bar_width = 10.0;
-    let bar_gap = 4.0;
-    let bar_radius = 1.0;
-    let min_bar_height = 3.0;
+    let display = BarDisplay::new(display_bands, ui.available_height() * 0.5, 10.0, 4.0, ui.visuals().text_color());
 
-    let num_bars = display_bands.len() as f32;
-    let total_width = (num_bars * bar_width) + ((num_bars - 1.0) * bar_gap);
-
-    let (rect, _) = ui.allocate_exact_size(vec2(total_width, desired_height), Sense::hover());
-
-    let painter = ui.painter();
-    for (i, &value) in display_bands.iter().enumerate() {
-        let height = (value * rect.height()).max(min_bar_height);
-        let x = rect.left() + i as f32 * (bar_width + bar_gap);
-        let y = rect.bottom();
-
-        let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width, y));
-        painter.rect_filled(bar_rect, bar_radius, ui.visuals().text_color());
-    }
+    ui.add(display);
 }
