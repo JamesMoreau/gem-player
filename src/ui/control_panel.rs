@@ -1,7 +1,7 @@
 use std::{path::Path, time::Duration};
 
 use egui::{
-    include_image, Align, Button, Frame, Image, Label, Layout, Margin, Popup, RectAlign, RichText, Slider, TextureFilter, TextureOptions,
+    include_image, Align, Button, Frame, Image, Layout, Margin, Popup, RectAlign, RichText, Slider, TextureFilter, TextureOptions,
     Ui, Vec2,
 };
 use egui_extras::{Size, StripBuilder};
