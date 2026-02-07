@@ -31,7 +31,7 @@ struct Player {
 
     backend: Option<AudioBackend>,
 
-    playing_artwork: Option<Vec<u8>>,
+    raw_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
 }
 
@@ -183,7 +183,7 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     let mut file = fs::File::open(&track.path)?;
 
     let maybe_artwork = extract_artwork_from_file(&mut file)?;
-    player.playing_artwork = maybe_artwork;
+    player.raw_artwork = maybe_artwork;
 
     file.seek(io::SeekFrom::Start(0))?; // Reset the file cursor since accessing artwork moves it forward.
 

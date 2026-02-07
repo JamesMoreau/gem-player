@@ -253,7 +253,7 @@ fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32)
         gem.ui.cached_track_key = playing_track_key.cloned();
     }
 
-    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.playing_artwork) {
+    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.raw_artwork) {
         let uri = compute_uri(&track.path);
         artwork = Image::from_bytes(uri, bytes.clone());
     }
