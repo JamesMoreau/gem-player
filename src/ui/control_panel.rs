@@ -243,8 +243,8 @@ fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32)
 
     let playing_track_key = gem.player.playing.as_ref().map(|t| &t.path);
 
+    // If the track has changed. Release the old texture (if there was one).
     if gem.ui.cached_track_key.as_ref() != playing_track_key {
-        // Cache miss
         if let Some(old_path) = &gem.ui.cached_track_key {
             let old_uri = compute_uri(old_path);
             ui.ctx().forget_image(&old_uri);

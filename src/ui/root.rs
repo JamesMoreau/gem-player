@@ -35,7 +35,7 @@ pub struct UIState {
     theme_preference: ThemePreference,
     marquee: MarqueeState,
     search: String,
-    cached_track_key: Option<PathBuf>, // Let's us know if the playing track has changed.
+    cached_track_key: Option<PathBuf>, // Let's us clear the old artwork texture on track change.
     volume_popup_is_open: bool,
 
     library: LibraryViewState,
