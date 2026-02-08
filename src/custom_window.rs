@@ -7,6 +7,8 @@ use egui::{Area, CursorIcon, Pos2, ResizeDirection};
 
 use egui_material_icons::icons;
 
+use crate::ui::root::unselectable_label;
+
 pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
     let frame = Frame::new()
         .fill(ctx.style().visuals.window_fill())
@@ -101,9 +103,13 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
             button(ui);
         }
 
+        ui.add_space(16.0);
+
+        let beta = RichText::new("BETA").italics().color(ui.visuals().weak_text_color());
+        ui.add(unselectable_label(beta));
+
         #[cfg(debug_assertions)]
         {
-            use crate::ui::root::unselectable_label;
             use egui::Color32;
 
             ui.add_space(16.0);

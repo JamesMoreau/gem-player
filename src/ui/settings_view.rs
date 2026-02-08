@@ -135,7 +135,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.horizontal_wrapped(|ui| {
                     let version = env!("CARGO_PKG_VERSION");
-                    ui.add(unselectable_label(format!("Version: {version}")));
+                    ui.add(unselectable_label(format!("Version: {version} (Beta)")));
 
                     ui.add(unselectable_label(" / "));
 
