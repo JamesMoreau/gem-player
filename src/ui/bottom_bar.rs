@@ -7,7 +7,7 @@ use crate::{
     player::clear_the_queue,
     playlist::PlaylistRetrieval,
     track::{calculate_total_duration, sort_by_label, SortBy, SortOrder, Track},
-    ui::root::{format_duration_to_hhmmss, unselectable_label, UIState, View},
+    ui::root::{format_duration_to_hhmmss, unselectable_label, View},
     GemPlayer,
 };
 
@@ -20,7 +20,8 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                         .selectable_label(gem.ui.current_view == view, format!("  {}  ", view.icon()))
                         .on_hover_text(format!("{:?}", view));
                     if response.clicked() {
-                        switch_view(&mut gem.ui, view);
+                        info!("Switching to view: {:?}", view);
+                        gem.ui.current_view = view;
                     }
 
                     ui.add_space(4.0);
@@ -137,11 +138,6 @@ fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
     }
 
     changed
-}
-
-fn switch_view(ui: &mut UIState, view: View) {
-    info!("Switching to view: {:?}", view);
-    ui.current_view = view;
 }
 
 fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
