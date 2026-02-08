@@ -10,8 +10,8 @@ use rodio::{
     Decoder, Device, DeviceTrait, OutputStream, OutputStreamBuilder, Sink, Source,
 };
 use std::{
-    fs,
-    io::{self, Seek},
+    fs::File,
+    io::{self, Seek, SeekFrom},
     path::Path,
     sync::mpsc::{Receiver, Sender},
     time::Duration,
@@ -180,12 +180,12 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
 
     backend.sink.stop(); // Stop the current track if any.
 
-    let mut file = fs::File::open(&track.path)?;
+    let mut file = File::open(&track.path)?;
 
     let maybe_artwork = extract_artwork_from_file(&mut file)?;
     player.raw_artwork = maybe_artwork;
 
-    file.seek(io::SeekFrom::Start(0))?; // Reset the file cursor since accessing artwork moves it forward.
+    file.seek(SeekFrom::Start(0))?; // Reset the file cursor since accessing artwork moves it forward.
 
     let decoder_result = Decoder::try_from(file);
     let decoder = match decoder_result {

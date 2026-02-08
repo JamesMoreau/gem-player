@@ -26,7 +26,8 @@ use rfd::FileDialog;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs, io,
+    fs::{copy, read},
+    io,
     path::{Path, PathBuf},
     sync::{
         mpsc::{channel, Receiver, Sender, TryRecvError},
@@ -368,7 +369,7 @@ pub fn handle_dropped_file(dropped_file: &DroppedFile, gem: &mut GemPlayer) -> i
     }
 
     let destination = library_path.join(file_name);
-    fs::copy(path, destination)?;
+    copy(path, destination)?;
 
     Ok(())
 }
@@ -551,7 +552,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
                 }
                 Handle::Path { ref path, .. } => {
                     info!("Loaded {name} from path: {:?}", path);
-                    if let Ok(data) = fs::read(path) {
+                    if let Ok(data) = read(path) {
                         return Some(data);
                     } else {
                         error!("Failed to read font data from path: {:?}", path);
