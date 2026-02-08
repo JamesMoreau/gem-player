@@ -1,20 +1,26 @@
 use std::{path::Path, time::Duration};
 
 use egui::{
-    include_image, Align, Button, Frame, Image, Layout, Margin, Popup, RectAlign, RichText, Slider, TextureFilter, TextureOptions,
-    Ui, Vec2,
+    include_image, Align, Button, Frame, Image, Layout, Margin, Popup, RectAlign, RichText, Slider, TextureFilter, TextureOptions, Ui, Vec2,
 };
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
 use log::{error, info};
 
 use crate::{
-    GemPlayer, maybe_play_next, maybe_play_previous, player::{AudioBackend, Player, mute_or_unmute, play_or_pause, toggle_shuffle}, track::{Track, file_type_name}, ui::{
+    maybe_play_next, maybe_play_previous,
+    player::{mute_or_unmute, play_or_pause, toggle_shuffle, AudioBackend, Player},
+    track::{file_type_name, Track},
+    ui::{
         root::{format_duration_to_mmss, unselectable_label},
         widgets::{
-            bar_display::BarDisplay, chip::MetadataChip, marquee::{Marquee, marquee_ui}
+            bar_display::BarDisplay,
+            chip::MetadataChip,
+            marquee::{marquee_ui, Marquee},
         },
-    }, visualizer::smooth_bars
+    },
+    visualizer::smooth_bars,
+    GemPlayer,
 };
 
 pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
@@ -183,7 +189,9 @@ fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32,
 
 fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_size: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
-    let starting_point = (ui.available_height() / 2.0) - button_size; // this is how we align the buttons vertically center.
+    
+    let vertical_pad = 8.0;
+    let starting_point = (ui.available_height() / 2.0) - (vertical_pad / 2.0) - button_size; // this is how we align the buttons vertically center.
     ui.add_space(starting_point);
 
     let get_button_color = |ui: &Ui, is_enabled: bool| {
@@ -197,19 +205,22 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     let color = get_button_color(ui, player.repeat);
     let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
     let response = ui.add(repeat_button).on_hover_text("Repeat");
+    
     if response.clicked() {
         player.repeat = !player.repeat;
     }
 
-    ui.add_space(4.0);
+    ui.add_space(vertical_pad);
 
     let color = get_button_color(ui, player.shuffle.is_some());
     let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
     let shuffle_enabled = !player.queue.is_empty();
+    
     let response = ui
         .add_enabled(shuffle_enabled, shuffle_button)
         .on_hover_text("Shuffle")
         .on_disabled_hover_text("Queue is empty");
+    
     if response.clicked() {
         toggle_shuffle(player);
     }
