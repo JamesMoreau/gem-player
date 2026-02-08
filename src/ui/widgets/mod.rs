@@ -1,3 +1,3 @@
 pub mod bar_display;
-pub mod chip;
+pub mod metadata_chip;
 pub mod marquee;

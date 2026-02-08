@@ -15,7 +15,7 @@ use crate::{
         root::{format_duration_to_mmss, unselectable_label},
         widgets::{
             bar_display::BarDisplay,
-            chip::MetadataChip,
+            metadata_chip::MetadataChip,
             marquee::{marquee_ui, Marquee},
         },
     },
