@@ -52,3 +52,4 @@ name = "Gem Player"
 identifier = "io.github.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
 category = "public.app-category.music"
+osx_info_plist_exts = ["platform/macos/osx-document-types.plist"]

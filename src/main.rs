@@ -26,6 +26,7 @@ use rfd::FileDialog;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
+    env::args_os,
     fs::{copy, read},
     io,
     path::{Path, PathBuf},
@@ -39,12 +40,16 @@ use std::{
 use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
-use crate::ui::{
-    library_view::LibraryViewState,
-    playlist_view::PlaylistsViewState,
-    root::{gem_player_ui, UIState, View},
-    settings_view::SettingsViewState,
-    widgets::marquee::Marquee,
+use crate::{
+    player::enqueue_next,
+    track::load_from_file,
+    ui::{
+        library_view::LibraryViewState,
+        playlist_view::PlaylistsViewState,
+        root::{gem_player_ui, UIState, View},
+        settings_view::SettingsViewState,
+        widgets::marquee::Marquee,
+    },
 };
 
 mod custom_window;
@@ -174,6 +179,37 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         b.sink.set_volume(initial_volume);
     }
 
+    let mut player = Player {
+        history: Vec::new(),
+        playing: None,
+        queue: Vec::new(),
+
+        repeat: false,
+        shuffle: None,
+        muted: false,
+        volume_before_mute: None,
+        paused_before_scrubbing: None,
+
+        backend,
+        raw_artwork: None,
+        visualizer: VisualizerState {
+            command_sender: visualizer_command_sender,
+            bands_receiver,
+            display_bands: vec![0.0; CENTER_FREQUENCIES.len()],
+        },
+    };
+
+    let mut toasts = Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
+        offset: [0, 0],
+        blur: 1,
+        spread: 1,
+        color: Color32::BLACK,
+    });
+
+    if let Some(track) = maybe_open_with_track(&mut toasts) {
+        enqueue_next(&mut player, track);
+    }
+
     GemPlayer {
         ui: UIState {
             current_view: View::Library,
@@ -197,12 +233,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 audio_output_devices_cache,
             },
             library_and_playlists_are_loading,
-            toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
-                offset: [0, 0],
-                blur: 1,
-                spread: 1,
-                color: Color32::BLACK,
-            }),
+            toasts,
             marquee: Marquee::new(),
             volume_popup_is_open: false,
         },
@@ -216,26 +247,24 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             update_receiver,
             command_sender: watcher_command_sender,
         },
-        player: Player {
-            history: Vec::new(),
-            playing: None,
-            queue: Vec::new(),
-
-            repeat: false,
-            shuffle: None,
-            muted: false,
-            volume_before_mute: None,
-            paused_before_scrubbing: None,
-
-            backend,
-            raw_artwork: None,
-            visualizer: VisualizerState {
-                command_sender: visualizer_command_sender,
-                bands_receiver,
-                display_bands: vec![0.0; CENTER_FREQUENCIES.len()],
-            },
-        },
+        player,
     }
+}
+
+fn maybe_open_with_track(toasts: &mut Toasts) -> Option<Track> {
+    // The Open-With function passes the file path as the first argument to the program.
+    let path = args_os().nth(1).map(PathBuf::from)?;
+
+    load_from_file(&path)
+        .inspect_err(|error| {
+            let message = format!(
+                "The Open-With function was passed an argument but the track could not be loaded: {}",
+                error
+            );
+            error!("{}", message);
+            toasts.error(message);
+        })
+        .ok()
 }
 
 impl App for GemPlayer {
