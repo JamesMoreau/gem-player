@@ -54,6 +54,7 @@ use crate::{
 
 mod custom_window;
 mod library_watcher;
+mod macos;
 mod player;
 mod playlist;
 mod track;
@@ -99,6 +100,10 @@ fn main() -> eframe::Result {
             .with_decorations(false)
             .with_transparent(true)
             .with_icon(icon_data),
+        event_loop_builder: Some(Box::new(|_| {
+            #[cfg(target_os = "macos")]
+            macos::install_app_delegate();
+        })),
         ..Default::default()
     };
     run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))

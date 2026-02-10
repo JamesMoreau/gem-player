@@ -40,6 +40,9 @@ strum = "0.27.2"
 strum_macros = "0.27.2"
 trash = "5.2.5"
 walkdir = "2.5.0"
+objc2 = "0.6.3"
+objc2-foundation = "0.3.2"
+objc2-app-kit = "0.3.2"
 
 [build-dependencies]
 winres = "0.1.12"
