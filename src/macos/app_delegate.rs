@@ -1,13 +1,13 @@
-
 //! Implementing `NSApplicationDelegate` for a custom class.
 #![deny(unsafe_op_in_unsafe_fn)]
-use std::path::PathBuf;
 
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{define_class, msg_send, MainThreadMarker, MainThreadOnly};
-use objc2_app_kit::{NSApplication, NSApplicationDelegate};
+use objc2_app_kit::{NSApplication, NSApplicationDelegate, NSApplicationDelegateReply};
 use objc2_foundation::{NSArray, NSObject, NSObjectProtocol, NSString};
+
+use std::io::Write;
 
 define_class!(
     // SAFETY:
@@ -21,11 +21,24 @@ define_class!(
 
     unsafe impl NSApplicationDelegate for AppDelegate {
         #[unsafe(method(application:openFiles:))]
-        fn application_open_files(&self, _app: &NSApplication, files: &NSArray<NSString>) {
-            let paths: Vec<PathBuf> = files.iter().map(|s| PathBuf::from(s.to_string())).collect();
+        fn application_open_files(&self, app: &NSApplication, files: &NSArray<NSString>) {
+            let mut f = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("/tmp/gem_player_open_with.log")
+                .unwrap();
 
-            // enqueue → channel → egui update
-            println!("open files: {paths:?}");
+            writeln!(f, "openFiles fired:").ok();
+
+            for file in files.iter() {
+                writeln!(f, "  {}", file).ok();
+
+                // 🔜 enqueue PathBuf::from(file.to_string())
+            }
+
+            unsafe {
+                app.replyToOpenOrPrint(NSApplicationDelegateReply::Success);
+            }
         }
     }
 );
@@ -45,4 +58,6 @@ pub fn install_app_delegate() {
 
     // keep alive for app lifetime
     std::mem::forget(delegate);
+
+    println!("done install_app_delegate");
 }
