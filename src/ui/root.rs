@@ -11,12 +11,12 @@ use crate::{
     custom_window::custom_window,
     handle_dropped_file,
     ui::{
+        bottom_bar::bottom_bar,
         control_panel::control_panel_ui,
         library_view::{library_view, LibraryViewState},
-        bottom_bar::bottom_bar,
         playlist_view::{playlists_view, PlaylistsViewState},
         queue_view::queue_view,
-        settings_view::{settings_view, SettingsViewState},
+        settings_view::settings_view,
         widgets::marquee::Marquee,
     },
     GemPlayer,
@@ -52,7 +52,6 @@ pub struct UIState {
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
-    settings: SettingsViewState,
 
     library_and_playlists_are_loading: bool,
 

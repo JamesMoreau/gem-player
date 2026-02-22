@@ -5,16 +5,12 @@ use crate::{
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
-use rodio::{
-    cpal::{default_host, traits::HostTrait},
-    Decoder, Device, DeviceTrait, MixerDeviceSink, DeviceSinkBuilder, Source,
-};
+use rodio::{Decoder, Device, DeviceSinkBuilder, MixerDeviceSink, Source};
 use std::{
     fs::File,
     io::{self, Seek, SeekFrom},
     path::Path,
     sync::mpsc::{Receiver, Sender},
-    time::Duration,
 };
 
 #[fully_pub]
@@ -39,7 +35,7 @@ struct Player {
 struct AudioBackend {
     device: Device,
     stream: MixerDeviceSink, // Holds the MixerDeviceSink to keep it alive
-    player: rodio::Player,           // Controls playback (play, pause, stop, etc.)
+    player: rodio::Player,   // Controls playback (play, pause, stop, etc.)
 }
 
 #[fully_pub]
@@ -62,59 +58,6 @@ pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend, S
     player.pause();
 
     Ok(AudioBackend { device, player, stream })
-}
-
-pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
-    let mut output_devices_and_names = Vec::new();
-
-    let host = default_host();
-    let devices_result = host.output_devices();
-    if let Ok(devices) = devices_result {
-        for device in devices {
-            if let Ok(description) = device.description() {
-                output_devices_and_names.push((device, description.name().to_owned()));
-            }
-        }
-    }
-
-    output_devices_and_names
-}
-
-/// Switches the audio backend to a new device while preserving playback state.
-pub fn switch_audio_devices(player: &mut Player, new_device: Device) -> Result<(), String> {
-    let maybe_backend = player.backend.as_ref();
-    let maybe_playing_track = player.playing.clone();
-
-    // In order to make the transition smooth, we need to reload the previous playback state onto the new backend.
-    let (was_paused, previous_volume, previous_playback_position) = maybe_backend
-        .map(|b| (b.player.is_paused(), b.player.volume(), b.player.get_pos()))
-        .unwrap_or((true, 0.5, Duration::ZERO));
-
-    match build_audio_backend_from_device(new_device.clone()) {
-        Ok(new_backend) => {
-            player.backend = Some(new_backend);
-
-            if let Some(playing) = maybe_playing_track {
-                load_and_play(player, &playing).map_err(|e| format!("Unable to play previous player's source: {}", e))?;
-
-                if let Some(backend) = &player.backend {
-                    if was_paused {
-                        backend.player.pause();
-                    }
-
-                    backend.player.set_volume(previous_volume);
-
-                    backend
-                        .player
-                        .try_seek(previous_playback_position)
-                        .map_err(|_| "Unable to seek to previous player's position.".to_string())?;
-                }
-            }
-
-            Ok(())
-        }
-        Err(e) => Err(e.to_string()),
-    }
 }
 
 pub fn clear_the_queue(player: &mut Player) {
