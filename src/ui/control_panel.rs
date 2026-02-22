@@ -58,7 +58,7 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
     let has_backend = gem.player.backend.is_some();
 
-    let mut volume = gem.player.backend.as_ref().map(|b| b.sink.volume()).unwrap_or(0.0);
+    let mut volume = gem.player.backend.as_ref().map(|b| b.player.volume()).unwrap_or(0.0);
 
     let volume_icon = match volume {
         0.0 => icons::ICON_VOLUME_OFF,
@@ -92,7 +92,7 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
                 gem.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
 
                 if let Some(backend) = &gem.player.backend {
-                    backend.sink.set_volume(volume);
+                    backend.player.set_volume(volume);
                 }
             }
 
@@ -128,7 +128,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         maybe_play_previous(gem)
     }
 
-    let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.sink.is_paused());
+    let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.player.is_paused());
     let play_pause_icon = if sink_is_paused {
         icons::ICON_PLAY_ARROW
     } else {
@@ -143,7 +143,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_disabled_hover_text("No current track");
     if response.clicked() {
         if let Some(backend) = &mut gem.player.backend {
-            play_or_pause(&mut backend.sink);
+            play_or_pause(&mut backend.player);
         }
     }
 
@@ -267,7 +267,7 @@ fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32)
 
 fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
     let (mut position_as_secs, track_duration_as_secs) = if let Some(track) = &player.playing {
-        let pos = player.backend.as_ref().map_or(0.0, |b| b.sink.get_pos().as_secs_f32());
+        let pos = player.backend.as_ref().map_or(0.0, |b| b.player.get_pos().as_secs_f32());
         (pos, track.duration.as_secs_f32())
     } else {
         (0.0, 0.1) // We set to 0.1 so that when no track is playing, the slider is at the start.
@@ -325,20 +325,20 @@ fn display_playback_slider(
     };
 
     if response.dragged() && paused_before_scrubbing.is_none() {
-        *paused_before_scrubbing = Some(backend.sink.is_paused());
-        backend.sink.pause(); // Pause playback during scrubbing
+        *paused_before_scrubbing = Some(backend.player.is_paused());
+        backend.player.pause(); // Pause playback during scrubbing
     }
 
     if response.drag_stopped() {
         let new_position = Duration::from_secs_f32(*position);
         info!("Seeking to {}", format_duration_to_mmss(new_position));
-        if let Err(e) = backend.sink.try_seek(new_position) {
+        if let Err(e) = backend.player.try_seek(new_position) {
             error!("Error seeking to new position: {:?}", e);
         }
 
         // Resume playback if the player was not paused before scrubbing
         if *paused_before_scrubbing == Some(false) {
-            backend.sink.play();
+            backend.player.play();
         }
 
         *paused_before_scrubbing = None;
@@ -418,7 +418,7 @@ fn display_track_metadata(ui: &mut Ui, track: &Track) {
     ui.add_space(4.0);
 
     if let Some(sr) = track.sample_rate {
-        let sample_rate_string = format!("{:.1} kHz", sr as f32 / 1000.0);
+        let sample_rate_string = format!("{:.1} kHz", sr.get() as f32 / 1000.0);
         ui.add(MetadataChip::new(&sample_rate_string));
     }
 }

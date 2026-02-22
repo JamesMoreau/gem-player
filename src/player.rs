@@ -7,7 +7,7 @@ use log::error;
 use rand::seq::SliceRandom;
 use rodio::{
     cpal::{default_host, traits::HostTrait},
-    Decoder, Device, DeviceTrait, OutputStream, OutputStreamBuilder, Sink, Source,
+    Decoder, Device, DeviceTrait, MixerDeviceSink, DeviceSinkBuilder, Source,
 };
 use std::{
     fs::File,
@@ -38,8 +38,8 @@ struct Player {
 #[fully_pub]
 struct AudioBackend {
     device: Device,
-    stream: OutputStream, // Holds the OutputStream to keep it alive
-    sink: Sink,           // Controls playback (play, pause, stop, etc.)
+    stream: MixerDeviceSink, // Holds the MixerDeviceSink to keep it alive
+    player: rodio::Player,           // Controls playback (play, pause, stop, etc.)
 }
 
 #[fully_pub]
@@ -50,18 +50,18 @@ struct VisualizerState {
 }
 
 pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend, String> {
-    let builder = OutputStreamBuilder::from_device(device.clone())
+    let builder = DeviceSinkBuilder::from_device(device.clone())
         .map_err(|e| e.to_string())?
         .with_error_callback(|e| {
             error!("Stream error: {}", e);
         });
 
-    let stream = builder.open_stream_or_fallback().map_err(|e| e.to_string())?;
+    let stream = builder.open_sink_or_fallback().map_err(|e| e.to_string())?;
 
-    let sink = Sink::connect_new(stream.mixer());
-    sink.pause();
+    let player = rodio::Player::connect_new(stream.mixer());
+    player.pause();
 
-    Ok(AudioBackend { device, sink, stream })
+    Ok(AudioBackend { device, player, stream })
 }
 
 pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
@@ -71,8 +71,8 @@ pub fn get_audio_output_devices_and_names() -> Vec<(Device, String)> {
     let devices_result = host.output_devices();
     if let Ok(devices) = devices_result {
         for device in devices {
-            if let Ok(name) = device.name() {
-                output_devices_and_names.push((device, name));
+            if let Ok(description) = device.description() {
+                output_devices_and_names.push((device, description.name().to_owned()));
             }
         }
     }
@@ -87,7 +87,7 @@ pub fn switch_audio_devices(player: &mut Player, new_device: Device) -> Result<(
 
     // In order to make the transition smooth, we need to reload the previous playback state onto the new backend.
     let (was_paused, previous_volume, previous_playback_position) = maybe_backend
-        .map(|b| (b.sink.is_paused(), b.sink.volume(), b.sink.get_pos()))
+        .map(|b| (b.player.is_paused(), b.player.volume(), b.player.get_pos()))
         .unwrap_or((true, 0.5, Duration::ZERO));
 
     match build_audio_backend_from_device(new_device.clone()) {
@@ -95,19 +95,19 @@ pub fn switch_audio_devices(player: &mut Player, new_device: Device) -> Result<(
             player.backend = Some(new_backend);
 
             if let Some(playing) = maybe_playing_track {
-                load_and_play(player, &playing).map_err(|e| format!("Unable to play previous sink's source: {}", e))?;
+                load_and_play(player, &playing).map_err(|e| format!("Unable to play previous player's source: {}", e))?;
 
                 if let Some(backend) = &player.backend {
                     if was_paused {
-                        backend.sink.pause();
+                        backend.player.pause();
                     }
 
-                    backend.sink.set_volume(previous_volume);
+                    backend.player.set_volume(previous_volume);
 
                     backend
-                        .sink
+                        .player
                         .try_seek(previous_playback_position)
-                        .map_err(|_| "Unable to seek to previous sink's position.".to_string())?;
+                        .map_err(|_| "Unable to seek to previous player's position.".to_string())?;
                 }
             }
 
@@ -123,11 +123,11 @@ pub fn clear_the_queue(player: &mut Player) {
     player.shuffle = None;
 }
 
-pub fn play_or_pause(sink: &mut Sink) {
-    if sink.is_paused() {
-        sink.play()
+pub fn play_or_pause(player: &mut rodio::Player) {
+    if player.is_paused() {
+        player.play()
     } else {
-        sink.pause()
+        player.pause()
     }
 }
 
@@ -178,7 +178,7 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
         return Err(io::Error::other("No audio backend available"));
     };
 
-    backend.sink.stop(); // Stop the current track if any.
+    backend.player.stop(); // Stop the current track if any.
 
     let mut file = File::open(&track.path)?;
 
@@ -200,8 +200,8 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     }
 
     let visualizer_source = visualizer_source(decoder, player.visualizer.command_sender.clone());
-    backend.sink.append(visualizer_source);
-    backend.sink.play();
+    backend.player.append(visualizer_source);
+    backend.player.play();
 
     Ok(())
 }
@@ -265,7 +265,7 @@ pub fn mute_or_unmute(player: &mut Player) {
 
     if player.muted {
         if let Some(backend) = &player.backend {
-            player.volume_before_mute = Some(backend.sink.volume());
+            player.volume_before_mute = Some(backend.player.volume());
         }
         target_volume = 0.0;
     } else if let Some(v) = player.volume_before_mute {
@@ -273,16 +273,16 @@ pub fn mute_or_unmute(player: &mut Player) {
     }
 
     if let Some(backend) = &player.backend {
-        backend.sink.set_volume(target_volume);
+        backend.player.set_volume(target_volume);
     }
 }
 
-pub fn adjust_volume_by_percentage(sink: &mut Sink, percentage: f32) {
-    let current_volume = sink.volume();
+pub fn adjust_volume_by_percentage(player: &mut rodio::Player, percentage: f32) {
+    let current_volume = player.volume();
 
     let min_volume = 0.0;
     let max_volume = 1.0;
 
     let new_volume = (current_volume + percentage).clamp(min_volume, max_volume);
-    sink.set_volume(new_volume);
+    player.set_volume(new_volume);
 }

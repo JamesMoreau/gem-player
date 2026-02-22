@@ -32,7 +32,7 @@ opener = { version = "0.8.4", features = ["reveal"] }
 rand = "0.10.0"
 rayon = "1.11.0"
 rfd = "0.17.2"
-rodio = { version = "0.21.1", features = ["symphonia-all"] }
+rodio = { version = "0.22.1", features = ["symphonia-all"] }
 rustfft = "6.4.1"
 sanitize-filename = "0.6.0"
 serde_json = "1.0.149"

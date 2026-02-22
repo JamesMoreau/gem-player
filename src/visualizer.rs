@@ -48,28 +48,30 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 
     let cs = command_sender.clone();
     thread::spawn(move || {
-        let mut sample_rate = 44100;
+        let mut sample_rate = None;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
         while let Ok(command) = commands_receiver.recv() {
             match command {
                 VisualizerCommand::Sample(sample) => {
-                    samples.push(sample);
+                    if let Some(sr) = sample_rate {
+                        samples.push(sample);
 
-                    if samples.len() == FFT_SIZE {
-                        let half_octave_bandwidth = SQRT_2;
-                        let bands = process_samples(&samples, sample_rate, &CENTER_FREQUENCIES, half_octave_bandwidth);
+                        if samples.len() == FFT_SIZE {
+                            let half_octave_bandwidth = SQRT_2;
+                            let bands = process_samples(&samples, sr, &CENTER_FREQUENCIES, half_octave_bandwidth);
 
-                        let result = bands_sender.send(bands);
-                        if result.is_err() {
-                            let _ = cs.send(VisualizerCommand::Shutdown);
+                            let result = bands_sender.send(bands);
+                            if result.is_err() {
+                                let _ = cs.send(VisualizerCommand::Shutdown);
+                            }
+
+                            samples.clear();
                         }
-
-                        samples.clear();
                     }
                 }
                 VisualizerCommand::SampleRate(sr) => {
-                    sample_rate = sr;
+                    sample_rate = Some(sr);
                     samples.clear();
                 }
                 VisualizerCommand::Shutdown => {
@@ -105,8 +107,8 @@ pub fn process_samples(samples: &[Sample], sample_rate: SampleRate, band_center_
         let f_start = center / bandwidth;
         let f_end = center * bandwidth;
 
-        let i_min = ((f_start * n as f32) / sample_rate as f32).floor() as usize;
-        let i_max = ((f_end * n as f32) / sample_rate as f32).ceil() as usize;
+        let i_min = ((f_start * n as f32) / sample_rate.get() as f32).floor() as usize;
+        let i_max = ((f_end * n as f32) / sample_rate.get() as f32).ceil() as usize;
         let i_max = i_max.min(magnitudes.len() - 1); // clamp to available bins
 
         for mag in &magnitudes[i_min..=i_max] {

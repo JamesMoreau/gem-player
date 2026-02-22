@@ -11,6 +11,7 @@ use rodio::SampleRate;
 use std::{
     fs::{metadata, File},
     io::{self, ErrorKind},
+    num::NonZeroU32,
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
@@ -110,7 +111,14 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
 
     let properties = tagged_file.properties();
     let duration = properties.duration();
-    let sample_rate = properties.sample_rate();
+
+    let sample_rate = properties
+        .sample_rate()
+        .map(|rate| {
+            NonZeroU32::new(rate)
+                .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, format!("Invalid sample rate (0) in file: {:?}", path)))
+        })
+        .transpose()?;
 
     let file_path = path.to_path_buf();
 

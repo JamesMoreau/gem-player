@@ -171,7 +171,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     apply_theme(&cc.egui_ctx, theme_preference);
 
     if let Some(b) = &backend {
-        b.sink.set_volume(initial_volume);
+        b.player.set_volume(initial_volume);
     }
 
     GemPlayer {
@@ -257,7 +257,7 @@ impl App for GemPlayer {
         storage.set_string(THEME_STORAGE_KEY, theme_json_string);
 
         if let Some(backend) = &self.player.backend {
-            let volume_json_string = serde_json::to_string(&backend.sink.volume()).unwrap();
+            let volume_json_string = serde_json::to_string(&backend.player.volume()).unwrap();
             storage.set_string(VOLUME_STORAGE_KEY, volume_json_string);
         }
     }
@@ -281,7 +281,7 @@ impl App for GemPlayer {
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         if let Some(backend) = &self.player.backend {
-            backend.sink.stop();
+            backend.player.stop();
         }
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
@@ -426,7 +426,7 @@ fn check_for_next_track(gem: &mut GemPlayer) {
         return;
     };
 
-    if !backend.sink.empty() {
+    if !backend.player.empty() {
         return; // If a track is still playing, do nothing
     }
 
@@ -453,7 +453,7 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
     let mut under_threshold = false;
 
     if let Some(backend) = &gem.player.backend {
-        let playback_position = backend.sink.get_pos().as_secs_f32();
+        let playback_position = backend.player.get_pos().as_secs_f32();
         under_threshold = playback_position < rewind_threshold;
     }
 
@@ -466,10 +466,10 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
             gem.ui.toasts.error("Error playing the previous track");
         }
     } else if let Some(backend) = &gem.player.backend {
-        if let Err(e) = backend.sink.try_seek(Duration::ZERO) {
+        if let Err(e) = backend.player.try_seek(Duration::ZERO) {
             error!("Error rewinding track: {:?}", e);
         }
-        backend.sink.play();
+        backend.player.play();
     }
 }
 
@@ -499,19 +499,19 @@ pub fn handle_key_commands(ctx: &Context, gem: &mut GemPlayer) {
                 match key {
                     Key::Space => {
                         if let Some(backend) = &mut gem.player.backend {
-                            play_or_pause(&mut backend.sink);
+                            play_or_pause(&mut backend.player);
                         }
                     }
                     Key::ArrowLeft => maybe_play_previous(gem),
                     Key::ArrowRight => maybe_play_next(gem),
                     Key::ArrowUp => {
                         if let Some(backend) = &mut gem.player.backend {
-                            adjust_volume_by_percentage(&mut backend.sink, 0.1);
+                            adjust_volume_by_percentage(&mut backend.player, 0.1);
                         }
                     }
                     Key::ArrowDown => {
                         if let Some(backend) = &mut gem.player.backend {
-                            adjust_volume_by_percentage(&mut backend.sink, -0.1);
+                            adjust_volume_by_percentage(&mut backend.player, -0.1);
                         }
                     }
                     Key::M => mute_or_unmute(&mut gem.player),
