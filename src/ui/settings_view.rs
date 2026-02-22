@@ -53,7 +53,8 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     .player
                     .backend
                     .as_ref()
-                    .and_then(|b| b.device.name().ok())
+                    .and_then(|b| b.device.description().ok())
+                    .map(|d| d.name().to_string())
                     .unwrap_or_else(|| "No device".to_string());
 
                 let inner = ComboBox::from_label("Output device")
@@ -61,7 +62,8 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     .show_ui(ui, |ui| {
                         for (device, name) in &gem.ui.settings.audio_output_devices_cache {
                             let maybe_backend = gem.player.backend.as_ref();
-                            let mut is_selected = maybe_backend.is_some_and(|b| b.device.name().ok() == Some(name.clone()));
+                            let mut is_selected =
+                                maybe_backend.is_some_and(|b| b.device.description().ok().map(|d| d.name() == name).unwrap_or(false));
 
                             let response = ui.selectable_value(&mut is_selected, true, name.clone());
 
