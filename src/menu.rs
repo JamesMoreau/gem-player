@@ -24,13 +24,11 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
     use muda::accelerator::{Accelerator, Code, Modifiers};
     use std::sync::mpsc::channel;
 
-    let menu = Menu::new();
-    
     let (sender, receiver) = channel();
     MenuEvent::set_event_handler(Some(move |event| {
         let _ = sender.send(event);
     }));
-    
+
     let app_menu = Submenu::with_items(
         "App",
         true,
@@ -45,7 +43,8 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             &PredefinedMenuItem::separator(),
             &PredefinedMenuItem::quit(None),
         ],
-    ).unwrap();
+    )
+    .unwrap();
 
     let file_menu = Submenu::with_items(
         "File",
@@ -55,7 +54,8 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             &PredefinedMenuItem::separator(),
             &PredefinedMenuItem::close_window(None),
         ],
-    ).unwrap();
+    )
+    .unwrap();
 
     let edit_menu = Submenu::with_items(
         "Edit",
@@ -69,7 +69,8 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             &PredefinedMenuItem::paste(None),
             &PredefinedMenuItem::select_all(None),
         ],
-    ).unwrap();
+    )
+    .unwrap();
 
     let view_menu = Submenu::with_items(
         "View",
@@ -80,7 +81,8 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             &MenuItem::new("Go to playlists", true, Some(Accelerator::new(Some(Modifiers::META), Code::KeyP))),
             &MenuItem::new("Go to settings", true, Some(Accelerator::new(Some(Modifiers::META), Code::Comma))),
         ],
-    ).unwrap();
+    )
+    .unwrap();
 
     let playback_menu = Submenu::with_items(
         "Playback",
@@ -94,7 +96,8 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
                 Some(Accelerator::new(Some(Modifiers::META), Code::ArrowLeft)),
             ),
         ],
-    ).unwrap();
+    )
+    .unwrap();
 
     let window_menu = Submenu::with_items(
         "Window",
@@ -105,14 +108,23 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             &PredefinedMenuItem::separator(),
             &PredefinedMenuItem::fullscreen(None),
         ],
-    ).unwrap();
+    )
+    .unwrap();
 
     let help_menu = Submenu::new("Help", true);
     let report_an_issue = MenuItem::new("Report an issue", true, None);
     help_menu.append_items(&[&report_an_issue]).unwrap();
 
-    menu.append_items(&[&app_menu, &file_menu, &edit_menu, &view_menu, &playback_menu, &window_menu, &help_menu])
-        .unwrap();
+    let menu = Menu::with_items(&[
+        &app_menu,
+        &file_menu,
+        &edit_menu,
+        &view_menu,
+        &playback_menu,
+        &window_menu,
+        &help_menu,
+    ])
+    .unwrap();
 
     (menu, receiver)
 }
