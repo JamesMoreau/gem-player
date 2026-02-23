@@ -2,6 +2,7 @@ use std::path::Path;
 
 use egui::{containers, Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
+use log::info;
 
 use crate::{apply_theme, spawn_folder_picker, ui::root::unselectable_label, GemPlayer, KEY_COMMANDS};
 
@@ -10,6 +11,8 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
         .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
         .show(ui, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
+                let divider_spacing = 32.0;
+
                 ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
                 ui.add_space(8.0);
                 ui.add(unselectable_label("Playlists are also stored here as m3u files."));
@@ -29,7 +32,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     }
                 });
 
-                ui.add(Separator::default().spacing(32.0));
+                ui.add(Separator::default().spacing(divider_spacing));
 
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
@@ -43,7 +46,26 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     apply_theme(ui.ctx(), after);
                 }
 
-                ui.add(Separator::default().spacing(32.0));
+                ui.add(Separator::default().spacing(divider_spacing));
+
+                ui.add(unselectable_label(RichText::new("Sleep Mode Blocker").heading()));
+
+                ui.add_space(8.0);
+
+                ui.add(unselectable_label("Prevents the computer from going to sleep during playback."));
+
+                let mut enabled = gem.nosleep_manager.is_enabled();
+                let check_label = if enabled { "enabled" } else { "disabled" };
+                if ui.checkbox(&mut enabled, check_label).changed() {
+                    match enabled {
+                        true => gem.nosleep_manager.enable(),
+                        false => gem.nosleep_manager.disable(),
+                    }
+
+                    info!("Sleep inhibitor is now {}.", if enabled { "enabled" } else { "disabled" });
+                }
+
+                ui.add(Separator::default().spacing(divider_spacing));
 
                 ui.add(unselectable_label(RichText::new("Controls").heading()));
 
@@ -72,7 +94,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     },
                 );
 
-                ui.add(Separator::default().spacing(32.0));
+                ui.add(Separator::default().spacing(divider_spacing));
 
                 ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
                 ui.add_space(8.0);

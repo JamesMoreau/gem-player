@@ -39,12 +39,12 @@ use std::{
 use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
-use crate::ui::{
+use crate::{nosleep_manager::NoSleepManager, ui::{
     library_view::LibraryViewState,
     playlist_view::PlaylistsViewState,
-    root::{gem_player_ui, UIState, View},
+    root::{UIState, View, gem_player_ui},
     widgets::marquee::Marquee,
-};
+}};
 
 mod custom_window;
 mod library_watcher;
@@ -53,6 +53,7 @@ mod playlist;
 mod track;
 mod ui;
 mod visualizer;
+mod nosleep_manager;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -73,6 +74,8 @@ struct GemPlayer {
     library_watcher: LibraryWatcher,
 
     player: Player,
+
+    nosleep_manager: NoSleepManager,
 }
 
 #[fully_pub]
@@ -230,6 +233,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 display_bands: vec![0.0; CENTER_FREQUENCIES.len()],
             },
         },
+        nosleep_manager: NoSleepManager::new(),
     }
 }
 
@@ -280,6 +284,7 @@ impl App for GemPlayer {
         }
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
+        self.nosleep_manager.disable();
     }
 }
 
