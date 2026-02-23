@@ -17,6 +17,7 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
+use muda::{Menu, MenuEvent};
 use player::{
     adjust_volume_by_percentage, build_audio_backend_from_device, mute_or_unmute, play_next, play_or_pause, play_previous, Player,
     VisualizerState,
@@ -39,21 +40,26 @@ use std::{
 use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
-use crate::{nosleep_manager::NoSleepManager, ui::{
-    library_view::LibraryViewState,
-    playlist_view::PlaylistsViewState,
-    root::{UIState, View, gem_player_ui},
-    widgets::marquee::Marquee,
-}};
+use crate::{
+    menu::{create_macos_menu, handle_menu_event},
+    nosleep_manager::NoSleepManager,
+    ui::{
+        library_view::LibraryViewState,
+        playlist_view::PlaylistsViewState,
+        root::{gem_player_ui, UIState, View},
+        widgets::marquee::Marquee,
+    },
+};
 
 mod custom_window;
 mod library_watcher;
+mod menu;
+mod nosleep_manager;
 mod player;
 mod playlist;
 mod track;
 mod ui;
 mod visualizer;
-mod nosleep_manager;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -76,6 +82,11 @@ struct GemPlayer {
     player: Player,
 
     nosleep_manager: NoSleepManager,
+
+    #[cfg(target_os = "macos")]
+    menu: Menu,
+    #[cfg(target_os = "macos")]
+    menu_receiver: Receiver<MenuEvent>,
 }
 
 #[fully_pub]
@@ -175,6 +186,13 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         b.player.set_volume(initial_volume);
     }
 
+    #[cfg(target_os = "macos")]
+    let (menu, menu_receiver) = {
+        let (menu, receiver) = create_macos_menu();
+        menu.init_for_nsapp();
+        (menu, receiver)
+    };
+
     GemPlayer {
         ui: UIState {
             current_view: View::Library,
@@ -234,6 +252,10 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             },
         },
         nosleep_manager: NoSleepManager::new(),
+        #[cfg(target_os = "macos")]
+        menu,
+        #[cfg(target_os = "macos")]
+        menu_receiver,
     }
 }
 
@@ -269,6 +291,7 @@ impl App for GemPlayer {
         check_for_next_track(self);
         poll_library_watcher_messages(self);
         poll_folder_picker(self);
+        poll_native_menu_events(self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -285,6 +308,17 @@ impl App for GemPlayer {
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
         self.nosleep_manager.disable();
+    }
+}
+
+fn poll_native_menu_events(gem: &mut GemPlayer) {
+    match gem.menu_receiver.try_recv() {
+        Ok(event) => handle_menu_event(event),
+        Err(TryRecvError::Empty) => {} // no menu event this frame
+        Err(TryRecvError::Disconnected) => {
+            error!("Menu events has been disconnected.");
+            gem.ui.library_and_playlists_are_loading = false;
+        }
     }
 }
 
@@ -400,8 +434,8 @@ fn poll_folder_picker(gem: &mut GemPlayer) {
                 info!("No folder selected");
             }
         }
-        Err(std::sync::mpsc::TryRecvError::Empty) => {} // folder picker is still open.
-        Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+        Err(TryRecvError::Empty) => {} // folder picker is still open.
+        Err(TryRecvError::Disconnected) => {
             error!("Folder picker channel disconnected unexpectedly.");
             gem.folder_picker_receiver = None;
         }

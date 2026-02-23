@@ -41,6 +41,7 @@ strum_macros = "0.28.0"
 trash = "5.2.5"
 walkdir = "2.5.0"
 nosleep = "0.2.1"
+muda = "0.17.1"
 
 [build-dependencies]
 winres = "0.1.12"
