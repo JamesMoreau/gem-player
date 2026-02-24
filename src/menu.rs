@@ -3,20 +3,24 @@ use std::sync::mpsc::Receiver;
 
 use muda::Menu;
 use muda::{MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
+use strum_macros::{Display, EnumString};
 
-pub fn handle_menu_event(event: MenuEvent) {
-    // Get the menu item ID
-    let id = event.id;
-
-    // You'll need to store menu item IDs to identify which was clicked
-    // For now, you can print to see what's being clicked
-    println!("Menu event received: {id:?}");
-
-    // Handle specific menu items
-    // Example:
-    // if id == self.save_item_id {
-    //     // Handle save
-    // }
+#[derive(Debug, Clone, Copy, EnumString, Display)]
+pub enum MenuCommand {
+    OpenFile,
+    JumpToPlayingTrack,
+    GoToLibrary,
+    GoToPlaylists,
+    GoToSettings,
+    PlayPause,
+    NextTrack,
+    PreviousTrack,
+    VolumeUp,
+    VolumeDown,
+    Minimize,
+    Maximize,
+    Fullscreen,
+    ReportIssue,
 }
 
 #[cfg(target_os = "macos")]
@@ -46,16 +50,8 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             ],
         )
         .unwrap(),
-        &Submenu::with_items(
-            "File",
-            true,
-            &[
-                &MenuItem::new("Open with", true, None),
-                &PredefinedMenuItem::separator(),
-                &PredefinedMenuItem::close_window(None),
-            ],
-        )
-        .unwrap(),
+        &Submenu::with_items("File", true, &[&MenuItem::with_id(MenuCommand::OpenFile, "Open with", true, None)]).unwrap(),
+        // The following do not do anything right now but we leave them for convention.
         &Submenu::with_items(
             "Edit",
             true,
@@ -74,11 +70,26 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             "View",
             true,
             &[
-                &MenuItem::new("Jump to playing track", true, None),
+                &MenuItem::with_id(MenuCommand::JumpToPlayingTrack, "Jump to playing track", true, None),
                 &PredefinedMenuItem::separator(),
-                &MenuItem::new("Go to library", true, Some(Accelerator::new(Some(Modifiers::META), Code::KeyL))),
-                &MenuItem::new("Go to playlists", true, Some(Accelerator::new(Some(Modifiers::META), Code::KeyP))),
-                &MenuItem::new("Go to settings", true, Some(Accelerator::new(Some(Modifiers::META), Code::Comma))),
+                &MenuItem::with_id(
+                    MenuCommand::GoToLibrary,
+                    "Go to library",
+                    true,
+                    Some(Accelerator::new(Some(Modifiers::META), Code::KeyL)),
+                ),
+                &MenuItem::with_id(
+                    MenuCommand::GoToPlaylists,
+                    "Go to playlists",
+                    true,
+                    Some(Accelerator::new(Some(Modifiers::META), Code::KeyP)),
+                ),
+                &MenuItem::with_id(
+                    MenuCommand::GoToSettings,
+                    "Go to settings",
+                    true,
+                    Some(Accelerator::new(Some(Modifiers::META), Code::Comma)),
+                ),
             ],
         )
         .unwrap(),
@@ -86,15 +97,36 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             "Playback",
             true,
             &[
-                &MenuItem::new("Play / Pause", true, Some(Accelerator::new(None, Code::Space))),
-                &MenuItem::new("Next track", true, Some(Accelerator::new(Some(Modifiers::META), Code::ArrowRight))),
-                &MenuItem::new(
+                &MenuItem::with_id(
+                    MenuCommand::PlayPause,
+                    "Play / Pause",
+                    true,
+                    Some(Accelerator::new(None, Code::Space)),
+                ),
+                &MenuItem::with_id(
+                    MenuCommand::NextTrack,
+                    "Next track",
+                    true,
+                    Some(Accelerator::new(Some(Modifiers::META), Code::ArrowRight)),
+                ),
+                &MenuItem::with_id(
+                    MenuCommand::PreviousTrack,
                     "Previous track",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::ArrowLeft)),
                 ),
-                &MenuItem::new("Volume up", true, Some(Accelerator::new(Some(Modifiers::META), Code::ArrowUp))),
-                &MenuItem::new("Volume down", true, Some(Accelerator::new(Some(Modifiers::META), Code::ArrowDown))),
+                &MenuItem::with_id(
+                    MenuCommand::VolumeUp,
+                    "Volume up",
+                    true,
+                    Some(Accelerator::new(Some(Modifiers::META), Code::ArrowUp)),
+                ),
+                &MenuItem::with_id(
+                    MenuCommand::VolumeDown,
+                    "Volume down",
+                    true,
+                    Some(Accelerator::new(Some(Modifiers::META), Code::ArrowDown)),
+                ),
             ],
         )
         .unwrap(),
@@ -109,7 +141,12 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             ],
         )
         .unwrap(),
-        &Submenu::with_items("Help", true, &[&MenuItem::new("Report an issue", true, None)]).unwrap(),
+        &Submenu::with_items(
+            "Help",
+            true,
+            &[&MenuItem::with_id(MenuCommand::ReportIssue, "Report an issue", true, None)],
+        )
+        .unwrap(),
     ])
     .unwrap();
 

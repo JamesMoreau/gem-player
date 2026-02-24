@@ -11,6 +11,7 @@ use eframe::{
     },
     icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage,
 };
+use egui::{OpenUrl, ViewportCommand};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -30,6 +31,7 @@ use std::{
     fs::{copy, read},
     io,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::{
         mpsc::{channel, Receiver, Sender, TryRecvError},
         Arc,
@@ -41,7 +43,7 @@ use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 use crate::{
-    menu::{create_macos_menu, handle_menu_event},
+    menu::{create_macos_menu, MenuCommand},
     nosleep_manager::NoSleepManager,
     ui::{
         library_view::LibraryViewState,
@@ -291,7 +293,7 @@ impl App for GemPlayer {
         check_for_next_track(self);
         poll_library_watcher_messages(self);
         poll_folder_picker(self);
-        poll_native_menu_events(self);
+        poll_native_menu_events(ctx, self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -311,9 +313,9 @@ impl App for GemPlayer {
     }
 }
 
-fn poll_native_menu_events(gem: &mut GemPlayer) {
+fn poll_native_menu_events(ctx: &Context, gem: &mut GemPlayer) {
     match gem.menu_receiver.try_recv() {
-        Ok(event) => handle_menu_event(event),
+        Ok(event) => handle_menu_event(ctx, gem, event),
         Err(TryRecvError::Empty) => {} // no menu event this frame
         Err(TryRecvError::Disconnected) => {
             error!("Menu events has been disconnected.");
@@ -554,6 +556,65 @@ pub fn handle_key_commands(ctx: &Context, gem: &mut GemPlayer) {
             }
         }
     });
+}
+
+pub fn handle_menu_event(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
+    info!("{}", event.id.0);
+    let result = MenuCommand::from_str(&event.id.0);
+
+    match result {
+        Ok(command) => match command {
+            MenuCommand::OpenFile => todo!(),
+            MenuCommand::JumpToPlayingTrack => todo!(),
+            MenuCommand::GoToLibrary => {
+                info!("Switching to Library");
+                gem.ui.current_view = View::Library;
+            }
+            MenuCommand::GoToPlaylists => {
+                info!("Switching to Playlists");
+                gem.ui.current_view = View::Playlists;
+            }
+            MenuCommand::GoToSettings => {
+                info!("Switching to Settings");
+                gem.ui.current_view = View::Settings;
+            }
+            MenuCommand::PlayPause => {
+                if let Some(backend) = &mut gem.player.backend {
+                    play_or_pause(&mut backend.player);
+                }
+            }
+            MenuCommand::NextTrack => maybe_play_next(gem),
+            MenuCommand::PreviousTrack => maybe_play_previous(gem),
+            MenuCommand::VolumeUp => {
+                if let Some(backend) = &mut gem.player.backend {
+                    adjust_volume_by_percentage(&mut backend.player, 0.1);
+                }
+            }
+            MenuCommand::VolumeDown => {
+                if let Some(backend) = &mut gem.player.backend {
+                    adjust_volume_by_percentage(&mut backend.player, -0.1);
+                }
+            }
+            MenuCommand::Minimize => {
+                ctx.send_viewport_cmd(ViewportCommand::Minimized(true));
+            }
+            MenuCommand::Maximize => {
+                let is_maximized = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
+                ctx.send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
+            }
+            MenuCommand::Fullscreen => {
+                let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
+                ctx.send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen))
+            }
+            MenuCommand::ReportIssue => {
+                let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
+                ctx.open_url(OpenUrl { url, new_tab: true });
+            }
+        },
+        Err(_) => {
+            println!("Unhandled menu command: {:?}", event.id);
+        }
+    }
 }
 
 pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
