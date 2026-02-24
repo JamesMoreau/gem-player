@@ -95,6 +95,8 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
                 true,
                 Some(Accelerator::new(Some(Modifiers::META), Code::ArrowLeft)),
             ),
+            &MenuItem::new("Volume up", true, Some(Accelerator::new(Some(Modifiers::META), Code::ArrowUp))),
+            &MenuItem::new("Volume down", true, Some(Accelerator::new(Some(Modifiers::META), Code::ArrowDown))),
         ],
     )
     .unwrap();
