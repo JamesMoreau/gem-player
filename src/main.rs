@@ -569,7 +569,6 @@ pub fn handle_key_commands(ctx: &Context, gem: &mut GemPlayer) {
 }
 
 pub fn handle_gem_command(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
-    info!("{}", event.id.0);
     let result = GemCommand::from_str(&event.id.0);
 
     match result {
