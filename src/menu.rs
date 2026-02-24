@@ -6,7 +6,7 @@ use muda::{MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use strum_macros::{Display, EnumString};
 
 #[derive(Debug, Clone, Copy, EnumString, Display)]
-pub enum MenuCommand {
+pub enum GemCommand {
     OpenFile,
     JumpToPlayingTrack,
     GoToLibrary,
@@ -50,7 +50,7 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             ],
         )
         .unwrap(),
-        &Submenu::with_items("File", true, &[&MenuItem::with_id(MenuCommand::OpenFile, "Open with", true, None)]).unwrap(),
+        &Submenu::with_items("File", true, &[&MenuItem::with_id(GemCommand::OpenFile, "Open with", true, None)]).unwrap(),
         // The following do not do anything right now but we leave them for convention.
         &Submenu::with_items(
             "Edit",
@@ -70,22 +70,22 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             "View",
             true,
             &[
-                &MenuItem::with_id(MenuCommand::JumpToPlayingTrack, "Jump to playing track", true, None),
+                &MenuItem::with_id(GemCommand::JumpToPlayingTrack, "Jump to playing track", true, None),
                 &PredefinedMenuItem::separator(),
                 &MenuItem::with_id(
-                    MenuCommand::GoToLibrary,
+                    GemCommand::GoToLibrary,
                     "Go to library",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::KeyL)),
                 ),
                 &MenuItem::with_id(
-                    MenuCommand::GoToPlaylists,
+                    GemCommand::GoToPlaylists,
                     "Go to playlists",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::KeyP)),
                 ),
                 &MenuItem::with_id(
-                    MenuCommand::GoToSettings,
+                    GemCommand::GoToSettings,
                     "Go to settings",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::Comma)),
@@ -98,31 +98,31 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
             true,
             &[
                 &MenuItem::with_id(
-                    MenuCommand::PlayPause,
+                    GemCommand::PlayPause,
                     "Play / Pause",
                     true,
                     Some(Accelerator::new(None, Code::Space)),
                 ),
                 &MenuItem::with_id(
-                    MenuCommand::NextTrack,
+                    GemCommand::NextTrack,
                     "Next track",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::ArrowRight)),
                 ),
                 &MenuItem::with_id(
-                    MenuCommand::PreviousTrack,
+                    GemCommand::PreviousTrack,
                     "Previous track",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::ArrowLeft)),
                 ),
                 &MenuItem::with_id(
-                    MenuCommand::VolumeUp,
+                    GemCommand::VolumeUp,
                     "Volume up",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::ArrowUp)),
                 ),
                 &MenuItem::with_id(
-                    MenuCommand::VolumeDown,
+                    GemCommand::VolumeDown,
                     "Volume down",
                     true,
                     Some(Accelerator::new(Some(Modifiers::META), Code::ArrowDown)),
@@ -144,7 +144,7 @@ pub fn create_macos_menu() -> (Menu, Receiver<MenuEvent>) {
         &Submenu::with_items(
             "Help",
             true,
-            &[&MenuItem::with_id(MenuCommand::ReportIssue, "Report an issue", true, None)],
+            &[&MenuItem::with_id(GemCommand::ReportIssue, "Report an issue", true, None)],
         )
         .unwrap(),
     ])

@@ -43,7 +43,7 @@ use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 use crate::{
-    menu::{create_macos_menu, MenuCommand},
+    menu::{create_macos_menu, GemCommand},
     nosleep_manager::NoSleepManager,
     ui::{
         library_view::LibraryViewState,
@@ -195,6 +195,16 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         (menu, receiver)
     };
 
+    #[cfg(target_os = "windows")]
+    unsafe {
+        use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+
+        if let RawWindowHandle::Win32(handle) = window.raw_window_handle() {
+            let hwnd = handle.hwnd as isize;
+            menu.init_for_hwnd(hwnd)?;
+        }
+    }
+
     GemPlayer {
         ui: UIState {
             current_view: View::Library,
@@ -315,7 +325,7 @@ impl App for GemPlayer {
 
 fn poll_native_menu_events(ctx: &Context, gem: &mut GemPlayer) {
     match gem.menu_receiver.try_recv() {
-        Ok(event) => handle_menu_event(ctx, gem, event),
+        Ok(event) => handle_gem_command(ctx, gem, event),
         Err(TryRecvError::Empty) => {} // no menu event this frame
         Err(TryRecvError::Disconnected) => {
             error!("Menu events has been disconnected.");
@@ -558,55 +568,55 @@ pub fn handle_key_commands(ctx: &Context, gem: &mut GemPlayer) {
     });
 }
 
-pub fn handle_menu_event(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
+pub fn handle_gem_command(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
     info!("{}", event.id.0);
-    let result = MenuCommand::from_str(&event.id.0);
+    let result = GemCommand::from_str(&event.id.0);
 
     match result {
         Ok(command) => match command {
-            MenuCommand::OpenFile => todo!(),
-            MenuCommand::JumpToPlayingTrack => todo!(),
-            MenuCommand::GoToLibrary => {
+            GemCommand::OpenFile => todo!(),
+            GemCommand::JumpToPlayingTrack => todo!(),
+            GemCommand::GoToLibrary => {
                 info!("Switching to Library");
                 gem.ui.current_view = View::Library;
             }
-            MenuCommand::GoToPlaylists => {
+            GemCommand::GoToPlaylists => {
                 info!("Switching to Playlists");
                 gem.ui.current_view = View::Playlists;
             }
-            MenuCommand::GoToSettings => {
+            GemCommand::GoToSettings => {
                 info!("Switching to Settings");
                 gem.ui.current_view = View::Settings;
             }
-            MenuCommand::PlayPause => {
+            GemCommand::PlayPause => {
                 if let Some(backend) = &mut gem.player.backend {
                     play_or_pause(&mut backend.player);
                 }
             }
-            MenuCommand::NextTrack => maybe_play_next(gem),
-            MenuCommand::PreviousTrack => maybe_play_previous(gem),
-            MenuCommand::VolumeUp => {
+            GemCommand::NextTrack => maybe_play_next(gem),
+            GemCommand::PreviousTrack => maybe_play_previous(gem),
+            GemCommand::VolumeUp => {
                 if let Some(backend) = &mut gem.player.backend {
                     adjust_volume_by_percentage(&mut backend.player, 0.1);
                 }
             }
-            MenuCommand::VolumeDown => {
+            GemCommand::VolumeDown => {
                 if let Some(backend) = &mut gem.player.backend {
                     adjust_volume_by_percentage(&mut backend.player, -0.1);
                 }
             }
-            MenuCommand::Minimize => {
+            GemCommand::Minimize => {
                 ctx.send_viewport_cmd(ViewportCommand::Minimized(true));
             }
-            MenuCommand::Maximize => {
+            GemCommand::Maximize => {
                 let is_maximized = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
                 ctx.send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
             }
-            MenuCommand::Fullscreen => {
+            GemCommand::Fullscreen => {
                 let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
                 ctx.send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen))
             }
-            MenuCommand::ReportIssue => {
+            GemCommand::ReportIssue => {
                 let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
                 ctx.open_url(OpenUrl { url, new_tab: true });
             }
