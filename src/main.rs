@@ -6,12 +6,10 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use dark_light::Mode;
 use eframe::{
     egui::{
-        Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, Shadow, ThemePreference, Vec2,
-        ViewportBuilder, Visuals,
+        Color32, Context, DroppedFile, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals,
     },
     icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage,
 };
-use egui::{OpenUrl, ViewportCommand};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -19,10 +17,7 @@ use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcher
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use muda::{Menu, MenuEvent};
-use player::{
-    adjust_volume_by_percentage, build_audio_backend_from_device, mute_or_unmute, play_next, play_or_pause, play_previous, Player,
-    VisualizerState,
-};
+use player::{build_audio_backend_from_device, play_next, play_previous, Player, VisualizerState};
 use playlist::Playlist;
 use rfd::FileDialog;
 use rodio::cpal::{default_host, traits::HostTrait};
@@ -31,7 +26,6 @@ use std::{
     fs::{copy, read},
     io,
     path::{Path, PathBuf},
-    str::FromStr,
     sync::{
         mpsc::{channel, Receiver, Sender, TryRecvError},
         Arc,
@@ -43,7 +37,6 @@ use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 use crate::{
-    menu::{create_macos_menu, GemCommand},
     nosleep_manager::NoSleepManager,
     ui::{
         library_view::LibraryViewState,
@@ -53,9 +46,9 @@ use crate::{
     },
 };
 
+mod commands;
 mod custom_window;
 mod library_watcher;
-mod menu;
 mod nosleep_manager;
 mod player;
 mod playlist;
@@ -190,20 +183,10 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     #[cfg(target_os = "macos")]
     let (menu, menu_receiver) = {
-        let (menu, receiver) = create_macos_menu();
+        let (menu, receiver) = commands::macos_menu::create_menu();
         menu.init_for_nsapp();
         (menu, receiver)
     };
-
-    #[cfg(target_os = "windows")]
-    unsafe {
-        use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-
-        if let RawWindowHandle::Win32(handle) = window.raw_window_handle() {
-            let hwnd = handle.hwnd as isize;
-            menu.init_for_hwnd(hwnd)?;
-        }
-    }
 
     GemPlayer {
         ui: UIState {
@@ -297,13 +280,15 @@ impl App for GemPlayer {
 
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         // Input
-        handle_key_commands(ctx, self);
+        #[cfg(target_os = "windows")]
+        commands::windows_shortcuts::handle_shortcuts(ctx, self);
+        #[cfg(target_os = "macos")]
+        commands::macos_menu::poll_menu_events(ctx, self);
 
         // Update
         check_for_next_track(self);
         poll_library_watcher_messages(self);
         poll_folder_picker(self);
-        poll_native_menu_events(ctx, self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -320,17 +305,6 @@ impl App for GemPlayer {
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
         self.nosleep_manager.disable();
-    }
-}
-
-fn poll_native_menu_events(ctx: &Context, gem: &mut GemPlayer) {
-    match gem.menu_receiver.try_recv() {
-        Ok(event) => handle_gem_command(ctx, gem, event),
-        Err(TryRecvError::Empty) => {} // no menu event this frame
-        Err(TryRecvError::Disconnected) => {
-            error!("Menu events has been disconnected.");
-            gem.ui.library_and_playlists_are_loading = false;
-        }
     }
 }
 
@@ -516,113 +490,6 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
             error!("Error rewinding track: {:?}", e);
         }
         backend.player.play();
-    }
-}
-
-const KEY_COMMANDS: &[(Key, &str)] = &[
-    (Key::Space, "Play/Pause"),
-    (Key::ArrowLeft, "Previous"),
-    (Key::ArrowRight, "Next"),
-    (Key::ArrowUp, "Volume Up"),
-    (Key::ArrowDown, "Volume Down"),
-    (Key::M, "Mute/Unmute"),
-];
-
-pub fn handle_key_commands(ctx: &Context, gem: &mut GemPlayer) {
-    if ctx.wants_keyboard_input() {
-        return;
-    }
-
-    ctx.input(|i| {
-        for event in &i.events {
-            if let Event::Key { key, pressed: true, .. } = event {
-                let Some(description) = KEY_COMMANDS.iter().find_map(|(k, desc)| (k == key).then_some(*desc)) else {
-                    continue;
-                };
-
-                info!("Key pressed: {}", description);
-
-                match key {
-                    Key::Space => {
-                        if let Some(backend) = &mut gem.player.backend {
-                            play_or_pause(&mut backend.player);
-                        }
-                    }
-                    Key::ArrowLeft => maybe_play_previous(gem),
-                    Key::ArrowRight => maybe_play_next(gem),
-                    Key::ArrowUp => {
-                        if let Some(backend) = &mut gem.player.backend {
-                            adjust_volume_by_percentage(&mut backend.player, 0.1);
-                        }
-                    }
-                    Key::ArrowDown => {
-                        if let Some(backend) = &mut gem.player.backend {
-                            adjust_volume_by_percentage(&mut backend.player, -0.1);
-                        }
-                    }
-                    Key::M => mute_or_unmute(&mut gem.player),
-                    _ => {}
-                }
-            }
-        }
-    });
-}
-
-pub fn handle_gem_command(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
-    let result = GemCommand::from_str(&event.id.0);
-
-    match result {
-        Ok(command) => match command {
-            GemCommand::OpenFile => todo!(),
-            GemCommand::JumpToPlayingTrack => todo!(),
-            GemCommand::GoToLibrary => {
-                info!("Switching to Library");
-                gem.ui.current_view = View::Library;
-            }
-            GemCommand::GoToPlaylists => {
-                info!("Switching to Playlists");
-                gem.ui.current_view = View::Playlists;
-            }
-            GemCommand::GoToSettings => {
-                info!("Switching to Settings");
-                gem.ui.current_view = View::Settings;
-            }
-            GemCommand::PlayPause => {
-                if let Some(backend) = &mut gem.player.backend {
-                    play_or_pause(&mut backend.player);
-                }
-            }
-            GemCommand::NextTrack => maybe_play_next(gem),
-            GemCommand::PreviousTrack => maybe_play_previous(gem),
-            GemCommand::VolumeUp => {
-                if let Some(backend) = &mut gem.player.backend {
-                    adjust_volume_by_percentage(&mut backend.player, 0.1);
-                }
-            }
-            GemCommand::VolumeDown => {
-                if let Some(backend) = &mut gem.player.backend {
-                    adjust_volume_by_percentage(&mut backend.player, -0.1);
-                }
-            }
-            GemCommand::Minimize => {
-                ctx.send_viewport_cmd(ViewportCommand::Minimized(true));
-            }
-            GemCommand::Maximize => {
-                let is_maximized = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
-                ctx.send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
-            }
-            GemCommand::Fullscreen => {
-                let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
-                ctx.send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen))
-            }
-            GemCommand::ReportIssue => {
-                let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
-                ctx.open_url(OpenUrl { url, new_tab: true });
-            }
-        },
-        Err(_) => {
-            println!("Unhandled menu command: {:?}", event.id);
-        }
     }
 }
 
