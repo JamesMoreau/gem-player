@@ -9,57 +9,57 @@ use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use crate::commands::executor::{execute, Command};
 use crate::GemPlayer;
 
-pub struct Shortcut {
+pub struct MenuShortcut {
     pub command: Command,
     pub key: Code,
     pub modifiers: Modifiers,
     pub description: &'static str,
 }
 
-pub const SHORTCUTS: &[Shortcut] = &[
-    Shortcut {
+pub const SHORTCUTS: &[MenuShortcut] = &[
+    MenuShortcut {
         command: Command::PlayPause,
         description: "Play / Pause",
         key: Code::Space,
         modifiers: Modifiers::empty(),
     },
-    Shortcut {
+    MenuShortcut {
         command: Command::NextTrack,
         description: "Next track",
         key: Code::ArrowRight,
         modifiers: Modifiers::META,
     },
-    Shortcut {
+    MenuShortcut {
         command: Command::PreviousTrack,
         description: "Previous track",
         key: Code::ArrowLeft,
         modifiers: Modifiers::META,
     },
-    Shortcut {
+    MenuShortcut {
         command: Command::VolumeUp,
         description: "Volume up",
         key: Code::ArrowUp,
         modifiers: Modifiers::META,
     },
-    Shortcut {
+    MenuShortcut {
         command: Command::VolumeDown,
         description: "Volume down",
         key: Code::ArrowDown,
         modifiers: Modifiers::META,
     },
-    Shortcut {
+    MenuShortcut {
         command: Command::GoToLibrary,
         description: "Go to library",
         key: Code::KeyL,
         modifiers: Modifiers::META,
     },
-    Shortcut {
+    MenuShortcut {
         command: Command::GoToPlaylists,
         description: "Go to playlists",
         key: Code::KeyP,
         modifiers: Modifiers::META,
     },
-    Shortcut {
+    MenuShortcut {
         command: Command::GoToSettings,
         description: "Go to settings",
         key: Code::KeyS,
@@ -67,7 +67,7 @@ pub const SHORTCUTS: &[Shortcut] = &[
     },
 ];
 
-pub fn get_shortcut_by_command(command: Command) -> &'static Shortcut {
+pub fn get_shortcut_by_command(command: Command) -> &'static MenuShortcut {
     SHORTCUTS
         .iter()
         .find(|s| s.command == command)
@@ -94,7 +94,7 @@ fn handle_menu_event(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
     }
 }
 
-fn menu_item_from_shortcut(shortcut: &Shortcut) -> MenuItem {
+fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
     MenuItem::with_id(
         shortcut.command,
         shortcut.description,
