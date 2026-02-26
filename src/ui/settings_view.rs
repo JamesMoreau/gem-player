@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use egui::{containers, Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
+use egui::{Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use log::info;
 
@@ -67,35 +67,34 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                // TODO: find a way to replace this
-                // ui.add(unselectable_label(RichText::new("Controls").heading()));
+                #[cfg(target_os = "windows")]
+                {
+                    ui.add(unselectable_label(RichText::new("Controls").heading()));
+    
+                    ui.add_space(8.0);
+    
+                    for shortcut in crate::commands::windows_shortcuts::SHORTCUTS {
+                        egui::containers::Sides::new().show(
+                            ui,
+                            |ui| {
+                                let label = unselectable_label(
+                                    crate::commands::formatting::format_shortcut(
+                                        shortcut.modifiers,
+                                        shortcut.key,
+                                    )
+                                );
+                                ui.add(label);
+                            },
+                            |ui| {
+                                ui.add_space(16.0);
+                                let label = unselectable_label(shortcut.description);
+                                ui.add(label);
+                            },
+                        );
+                    }
 
-                // ui.add_space(8.0);
-                // for (key, binding) in KEY_COMMANDS.iter() {
-                //     containers::Sides::new().show(
-                //         ui,
-                //         |ui| {
-                //             ui.add(unselectable_label(format!("{:?}", key)));
-                //         },
-                //         |ui| {
-                //             ui.add_space(16.0);
-                //             ui.add(unselectable_label(binding.to_string()));
-                //         },
-                //     );
-                // }
-
-                // containers::Sides::new().show(
-                //     ui,
-                //     |ui| {
-                //         ui.add(unselectable_label("Shift + Click"));
-                //     },
-                //     |ui| {
-                //         ui.add_space(16.0);
-                //         ui.add(unselectable_label("Select multiple tracks"));
-                //     },
-                // );
-
-                // ui.add(Separator::default().spacing(divider_spacing));
+                    ui.add(Separator::default().spacing(divider_spacing));
+                }
 
                 ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
                 ui.add_space(8.0);

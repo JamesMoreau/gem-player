@@ -1,30 +1,56 @@
 use crate::{GemPlayer, commands::executor::{Command, execute}};
 use egui::{Context, Key, Modifiers};
 
+pub struct Shortcut {
+    pub command: Command,
+    pub key: Key,
+    pub modifiers: Modifiers,
+    pub description: &'static str,
+}
+
+pub const SHORTCUTS: &[Shortcut] = &[
+    Shortcut {
+        command: Command::PlayPause,
+        key: Key::Space,
+        modifiers: Modifiers::NONE,
+        description: "Play / Pause",
+    },
+    Shortcut {
+        command: Command::PreviousTrack,
+        key: Key::ArrowLeft,
+        modifiers: Modifiers::CTRL,
+        description: "Previous track",
+    },
+    Shortcut {
+        command: Command::NextTrack,
+        key: Key::ArrowRight,
+        modifiers: Modifiers::CTRL,
+        description: "Next track",
+    },
+    Shortcut {
+        command: Command::VolumeUp,
+        key: Key::ArrowUp,
+        modifiers: Modifiers::CTRL,
+        description: "Volume up",
+    },
+    Shortcut {
+        command: Command::VolumeDown,
+        key: Key::ArrowDown,
+        modifiers: Modifiers::CTRL,
+        description: "Volume down",
+    },
+];
+
 pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
     if ctx.wants_keyboard_input() {
         return;
     }
 
     ctx.input_mut(|i| {
-        if i.consume_key(Modifiers::NONE, Key::Space) {
-            execute(ctx, gem, Command::PlayPause);
-        }
-
-        if i.consume_key(Modifiers::NONE, Key::ArrowLeft) {
-            execute(ctx, gem, Command::PreviousTrack);
-        }
-
-        if i.consume_key(Modifiers::NONE, Key::ArrowRight) {
-            execute(ctx, gem, Command::NextTrack);
-        }
-
-        if i.consume_key(Modifiers::NONE, Key::ArrowUp) {
-            execute(ctx, gem, Command::VolumeUp);
-        }
-
-        if i.consume_key(Modifiers::NONE, Key::ArrowDown) {
-            execute(ctx, gem, Command::VolumeDown);
+        for shortcut in SHORTCUTS {
+            if i.consume_key(shortcut.modifiers, shortcut.key) {
+                execute(ctx, gem, shortcut.command);
+            }
         }
     });
 }
