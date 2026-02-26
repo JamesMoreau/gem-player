@@ -78,7 +78,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                             ui,
                             |ui| {
                                 let label = unselectable_label(
-                                    crate::commands::formatting::format_shortcut(
+                                    crate::commands::windows_shortcuts::format_shortcut(
                                         shortcut.modifiers,
                                         shortcut.key,
                                     )
@@ -96,32 +96,32 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.add(Separator::default().spacing(divider_spacing));
                 }
 
-                // #[cfg(target_os = "macos")]
-                // {
-                //     ui.add(unselectable_label(RichText::new("Keyboard Shortcuts").heading()));
-                //     ui.add_space(8.0);
+                #[cfg(target_os = "macos")]
+                {
+                    ui.add(unselectable_label(RichText::new("Keyboard Shortcuts").heading()));
+                    ui.add_space(8.0);
 
-                //     for shortcut in crate::commands::macos_menu::SHORTCUTS {
-                //         egui::containers::Sides::new().show(
-                //             ui,
-                //             |ui| {
-                //                 let label = unselectable_label(
-                //                     crate::commands::formatting::format_shortcut(
-                //                         shortcut.modifiers,
-                //                         shortcut.key,
-                //                     )
-                //                 );
-                //                 ui.add(label);
-                //             },
-                //             |ui| {
-                //                 ui.add_space(16.0);
-                //                 ui.add(unselectable_label(shortcut.description));
-                //             },
-                //         );
-                //     }
+                    for shortcut in crate::commands::macos_menu::SHORTCUTS {
+                        egui::containers::Sides::new().show(
+                            ui,
+                            |ui| {
+                                let label = unselectable_label(
+                                    crate::commands::macos_menu::format_shortcut(
+                                        shortcut.modifiers,
+                                        shortcut.key,
+                                    )
+                                );
+                                ui.add(label);
+                            },
+                            |ui| {
+                                ui.add_space(16.0);
+                                ui.add(unselectable_label(shortcut.description));
+                            },
+                        );
+                    }
 
-                //     ui.add(Separator::default().spacing(divider_spacing));
-                // }
+                    ui.add(Separator::default().spacing(divider_spacing));
+                }
 
                 ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
                 ui.add_space(8.0);

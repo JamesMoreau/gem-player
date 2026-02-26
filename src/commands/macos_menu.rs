@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Receiver, TryRecvError};
 
-use egui::{Context};
+use egui::Context;
 use log::error;
 use muda::accelerator::{Accelerator, Code, Modifiers};
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
@@ -16,63 +16,72 @@ pub struct MenuShortcut {
     pub description: &'static str,
 }
 
-pub const SHORTCUTS: &[MenuShortcut] = &[
-    MenuShortcut {
-        command: Command::PlayPause,
-        description: "Play / Pause",
-        key: Code::Space,
-        modifiers: Modifiers::empty(),
-    },
-    MenuShortcut {
-        command: Command::NextTrack,
-        description: "Next track",
-        key: Code::ArrowRight,
-        modifiers: Modifiers::META,
-    },
-    MenuShortcut {
-        command: Command::PreviousTrack,
-        description: "Previous track",
-        key: Code::ArrowLeft,
-        modifiers: Modifiers::META,
-    },
-    MenuShortcut {
-        command: Command::VolumeUp,
-        description: "Volume up",
-        key: Code::ArrowUp,
-        modifiers: Modifiers::META,
-    },
-    MenuShortcut {
-        command: Command::VolumeDown,
-        description: "Volume down",
-        key: Code::ArrowDown,
-        modifiers: Modifiers::META,
-    },
-    MenuShortcut {
-        command: Command::GoToLibrary,
-        description: "Go to library",
-        key: Code::KeyL,
-        modifiers: Modifiers::META,
-    },
-    MenuShortcut {
-        command: Command::GoToPlaylists,
-        description: "Go to playlists",
-        key: Code::KeyP,
-        modifiers: Modifiers::META,
-    },
-    MenuShortcut {
-        command: Command::GoToSettings,
-        description: "Go to settings",
-        key: Code::KeyS,
-        modifiers: Modifiers::META,
-    },
-];
+pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
+    command: Command::PlayPause,
+    description: "Play / Pause",
+    key: Code::Space,
+    modifiers: Modifiers::empty(),
+};
 
-pub fn get_shortcut_by_command(command: Command) -> &'static MenuShortcut {
-    SHORTCUTS
-        .iter()
-        .find(|s| s.command == command)
-        .unwrap_or_else(|| panic!("Shortcut must exist for this command {}", command))
-}
+pub const NEXT_TRACK: MenuShortcut = MenuShortcut {
+    command: Command::NextTrack,
+    description: "Next track",
+    key: Code::ArrowRight,
+    modifiers: Modifiers::META,
+};
+
+pub const PREVIOUS_TRACK: MenuShortcut = MenuShortcut {
+    command: Command::PreviousTrack,
+    description: "Previous track",
+    key: Code::ArrowLeft,
+    modifiers: Modifiers::META,
+};
+
+pub const VOLUME_UP: MenuShortcut = MenuShortcut {
+    command: Command::VolumeUp,
+    description: "Volume up",
+    key: Code::ArrowUp,
+    modifiers: Modifiers::META,
+};
+
+pub const VOLUME_DOWN: MenuShortcut = MenuShortcut {
+    command: Command::VolumeDown,
+    description: "Volume down",
+    key: Code::ArrowDown,
+    modifiers: Modifiers::META,
+};
+
+pub const GO_TO_LIBRARY: MenuShortcut = MenuShortcut {
+    command: Command::GoToLibrary,
+    description: "Go to library",
+    key: Code::KeyL,
+    modifiers: Modifiers::META,
+};
+
+pub const GO_TO_PLAYLISTS: MenuShortcut = MenuShortcut {
+    command: Command::GoToPlaylists,
+    description: "Go to playlists",
+    key: Code::KeyP,
+    modifiers: Modifiers::META,
+};
+
+pub const GO_TO_SETTINGS: MenuShortcut = MenuShortcut {
+    command: Command::GoToSettings,
+    description: "Go to settings",
+    key: Code::KeyS,
+    modifiers: Modifiers::META,
+};
+
+pub const SHORTCUTS: &[MenuShortcut] = &[
+    PLAY_PAUSE,
+    NEXT_TRACK,
+    PREVIOUS_TRACK,
+    VOLUME_UP,
+    VOLUME_DOWN,
+    GO_TO_LIBRARY,
+    GO_TO_PLAYLISTS,
+    GO_TO_SETTINGS,
+];
 
 pub fn poll_menu_events(ctx: &Context, gem: &mut GemPlayer) {
     match gem.menu_receiver.try_recv() {
@@ -101,10 +110,6 @@ fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
         true,
         Some(Accelerator::new(Some(shortcut.modifiers), shortcut.key)),
     )
-}
-
-fn item(command: Command) -> MenuItem {
-    menu_item_from_shortcut(get_shortcut_by_command(command))
 }
 
 // Create a native macos menu using the Muda crate. Menu items and events are identified using
@@ -152,9 +157,9 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             "View",
             true,
             &[
-                &item(Command::GoToLibrary),
-                &item(Command::GoToPlaylists),
-                &item(Command::GoToSettings),
+                &menu_item_from_shortcut(&GO_TO_LIBRARY),
+                &menu_item_from_shortcut(&GO_TO_PLAYLISTS),
+                &menu_item_from_shortcut(&GO_TO_SETTINGS),
             ],
         )
         .unwrap(),
@@ -162,11 +167,11 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             "Playback",
             true,
             &[
-                &item(Command::PlayPause),
-                &item(Command::NextTrack),
-                &item(Command::PreviousTrack),
-                &item(Command::VolumeUp),
-                &item(Command::VolumeDown),
+                &menu_item_from_shortcut(&PLAY_PAUSE),
+                &menu_item_from_shortcut(&NEXT_TRACK),
+                &menu_item_from_shortcut(&PREVIOUS_TRACK),
+                &menu_item_from_shortcut(&VOLUME_UP),
+                &menu_item_from_shortcut(&VOLUME_DOWN),
             ],
         )
         .unwrap(),
@@ -191,4 +196,38 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
     .unwrap();
 
     (menu, receiver)
+}
+
+pub fn format_shortcut(mods: Modifiers, key: Code) -> String {
+    let mut s = String::new();
+
+    if mods.contains(Modifiers::CONTROL) {
+        s.push('⌃');
+    }
+    if mods.contains(Modifiers::SHIFT) {
+        s.push('⇧');
+    }
+    if mods.contains(Modifiers::ALT) {
+        s.push('⌥');
+    }
+    if mods.contains(Modifiers::META) {
+        s.push('⌘');
+    }
+
+    let key_str = match key {
+        Code::ArrowLeft => "←",
+        Code::ArrowRight => "→",
+        Code::ArrowUp => "↑",
+        Code::ArrowDown => "↓",
+        Code::Space => "Space",
+        _ => return format!("{} {}", s, key),
+    };
+
+    if !s.is_empty() {
+        s.push(' ');
+    }
+
+    s.push_str(key_str);
+
+    s
 }
