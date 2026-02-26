@@ -1,13 +1,78 @@
 use std::str::FromStr;
-use std::sync::mpsc::{Receiver, TryRecvError, channel};
+use std::sync::mpsc::{channel, Receiver, TryRecvError};
 
-use egui::Context;
+use egui::{Context};
 use log::error;
 use muda::accelerator::{Accelerator, Code, Modifiers};
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
-use crate::commands::executor::{Command, execute};
+use crate::commands::executor::{execute, Command};
 use crate::GemPlayer;
+
+pub struct Shortcut {
+    pub command: Command,
+    pub key: Code,
+    pub modifiers: Modifiers,
+    pub description: &'static str,
+}
+
+pub const SHORTCUTS: &[Shortcut] = &[
+    Shortcut {
+        command: Command::PlayPause,
+        description: "Play / Pause",
+        key: Code::Space,
+        modifiers: Modifiers::empty(),
+    },
+    Shortcut {
+        command: Command::NextTrack,
+        description: "Next track",
+        key: Code::ArrowRight,
+        modifiers: Modifiers::META,
+    },
+    Shortcut {
+        command: Command::PreviousTrack,
+        description: "Previous track",
+        key: Code::ArrowLeft,
+        modifiers: Modifiers::META,
+    },
+    Shortcut {
+        command: Command::VolumeUp,
+        description: "Volume up",
+        key: Code::ArrowUp,
+        modifiers: Modifiers::META,
+    },
+    Shortcut {
+        command: Command::VolumeDown,
+        description: "Volume down",
+        key: Code::ArrowDown,
+        modifiers: Modifiers::META,
+    },
+    Shortcut {
+        command: Command::GoToLibrary,
+        description: "Go to library",
+        key: Code::KeyL,
+        modifiers: Modifiers::META,
+    },
+    Shortcut {
+        command: Command::GoToPlaylists,
+        description: "Go to playlists",
+        key: Code::KeyP,
+        modifiers: Modifiers::META,
+    },
+    Shortcut {
+        command: Command::GoToSettings,
+        description: "Go to settings",
+        key: Code::KeyS,
+        modifiers: Modifiers::META,
+    },
+];
+
+pub fn get_shortcut_by_command(command: Command) -> &'static Shortcut {
+    SHORTCUTS
+        .iter()
+        .find(|s| s.command == command)
+        .unwrap_or_else(|| panic!("Shortcut must exist for this command {}", command))
+}
 
 pub fn poll_menu_events(ctx: &Context, gem: &mut GemPlayer) {
     match gem.menu_receiver.try_recv() {
@@ -27,6 +92,19 @@ fn handle_menu_event(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
     } else {
         error!("Unable to process menu event: {:?}", event);
     }
+}
+
+fn menu_item_from_shortcut(shortcut: &Shortcut) -> MenuItem {
+    MenuItem::with_id(
+        shortcut.command,
+        shortcut.description,
+        true,
+        Some(Accelerator::new(Some(shortcut.modifiers), shortcut.key)),
+    )
+}
+
+fn item(command: Command) -> MenuItem {
+    menu_item_from_shortcut(get_shortcut_by_command(command))
 }
 
 // Create a native macos menu using the Muda crate. Menu items and events are identified using
@@ -74,26 +152,9 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             "View",
             true,
             &[
-                &MenuItem::with_id(Command::JumpToPlayingTrack, "Jump to playing track", true, None),
-                &PredefinedMenuItem::separator(),
-                &MenuItem::with_id(
-                    Command::GoToLibrary,
-                    "Go to library",
-                    true,
-                    Some(Accelerator::new(Some(Modifiers::META), Code::KeyL)),
-                ),
-                &MenuItem::with_id(
-                    Command::GoToPlaylists,
-                    "Go to playlists",
-                    true,
-                    Some(Accelerator::new(Some(Modifiers::META), Code::KeyP)),
-                ),
-                &MenuItem::with_id(
-                    Command::GoToSettings,
-                    "Go to settings",
-                    true,
-                    Some(Accelerator::new(Some(Modifiers::META), Code::Comma)),
-                ),
+                &item(Command::GoToLibrary),
+                &item(Command::GoToPlaylists),
+                &item(Command::GoToSettings),
             ],
         )
         .unwrap(),
@@ -101,31 +162,11 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             "Playback",
             true,
             &[
-                &MenuItem::with_id(Command::PlayPause, "Play / Pause", true, Some(Accelerator::new(None, Code::Space))),
-                &MenuItem::with_id(
-                    Command::NextTrack,
-                    "Next track",
-                    true,
-                    Some(Accelerator::new(Some(Modifiers::META), Code::ArrowRight)),
-                ),
-                &MenuItem::with_id(
-                    Command::PreviousTrack,
-                    "Previous track",
-                    true,
-                    Some(Accelerator::new(Some(Modifiers::META), Code::ArrowLeft)),
-                ),
-                &MenuItem::with_id(
-                    Command::VolumeUp,
-                    "Volume up",
-                    true,
-                    Some(Accelerator::new(Some(Modifiers::META), Code::ArrowUp)),
-                ),
-                &MenuItem::with_id(
-                    Command::VolumeDown,
-                    "Volume down",
-                    true,
-                    Some(Accelerator::new(Some(Modifiers::META), Code::ArrowDown)),
-                ),
+                &item(Command::PlayPause),
+                &item(Command::NextTrack),
+                &item(Command::PreviousTrack),
+                &item(Command::VolumeUp),
+                &item(Command::VolumeDown),
             ],
         )
         .unwrap(),

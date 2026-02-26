@@ -8,10 +8,10 @@ use crate::{
     GemPlayer,
 };
 
-#[derive(Debug, Clone, Copy, EnumString, Display)]
+#[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
 pub enum Command {
     OpenFile,
-    JumpToPlayingTrack,
+    // JumpToPlayingTrack,
     GoToLibrary,
     GoToPlaylists,
     GoToSettings,
@@ -24,12 +24,12 @@ pub enum Command {
     Maximize,
     Fullscreen,
     ReportIssue,
+    // Mute / ummute
 }
 
 pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
     match command {
         Command::OpenFile => todo!(),
-        Command::JumpToPlayingTrack => todo!(),
         Command::GoToLibrary => {
             gem.ui.current_view = View::Library;
         }
