@@ -42,30 +42,6 @@ pub const SHORTCUTS: &[Shortcut] = &[
         key: Key::ArrowDown,
         description: "Volume down",
     },
-    Shortcut {
-        command: Command::GoToLibrary,
-        modifiers: Modifiers::CTRL,
-        key: Key::Num1,
-        description: "Go to library",
-    },
-    Shortcut {
-        command: Command::GoToPlaylists,
-        modifiers: Modifiers::CTRL,
-        key: Key::Num2,
-        description: "Go to playlists",
-    },
-    Shortcut {
-        command: Command::GoToQueue,
-        modifiers: Modifiers::CTRL,
-        key: Key::Num3,
-        description: "Go to queue",
-    },
-    Shortcut {
-        command: Command::GoToSettings,
-        modifiers: Modifiers::CTRL,
-        key: Key::Num4,
-        description: "Go to settings",
-    },
 ];
 
 pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
@@ -86,7 +62,7 @@ pub fn format_shortcut(mods: Modifiers, key: Key) -> String {
     let mut s = String::new();
     let mut first = true;
 
-    let mut push_part = |part: &str, s: &mut String, first: &mut bool| {
+    let push_part = |part: &str, s: &mut String, first: &mut bool| {
         if !*first {
             s.push_str(" + ");
         }

@@ -58,34 +58,6 @@ pub const JUMP_TO_PLAYING_TRACK: MenuShortcut = MenuShortcut {
     description: "Jump to playing track",
 };
 
-pub const GO_TO_LIBRARY: MenuShortcut = MenuShortcut {
-    command: Command::GoToLibrary,
-    modifiers: Modifiers::META,
-    key: Code::Digit1,
-    description: "Go to library",
-};
-
-pub const GO_TO_PLAYLISTS: MenuShortcut = MenuShortcut {
-    command: Command::GoToPlaylists,
-    modifiers: Modifiers::META,
-    key: Code::Digit2,
-    description: "Go to playlists",
-};
-
-pub const GO_TO_QUEUE: MenuShortcut = MenuShortcut {
-    command: Command::GoToQueue,
-    modifiers: Modifiers::META,
-    key: Code::Digit3,
-    description: "Go to queue",
-};
-
-pub const GO_TO_SETTINGS: MenuShortcut = MenuShortcut {
-    command: Command::GoToSettings,
-    modifiers: Modifiers::META,
-    key: Code::Digit4,
-    description: "Go to settings",
-};
-
 pub const SHORTCUTS: &[MenuShortcut] = &[
     PLAY_PAUSE,
     NEXT_TRACK,
@@ -93,10 +65,6 @@ pub const SHORTCUTS: &[MenuShortcut] = &[
     VOLUME_UP,
     VOLUME_DOWN,
     JUMP_TO_PLAYING_TRACK,
-    GO_TO_LIBRARY,
-    GO_TO_PLAYLISTS,
-    GO_TO_QUEUE,
-    GO_TO_SETTINGS,
 ];
 
 fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
@@ -159,11 +127,6 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             true,
             &[
                 &menu_item_from_shortcut(&JUMP_TO_PLAYING_TRACK),
-                &PredefinedMenuItem::separator(),
-                &menu_item_from_shortcut(&GO_TO_LIBRARY),
-                &menu_item_from_shortcut(&GO_TO_PLAYLISTS),
-                &menu_item_from_shortcut(&GO_TO_QUEUE),
-                &menu_item_from_shortcut(&GO_TO_SETTINGS),
             ],
         )
         .unwrap(),

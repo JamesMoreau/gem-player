@@ -13,10 +13,6 @@ use crate::{
 pub enum Command {
     // OpenFile,
     JumpToPlayingTrack,
-    GoToLibrary,
-    GoToPlaylists,
-    GoToQueue,
-    GoToSettings,
     PlayPause,
     NextTrack,
     PreviousTrack,
@@ -28,18 +24,6 @@ pub enum Command {
 
 pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
     match command {
-        Command::GoToLibrary => {
-            gem.ui.current_view = View::Library;
-        }
-        Command::GoToPlaylists => {
-            gem.ui.current_view = View::Playlists;
-        }
-        Command::GoToQueue => {
-            gem.ui.current_view = View::Queue;
-        }
-        Command::GoToSettings => {
-            gem.ui.current_view = View::Settings;
-        }
         Command::PlayPause => {
             if let Some(backend) = &mut gem.player.backend {
                 play_or_pause(&mut backend.player);
