@@ -40,7 +40,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
         Command::GoToSettings => {
             gem.ui.current_view = View::Settings;
         }
-        Command::PlayPause => {
+        Command::PlayPause => { // TODO: doesn't work
             if let Some(backend) = &mut gem.player.backend {
                 play_or_pause(&mut backend.player);
             }

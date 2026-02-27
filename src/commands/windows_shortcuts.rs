@@ -6,41 +6,59 @@ use egui::{Context, Key, Modifiers};
 
 pub struct Shortcut {
     pub command: Command,
-    pub key: Key,
     pub modifiers: Modifiers,
+    pub key: Key,
     pub description: &'static str,
 }
 
 pub const SHORTCUTS: &[Shortcut] = &[
     Shortcut {
         command: Command::PlayPause,
-        key: Key::Space,
         modifiers: Modifiers::NONE,
+        key: Key::Space,
         description: "Play / Pause",
     },
     Shortcut {
         command: Command::PreviousTrack,
-        key: Key::ArrowLeft,
         modifiers: Modifiers::CTRL,
+        key: Key::ArrowLeft,
         description: "Previous track",
     },
     Shortcut {
         command: Command::NextTrack,
-        key: Key::ArrowRight,
         modifiers: Modifiers::CTRL,
+        key: Key::ArrowRight,
         description: "Next track",
     },
     Shortcut {
         command: Command::VolumeUp,
-        key: Key::ArrowUp,
         modifiers: Modifiers::CTRL,
+        key: Key::ArrowUp,
         description: "Volume up",
     },
     Shortcut {
         command: Command::VolumeDown,
-        key: Key::ArrowDown,
         modifiers: Modifiers::CTRL,
+        key: Key::ArrowDown,
         description: "Volume down",
+    },
+    Shortcut {
+        command: Command::GoToLibrary,
+        modifiers: Modifiers::CTRL,
+        key: Key::L,
+        description: "Go to library",
+    },
+    Shortcut {
+        command: Command::GoToPlaylists,
+        modifiers: Modifiers::CTRL,
+        key: Key::P,
+        description: "Go to playlists",
+    },
+    Shortcut {
+        command: Command::GoToSettings,
+        modifiers: Modifiers::CTRL,
+        key: Key::S,
+        description: "Go to settings",
     },
 ];
 
