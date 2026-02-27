@@ -1,10 +1,10 @@
 use std::path::Path;
 
-use egui::{containers, Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
+use egui::{Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use log::info;
 
-use crate::{apply_theme, spawn_folder_picker, ui::root::unselectable_label, GemPlayer, KEY_COMMANDS};
+use crate::{apply_theme, spawn_folder_picker, ui::root::unselectable_label, GemPlayer};
 
 pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
@@ -67,34 +67,61 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                ui.add(unselectable_label(RichText::new("Controls").heading()));
+                #[cfg(target_os = "windows")]
+                {
+                    ui.add(unselectable_label(RichText::new("Controls").heading()));
+    
+                    ui.add_space(8.0);
+    
+                    for shortcut in crate::commands::windows_shortcuts::SHORTCUTS {
+                        egui::containers::Sides::new().show(
+                            ui,
+                            |ui| {
+                                let label = unselectable_label(
+                                    crate::commands::windows_shortcuts::format_shortcut(
+                                        shortcut.modifiers,
+                                        shortcut.key,
+                                    )
+                                );
+                                ui.add(label);
+                            },
+                            |ui| {
+                                ui.add_space(16.0);
+                                let label = unselectable_label(shortcut.description);
+                                ui.add(label);
+                            },
+                        );
+                    }
 
-                ui.add_space(8.0);
-                for (key, binding) in KEY_COMMANDS.iter() {
-                    containers::Sides::new().show(
-                        ui,
-                        |ui| {
-                            ui.add(unselectable_label(format!("{:?}", key)));
-                        },
-                        |ui| {
-                            ui.add_space(16.0);
-                            ui.add(unselectable_label(binding.to_string()));
-                        },
-                    );
+                    ui.add(Separator::default().spacing(divider_spacing));
                 }
 
-                containers::Sides::new().show(
-                    ui,
-                    |ui| {
-                        ui.add(unselectable_label("Shift + Click"));
-                    },
-                    |ui| {
-                        ui.add_space(16.0);
-                        ui.add(unselectable_label("Select multiple tracks"));
-                    },
-                );
+                #[cfg(target_os = "macos")]
+                {
+                    ui.add(unselectable_label(RichText::new("Keyboard Shortcuts").heading()));
+                    ui.add_space(8.0);
 
-                ui.add(Separator::default().spacing(divider_spacing));
+                    for shortcut in crate::commands::macos_menu::SHORTCUTS {
+                        egui::containers::Sides::new().show(
+                            ui,
+                            |ui| {
+                                let label = unselectable_label(
+                                    crate::commands::macos_menu::format_shortcut(
+                                        shortcut.modifiers,
+                                        shortcut.key,
+                                    )
+                                );
+                                ui.add(label);
+                            },
+                            |ui| {
+                                ui.add_space(16.0);
+                                ui.add(unselectable_label(shortcut.description));
+                            },
+                        );
+                    }
+
+                    ui.add(Separator::default().spacing(divider_spacing));
+                }
 
                 ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
                 ui.add_space(8.0);

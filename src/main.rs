@@ -6,8 +6,7 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use dark_light::Mode;
 use eframe::{
     egui::{
-        Color32, Context, DroppedFile, Event, FontData, FontDefinitions, FontFamily, Key, Rgba, Shadow, ThemePreference, Vec2,
-        ViewportBuilder, Visuals,
+        Color32, Context, DroppedFile, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals,
     },
     icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage,
 };
@@ -17,10 +16,8 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
-use player::{
-    adjust_volume_by_percentage, build_audio_backend_from_device, mute_or_unmute, play_next, play_or_pause, play_previous, Player,
-    VisualizerState,
-};
+use muda::{Menu, MenuEvent};
+use player::{build_audio_backend_from_device, play_next, play_previous, Player, VisualizerState};
 use playlist::Playlist;
 use rfd::FileDialog;
 use rodio::cpal::{default_host, traits::HostTrait};
@@ -39,21 +36,25 @@ use std::{
 use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
-use crate::{nosleep_manager::NoSleepManager, ui::{
-    library_view::LibraryViewState,
-    playlist_view::PlaylistsViewState,
-    root::{UIState, View, gem_player_ui},
-    widgets::marquee::Marquee,
-}};
+use crate::{
+    nosleep_manager::NoSleepManager,
+    ui::{
+        library_view::LibraryViewState,
+        playlist_view::PlaylistsViewState,
+        root::{gem_player_ui, UIState, View},
+        widgets::marquee::Marquee,
+    },
+};
 
+mod commands;
 mod custom_window;
 mod library_watcher;
+mod nosleep_manager;
 mod player;
 mod playlist;
 mod track;
 mod ui;
 mod visualizer;
-mod nosleep_manager;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -76,6 +77,11 @@ struct GemPlayer {
     player: Player,
 
     nosleep_manager: NoSleepManager,
+
+    #[cfg(target_os = "macos")]
+    menu: Menu,
+    #[cfg(target_os = "macos")]
+    menu_receiver: Receiver<MenuEvent>,
 }
 
 #[fully_pub]
@@ -175,6 +181,13 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         b.player.set_volume(initial_volume);
     }
 
+    #[cfg(target_os = "macos")]
+    let (menu, menu_receiver) = {
+        let (menu, receiver) = commands::macos_menu::create_menu();
+        menu.init_for_nsapp();
+        (menu, receiver)
+    };
+
     GemPlayer {
         ui: UIState {
             current_view: View::Library,
@@ -186,6 +199,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 selected_tracks: Vec::new(),
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
+                pending_jump_to_track: None,
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
@@ -234,6 +248,10 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             },
         },
         nosleep_manager: NoSleepManager::new(),
+        #[cfg(target_os = "macos")]
+        menu,
+        #[cfg(target_os = "macos")]
+        menu_receiver,
     }
 }
 
@@ -263,7 +281,10 @@ impl App for GemPlayer {
 
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         // Input
-        handle_key_commands(ctx, self);
+        #[cfg(target_os = "windows")]
+        commands::windows_shortcuts::handle_shortcuts(ctx, self);
+        #[cfg(target_os = "macos")]
+        commands::macos_menu::poll_menu_events(ctx, self);
 
         // Update
         check_for_next_track(self);
@@ -400,8 +421,8 @@ fn poll_folder_picker(gem: &mut GemPlayer) {
                 info!("No folder selected");
             }
         }
-        Err(std::sync::mpsc::TryRecvError::Empty) => {} // folder picker is still open.
-        Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+        Err(TryRecvError::Empty) => {} // folder picker is still open.
+        Err(TryRecvError::Disconnected) => {
             error!("Folder picker channel disconnected unexpectedly.");
             gem.folder_picker_receiver = None;
         }
@@ -471,55 +492,6 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
         }
         backend.player.play();
     }
-}
-
-const KEY_COMMANDS: &[(Key, &str)] = &[
-    (Key::Space, "Play/Pause"),
-    (Key::ArrowLeft, "Previous"),
-    (Key::ArrowRight, "Next"),
-    (Key::ArrowUp, "Volume Up"),
-    (Key::ArrowDown, "Volume Down"),
-    (Key::M, "Mute/Unmute"),
-];
-
-pub fn handle_key_commands(ctx: &Context, gem: &mut GemPlayer) {
-    if ctx.wants_keyboard_input() {
-        return;
-    }
-
-    ctx.input(|i| {
-        for event in &i.events {
-            if let Event::Key { key, pressed: true, .. } = event {
-                let Some(description) = KEY_COMMANDS.iter().find_map(|(k, desc)| (k == key).then_some(*desc)) else {
-                    continue;
-                };
-
-                info!("Key pressed: {}", description);
-
-                match key {
-                    Key::Space => {
-                        if let Some(backend) = &mut gem.player.backend {
-                            play_or_pause(&mut backend.player);
-                        }
-                    }
-                    Key::ArrowLeft => maybe_play_previous(gem),
-                    Key::ArrowRight => maybe_play_next(gem),
-                    Key::ArrowUp => {
-                        if let Some(backend) = &mut gem.player.backend {
-                            adjust_volume_by_percentage(&mut backend.player, 0.1);
-                        }
-                    }
-                    Key::ArrowDown => {
-                        if let Some(backend) = &mut gem.player.backend {
-                            adjust_volume_by_percentage(&mut backend.player, -0.1);
-                        }
-                    }
-                    Key::M => mute_or_unmute(&mut gem.player),
-                    _ => {}
-                }
-            }
-        }
-    });
 }
 
 pub fn apply_theme(ctx: &Context, preference: ThemePreference) {

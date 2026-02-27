@@ -21,6 +21,8 @@ struct LibraryViewState {
 
     sort_by: SortBy,
     sort_order: SortOrder,
+
+    pending_jump_to_track: Option<PathBuf>,
 }
 
 pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
@@ -99,7 +101,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
     let playing_color = ui.visuals().selection.bg_fill;
 
-    TableBuilder::new(ui)
+    let mut table = TableBuilder::new(ui)
         .striped(true)
         .sense(Sense::click())
         .cell_layout(Layout::left_to_right(Align::Center))
@@ -107,7 +109,15 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         .column(egui_extras::Column::exact(artist_width))
         .column(egui_extras::Column::exact(album_width))
         .column(egui_extras::Column::exact(time_width))
-        .column(egui_extras::Column::exact(more_width))
+        .column(egui_extras::Column::exact(more_width));
+
+    if let Some(path) = gem.ui.library.pending_jump_to_track.take() {
+        if let Some(index) = cached_library.iter().position(|t| t.path == path) {
+            table = table.scroll_to_row(index, Some(Align::Min));
+        }
+    }
+
+    table
         .header(16.0, |mut header| {
             for (i, h) in header_labels.iter().enumerate() {
                 header.col(|ui| {
