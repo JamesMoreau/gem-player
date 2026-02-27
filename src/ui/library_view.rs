@@ -179,6 +179,15 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                         let more_button = Button::new(icons::ICON_MORE_HORIZ);
                         let response = ui.add(more_button).on_hover_text("More");
 
+                        if response.clicked() {
+                            let selected_tracks = &mut gem.ui.library.selected_tracks;
+
+                            if selected_tracks.is_empty() || !selected_tracks.contains(&track.path) {
+                                selected_tracks.clear();
+                                selected_tracks.push(track.path.clone());
+                            }
+                        }
+
                         Popup::menu(&response).show(|ui| {
                             let selected_tracks_count = gem.ui.library.selected_tracks.len();
                             let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem.playlists);
