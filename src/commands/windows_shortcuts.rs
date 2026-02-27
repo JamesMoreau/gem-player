@@ -14,7 +14,7 @@ pub struct Shortcut {
 pub const SHORTCUTS: &[Shortcut] = &[
     Shortcut {
         command: Command::PlayPause,
-        modifiers: Modifiers::NONE,
+        modifiers: Modifiers::CTRL,
         key: Key::Space,
         description: "Play / Pause",
     },
