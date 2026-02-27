@@ -48,7 +48,6 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
         Command::JumpToPlayingTrack => {
             let Some(playing) = &gem.player.playing else {
                 warn!("No currently playing track to jump to.");
-                gem.ui.toasts.info("No currently playing track.");
                 return;
             };
 
