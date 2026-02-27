@@ -95,7 +95,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 #[cfg(target_os = "macos")]
                 {
-                    ui.add(unselectable_label(RichText::new("Keyboard Shortcuts").heading()));
+                    ui.add(unselectable_label(RichText::new("Controls").heading()));
                     ui.add_space(8.0);
 
                     for shortcut in crate::commands::macos_menu::SHORTCUTS {
