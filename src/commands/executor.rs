@@ -11,7 +11,7 @@ use crate::{
 
 #[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
 pub enum Command {
-    OpenFile,
+    // OpenFile,
     JumpToPlayingTrack,
     GoToLibrary,
     GoToPlaylists,
@@ -30,7 +30,7 @@ pub enum Command {
 
 pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
     match command {
-        Command::OpenFile => todo!(),
+        // Command::OpenFile => todo!(),
         Command::GoToLibrary => {
             gem.ui.current_view = View::Library;
         }
@@ -40,7 +40,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
         Command::GoToSettings => {
             gem.ui.current_view = View::Settings;
         }
-        Command::PlayPause => { // TODO: doesn't work
+        Command::PlayPause => {
             if let Some(backend) = &mut gem.player.backend {
                 play_or_pause(&mut backend.player);
             }

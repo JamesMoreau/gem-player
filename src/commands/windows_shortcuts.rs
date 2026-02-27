@@ -45,19 +45,19 @@ pub const SHORTCUTS: &[Shortcut] = &[
     Shortcut {
         command: Command::GoToLibrary,
         modifiers: Modifiers::CTRL,
-        key: Key::L,
+        key: Key::Num1,
         description: "Go to library",
     },
     Shortcut {
         command: Command::GoToPlaylists,
         modifiers: Modifiers::CTRL,
-        key: Key::P,
+        key: Key::Num2,
         description: "Go to playlists",
     },
     Shortcut {
         command: Command::GoToSettings,
         modifiers: Modifiers::CTRL,
-        key: Key::S,
+        key: Key::Num3,
         description: "Go to settings",
     },
 ];

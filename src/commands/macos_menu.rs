@@ -18,11 +18,12 @@ pub struct MenuShortcut {
 
 pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
     command: Command::PlayPause,
-    modifiers: Modifiers::empty(),
-    key: Code::Space,
+    modifiers: Modifiers::META,
+    key: Code::KeyP,
     description: "Play / Pause",
 };
 
+// TODO: can we use specialized keyboard key
 pub const NEXT_TRACK: MenuShortcut = MenuShortcut {
     command: Command::NextTrack,
     modifiers: Modifiers::META,
@@ -61,21 +62,21 @@ pub const JUMP_TO_PLAYING_TRACK: MenuShortcut = MenuShortcut {
 pub const GO_TO_LIBRARY: MenuShortcut = MenuShortcut {
     command: Command::GoToLibrary,
     modifiers: Modifiers::META,
-    key: Code::KeyL,
+    key: Code::Digit1,
     description: "Go to library",
 };
 
 pub const GO_TO_PLAYLISTS: MenuShortcut = MenuShortcut {
     command: Command::GoToPlaylists,
     modifiers: Modifiers::META,
-    key: Code::KeyP,
+    key: Code::Digit2,
     description: "Go to playlists",
 };
 
 pub const GO_TO_SETTINGS: MenuShortcut = MenuShortcut {
     command: Command::GoToSettings,
     modifiers: Modifiers::META,
-    key: Code::KeyS,
+    key: Code::Digit3,
     description: "Go to settings",
 };
 
@@ -90,6 +91,15 @@ pub const SHORTCUTS: &[MenuShortcut] = &[
     GO_TO_PLAYLISTS,
     GO_TO_SETTINGS,
 ];
+
+fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
+    MenuItem::with_id(
+        shortcut.command,
+        shortcut.description,
+        true,
+        Some(Accelerator::new(Some(shortcut.modifiers), shortcut.key)),
+    )
+}
 
 pub fn poll_menu_events(ctx: &Context, gem: &mut GemPlayer) {
     match gem.menu_receiver.try_recv() {
@@ -109,15 +119,6 @@ fn handle_menu_event(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
     } else {
         error!("Unable to process menu event: {:?}", event);
     }
-}
-
-fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
-    MenuItem::with_id(
-        shortcut.command,
-        shortcut.description,
-        true,
-        Some(Accelerator::new(Some(shortcut.modifiers), shortcut.key)),
-    )
 }
 
 // Create a native macos menu using the Muda crate. Menu items and events are identified using
@@ -145,22 +146,7 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             ],
         )
         .unwrap(),
-        &Submenu::with_items("File", true, &[&MenuItem::with_id(Command::OpenFile, "Open with", true, None)]).unwrap(),
-        // The following do not do anything right now but we leave them for convention.
-        &Submenu::with_items(
-            "Edit",
-            true,
-            &[
-                &PredefinedMenuItem::undo(None),
-                &PredefinedMenuItem::redo(None),
-                &PredefinedMenuItem::separator(),
-                &PredefinedMenuItem::cut(None),
-                &PredefinedMenuItem::copy(None),
-                &PredefinedMenuItem::paste(None),
-                &PredefinedMenuItem::select_all(None),
-            ],
-        )
-        .unwrap(),
+        // &Submenu::with_items("File", true, &[&MenuItem::with_id(Command::OpenFile, "Open with", true, None)]).unwrap(),
         &Submenu::with_items(
             "View",
             true,
