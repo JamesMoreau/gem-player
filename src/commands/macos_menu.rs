@@ -73,10 +73,17 @@ pub const GO_TO_PLAYLISTS: MenuShortcut = MenuShortcut {
     description: "Go to playlists",
 };
 
+pub const GO_TO_QUEUE: MenuShortcut = MenuShortcut {
+    command: Command::GoToQueue,
+    modifiers: Modifiers::META,
+    key: Code::Digit3,
+    description: "Go to queue",
+};
+
 pub const GO_TO_SETTINGS: MenuShortcut = MenuShortcut {
     command: Command::GoToSettings,
     modifiers: Modifiers::META,
-    key: Code::Digit3,
+    key: Code::Digit4,
     description: "Go to settings",
 };
 
@@ -89,6 +96,7 @@ pub const SHORTCUTS: &[MenuShortcut] = &[
     JUMP_TO_PLAYING_TRACK,
     GO_TO_LIBRARY,
     GO_TO_PLAYLISTS,
+    GO_TO_QUEUE,
     GO_TO_SETTINGS,
 ];
 
@@ -155,6 +163,7 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
                 &PredefinedMenuItem::separator(),
                 &menu_item_from_shortcut(&GO_TO_LIBRARY),
                 &menu_item_from_shortcut(&GO_TO_PLAYLISTS),
+                &menu_item_from_shortcut(&GO_TO_QUEUE),
                 &menu_item_from_shortcut(&GO_TO_SETTINGS),
             ],
         )

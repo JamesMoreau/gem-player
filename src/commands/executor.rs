@@ -15,6 +15,7 @@ pub enum Command {
     JumpToPlayingTrack,
     GoToLibrary,
     GoToPlaylists,
+    GoToQueue,
     GoToSettings,
     PlayPause,
     NextTrack,
@@ -30,12 +31,14 @@ pub enum Command {
 
 pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
     match command {
-        // Command::OpenFile => todo!(),
         Command::GoToLibrary => {
             gem.ui.current_view = View::Library;
         }
         Command::GoToPlaylists => {
             gem.ui.current_view = View::Playlists;
+        }
+        Command::GoToQueue => {
+            gem.ui.current_view = View::Queue;
         }
         Command::GoToSettings => {
             gem.ui.current_view = View::Settings;
