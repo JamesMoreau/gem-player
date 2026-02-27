@@ -673,4 +673,3 @@ fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option
 
     action
 }
-

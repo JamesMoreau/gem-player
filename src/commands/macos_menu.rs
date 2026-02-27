@@ -11,65 +11,72 @@ use crate::GemPlayer;
 
 pub struct MenuShortcut {
     pub command: Command,
-    pub key: Code,
     pub modifiers: Modifiers,
+    pub key: Code,
     pub description: &'static str,
 }
 
 pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
     command: Command::PlayPause,
-    description: "Play / Pause",
-    key: Code::Space,
     modifiers: Modifiers::empty(),
+    key: Code::Space,
+    description: "Play / Pause",
 };
 
 pub const NEXT_TRACK: MenuShortcut = MenuShortcut {
     command: Command::NextTrack,
-    description: "Next track",
-    key: Code::ArrowRight,
     modifiers: Modifiers::META,
+    key: Code::ArrowRight,
+    description: "Next track",
 };
 
 pub const PREVIOUS_TRACK: MenuShortcut = MenuShortcut {
     command: Command::PreviousTrack,
-    description: "Previous track",
-    key: Code::ArrowLeft,
     modifiers: Modifiers::META,
+    key: Code::ArrowLeft,
+    description: "Previous track",
 };
 
 pub const VOLUME_UP: MenuShortcut = MenuShortcut {
     command: Command::VolumeUp,
-    description: "Volume up",
-    key: Code::ArrowUp,
     modifiers: Modifiers::META,
+    key: Code::ArrowUp,
+    description: "Volume up",
 };
 
 pub const VOLUME_DOWN: MenuShortcut = MenuShortcut {
     command: Command::VolumeDown,
-    description: "Volume down",
-    key: Code::ArrowDown,
     modifiers: Modifiers::META,
+    key: Code::ArrowDown,
+    description: "Volume down",
+};
+
+pub const JUMP_TO_PLAYING_TRACK: MenuShortcut = MenuShortcut {
+    command: Command::JumpToPlayingTrack,
+    modifiers: Modifiers::META,
+    key: Code::KeyT,
+    description: "Jump to playing track",
 };
 
 pub const GO_TO_LIBRARY: MenuShortcut = MenuShortcut {
     command: Command::GoToLibrary,
-    description: "Go to library",
-    key: Code::KeyL,
     modifiers: Modifiers::META,
+    key: Code::KeyL,
+    description: "Go to library",
 };
 
 pub const GO_TO_PLAYLISTS: MenuShortcut = MenuShortcut {
     command: Command::GoToPlaylists,
-    description: "Go to playlists",
-    key: Code::KeyP,
     modifiers: Modifiers::META,
+    key: Code::KeyP,
+    description: "Go to playlists",
 };
 
 pub const GO_TO_SETTINGS: MenuShortcut = MenuShortcut {
     command: Command::GoToSettings,
-    description: "Go to settings",
-    key: Code::KeyS,
     modifiers: Modifiers::META,
+    key: Code::KeyS,
+    description: "Go to settings",
 };
 
 pub const SHORTCUTS: &[MenuShortcut] = &[
@@ -78,6 +85,7 @@ pub const SHORTCUTS: &[MenuShortcut] = &[
     PREVIOUS_TRACK,
     VOLUME_UP,
     VOLUME_DOWN,
+    JUMP_TO_PLAYING_TRACK,
     GO_TO_LIBRARY,
     GO_TO_PLAYLISTS,
     GO_TO_SETTINGS,
@@ -157,6 +165,8 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             "View",
             true,
             &[
+                &menu_item_from_shortcut(&JUMP_TO_PLAYING_TRACK),
+                &PredefinedMenuItem::separator(),
                 &menu_item_from_shortcut(&GO_TO_LIBRARY),
                 &menu_item_from_shortcut(&GO_TO_PLAYLISTS),
                 &menu_item_from_shortcut(&GO_TO_SETTINGS),

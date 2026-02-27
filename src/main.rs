@@ -199,6 +199,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 selected_tracks: Vec::new(),
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
+                pending_jump_to_track: None,
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,

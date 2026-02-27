@@ -1,4 +1,5 @@
 use egui::{Context, OpenUrl, ViewportCommand};
+use log::warn;
 use strum_macros::{Display, EnumString};
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
 #[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
 pub enum Command {
     OpenFile,
-    // JumpToPlayingTrack,
+    JumpToPlayingTrack,
     GoToLibrary,
     GoToPlaylists,
     GoToSettings,
@@ -70,6 +71,16 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
             ctx.open_url(OpenUrl { url, new_tab: true });
+        }
+        Command::JumpToPlayingTrack => {
+            let Some(playing) = &gem.player.playing else {
+                warn!("No currently playing track to jump to.");
+                gem.ui.toasts.info("No currently playing track.");
+                return;
+            };
+
+            gem.ui.current_view = View::Library;
+            gem.ui.library.pending_jump_to_track = Some(playing.path.clone());
         }
     }
 }
