@@ -23,7 +23,6 @@ pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
     description: "Play / Pause",
 };
 
-// TODO: can we use specialized keyboard key
 pub const NEXT_TRACK: MenuShortcut = MenuShortcut {
     command: Command::NextTrack,
     modifiers: Modifiers::META,
