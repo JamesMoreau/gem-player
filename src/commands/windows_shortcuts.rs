@@ -31,6 +31,12 @@ pub const SHORTCUTS: &[Shortcut] = &[
         description: "Next track",
     },
     Shortcut {
+        command: Command::JumpToPlayingTrack,
+        modifiers: Modifiers::CTRL,
+        key: Key::T,
+        description: "Jump to playing track",
+    },
+    Shortcut {
         command: Command::VolumeUp,
         modifiers: Modifiers::CTRL,
         key: Key::ArrowUp,
