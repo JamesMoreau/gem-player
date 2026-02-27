@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::sync::mpsc::{channel, Receiver, TryRecvError};
 
 use egui::Context;
+use fully_pub::fully_pub;
 use log::error;
 use muda::accelerator::{Accelerator, Code, Modifiers};
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
@@ -9,11 +10,18 @@ use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use crate::commands::executor::{execute, Command};
 use crate::GemPlayer;
 
+#[fully_pub]
+struct MenuBar {
+    menu: Menu,
+    menu_receiver: Receiver<MenuEvent>,
+}
+
+#[fully_pub]
 pub struct MenuShortcut {
-    pub command: Command,
-    pub modifiers: Modifiers,
-    pub key: Code,
-    pub description: &'static str,
+    command: Command,
+    modifiers: Modifiers,
+    key: Code,
+    description: &'static str,
 }
 
 pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
@@ -77,7 +85,7 @@ fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
 }
 
 pub fn poll_menu_events(ctx: &Context, gem: &mut GemPlayer) {
-    match gem.menu_receiver.try_recv() {
+    match gem.menubar.menu_receiver.try_recv() {
         Ok(event) => handle_menu_event(ctx, gem, event),
         Err(TryRecvError::Empty) => {} // no menu event this frame
         Err(TryRecvError::Disconnected) => {

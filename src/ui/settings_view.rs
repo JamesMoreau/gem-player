@@ -69,20 +69,17 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 #[cfg(target_os = "windows")]
                 {
+                    use crate::commands::windows_shortcuts::{SHORTCUTS, format_shortcut};
+
                     ui.add(unselectable_label(RichText::new("Controls").heading()));
-    
+
                     ui.add_space(8.0);
-    
-                    for shortcut in crate::commands::windows_shortcuts::SHORTCUTS {
+
+                    for shortcut in SHORTCUTS {
                         egui::containers::Sides::new().show(
                             ui,
                             |ui| {
-                                let label = unselectable_label(
-                                    crate::commands::windows_shortcuts::format_shortcut(
-                                        shortcut.modifiers,
-                                        shortcut.key,
-                                    )
-                                );
+                                let label = unselectable_label(format_shortcut(shortcut.modifiers, shortcut.key));
                                 ui.add(label);
                             },
                             |ui| {
@@ -105,12 +102,8 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                         egui::containers::Sides::new().show(
                             ui,
                             |ui| {
-                                let label = unselectable_label(
-                                    crate::commands::macos_menu::format_shortcut(
-                                        shortcut.modifiers,
-                                        shortcut.key,
-                                    )
-                                );
+                                let label =
+                                    unselectable_label(crate::commands::macos_menu::format_shortcut(shortcut.modifiers, shortcut.key));
                                 ui.add(label);
                             },
                             |ui| {

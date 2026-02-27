@@ -16,7 +16,6 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
-use muda::{Menu, MenuEvent};
 use player::{build_audio_backend_from_device, play_next, play_previous, Player, VisualizerState};
 use playlist::Playlist;
 use rfd::FileDialog;
@@ -35,6 +34,12 @@ use std::{
 };
 use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
+
+#[cfg(target_os = "macos")]
+use crate::commands::macos_menu::{MenuBar, poll_menu_events};
+
+#[cfg(target_os = "windows")]
+use crate::commands::windows_shortcuts::handle_shortcuts;
 
 use crate::{
     nosleep_manager::NoSleepManager,
@@ -79,9 +84,7 @@ struct GemPlayer {
     nosleep_manager: NoSleepManager,
 
     #[cfg(target_os = "macos")]
-    menu: Menu,
-    #[cfg(target_os = "macos")]
-    menu_receiver: Receiver<MenuEvent>,
+    menubar: commands::macos_menu::MenuBar,
 }
 
 #[fully_pub]
@@ -249,9 +252,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         },
         nosleep_manager: NoSleepManager::new(),
         #[cfg(target_os = "macos")]
-        menu,
-        #[cfg(target_os = "macos")]
-        menu_receiver,
+        menubar: MenuBar { menu, menu_receiver },
     }
 }
 
@@ -282,9 +283,9 @@ impl App for GemPlayer {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         // Input
         #[cfg(target_os = "windows")]
-        commands::windows_shortcuts::handle_shortcuts(ctx, self);
+        handle_shortcuts(ctx, self);
         #[cfg(target_os = "macos")]
-        commands::macos_menu::poll_menu_events(ctx, self);
+        poll_menu_events(ctx, self);
 
         // Update
         check_for_next_track(self);
