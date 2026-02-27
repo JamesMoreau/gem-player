@@ -185,7 +185,6 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             true,
             &[
                 &PredefinedMenuItem::minimize(None),
-                &PredefinedMenuItem::maximize(None),
                 &PredefinedMenuItem::separator(),
                 &PredefinedMenuItem::fullscreen(None),
             ],

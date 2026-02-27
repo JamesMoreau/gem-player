@@ -1,4 +1,4 @@
-use egui::{Context, OpenUrl, ViewportCommand};
+use egui::{Context, OpenUrl};
 use log::warn;
 use strum_macros::{Display, EnumString};
 
@@ -22,9 +22,6 @@ pub enum Command {
     PreviousTrack,
     VolumeUp,
     VolumeDown,
-    Minimize,
-    Maximize,
-    Fullscreen,
     ReportIssue,
     // Mute / ummute
 }
@@ -59,17 +56,6 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
             if let Some(backend) = &mut gem.player.backend {
                 adjust_volume_by_percentage(&mut backend.player, -0.1);
             }
-        }
-        Command::Minimize => {
-            ctx.send_viewport_cmd(ViewportCommand::Minimized(true));
-        }
-        Command::Maximize => {
-            let is_maximized = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
-            ctx.send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
-        }
-        Command::Fullscreen => {
-            let is_fullscreen = ctx.input(|i| i.viewport().fullscreen.unwrap_or(false));
-            ctx.send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen))
         }
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
