@@ -1,6 +1,6 @@
 use std::{
     path::{Path, PathBuf},
-    sync::mpsc::{self, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender, channel},
     thread,
     time::Duration,
 };
@@ -23,8 +23,8 @@ pub enum LibraryWatcherCommand {
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
 
 pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<Option<LibraryAndPlaylists>>), String> {
-    let (command_sender, command_receiver) = mpsc::channel();
-    let (update_sender, update_receiver) = mpsc::channel();
+    let (command_sender, command_receiver) = channel();
+    let (update_sender, update_receiver) = channel();
 
     let debouncer_cs = command_sender.clone();
     let thread_cs = command_sender.clone();

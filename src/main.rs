@@ -40,7 +40,6 @@ use crate::commands::macos_menu::{poll_menu_events, MenuBar};
 use crate::commands::windows_shortcuts::handle_shortcuts;
 
 use crate::{
-    library_folder_picker::poll_library_folder_picker,
     nosleep_manager::NoSleepManager,
     ui::{
         library_view::LibraryViewState,
@@ -328,6 +327,40 @@ fn poll_library_watcher_messages(gem: &mut GemPlayer) {
         Err(TryRecvError::Disconnected) => {
             error!("Library watcher has disconnected.");
             gem.ui.library_and_playlists_are_loading = false;
+        }
+    }
+}
+
+pub fn poll_library_folder_picker(gem: &mut GemPlayer) {
+    let Some(receiver) = &gem.folder_picker_receiver else {
+        return;
+    };
+
+    match receiver.try_recv() {
+        Ok(maybe_directory) => {
+            gem.folder_picker_receiver = None;
+
+            if let Some(directory) = maybe_directory {
+                info!("Selected folder: {:?}", directory);
+
+                let command = LibraryWatcherCommand::SetPath(directory.clone());
+                let result = gem.library_watcher.command_sender.send(command);
+                if result.is_err() {
+                    let message = "Failed to start watching library directory. Reverting back to old directory.";
+                    error!("{}", message);
+                    gem.ui.toasts.error(message);
+                } else {
+                    gem.library_directory = Some(directory);
+                    gem.ui.library_and_playlists_are_loading = true;
+                }
+            } else {
+                info!("No folder selected");
+            }
+        }
+        Err(TryRecvError::Empty) => {} // folder picker is still open.
+        Err(TryRecvError::Disconnected) => {
+            error!("Folder picker channel disconnected unexpectedly.");
+            gem.folder_picker_receiver = None;
         }
     }
 }
