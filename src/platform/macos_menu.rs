@@ -7,8 +7,8 @@ use log::error;
 use muda::accelerator::{Accelerator, Code, Modifiers};
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
-use crate::commands::executor::{execute, Command};
 use crate::GemPlayer;
+use crate::commands::{Command, execute};
 
 #[fully_pub]
 struct MenuBar {

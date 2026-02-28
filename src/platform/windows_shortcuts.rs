@@ -1,6 +1,5 @@
 use crate::{
-    commands::executor::{execute, Command},
-    GemPlayer,
+    GemPlayer, commands::{Command, execute},
 };
 use egui::{Context, Key, Modifiers};
 use fully_pub::fully_pub;

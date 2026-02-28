@@ -4,7 +4,7 @@ use egui::{Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use log::info;
 
-use crate::{GemPlayer, apply_theme, library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label};
+use crate::{apply_theme, library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label, GemPlayer};
 
 pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
@@ -69,7 +69,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 #[cfg(target_os = "windows")]
                 {
-                    use crate::commands::windows_shortcuts::{SHORTCUTS, format_shortcut};
+                    use crate::commands::windows_shortcuts::{format_shortcut, SHORTCUTS};
 
                     ui.add(unselectable_label(RichText::new("Controls").heading()));
 
@@ -95,15 +95,16 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 #[cfg(target_os = "macos")]
                 {
+                    use crate::platform::macos_menu::{format_shortcut, SHORTCUTS};
+
                     ui.add(unselectable_label(RichText::new("Controls").heading()));
                     ui.add_space(8.0);
 
-                    for shortcut in crate::commands::macos_menu::SHORTCUTS {
+                    for shortcut in SHORTCUTS {
                         egui::containers::Sides::new().show(
                             ui,
                             |ui| {
-                                let label =
-                                    unselectable_label(crate::commands::macos_menu::format_shortcut(shortcut.modifiers, shortcut.key));
+                                let label = unselectable_label(format_shortcut(shortcut.modifiers, shortcut.key));
                                 ui.add(label);
                             },
                             |ui| {

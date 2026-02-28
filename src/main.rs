@@ -34,7 +34,7 @@ use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 #[cfg(target_os = "macos")]
-use crate::commands::macos_menu::{poll_menu_events, MenuBar};
+use crate::platform::macos_menu::{poll_menu_events, MenuBar};
 
 #[cfg(target_os = "windows")]
 use crate::commands::windows_shortcuts::handle_shortcuts;
@@ -54,6 +54,7 @@ mod custom_window;
 mod library_folder_picker;
 mod library_watcher;
 mod nosleep_manager;
+mod platform;
 mod player;
 mod playlist;
 mod track;
@@ -83,7 +84,7 @@ struct GemPlayer {
     nosleep_manager: NoSleepManager,
 
     #[cfg(target_os = "macos")]
-    menubar: commands::macos_menu::MenuBar,
+    menubar: platform::macos_menu::MenuBar,
 }
 
 #[fully_pub]
@@ -185,7 +186,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     #[cfg(target_os = "macos")]
     let (menu, menu_receiver) = {
-        let (menu, receiver) = commands::macos_menu::create_menu();
+        let (menu, receiver) = platform::macos_menu::create_menu();
         menu.init_for_nsapp();
         (menu, receiver)
     };
