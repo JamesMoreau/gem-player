@@ -4,7 +4,7 @@ use egui::{Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use log::info;
 
-use crate::{apply_theme, spawn_folder_picker, ui::root::unselectable_label, GemPlayer};
+use crate::{GemPlayer, apply_theme, library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label};
 
 pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
@@ -27,7 +27,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     let start_dir = gem.library_directory.as_deref().unwrap_or_else(|| Path::new("/")).to_path_buf();
 
                     if ui.button(icons::ICON_FOLDER_OPEN).on_hover_text("Change").clicked() {
-                        let receiver = spawn_folder_picker(&start_dir);
+                        let receiver = spawn_library_folder_picker(&start_dir);
                         gem.folder_picker_receiver = Some(receiver);
                     }
                 });

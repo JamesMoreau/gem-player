@@ -18,30 +18,29 @@ use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use player::{build_audio_backend_from_device, play_next, play_previous, Player, VisualizerState};
 use playlist::Playlist;
-use rfd::FileDialog;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
     fs::{copy, read},
     io,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::{
-        mpsc::{channel, Receiver, Sender, TryRecvError},
+        mpsc::{Receiver, Sender, TryRecvError},
         Arc,
     },
-    thread,
     time::Duration,
 };
 use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 #[cfg(target_os = "macos")]
-use crate::commands::macos_menu::{MenuBar, poll_menu_events};
+use crate::commands::macos_menu::{poll_menu_events, MenuBar};
 
 #[cfg(target_os = "windows")]
 use crate::commands::windows_shortcuts::handle_shortcuts;
 
 use crate::{
+    library_folder_picker::poll_library_folder_picker,
     nosleep_manager::NoSleepManager,
     ui::{
         library_view::LibraryViewState,
@@ -53,6 +52,7 @@ use crate::{
 
 mod commands;
 mod custom_window;
+mod library_folder_picker;
 mod library_watcher;
 mod nosleep_manager;
 mod player;
@@ -290,7 +290,7 @@ impl App for GemPlayer {
         // Update
         check_for_next_track(self);
         poll_library_watcher_messages(self);
-        poll_folder_picker(self);
+        poll_library_folder_picker(self);
 
         // Render
         gem_player_ui(self, ctx);
@@ -394,53 +394,6 @@ pub fn handle_dropped_file(dropped_file: &DroppedFile, gem: &mut GemPlayer) -> i
     copy(path, destination)?;
 
     Ok(())
-}
-
-fn poll_folder_picker(gem: &mut GemPlayer) {
-    let Some(receiver) = &gem.folder_picker_receiver else {
-        return;
-    };
-
-    match receiver.try_recv() {
-        Ok(maybe_directory) => {
-            gem.folder_picker_receiver = None;
-
-            if let Some(directory) = maybe_directory {
-                info!("Selected folder: {:?}", directory);
-
-                let command = LibraryWatcherCommand::SetPath(directory.clone());
-                let result = gem.library_watcher.command_sender.send(command);
-                if result.is_err() {
-                    let message = "Failed to start watching library directory. Reverting back to old directory.";
-                    error!("{}", message);
-                    gem.ui.toasts.error(message);
-                } else {
-                    gem.library_directory = Some(directory);
-                    gem.ui.library_and_playlists_are_loading = true;
-                }
-            } else {
-                info!("No folder selected");
-            }
-        }
-        Err(TryRecvError::Empty) => {} // folder picker is still open.
-        Err(TryRecvError::Disconnected) => {
-            error!("Folder picker channel disconnected unexpectedly.");
-            gem.folder_picker_receiver = None;
-        }
-    }
-}
-
-/// Spawns a folder picker in a background thread and returns the receiver where the selected folder will eventually be sent.
-fn spawn_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>> {
-    let (sender, receiver) = channel();
-    let start_dir = start_dir.to_path_buf();
-
-    thread::spawn(move || {
-        let maybe_directory = FileDialog::new().set_directory(start_dir).pick_folder().map(|p| p.to_path_buf());
-        let _ = sender.send(maybe_directory);
-    });
-
-    receiver
 }
 
 fn check_for_next_track(gem: &mut GemPlayer) {
