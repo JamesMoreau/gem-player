@@ -1,7 +1,5 @@
-use crate::{
-    GemPlayer, commands::{Command, execute},
-};
-use egui::{Context, Key, Modifiers};
+use crate::commands::Command;
+use egui::{Key, Modifiers};
 use fully_pub::fully_pub;
 
 #[fully_pub]
@@ -50,20 +48,6 @@ pub const SHORTCUTS: &[Shortcut] = &[
         description: "Volume down",
     },
 ];
-
-pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
-    if ctx.wants_keyboard_input() {
-        return;
-    }
-
-    ctx.input_mut(|i| {
-        for shortcut in SHORTCUTS {
-            if i.consume_key(shortcut.modifiers, shortcut.key) {
-                execute(ctx, gem, shortcut.command);
-            }
-        }
-    });
-}
 
 pub fn format_shortcut(mods: Modifiers, key: Key) -> String {
     let mut s = String::new();

@@ -34,10 +34,16 @@ use track::{is_relevant_media_file, SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 #[cfg(target_os = "macos")]
-use crate::platform::macos_menu::{poll_menu_events, MenuBar};
+use {
+    crate::{
+        commands::{execute, Command},
+        platform::macos_menu::MenuBar,
+    },
+    std::str::FromStr,
+};
 
 #[cfg(target_os = "windows")]
-use crate::commands::windows_shortcuts::handle_shortcuts;
+use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
     nosleep_manager::NoSleepManager,
@@ -285,7 +291,7 @@ impl App for GemPlayer {
         #[cfg(target_os = "windows")]
         handle_shortcuts(ctx, self);
         #[cfg(target_os = "macos")]
-        poll_menu_events(ctx, self);
+        poll_macos_menu_events(ctx, self);
 
         // Update
         check_for_next_track(self);
@@ -308,6 +314,40 @@ impl App for GemPlayer {
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
         self.nosleep_manager.disable();
     }
+}
+
+#[cfg(target_os = "macos")]
+fn poll_macos_menu_events(ctx: &Context, gem: &mut GemPlayer) {
+    match gem.menubar.menu_receiver.try_recv() {
+        Ok(event) => {
+            let result = Command::from_str(&event.id.0);
+            if let Ok(command) = result {
+                execute(ctx, gem, command);
+            } else {
+                error!("Unable to process menu event: {:?}", event);
+            }
+        }
+        Err(TryRecvError::Empty) => {} // no menu event this frame
+        Err(TryRecvError::Disconnected) => {
+            error!("Menu events has been disconnected.");
+            gem.ui.library_and_playlists_are_loading = false;
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
+    if ctx.wants_keyboard_input() {
+        return;
+    }
+
+    ctx.input_mut(|i| {
+        for shortcut in SHORTCUTS {
+            if i.consume_key(shortcut.modifiers, shortcut.key) {
+                execute(ctx, gem, shortcut.command);
+            }
+        }
+    });
 }
 
 fn poll_library_watcher_messages(gem: &mut GemPlayer) {

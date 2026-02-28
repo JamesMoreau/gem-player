@@ -1,14 +1,10 @@
-use std::str::FromStr;
-use std::sync::mpsc::{channel, Receiver, TryRecvError};
+use std::sync::mpsc::{channel, Receiver};
 
-use egui::Context;
 use fully_pub::fully_pub;
-use log::error;
 use muda::accelerator::{Accelerator, Code, Modifiers};
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
-use crate::GemPlayer;
-use crate::commands::{Command, execute};
+use crate::commands::Command;
 
 #[fully_pub]
 struct MenuBar {
@@ -84,26 +80,6 @@ fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
     )
 }
 
-pub fn poll_menu_events(ctx: &Context, gem: &mut GemPlayer) {
-    match gem.menubar.menu_receiver.try_recv() {
-        Ok(event) => handle_menu_event(ctx, gem, event),
-        Err(TryRecvError::Empty) => {} // no menu event this frame
-        Err(TryRecvError::Disconnected) => {
-            error!("Menu events has been disconnected.");
-            gem.ui.library_and_playlists_are_loading = false;
-        }
-    }
-}
-
-fn handle_menu_event(ctx: &Context, gem: &mut GemPlayer, event: MenuEvent) {
-    let result = Command::from_str(&event.id.0);
-    if let Ok(command) = result {
-        execute(ctx, gem, command);
-    } else {
-        error!("Unable to process menu event: {:?}", event);
-    }
-}
-
 // Create a native macos menu using the Muda crate. Menu items and events are identified using
 // the specific command as an Id. We also return a channel receiver to process these events.
 pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
@@ -130,14 +106,7 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
         )
         .unwrap(),
         // &Submenu::with_items("File", true, &[&MenuItem::with_id(Command::OpenFile, "Open with", true, None)]).unwrap(),
-        &Submenu::with_items(
-            "View",
-            true,
-            &[
-                &menu_item_from_shortcut(&JUMP_TO_PLAYING_TRACK),
-            ],
-        )
-        .unwrap(),
+        &Submenu::with_items("View", true, &[&menu_item_from_shortcut(&JUMP_TO_PLAYING_TRACK)]).unwrap(),
         &Submenu::with_items(
             "Playback",
             true,
