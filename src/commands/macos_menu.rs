@@ -17,7 +17,7 @@ struct MenuBar {
 }
 
 #[fully_pub]
-pub struct MenuShortcut {
+struct MenuShortcut {
     command: Command,
     modifiers: Modifiers,
     key: Code,

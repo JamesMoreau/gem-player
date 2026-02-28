@@ -85,7 +85,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     (command_sender, bands_receiver)
 }
 
-pub fn process_samples(samples: &[Sample], sample_rate: SampleRate, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {
+fn process_samples(samples: &[Sample], sample_rate: SampleRate, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {
     let n = samples.len();
     let window = hann_window(n);
 
@@ -133,7 +133,7 @@ pub fn process_samples(samples: &[Sample], sample_rate: SampleRate, band_center_
     bands
 }
 
-pub fn hann_window(n: usize) -> Vec<f32> {
+fn hann_window(n: usize) -> Vec<f32> {
     (0..n)
         .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / (n as f32 - 1.0)).cos()))
         .collect()

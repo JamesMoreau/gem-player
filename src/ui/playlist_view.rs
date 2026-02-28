@@ -562,7 +562,6 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-#[derive(Debug)]
 enum PlaylistContextMenuAction {
     RemoveFromPlaylist,
     EnqueueNext,

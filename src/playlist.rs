@@ -10,8 +10,7 @@ use std::{
 use walkdir::WalkDir;
 
 #[fully_pub]
-#[derive(Debug, Clone)]
-pub struct Playlist {
+struct Playlist {
     name: String,
     creation_date_time: SystemTime,
     tracks: Vec<Track>, // Duplicates of tracks are not allowed.

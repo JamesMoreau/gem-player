@@ -18,7 +18,7 @@ use std::{
 use strum_macros::EnumIter;
 use walkdir::WalkDir;
 
-#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(EnumIter, PartialEq, Clone, Copy)]
 pub enum SortBy {
     Title,
     Artist,
@@ -44,7 +44,7 @@ pub enum SortOrder {
 }
 
 #[fully_pub]
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Track {
     title: Option<String>,
     artist: Option<String>,

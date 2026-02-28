@@ -3,12 +3,14 @@ use crate::{
     GemPlayer,
 };
 use egui::{Context, Key, Modifiers};
+use fully_pub::fully_pub;
 
-pub struct Shortcut {
-    pub command: Command,
-    pub modifiers: Modifiers,
-    pub key: Key,
-    pub description: &'static str,
+#[fully_pub]
+struct Shortcut {
+    command: Command,
+    modifiers: Modifiers,
+    key: Key,
+    description: &'static str,
 }
 
 pub const SHORTCUTS: &[Shortcut] = &[
