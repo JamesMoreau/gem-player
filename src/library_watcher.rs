@@ -26,15 +26,15 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
     let (command_sender, command_receiver) = channel();
     let (update_sender, update_receiver) = channel();
 
-    let debouncer_cs = command_sender.clone();
-    let thread_cs = command_sender.clone();
-    thread::spawn(move || {
+    let debouncer_command_sender = command_sender.clone();
+    let watcher_command_sender = command_sender.clone();
+    thread::spawn(move || { // Watcher thread.
         let mut debouncer = new_debouncer(Duration::from_secs(2), {
             move |res: DebounceEventResult| match res {
                 Err(e) => error!("watch error: {:?}", e),
                 Ok(events) => {
                     events.iter().for_each(|e| info!("Event for {:?}.", e.path));
-                    let _ = debouncer_cs.send(LibraryWatcherCommand::Load);
+                    let _ = debouncer_command_sender.send(LibraryWatcherCommand::Load);
                 }
             }
         })
@@ -46,8 +46,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
             match command {
                 LibraryWatcherCommand::Load => {
                     if let Some(path) = &watcher_directory {
-                        let is_valid = path.exists() && path.is_dir();
-                        if !is_valid {
+                        if !path.is_dir() {
                             error!("Cannot load library: invalid path {:?}", path);
                             let _ = update_sender.send(None);
                             continue;
@@ -61,8 +60,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                     }
                 }
                 LibraryWatcherCommand::SetPath(new_directory) => {
-                    let is_valid = new_directory.exists() && new_directory.is_dir();
-                    if !is_valid {
+                    if !new_directory.is_dir() {
                         warn!("Invalid library path: {:?}", new_directory);
                         let _ = update_sender.send(None);
                         continue;
@@ -84,7 +82,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                     }
 
                     watcher_directory = Some(new_directory.clone());
-                    let _ = thread_cs.send(LibraryWatcherCommand::Load);
+                    let _ = watcher_command_sender.send(LibraryWatcherCommand::Load);
                 }
                 LibraryWatcherCommand::Shutdown => {
                     info!("Received shutdown message. Shutting down the library watcher.");
