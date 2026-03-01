@@ -71,7 +71,7 @@ pub fn load_playlists_from_directory(directory: &Path) -> io::Result<Vec<Playlis
 
     for maybe_entry in WalkDir::new(directory) {
         let entry = maybe_entry?;
-        
+
         let path = entry.path();
         if !is_m3u_file(path) {
             continue;
@@ -97,37 +97,28 @@ pub fn save_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
     let directory = playlist.m3u_path.parent().unwrap_or_else(|| Path::new(""));
 
     for track in &playlist.tracks {
-        let relative_path = match track.path.strip_prefix(directory) {
-            Ok(path) => path.to_string_lossy().into_owned(),
-            Err(_) => {
-                error!("Failed to strip prefix from path: {}", track.path.display());
-                track.path.to_string_lossy().into_owned() // If we can't strip the prefix, just use the full path.
-            }
-        };
-
-        writeln!(file, "{}", relative_path)?;
+        let path = track.path.strip_prefix(directory).unwrap_or(&track.path);
+        writeln!(file, "{}", path.to_string_lossy())?;
     }
 
     Ok(())
 }
 
 pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
-    let Some(extension) = path.extension() else {
-        return Err(io::Error::new(ErrorKind::InvalidInput, "File has no extension"));
-    };
-
-    if extension.to_string_lossy().to_ascii_lowercase() != "m3u" {
-        return Err(io::Error::new(ErrorKind::InvalidInput, "The file type is not .m3u"));
+    if !is_m3u_file(path) {
+        return Err(io::Error::new(ErrorKind::InvalidInput, "The file type is not m3u"));
     }
 
-    let mut name = "Unnamed Playlist".to_owned();
-    if let Some(stem) = path.file_stem() {
-        name = stem.to_string_lossy().to_string();
-    }
+    let name = path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "Unnamed Playlist".to_string());
 
     let directory = path.parent().unwrap_or_else(|| Path::new(""));
     let file_contents = read_to_string(path)?;
+
     let mut tracks = Vec::new();
+
     for line in file_contents.lines() {
         let trimmed_line = line.trim();
         if trimmed_line.is_empty() || trimmed_line.starts_with("#") {
@@ -141,13 +132,9 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
             directory.join(relative_path)
         };
 
-        let maybe_track = load_from_file(&full_path);
-        match maybe_track {
+        match load_from_file(&full_path) {
             Ok(track) => tracks.push(track),
-            Err(err) => {
-                error!("Failed to load track '{}': {}", full_path.to_string_lossy(), err);
-                continue;
-            }
+            Err(err) => warn!("Skipping invalid track '{}': {}", full_path.display(), err),
         }
     }
 
