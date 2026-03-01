@@ -1,7 +1,6 @@
 use fully_pub::fully_pub;
-use infer::{get_from_path, MatcherType};
 use lofty::{
-    file::{AudioFile, FileType, TaggedFileExt},
+    file::{AudioFile, FileType, TaggedFileExt, EXTENSIONS},
     read_from, read_from_path,
     tag::ItemKey,
 };
@@ -139,9 +138,8 @@ pub fn load_from_file(path: &Path) -> io::Result<Track> {
     })
 }
 
-pub fn is_relevant_media_file(path: &Path) -> bool {
-    let file_type = get_from_path(path).ok().flatten().map(|k| k.matcher_type());
-    matches!(file_type, Some(MatcherType::Audio) | Some(MatcherType::Video))
+pub fn is_audio_file(path: &Path) -> bool {
+    path.extension().is_some_and(|ext| EXTENSIONS.iter().any(|e| *e == ext))
 }
 
 pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
@@ -150,7 +148,7 @@ pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
         .filter_map(|e| e.ok())
         .filter(|entry| {
             let path = entry.path();
-            path.is_file() && is_relevant_media_file(path)
+            path.is_file() && is_audio_file(path)
         })
         .map(|entry| entry.into_path())
         .collect();

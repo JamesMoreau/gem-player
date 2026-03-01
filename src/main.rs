@@ -30,7 +30,7 @@ use std::{
     },
     time::Duration,
 };
-use track::{is_relevant_media_file, SortBy, SortOrder, Track};
+use track::{SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 #[cfg(target_os = "macos")]
@@ -47,6 +47,7 @@ use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
     nosleep_manager::NoSleepManager,
+    track::is_audio_file,
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
@@ -457,7 +458,7 @@ pub fn handle_dropped_file(dropped_file: &DroppedFile, gem: &mut GemPlayer) -> i
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no file name"));
     };
 
-    if !is_relevant_media_file(path) {
+    if !is_audio_file(path) {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "Dropped file is not a relevant media file",
