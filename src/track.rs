@@ -90,7 +90,7 @@ pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
 }
 
 pub fn load_from_file(path: &Path) -> io::Result<Track> {
-    if !path.is_file() {
+    if !path.is_file() { // TODO: maybe this check is pointless?
         return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
 
@@ -145,7 +145,7 @@ pub fn is_audio_file(path: &Path) -> bool {
 pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
     let entries: Vec<_> = WalkDir::new(directory)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .filter_map(|e| e.ok()) // TODO: if error, break?
         .filter(|entry| {
             let path = entry.path();
             path.is_file() && is_audio_file(path)

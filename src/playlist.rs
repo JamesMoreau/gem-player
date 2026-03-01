@@ -1,6 +1,6 @@
 use crate::{track::load_from_file, Track};
 use fully_pub::fully_pub;
-use log::error;
+use log::{error, warn};
 use std::{
     fs::{metadata, read_to_string, File},
     io::{self, ErrorKind, Write},
@@ -69,23 +69,27 @@ pub fn remove_from_playlist(playlist: &mut Playlist, track_key: &Path) -> io::Re
 pub fn load_playlists_from_directory(directory: &Path) -> io::Result<Vec<Playlist>> {
     let mut playlists = Vec::new();
 
-    for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
+    for maybe_entry in WalkDir::new(directory) {
+        let entry = maybe_entry?;
+        
         let path = entry.path();
-
-        let is_m3u_file = path.is_file() && path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("m3u"));
-        if !is_m3u_file {
+        if !is_m3u_file(path) {
             continue;
         }
 
         match load_from_m3u(path) {
-            Err(e) => error!("{}", e),
             Ok(playlist) => playlists.push(playlist),
+             Err(e) => warn!("Failed to load playlist {:?}: {}", path, e),
         }
     }
 
     playlists.sort_by(|a, b| a.creation_date_time.cmp(&b.creation_date_time));
 
     Ok(playlists)
+}
+
+pub fn is_m3u_file(path: &Path) -> bool {
+    path.is_file() && path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("m3u"))
 }
 
 pub fn save_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
