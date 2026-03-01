@@ -1,6 +1,6 @@
 use crate::{track::load_from_file, Track};
 use fully_pub::fully_pub;
-use log::{error, warn};
+use log::warn;
 use std::{
     fs::{metadata, read_to_string, File},
     io::{self, ErrorKind, Write},
