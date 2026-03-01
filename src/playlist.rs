@@ -188,7 +188,8 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
         return Err(io::Error::new(ErrorKind::NotFound, "The specified directory does not exist."));
     }
 
-    let filename = format!("{}.m3u", sanitized_name);
+    let extension = ".m3u";
+    let filename = format!("{}{}", sanitized_name, extension);
     let file_path = directory.join(&filename);
 
     if file_path.exists() {
