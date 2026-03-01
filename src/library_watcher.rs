@@ -22,13 +22,14 @@ pub enum LibraryWatcherCommand {
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
 
-pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<Option<LibraryAndPlaylists>>), String> {
+pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<Option<LibraryAndPlaylists>>), ()> {
     let (command_sender, command_receiver) = channel();
     let (update_sender, update_receiver) = channel();
 
     let debouncer_command_sender = command_sender.clone();
     let watcher_command_sender = command_sender.clone();
-    thread::spawn(move || { // Watcher thread.
+    thread::spawn(move || {
+        // The debouncer, using a channel, will message the watcher thread, notifying it when the library changes.
         let mut debouncer = new_debouncer(Duration::from_secs(2), {
             move |res: DebounceEventResult| match res {
                 Err(e) => error!("watch error: {:?}", e),
