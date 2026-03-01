@@ -4,7 +4,7 @@ use lofty::{
     read_from, read_from_path,
     tag::ItemKey,
 };
-use log::error;
+use log::warn;
 use rayon::prelude::*;
 use rodio::SampleRate;
 use std::{
@@ -90,7 +90,8 @@ pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
 }
 
 pub fn load_from_file(path: &Path) -> io::Result<Track> {
-    if !path.is_file() { // TODO: maybe this check is pointless?
+    if !path.is_file() {
+        // TODO: maybe this check is pointless?
         return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
     }
 
@@ -145,7 +146,7 @@ pub fn is_audio_file(path: &Path) -> bool {
 pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
     let entries: Vec<_> = WalkDir::new(directory)
         .into_iter()
-        .filter_map(|e| e.ok()) // TODO: if error, break?
+        .filter_map(|e| e.ok())
         .filter(|entry| {
             let path = entry.path();
             path.is_file() && is_audio_file(path)
@@ -158,7 +159,7 @@ pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
         .filter_map(|path| match load_from_file(path) {
             Ok(track) => Some(track),
             Err(e) => {
-                error!("{}", e);
+                warn!("Skipping track '{}': {}", path.display(), e);
                 None
             }
         })
