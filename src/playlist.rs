@@ -79,7 +79,7 @@ pub fn load_playlists_from_directory(directory: &Path) -> io::Result<Vec<Playlis
 
         match load_from_m3u(path) {
             Ok(playlist) => playlists.push(playlist),
-             Err(e) => warn!("Failed to load playlist {:?}: {}", path, e),
+            Err(e) => warn!("Failed to load playlist {:?}: {}", path, e),
         }
     }
 
