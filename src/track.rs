@@ -117,7 +117,7 @@ pub fn load_from_file(path: &Path) -> Result<Track> {
 
     let sample_rate = properties
         .sample_rate()
-        .map(|rate| NonZeroU32::new(rate).ok_or_else(|| anyhow::anyhow!("Invalid sample rate (0) in file '{}'", path.display())))
+        .map(|rate| NonZeroU32::new(rate).ok_or_else(|| anyhow!("Invalid sample rate (0) in file '{}'", path.display())))
         .transpose()?;
 
     let file_path = path.to_path_buf();
