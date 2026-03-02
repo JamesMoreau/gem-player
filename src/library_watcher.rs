@@ -1,6 +1,6 @@
 use std::{
     path::{Path, PathBuf},
-    sync::mpsc::{Receiver, Sender, channel},
+    sync::mpsc::{channel, Receiver, Sender},
     thread,
     time::Duration,
 };
@@ -99,26 +99,8 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
 }
 
 fn load_library_and_playlists(directory: &Path) -> LibraryAndPlaylists {
-    let mut library = Vec::new();
-    let mut playlists = Vec::new();
-
-    match load_tracks_from_directory(directory) {
-        Ok(found_tracks) => {
-            library = found_tracks;
-        }
-        Err(e) => {
-            error!("{}", e);
-        }
-    }
-
-    match load_playlists_from_directory(directory) {
-        Ok(found_playlists) => {
-            playlists = found_playlists;
-        }
-        Err(e) => {
-            error!("{}", e);
-        }
-    }
+    let library = load_tracks_from_directory(directory);
+    let playlists = load_playlists_from_directory(directory);
 
     info!(
         "Loaded library from {:?}: {} tracks, {} playlists.",

@@ -124,10 +124,8 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     backend.player.stop(); // Stop the current track if any.
 
     let mut file = File::open(&track.path)?;
-
-    let maybe_artwork = extract_artwork_from_file(&mut file)?;
-    player.raw_artwork = maybe_artwork;
-
+    
+    player.raw_artwork = extract_artwork_from_file(&mut file);
     file.seek(SeekFrom::Start(0))?; // Reset the file cursor since accessing artwork moves it forward.
 
     let decoder_result = Decoder::try_from(file);

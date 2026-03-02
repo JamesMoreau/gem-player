@@ -10,7 +10,6 @@ use rayon::prelude::*;
 use rodio::SampleRate;
 use std::{
     fs::{metadata, File},
-    io::{self, ErrorKind},
     num::NonZeroU32,
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
@@ -147,10 +146,15 @@ pub fn is_audio_file(path: &Path) -> bool {
     path.extension().is_some_and(|ext| EXTENSIONS.iter().any(|e| *e == ext))
 }
 
-pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
+pub fn load_tracks_from_directory(directory: &Path) -> Vec<Track> {
     let entries: Vec<_> = WalkDir::new(directory)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .filter_map(|e| {
+            if let Err(err) = &e {
+                warn!("Failed to read directory entry: {}", err);
+            }
+            e.ok()
+        })
         .filter(|entry| {
             let path = entry.path();
             path.is_file() && is_audio_file(path)
@@ -169,33 +173,23 @@ pub fn load_tracks_from_directory(directory: &Path) -> io::Result<Vec<Track>> {
         })
         .collect();
 
-    Ok(tracks)
+    tracks
 }
 
 pub fn calculate_total_duration(tracks: &[Track]) -> Duration {
     tracks.iter().map(|track| track.duration).sum()
 }
 
-pub fn open_file_location(track: &Track) -> io::Result<()> {
-    let path = track.path.as_path();
-
-    let result = opener::reveal(path);
-    if let Err(e) = result {
-        return Err(io::Error::other(format!("Failed to open file location: {}", e)));
-    }
+pub fn open_file_location(track: &Track) -> Result<()> {
+    opener::reveal(&track.path).with_context(|| format!("Failed to open file location for '{}'", track.path.display()))?;
 
     Ok(())
 }
 
-pub fn extract_artwork_from_file(file: &mut File) -> io::Result<Option<Vec<u8>>> {
-    let tagged_file = read_from(file).map_err(|e| io::Error::new(ErrorKind::InvalidData, format!("Error reading tags: {}", e)))?;
-
-    let tag = tagged_file
-        .primary_tag()
-        .or_else(|| tagged_file.first_tag())
-        .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, "No tags found"))?;
-
-    Ok(tag.pictures().first().map(|pic| pic.data().to_vec()))
+pub fn extract_artwork_from_file(file: &mut File) -> Option<Vec<u8>> {
+    let tagged_file = read_from(file).ok()?;
+    let tag = tagged_file.primary_tag().or_else(|| tagged_file.first_tag())?;
+    tag.pictures().first().map(|pic| pic.data().to_vec())
 }
 
 pub fn file_type_name(ft: FileType) -> &'static str {

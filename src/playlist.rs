@@ -67,10 +67,15 @@ pub fn remove_from_playlist(playlist: &mut Playlist, track_key: &Path) -> Result
     Ok(())
 }
 
-pub fn load_playlists_from_directory(directory: &Path) -> Result<Vec<Playlist>> {
+pub fn load_playlists_from_directory(directory: &Path) -> Vec<Playlist> {
     let mut playlists = Vec::new();
 
-    for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
+    for entry in WalkDir::new(directory).into_iter().filter_map(|e| {
+        if let Err(err) = &e {
+            warn!("Failed to read directory entry: {}", err);
+        }
+        e.ok()
+    }) {
         let path = entry.path();
 
         if !is_m3u_file(path) {
@@ -85,9 +90,8 @@ pub fn load_playlists_from_directory(directory: &Path) -> Result<Vec<Playlist>> 
         }
     }
 
-    playlists.sort_by(|a, b| a.creation_date_time.cmp(&b.creation_date_time));
-
-    Ok(playlists)
+    playlists.sort_by_key(|p| p.creation_date_time);
+    playlists
 }
 
 pub fn is_m3u_file(path: &Path) -> bool {
