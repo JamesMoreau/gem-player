@@ -55,21 +55,7 @@ pub const VOLUME_DOWN: MenuShortcut = MenuShortcut {
     description: "Volume down",
 };
 
-pub const JUMP_TO_PLAYING_TRACK: MenuShortcut = MenuShortcut {
-    command: Command::JumpToPlayingTrack,
-    modifiers: Modifiers::META,
-    key: Code::KeyT,
-    description: "Jump to playing track",
-};
-
-pub const SHORTCUTS: &[MenuShortcut] = &[
-    PLAY_PAUSE,
-    NEXT_TRACK,
-    PREVIOUS_TRACK,
-    VOLUME_UP,
-    VOLUME_DOWN,
-    JUMP_TO_PLAYING_TRACK,
-];
+pub const SHORTCUTS: &[MenuShortcut] = &[PLAY_PAUSE, NEXT_TRACK, PREVIOUS_TRACK, VOLUME_UP, VOLUME_DOWN];
 
 fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
     MenuItem::with_id(
@@ -106,7 +92,6 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
         )
         .unwrap(),
         // &Submenu::with_items("File", true, &[&MenuItem::with_id(Command::OpenFile, "Open with", true, None)]).unwrap(),
-        &Submenu::with_items("View", true, &[&menu_item_from_shortcut(&JUMP_TO_PLAYING_TRACK)]).unwrap(),
         &Submenu::with_items(
             "Playback",
             true,
