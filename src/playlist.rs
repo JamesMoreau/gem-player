@@ -4,7 +4,7 @@ use fully_pub::fully_pub;
 use log::warn;
 use std::{
     fs::{self, metadata, read_to_string, File},
-    io::{self, ErrorKind, Write},
+    io::Write,
     path::{Path, PathBuf},
     time::SystemTime,
 };
@@ -109,9 +109,9 @@ pub fn save_to_m3u(playlist: &mut Playlist) -> Result<()> {
     Ok(())
 }
 
-pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
+pub fn load_from_m3u(path: &Path) -> Result<Playlist> {
     if !is_m3u_file(path) {
-        return Err(io::Error::new(ErrorKind::InvalidInput, "The file type is not m3u"));
+        bail!("The file '{}' is not an M3U playlist", path.display());
     }
 
     let name = path
@@ -120,7 +120,7 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
         .unwrap_or_else(|| "Unnamed Playlist".to_string());
 
     let directory = path.parent().unwrap_or_else(|| Path::new(""));
-    let file_contents = read_to_string(path)?;
+    let file_contents = read_to_string(path).with_context(|| format!("Failed to read playlist file '{}'", path.display()))?;
 
     let mut tracks = Vec::new();
 
@@ -139,7 +139,9 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
 
         match load_from_file(&full_path) {
             Ok(track) => tracks.push(track),
-            Err(err) => warn!("Skipping invalid track '{}': {}", full_path.display(), err),
+            Err(err) => {
+                warn!("Skipping invalid track '{}': {}", full_path.display(), err);
+            }
         }
     }
 
