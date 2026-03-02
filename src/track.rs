@@ -1,3 +1,4 @@
+use anyhow::{anyhow, bail, Context, Result};
 use fully_pub::fully_pub;
 use lofty::{
     file::{AudioFile, FileType, TaggedFileExt, EXTENSIONS},
@@ -89,43 +90,46 @@ pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     });
 }
 
-pub fn load_from_file(path: &Path) -> io::Result<Track> {
+pub fn load_from_file(path: &Path) -> Result<Track> {
     if !path.is_file() {
-        // TODO: maybe this check is pointless?
-        return Err(io::Error::new(io::ErrorKind::NotFound, "Path is not a file"));
+        bail!("Path '{}' is not a file", path.display());
     }
 
-    let tagged_file = read_from_path(path).map_err(|e| io::Error::new(ErrorKind::InvalidData, format!("Error reading file: {}", e)))?;
+    let tagged_file = read_from_path(path).with_context(|| format!("Failed to read audio file '{}'", path.display()))?;
 
     let tag = tagged_file
         .primary_tag()
         .or_else(|| tagged_file.first_tag())
-        .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, format!("No tags found in file: {:?}", path)))?;
+        .ok_or_else(|| anyhow!("No tags found in file '{}'", path.display()))?;
 
     let title = tag
         .get_string(ItemKey::TrackTitle)
         .map(|t| t.to_owned())
         .or_else(|| path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_owned()));
+
     let artist = tag.get_string(ItemKey::TrackArtist).map(|a| a.to_owned());
+
     let album = tag.get_string(ItemKey::AlbumTitle).map(|a| a.to_owned());
 
     let properties = tagged_file.properties();
+
     let duration = properties.duration();
 
     let sample_rate = properties
         .sample_rate()
-        .map(|rate| {
-            NonZeroU32::new(rate)
-                .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, format!("Invalid sample rate (0) in file: {:?}", path)))
-        })
+        .map(|rate| NonZeroU32::new(rate).ok_or_else(|| anyhow::anyhow!("Invalid sample rate (0) in file '{}'", path.display())))
         .transpose()?;
 
     let file_path = path.to_path_buf();
 
     let codec = tagged_file.file_type();
 
-    let file_metadata = metadata(path)?;
-    let date_added = file_metadata.created().or_else(|_| file_metadata.modified())?;
+    let file_metadata = metadata(path).with_context(|| format!("Failed to get metadata for '{}'", path.display()))?;
+
+    let date_added = file_metadata
+        .created()
+        .or_else(|_| file_metadata.modified())
+        .with_context(|| format!("Failed to determine creation/modification date for '{}'", path.display()))?;
 
     Ok(Track {
         title,
