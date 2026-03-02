@@ -1,8 +1,9 @@
 use crate::{track::load_from_file, Track};
+use anyhow::{anyhow, bail, Context, Result};
 use fully_pub::fully_pub;
 use log::warn;
 use std::{
-    fs::{metadata, read_to_string, File},
+    fs::{self, metadata, read_to_string, File},
     io::{self, ErrorKind, Write},
     path::{Path, PathBuf},
     time::SystemTime,
@@ -39,47 +40,48 @@ impl PlaylistRetrieval for Vec<Playlist> {
     }
 }
 
-pub fn add_to_playlist(playlist: &mut Playlist, track: Track) -> io::Result<()> {
+pub fn add_to_playlist(playlist: &mut Playlist, track: Track) -> Result<()> {
     if playlist.tracks.contains(&track) {
-        return Err(io::Error::other(
-            "The track is already in the playlist. Duplicates are not allowed.",
-        ));
+        bail!(
+            "The track '{}' is already in the playlist. Duplicates are not allowed.",
+            track.path.display()
+        );
     }
 
     playlist.tracks.push(track);
-    save_to_m3u(playlist)?;
+    save_to_m3u(playlist).context("Failed to persist playlist after adding track")?;
 
     Ok(())
 }
 
-pub fn remove_from_playlist(playlist: &mut Playlist, track_key: &Path) -> io::Result<()> {
-    let Some(index) = playlist.tracks.iter().position(|t: &Track| t.path == track_key) else {
-        return Err(io::Error::new(
-            ErrorKind::NotFound,
-            "The track to be removed was not found in the playlist.",
-        ));
-    };
+pub fn remove_from_playlist(playlist: &mut Playlist, track_key: &Path) -> Result<()> {
+    let index = playlist
+        .tracks
+        .iter()
+        .position(|t: &Track| t.path == track_key)
+        .ok_or_else(|| anyhow!("Track '{}' not found in playlist", track_key.display()))?;
 
     playlist.tracks.remove(index);
-    save_to_m3u(playlist)?;
+    save_to_m3u(playlist).context("Failed to persist playlist after removing track")?;
 
     Ok(())
 }
 
-pub fn load_playlists_from_directory(directory: &Path) -> io::Result<Vec<Playlist>> {
+pub fn load_playlists_from_directory(directory: &Path) -> Result<Vec<Playlist>> {
     let mut playlists = Vec::new();
 
-    for maybe_entry in WalkDir::new(directory) {
-        let entry = maybe_entry?;
-
+    for entry in WalkDir::new(directory).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
+
         if !is_m3u_file(path) {
             continue;
         }
 
         match load_from_m3u(path) {
             Ok(playlist) => playlists.push(playlist),
-            Err(e) => warn!("Failed to load playlist {:?}: {}", path, e),
+            Err(e) => {
+                warn!("Failed to load playlist {:?}: {}", path, e);
+            }
         }
     }
 
@@ -92,13 +94,16 @@ pub fn is_m3u_file(path: &Path) -> bool {
     path.is_file() && path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("m3u"))
 }
 
-pub fn save_to_m3u(playlist: &mut Playlist) -> io::Result<()> {
-    let mut file = File::create(&playlist.m3u_path)?;
+pub fn save_to_m3u(playlist: &mut Playlist) -> Result<()> {
+    let mut file =
+        File::create(&playlist.m3u_path).with_context(|| format!("Failed to create playlist file '{}'", playlist.m3u_path.display()))?;
+
     let directory = playlist.m3u_path.parent().unwrap_or_else(|| Path::new(""));
 
     for track in &playlist.tracks {
         let path = track.path.strip_prefix(directory).unwrap_or(&track.path);
-        writeln!(file, "{}", path.to_string_lossy())?;
+        writeln!(file, "{}", path.to_string_lossy())
+            .with_context(|| format!("Failed to write track '{}' to playlist", track.path.display()))?;
     }
 
     Ok(())
@@ -150,27 +155,26 @@ pub fn load_from_m3u(path: &Path) -> io::Result<Playlist> {
     })
 }
 
-pub fn rename(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
-    let Some(directory) = playlist.m3u_path.parent() else {
-        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist path has no parent directory."));
-    };
+pub fn rename(playlist: &mut Playlist, new_name: String) -> Result<()> {
+    let directory = playlist
+        .m3u_path
+        .parent()
+        .ok_or_else(|| anyhow!("Playlist path has no parent directory"))?;
 
     let sanitized_name = sanitize_filename::sanitize(new_name.trim());
     if sanitized_name.is_empty() {
-        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist name cannot be empty."));
+        bail!("Playlist name cannot be empty.");
     }
 
     let new_filename = format!("{}.m3u", sanitized_name);
     let new_path = directory.join(new_filename);
 
     if new_path.exists() {
-        return Err(io::Error::new(
-            ErrorKind::AlreadyExists,
-            "A playlist with this name already exists.",
-        ));
+        bail!("A playlist with this name already exists");
     }
 
-    std::fs::rename(&playlist.m3u_path, &new_path)?;
+    fs::rename(&playlist.m3u_path, &new_path)
+        .with_context(|| format!("Failed to rename '{}' to '{}'", playlist.m3u_path.display(), new_path.display()))?;
 
     playlist.name = sanitized_name;
     playlist.m3u_path = new_path;
@@ -178,14 +182,14 @@ pub fn rename(playlist: &mut Playlist, new_name: String) -> io::Result<()> {
     Ok(())
 }
 
-pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
+pub fn create(name: String, directory: &Path) -> Result<Playlist> {
     let sanitized_name = sanitize_filename::sanitize(name.trim());
     if sanitized_name.is_empty() {
-        return Err(io::Error::new(ErrorKind::InvalidInput, "Playlist name cannot be empty."));
+        bail!("Playlist name cannot be empty.");
     }
 
     if !directory.exists() {
-        return Err(io::Error::new(ErrorKind::NotFound, "The specified directory does not exist."));
+        bail!("The specified directory does not exist: {}", directory.display());
     }
 
     let extension = ".m3u";
@@ -193,13 +197,10 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
     let file_path = directory.join(&filename);
 
     if file_path.exists() {
-        return Err(io::Error::new(
-            ErrorKind::AlreadyExists,
-            "A playlist with this name already exists.",
-        ));
+        bail!("A playlist with this name already exists.");
     }
 
-    File::create(&file_path)?;
+    File::create(&file_path).with_context(|| format!("Failed to create playlist file '{}'", file_path.display()))?;
 
     let mut playlist = Playlist {
         name: sanitized_name,
@@ -208,24 +209,22 @@ pub fn create(name: String, directory: &Path) -> io::Result<Playlist> {
         m3u_path: file_path,
     };
 
-    save_to_m3u(&mut playlist)?;
+    save_to_m3u(&mut playlist).context("Failed to initialize playlist file contents")?;
 
     Ok(playlist)
 }
 
 /// Removes the playlist from the list and deletes the associated m3u file.
-pub fn delete(playlist_key: &Path, playlists: &mut Vec<Playlist>) -> Result<(), String> {
+pub fn delete(playlist_key: &Path, playlists: &mut Vec<Playlist>) -> Result<()> {
     let index = playlists
         .iter()
         .position(|p| p.m3u_path == playlist_key)
-        .expect("Playlist not found in library");
+        .ok_or_else(|| anyhow!("Playlist '{}' not found in library", playlist_key.display()))?;
+
     let playlist = playlists.remove(index);
 
     // Send the m3u file to the trash!
-    let result = trash::delete(playlist.m3u_path);
-    if let Err(e) = result {
-        return Err(e.to_string());
-    }
+    trash::delete(&playlist.m3u_path).with_context(|| format!("Failed to delete playlist file '{}'", playlist.m3u_path.display()))?;
 
     Ok(())
 }
