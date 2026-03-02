@@ -5,9 +5,7 @@ compile_error!("Gem Player only supports macOS and Windows.");
 
 use dark_light::Mode;
 use eframe::{
-    egui::{
-        Color32, Context, DroppedFile, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals,
-    },
+    egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals},
     icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage,
 };
 use egui_notify::Toasts;
@@ -21,8 +19,7 @@ use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs::{copy, read},
-    io,
+    fs::read,
     path::PathBuf,
     sync::{
         mpsc::{Receiver, Sender, TryRecvError},
@@ -47,7 +44,6 @@ use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
     nosleep_manager::NoSleepManager,
-    track::is_audio_file,
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
@@ -443,32 +439,6 @@ pub fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_pla
     }
 
     gem.ui.library_and_playlists_are_loading = false;
-}
-
-pub fn handle_dropped_file(dropped_file: &DroppedFile, gem: &mut GemPlayer) -> io::Result<()> {
-    let Some(path) = dropped_file.path.as_ref() else {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no path"));
-    };
-
-    let Some(library_path) = gem.library_directory.as_ref() else {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "No library directory set"));
-    };
-
-    let Some(file_name) = path.file_name() else {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Dropped file has no file name"));
-    };
-
-    if !is_audio_file(path) {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Dropped file is not a relevant media file",
-        ));
-    }
-
-    let destination = library_path.join(file_name);
-    copy(path, destination)?;
-
-    Ok(())
 }
 
 fn check_for_next_track(gem: &mut GemPlayer) {

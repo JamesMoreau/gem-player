@@ -1,6 +1,6 @@
 use std::{path::PathBuf, time::Duration};
 
-use egui::{pos2, vec2, Color32, Context, Frame, Label, Margin, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
+use egui::{pos2, vec2, Color32, Context, Label, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
 use egui_notify::Toasts;
@@ -9,10 +9,10 @@ use strum_macros::EnumIter;
 
 use crate::{
     custom_window::custom_window,
-    handle_dropped_file,
     ui::{
         bottom_bar::bottom_bar,
         control_panel::control_panel_ui,
+        file_drag_and_drop::drop_files_area_ui,
         library_view::{library_view, LibraryViewState},
         playlist_view::{playlists_view, PlaylistsViewState},
         queue_view::queue_view,
@@ -96,52 +96,6 @@ pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
                 strip.cell(|ui| bottom_bar(ui, gem));
             });
     });
-}
-
-fn drop_files_area_ui(ui: &mut Ui, gem: &mut GemPlayer) -> bool {
-    let mut drop_area_is_active = false;
-
-    let files_are_hovered = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
-    let files_were_dropped = ui.ctx().input(|i| !i.raw.dropped_files.is_empty());
-
-    if files_were_dropped {
-        ui.ctx().input(|i| {
-            for dropped_file in &i.raw.dropped_files {
-                let result = handle_dropped_file(dropped_file, gem);
-                if let Err(e) = result {
-                    gem.ui.toasts.error(format!("Error adding file: {}", e));
-                } else {
-                    let file_name = dropped_file
-                        .path
-                        .as_ref()
-                        .and_then(|p| p.file_name())
-                        .and_then(|f| f.to_str())
-                        .unwrap_or("Unnamed file");
-
-                    gem.ui.toasts.success(format!("Added '{}' to Library.", file_name));
-                }
-            }
-        });
-    }
-
-    if files_are_hovered {
-        Frame::new()
-            .outer_margin(Margin::symmetric(
-                (ui.available_width() * (1.0 / 4.0)) as i8,
-                (ui.available_height() * (1.0 / 4.0)) as i8,
-            ))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label(format!(
-                        "Drop tracks here to add them to your library.{}",
-                        icons::ICON_DOWNLOAD
-                    )));
-                });
-            });
-        drop_area_is_active = true;
-    }
-
-    drop_area_is_active
 }
 
 pub fn playing_indicator(ui: &mut Ui) {
