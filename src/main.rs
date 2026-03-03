@@ -43,6 +43,7 @@ use {
 use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
+    media_controls::{setup_media_controls, OSMediaControls},
     nosleep_manager::NoSleepManager,
     ui::{
         library_view::LibraryViewState,
@@ -56,6 +57,7 @@ mod commands;
 mod custom_window;
 mod library_folder_picker;
 mod library_watcher;
+mod media_controls;
 mod nosleep_manager;
 mod platform;
 mod player;
@@ -86,8 +88,9 @@ struct GemPlayer {
 
     nosleep_manager: NoSleepManager,
 
+    os_media: Option<OSMediaControls>,
     #[cfg(target_os = "macos")]
-    menubar: platform::macos_menu::MenuBar,
+    menubar: platform::macos_menu::MenuBar, //TODO: this should be optional
 }
 
 #[fully_pub]
@@ -194,6 +197,14 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         (menu, receiver)
     };
 
+    let os_media = match setup_media_controls() {
+        Ok(osm) => Some(osm),
+        Err(e) => {
+            error!("Failed to setup media controls: {}", e);
+            None
+        }
+    };
+
     GemPlayer {
         ui: UIState {
             current_view: View::Library,
@@ -253,6 +264,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             },
         },
         nosleep_manager: NoSleepManager::new(),
+        os_media,
         #[cfg(target_os = "macos")]
         menubar: MenuBar { menu, menu_receiver },
     }
@@ -284,6 +296,7 @@ impl App for GemPlayer {
 
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         // Input
+        poll_os_media_controls(ctx, self);
         #[cfg(target_os = "windows")]
         handle_shortcuts(ctx, self);
         #[cfg(target_os = "macos")]
@@ -309,6 +322,17 @@ impl App for GemPlayer {
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
         self.nosleep_manager.disable();
+    }
+}
+
+fn poll_os_media_controls(ctx: &Context, gem: &mut GemPlayer) {
+    let Some(os_media) = &gem.os_media else {
+        return;
+    };
+
+    let commands: Vec<Command> = os_media.receiver.try_iter().collect();
+    for command in commands {
+        execute(ctx, gem, command);
     }
 }
 
