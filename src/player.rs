@@ -2,13 +2,14 @@ use crate::{
     track::{extract_artwork_from_file, Track},
     visualizer::{visualizer_source, VisualizerCommand},
 };
+use anyhow::{bail, Context, Result};
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, Device, DeviceSinkBuilder, MixerDeviceSink, Source};
 use std::{
     fs::File,
-    io::{self, Seek, SeekFrom},
+    io::{Seek, SeekFrom},
     path::Path,
     sync::mpsc::{Receiver, Sender},
 };
@@ -45,14 +46,14 @@ struct VisualizerState {
     display_bands: Vec<f32>,
 }
 
-pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend, String> {
+pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend> {
     let builder = DeviceSinkBuilder::from_device(device.clone())
-        .map_err(|e| e.to_string())?
+        .context("Failed to create DeviceSinkBuilder from device")?
         .with_error_callback(|e| {
             error!("Stream error: {}", e);
         });
 
-    let stream = builder.open_sink_or_fallback().map_err(|e| e.to_string())?;
+    let stream = builder.open_sink_or_fallback().context("Failed to open audio sink or fallback")?;
 
     let player = rodio::Player::connect_new(stream.mixer());
     player.pause();
@@ -74,10 +75,11 @@ pub fn play_or_pause(player: &mut rodio::Player) {
     }
 }
 
-pub fn play_next(player: &mut Player) -> Result<(), String> {
+pub fn play_next(player: &mut Player) -> Result<()> {
     if player.repeat {
         if let Some(playing) = player.playing.clone() {
-            return load_and_play(player, &playing).map_err(|e| e.to_string());
+            load_and_play(player, &playing)?;
+            return Ok(());
         }
     }
 
@@ -90,53 +92,46 @@ pub fn play_next(player: &mut Player) -> Result<(), String> {
         player.history.push(current);
     }
 
-    if let Some(next_track) = player.queue.first().cloned() {
-        player.queue.remove(0);
-        load_and_play(player, &next_track).map_err(|e| e.to_string())?;
-        player.playing = Some(next_track);
-    }
+    let next_track = player.queue.remove(0);
+    load_and_play(player, &next_track)?;
+    player.playing = Some(next_track);
 
     Ok(())
 }
 
-pub fn play_previous(player: &mut Player) -> Result<(), String> {
+pub fn play_previous(player: &mut Player) -> Result<()> {
     let Some(previous) = player.history.pop() else {
-        return Err("There is no previous track to play.".to_owned());
+        bail!("There is no previous track to play.");
     };
 
-    if let Err(e) = load_and_play(player, &previous) {
-        return Err(e.to_string());
-    }
+    load_and_play(player, &previous)?;
 
     if let Some(playing) = player.playing.take() {
         enqueue_next(player, playing);
     }
 
     player.playing = Some(previous);
+
     Ok(())
 }
 
-pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
+pub fn load_and_play(player: &mut Player, track: &Track) -> Result<()> {
     let Some(backend) = &player.backend else {
-        return Err(io::Error::other("No audio backend available"));
+        bail!("No audio backend available");
     };
 
     backend.player.stop(); // Stop the current track if any.
 
-    let mut file = File::open(&track.path)?;
-    
-    player.raw_artwork = extract_artwork_from_file(&mut file);
-    file.seek(SeekFrom::Start(0))?; // Reset the file cursor since accessing artwork moves it forward.
+    let mut file = File::open(&track.path).with_context(|| format!("Failed to open audio file at {:?}", track.path))?;
 
-    let decoder_result = Decoder::try_from(file);
-    let decoder = match decoder_result {
-        Err(e) => return Err(io::Error::other(e.to_string())),
-        Ok(d) => d,
-    };
+    player.raw_artwork = extract_artwork_from_file(&mut file);
+    file.seek(SeekFrom::Start(0))
+        .context("Failed to reset file cursor after extracting artwork")?; // Reset the file cursor since accessing artwork moves it forward.
+
+    let decoder = Decoder::try_from(file).with_context(|| format!("Failed to decode audio file {:?}", track.path))?;
 
     let sample_rate = decoder.sample_rate();
-    let result = player.visualizer.command_sender.send(VisualizerCommand::SampleRate(sample_rate));
-    if let Err(e) = result {
+    if let Err(e) = player.visualizer.command_sender.send(VisualizerCommand::SampleRate(sample_rate)) {
         error!("Visualizer channel error: {e}. Continuing playback anyway.");
     }
 
@@ -147,7 +142,7 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> io::Result<()> {
     Ok(())
 }
 
-pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) -> Result<(), String> {
+pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) -> Result<()> {
     clear_the_queue(player);
 
     let start_index = starting_track
@@ -161,7 +156,7 @@ pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Opti
         player.queue.push(track.clone());
     }
 
-    play_next(player)
+    play_next(player).context("Failed to start playback")
 }
 
 pub fn toggle_shuffle(player: &mut Player) {
