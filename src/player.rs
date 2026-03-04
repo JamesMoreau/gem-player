@@ -46,17 +46,23 @@ struct VisualizerState {
     display_bands: Vec<f32>,
 }
 
-pub fn play_next(player: &mut Player) -> Result<()> {
+pub enum Transition {
+    Unchanged,
+    Changed,
+}
+
+pub fn play_next(player: &mut Player) -> Result<Transition> {
     if player.repeat {
+        // TODO: extract to caller.
         if let Some(playing) = player.playing.clone() {
             load_and_play(player, &playing)?;
-            return Ok(());
+            return Ok(Transition::Unchanged);
         }
     }
 
     if player.queue.is_empty() {
         player.playing = None;
-        return Ok(()); // Nothing to play
+        return Ok(Transition::Changed); // Nothing to play
     }
 
     if let Some(current) = player.playing.take() {
@@ -67,10 +73,10 @@ pub fn play_next(player: &mut Player) -> Result<()> {
     load_and_play(player, &next_track)?;
     player.playing = Some(next_track);
 
-    Ok(())
+    Ok(Transition::Changed)
 }
 
-pub fn play_previous(player: &mut Player) -> Result<()> {
+pub fn play_previous(player: &mut Player) -> Result<Transition> {
     let Some(previous) = player.history.pop() else {
         bail!("There is no previous track to play.");
     };
@@ -83,7 +89,7 @@ pub fn play_previous(player: &mut Player) -> Result<()> {
 
     player.playing = Some(previous);
 
-    Ok(())
+    Ok(Transition::Changed)
 }
 
 pub fn load_and_play(player: &mut Player, track: &Track) -> Result<()> {
@@ -127,7 +133,9 @@ pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Opti
         player.queue.push(track.clone());
     }
 
-    play_next(player).context("Failed to start playback")
+    Ok(())
+
+    // play_next(player).context("Failed to start playback")
 }
 
 pub fn play_or_pause(player: &mut rodio::Player) {
@@ -169,7 +177,7 @@ pub fn toggle_shuffle(player: &mut Player) {
         None => {
             let original_queue = player.queue.clone();
             player.shuffle = Some(original_queue);
-            
+
             let mut rng = rand::rng();
             player.queue.shuffle(&mut rng);
         }
