@@ -22,11 +22,11 @@ struct Player {
 
     repeat: bool,
     shuffle: Option<Vec<Track>>, // Used to restore the queue after shuffling. The tracks are what was in front of the cursor.
+    paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
+    
+    backend: Option<AudioBackend>,
     muted: bool,
     volume_before_mute: Option<f32>,
-    paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
-
-    backend: Option<AudioBackend>,
 
     raw_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
