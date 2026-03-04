@@ -469,8 +469,9 @@ fn check_for_next_track(gem: &mut GemPlayer) {
         return;
     };
 
-    if !backend.player.empty() {
-        return; // If a track is still playing, do nothing
+    let track_is_playing = !backend.player.empty();
+    if track_is_playing {
+        return;
     }
 
     let result = play_next(&mut gem.player);
@@ -490,7 +491,7 @@ fn maybe_play_next(gem: &mut GemPlayer) {
 
 // If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
-// This is what actually gets called by the UI and key command.
+// This is what actually gets called by the UI.
 pub fn maybe_play_previous(gem: &mut GemPlayer) {
     let rewind_threshold = 5.0;
     let mut under_threshold = false;
