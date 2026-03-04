@@ -133,7 +133,7 @@ pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Opti
         player.queue.push(track.clone());
     }
 
-    Ok(())
+    Ok(()) // TODO put back
 
     // play_next(player).context("Failed to start playback")
 }
