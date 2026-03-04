@@ -88,7 +88,7 @@ struct GemPlayer {
 
     nosleep_manager: NoSleepManager,
 
-    os_media: Option<OSMediaControls>,
+    os_media_controls: Option<OSMediaControls>,
     #[cfg(target_os = "macos")]
     menubar: platform::macos_menu::MenuBar, //TODO: this should be optional
 }
@@ -197,7 +197,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         (menu, receiver)
     };
 
-    let os_media = match setup_media_controls() {
+    let os_media_controls = match setup_media_controls() {
         Ok(osm) => Some(osm),
         Err(e) => {
             error!("Failed to setup media controls: {}", e);
@@ -264,7 +264,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             },
         },
         nosleep_manager: NoSleepManager::new(),
-        os_media,
+        os_media_controls,
         #[cfg(target_os = "macos")]
         menubar: MenuBar { menu, menu_receiver },
     }
@@ -326,18 +326,18 @@ impl App for GemPlayer {
 }
 
 fn poll_os_media_controls(ctx: &Context, gem: &mut GemPlayer) {
-    let Some(os_media) = &gem.os_media else {
+    let Some(os_media_controls) = &gem.os_media_controls else {
         return;
     };
 
-    let commands: Vec<Command> = os_media.receiver.try_iter().collect();
+    let commands: Vec<Command> = os_media_controls.receiver.try_iter().collect();
     for command in commands {
         execute(ctx, gem, command);
     }
 }
 
 #[cfg(target_os = "macos")]
-fn poll_macos_menu_events(ctx: &Context, gem: &mut GemPlayer) {
+fn poll_macos_menu_events(ctx: &Context, gem: &mut GemPlayer) { // TODO: should this use try_iter
     match gem.menubar.menu_receiver.try_recv() {
         Ok(event) => {
             let result = Command::from_str(&event.id.0);
@@ -370,7 +370,7 @@ pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
     });
 }
 
-fn poll_library_watcher_messages(gem: &mut GemPlayer) {
+fn poll_library_watcher_messages(gem: &mut GemPlayer) { // TODO should this use try_iter
     let update = gem.library_watcher.update_receiver.try_recv();
     match update {
         Ok(Some((library, playlists))) => {

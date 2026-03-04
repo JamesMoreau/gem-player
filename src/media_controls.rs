@@ -23,7 +23,7 @@ pub fn setup_media_controls() -> Result<OSMediaControls> {
     let mut controls = MediaControls::new(config).context("Failed to initialize media controls")?;
 
     controls
-        .attach(move |event: MediaControlEvent| {
+        .attach(move |event| {
             let command = match event {
                 MediaControlEvent::Play => Some(Command::Play),
                 MediaControlEvent::Pause => Some(Command::Pause),
