@@ -44,6 +44,7 @@ use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
     nosleep_manager::NoSleepManager,
+    player::Transition,
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
@@ -87,7 +88,7 @@ struct GemPlayer {
     nosleep_manager: NoSleepManager,
 
     #[cfg(target_os = "macos")]
-    menubar: platform::macos_menu::MenuBar,
+    menubar: platform::macos_menu::MenuBar, //TODO: this should be optional
 }
 
 #[fully_pub]
@@ -314,6 +315,7 @@ impl App for GemPlayer {
 
 #[cfg(target_os = "macos")]
 fn poll_macos_menu_events(ctx: &Context, gem: &mut GemPlayer) {
+    // TODO: should this use try_iter
     match gem.menubar.menu_receiver.try_recv() {
         Ok(event) => {
             let result = Command::from_str(&event.id.0);
@@ -347,6 +349,7 @@ pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
 }
 
 fn poll_library_watcher_messages(gem: &mut GemPlayer) {
+    // TODO should this use try_iter
     let update = gem.library_watcher.update_receiver.try_recv();
     match update {
         Ok(Some((library, playlists))) => {
@@ -445,28 +448,30 @@ fn check_for_next_track(gem: &mut GemPlayer) {
         return;
     };
 
-    if !backend.player.empty() {
-        return; // If a track is still playing, do nothing
+    let track_is_playing = !backend.player.empty();
+    if track_is_playing {
+        return;
     }
 
-    let result = play_next(&mut gem.player);
-    if let Err(e) = result {
-        error!("{}", e);
-        gem.ui.toasts.error("Error playing the next track");
-    }
+    maybe_play_next(gem);
 }
 
 fn maybe_play_next(gem: &mut GemPlayer) {
-    let result = play_next(&mut gem.player);
-    if let Err(e) = result {
-        error!("{}", e);
-        gem.ui.toasts.error("Error playing the next track");
+    match play_next(&mut gem.player) {
+        Ok(transition) => match transition {
+            Transition::Unchanged => {}
+            Transition::Changed => on_transition(gem),
+        },
+        Err(e) => {
+            error!("{}", e);
+            gem.ui.toasts.error("Error playing the next track");
+        }
     }
 }
 
 // If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
-// This is what actually gets called by the UI and key command.
+// This is what actually gets called by the UI.
 pub fn maybe_play_previous(gem: &mut GemPlayer) {
     let rewind_threshold = 5.0;
     let mut under_threshold = false;
@@ -480,9 +485,15 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
 
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
-        if let Err(e) = play_previous(&mut gem.player) {
-            error!("{}", e);
-            gem.ui.toasts.error("Error playing the previous track");
+        match play_previous(&mut gem.player) {
+            Ok(transition) => match transition {
+                Transition::Unchanged => {}
+                Transition::Changed => on_transition(gem),
+            },
+            Err(e) => {
+                error!("{}", e);
+                gem.ui.toasts.error("Error playing the previous track");
+            }
         }
     } else if let Some(backend) = &gem.player.backend {
         if let Err(e) = backend.player.try_seek(Duration::ZERO) {
@@ -490,6 +501,9 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
         }
         backend.player.play();
     }
+}
+
+fn on_transition(_gem: &mut GemPlayer) {
 }
 
 pub fn apply_theme(ctx: &Context, preference: ThemePreference) {

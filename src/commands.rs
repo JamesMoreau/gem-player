@@ -17,6 +17,8 @@ pub enum Command {
     VolumeDown,
     // Mute / ummute
     ReportIssue,
+    Play,
+    Pause,
 }
 
 pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
@@ -41,6 +43,16 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
             ctx.open_url(OpenUrl { url, new_tab: true });
+        }
+        Command::Play => {
+            if let Some(backend) = &mut gem.player.backend {
+                backend.player.play();
+            }
+        }
+        Command::Pause => {
+            if let Some(backend) = &mut gem.player.backend {
+                backend.player.pause();
+            }
         }
     }
 }

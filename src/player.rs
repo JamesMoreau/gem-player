@@ -22,11 +22,11 @@ struct Player {
 
     repeat: bool,
     shuffle: Option<Vec<Track>>, // Used to restore the queue after shuffling. The tracks are what was in front of the cursor.
-    muted: bool,
-    volume_before_mute: Option<f32>,
     paused_before_scrubbing: Option<bool>, // None if not scrubbing, Some(true) if paused, Some(false) if playing.
 
     backend: Option<AudioBackend>,
+    muted: bool,
+    volume_before_mute: Option<f32>,
 
     raw_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
@@ -46,46 +46,22 @@ struct VisualizerState {
     display_bands: Vec<f32>,
 }
 
-pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend> {
-    let builder = DeviceSinkBuilder::from_device(device.clone())
-        .context("Failed to create DeviceSinkBuilder from device")?
-        .with_error_callback(|e| {
-            error!("Stream error: {}", e);
-        });
-
-    let stream = builder.open_sink_or_fallback().context("Failed to open audio sink or fallback")?;
-
-    let player = rodio::Player::connect_new(stream.mixer());
-    player.pause();
-
-    Ok(AudioBackend { device, player, stream })
+pub enum Transition {
+    Unchanged,
+    Changed,
 }
 
-pub fn clear_the_queue(player: &mut Player) {
-    player.history.clear();
-    player.queue.clear();
-    player.shuffle = None;
-}
-
-pub fn play_or_pause(player: &mut rodio::Player) {
-    if player.is_paused() {
-        player.play()
-    } else {
-        player.pause()
-    }
-}
-
-pub fn play_next(player: &mut Player) -> Result<()> {
+pub fn play_next(player: &mut Player) -> Result<Transition> {
     if player.repeat {
         if let Some(playing) = player.playing.clone() {
             load_and_play(player, &playing)?;
-            return Ok(());
+            return Ok(Transition::Unchanged);
         }
     }
 
     if player.queue.is_empty() {
         player.playing = None;
-        return Ok(()); // Nothing to play
+        return Ok(Transition::Changed); // Nothing to play
     }
 
     if let Some(current) = player.playing.take() {
@@ -96,10 +72,10 @@ pub fn play_next(player: &mut Player) -> Result<()> {
     load_and_play(player, &next_track)?;
     player.playing = Some(next_track);
 
-    Ok(())
+    Ok(Transition::Changed)
 }
 
-pub fn play_previous(player: &mut Player) -> Result<()> {
+pub fn play_previous(player: &mut Player) -> Result<Transition> {
     let Some(previous) = player.history.pop() else {
         bail!("There is no previous track to play.");
     };
@@ -112,7 +88,7 @@ pub fn play_previous(player: &mut Player) -> Result<()> {
 
     player.playing = Some(previous);
 
-    Ok(())
+    Ok(Transition::Changed)
 }
 
 pub fn load_and_play(player: &mut Player, track: &Track) -> Result<()> {
@@ -156,20 +132,35 @@ pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Opti
         player.queue.push(track.clone());
     }
 
-    play_next(player).context("Failed to start playback")
+    match play_next(player) {
+        Ok(transition) => match transition {
+            Transition::Unchanged => {
+                // TODO
+            },
+            Transition::Changed => {
+                // TODO: handle track change.
+            },
+        },
+        Err(e) => {
+            error!("Failed to play next: ")
+        },
+    }
+
+    Ok(())
 }
 
-pub fn toggle_shuffle(player: &mut Player) {
-    match player.shuffle.take() {
-        Some(unshuffled_queue) => {
-            player.queue = unshuffled_queue; // Restore the queue to its original order.
-        }
-        None => {
-            let original_queue = player.queue.clone();
-            player.shuffle = Some(original_queue);
-            shuffle(&mut player.queue);
-        }
+pub fn play_or_pause(player: &mut rodio::Player) {
+    if player.is_paused() {
+        player.play()
+    } else {
+        player.pause()
     }
+}
+
+pub fn clear_the_queue(player: &mut Player) {
+    player.history.clear();
+    player.queue.clear();
+    player.shuffle = None;
 }
 
 pub fn remove_from_queue(player: &mut Player, index: usize) {
@@ -189,9 +180,34 @@ pub fn enqueue(player: &mut Player, track: Track) {
     player.queue.push(track);
 }
 
-pub fn shuffle(queue: &mut [Track]) {
-    let mut rng = rand::rng();
-    queue.shuffle(&mut rng);
+pub fn toggle_shuffle(player: &mut Player) {
+    match player.shuffle.take() {
+        Some(unshuffled_queue) => {
+            player.queue = unshuffled_queue; // Restore the queue to its original order.
+        }
+        None => {
+            let original_queue = player.queue.clone();
+            player.shuffle = Some(original_queue);
+
+            let mut rng = rand::rng();
+            player.queue.shuffle(&mut rng);
+        }
+    }
+}
+
+pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend> {
+    let builder = DeviceSinkBuilder::from_device(device.clone())
+        .context("Failed to create DeviceSinkBuilder from device")?
+        .with_error_callback(|e| {
+            error!("Stream error: {}", e);
+        });
+
+    let stream = builder.open_sink_or_fallback().context("Failed to open audio sink or fallback")?;
+
+    let player = rodio::Player::connect_new(stream.mixer());
+    player.pause();
+
+    Ok(AudioBackend { device, player, stream })
 }
 
 pub fn mute_or_unmute(player: &mut Player) {
