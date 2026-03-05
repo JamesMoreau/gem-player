@@ -53,7 +53,6 @@ pub enum Transition {
 
 pub fn play_next(player: &mut Player) -> Result<Transition> {
     if player.repeat {
-        // TODO: extract to caller.
         if let Some(playing) = player.playing.clone() {
             load_and_play(player, &playing)?;
             return Ok(Transition::Unchanged);
@@ -133,9 +132,21 @@ pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Opti
         player.queue.push(track.clone());
     }
 
-    Ok(()) // TODO put back
+    match play_next(player) {
+        Ok(transition) => match transition {
+            Transition::Unchanged => {
+                // TODO
+            },
+            Transition::Changed => {
+                // TODO: handle track change.
+            },
+        },
+        Err(e) => {
+            error!("Failed to play next: ")
+        },
+    }
 
-    // play_next(player).context("Failed to start playback")
+    Ok(())
 }
 
 pub fn play_or_pause(player: &mut rodio::Player) {
