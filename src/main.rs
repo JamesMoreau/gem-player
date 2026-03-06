@@ -88,7 +88,7 @@ struct GemPlayer {
     nosleep_manager: NoSleepManager,
 
     #[cfg(target_os = "macos")]
-    menubar: platform::macos_menu::MenuBar, //TODO: this should be optional
+    menubar: platform::macos_menu::MenuBar,
 }
 
 #[fully_pub]
