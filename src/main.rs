@@ -44,7 +44,7 @@ use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
     nosleep_manager::NoSleepManager,
-    player::Transition,
+    player::TrackTransition,
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
@@ -459,8 +459,8 @@ fn check_for_next_track(gem: &mut GemPlayer) {
 fn maybe_play_next(gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
         Ok(transition) => match transition {
-            Transition::Unchanged => {}
-            Transition::Changed => on_transition(gem),
+            TrackTransition::Unchanged => {}
+            TrackTransition::Changed => on_transition(gem),
         },
         Err(e) => {
             error!("{}", e);
@@ -487,8 +487,8 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
     if can_go_previous {
         match play_previous(&mut gem.player) {
             Ok(transition) => match transition {
-                Transition::Unchanged => {}
-                Transition::Changed => on_transition(gem),
+                TrackTransition::Unchanged => {}
+                TrackTransition::Changed => on_transition(gem),
             },
             Err(e) => {
                 error!("{}", e);

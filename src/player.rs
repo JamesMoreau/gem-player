@@ -46,22 +46,22 @@ struct VisualizerState {
     display_bands: Vec<f32>,
 }
 
-pub enum Transition {
+pub enum TrackTransition {
     Unchanged,
     Changed,
 }
 
-pub fn play_next(player: &mut Player) -> Result<Transition> {
+pub fn play_next(player: &mut Player) -> Result<TrackTransition> {
     if player.repeat {
         if let Some(playing) = player.playing.clone() {
-            load_and_play(player, &playing)?;
-            return Ok(Transition::Unchanged);
+            play_track(player, playing)?;
+            return Ok(TrackTransition::Unchanged);
         }
     }
 
     if player.queue.is_empty() {
         player.playing = None;
-        return Ok(Transition::Changed); // Nothing to play
+        return Ok(TrackTransition::Changed); // Nothing to play
     }
 
     if let Some(current) = player.playing.take() {
@@ -69,29 +69,27 @@ pub fn play_next(player: &mut Player) -> Result<Transition> {
     }
 
     let next_track = player.queue.remove(0);
-    load_and_play(player, &next_track)?;
-    player.playing = Some(next_track);
 
-    Ok(Transition::Changed)
+    play_track(player, next_track)?;
+
+    Ok(TrackTransition::Changed)
 }
 
-pub fn play_previous(player: &mut Player) -> Result<Transition> {
+pub fn play_previous(player: &mut Player) -> Result<TrackTransition> {
     let Some(previous) = player.history.pop() else {
         bail!("There is no previous track to play.");
     };
-
-    load_and_play(player, &previous)?;
 
     if let Some(playing) = player.playing.take() {
         enqueue_next(player, playing);
     }
 
-    player.playing = Some(previous);
+    play_track(player, previous)?;
 
-    Ok(Transition::Changed)
+    Ok(TrackTransition::Changed)
 }
 
-pub fn load_and_play(player: &mut Player, track: &Track) -> Result<()> {
+fn play_track(player: &mut Player, track: Track) -> Result<()> {
     let Some(backend) = &player.backend else {
         bail!("No audio backend available");
     };
@@ -116,6 +114,7 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> Result<()> {
     backend.player.play();
 
     player.raw_artwork = artwork;
+    player.playing = Some(track);
 
     Ok(())
 }
@@ -136,16 +135,16 @@ pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Opti
 
     match play_next(player) {
         Ok(transition) => match transition {
-            Transition::Unchanged => {
+            TrackTransition::Unchanged => {
                 // TODO
-            },
-            Transition::Changed => {
+            }
+            TrackTransition::Changed => {
                 // TODO: handle track change.
-            },
+            }
         },
         Err(e) => {
             error!("Failed to play next: ")
-        },
+        }
     }
 
     Ok(())
