@@ -100,7 +100,7 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> Result<()> {
 
     let mut file = File::open(&track.path).with_context(|| format!("Failed to open audio file at {:?}", track.path))?;
 
-    player.raw_artwork = extract_artwork_from_file(&mut file);
+    let artwork = extract_artwork_from_file(&mut file);
     file.seek(SeekFrom::Start(0))
         .context("Failed to reset file cursor after extracting artwork")?; // Reset the file cursor since accessing artwork moves it forward.
 
@@ -114,6 +114,8 @@ pub fn load_and_play(player: &mut Player, track: &Track) -> Result<()> {
     let visualizer_source = visualizer_source(decoder, player.visualizer.command_sender.clone());
     backend.player.append(visualizer_source);
     backend.player.play();
+
+    player.raw_artwork = artwork;
 
     Ok(())
 }
