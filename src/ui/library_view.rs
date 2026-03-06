@@ -7,7 +7,8 @@ use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    player::{enqueue, enqueue_next, play_in_order},
+    maybe_play_next,
+    player::{add_to_queue_in_order, enqueue, enqueue_next},
     playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
     track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
     ui::root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
@@ -239,10 +240,8 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     // Perform actions AFTER rendering the table to avoid borrow checker issues that come with mutating state inside closures.
 
     if let Some(track_key) = should_play_library {
-        if let Err(e) = play_in_order(&mut gem.player, cached_library, Some(&track_key)) {
-            error!("{}", e);
-            gem.ui.toasts.error("Error playing from library");
-        }
+        add_to_queue_in_order(&mut gem.player, cached_library, Some(&track_key));
+        maybe_play_next(gem);
     }
 
     if let Some(action) = context_menu_action {

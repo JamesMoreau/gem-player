@@ -119,7 +119,15 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
     Ok(())
 }
 
-pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) -> Result<()> {
+pub fn play_or_pause(player: &mut rodio::Player) {
+    if player.is_paused() {
+        player.play()
+    } else {
+        player.pause()
+    }
+}
+
+pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) {
     clear_the_queue(player);
 
     let start_index = starting_track
@@ -132,31 +140,8 @@ pub fn play_in_order(player: &mut Player, tracks: &[Track], starting_track: Opti
     for track in ordered {
         player.queue.push(track.clone());
     }
-
-    match play_next(player) {
-        Ok(transition) => match transition {
-            TrackTransition::Unchanged => {
-                // TODO
-            }
-            TrackTransition::Changed => {
-                // TODO: handle track change.
-            }
-        },
-        Err(e) => {
-            error!("Failed to play next: ")
-        }
-    }
-
-    Ok(())
 }
 
-pub fn play_or_pause(player: &mut rodio::Player) {
-    if player.is_paused() {
-        player.play()
-    } else {
-        player.pause()
-    }
-}
 
 pub fn clear_the_queue(player: &mut Player) {
     player.history.clear();

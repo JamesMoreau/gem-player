@@ -7,7 +7,8 @@ use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    player::{enqueue, enqueue_next, play_in_order},
+    maybe_play_next,
+    player::{add_to_queue_in_order, enqueue, enqueue_next},
     playlist::{create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     track::{open_file_location, Track, TrackRetrieval},
     ui::root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
@@ -302,10 +303,8 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                         if play_clicked {
                             let playlist = gem.playlists.get_by_path(&playlist_key);
 
-                            if let Err(e) = play_in_order(&mut gem.player, &playlist.tracks, None) {
-                                error!("{}", e);
-                                gem.ui.toasts.error("Error playing from playlist");
-                            }
+                            add_to_queue_in_order(&mut gem.player, &playlist.tracks, None);
+                            maybe_play_next(gem);
                         }
 
                         if delete_clicked {
@@ -551,10 +550,8 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         });
 
     if let Some(track_key) = should_play_playlist {
-        if let Err(e) = play_in_order(&mut gem.player, cached_playlist_tracks, Some(&track_key)) {
-            error!("{}", e);
-            gem.ui.toasts.error("Error playing from playlist");
-        }
+        add_to_queue_in_order(&mut gem.player, cached_playlist_tracks, Some(&track_key));
+        maybe_play_next(gem);
     }
 
     if let Some(action) = context_menu_action {
