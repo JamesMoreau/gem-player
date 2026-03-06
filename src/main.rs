@@ -292,7 +292,7 @@ impl App for GemPlayer {
 
         // Update
         check_for_next_track(self);
-        poll_library_watcher_messages(self);
+        poll_library_watcher(self);
         poll_library_folder_picker(self);
 
         // Render
@@ -348,25 +348,24 @@ pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
     });
 }
 
-fn poll_library_watcher_messages(gem: &mut GemPlayer) {
-    // TODO should this use try_iter
-    let update = gem.library_watcher.update_receiver.try_recv();
-    match update {
-        Ok(Some((library, playlists))) => {
-            on_library_reloaded(gem, library, playlists);
-        }
-        Ok(None) => {
-            let message = "Failed to load library folder.";
-            error!("{}", message);
-            gem.ui.toasts.error(message);
+fn poll_library_watcher(gem: &mut GemPlayer) {
+    let mut latest = None;
 
-            gem.library_directory = None;
-            gem.ui.library_and_playlists_are_loading = false;
-        }
-        Err(TryRecvError::Empty) => {} // no update available this frame
-        Err(TryRecvError::Disconnected) => {
-            error!("Library watcher has disconnected.");
-            gem.ui.library_and_playlists_are_loading = false;
+    for update in gem.library_watcher.update_receiver.try_iter() {
+        latest = Some(update);
+    }
+
+    if let Some(update) = latest {
+        match update {
+            Some((new_library, new_playlists)) => on_library_reloaded(gem, new_library, new_playlists),
+            None => {
+                let message = "Failed to load library folder.";
+                error!("{}", message);
+                gem.ui.toasts.error(message);
+
+                gem.library_directory = None;
+                gem.ui.library_and_playlists_are_loading = false;
+            }
         }
     }
 }
@@ -503,8 +502,7 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
     }
 }
 
-fn on_transition(_gem: &mut GemPlayer) {
-}
+fn on_transition(_gem: &mut GemPlayer) {}
 
 pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
     let visuals = match preference {
