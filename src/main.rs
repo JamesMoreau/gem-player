@@ -315,20 +315,12 @@ impl App for GemPlayer {
 
 #[cfg(target_os = "macos")]
 fn poll_macos_menu_events(ctx: &Context, gem: &mut GemPlayer) {
-    // TODO: should this use try_iter
-    match gem.menubar.menu_receiver.try_recv() {
-        Ok(event) => {
-            let result = Command::from_str(&event.id.0);
-            if let Ok(command) = result {
-                execute(ctx, gem, command);
-            } else {
-                error!("Unable to process menu event: {:?}", event);
-            }
-        }
-        Err(TryRecvError::Empty) => {} // no menu event this frame
-        Err(TryRecvError::Disconnected) => {
-            error!("Menu events has been disconnected.");
-            gem.ui.library_and_playlists_are_loading = false;
+    let events: Vec<_> = gem.menubar.menu_receiver.try_iter().collect();
+
+    for event in events {
+        match Command::from_str(&event.id.0) {
+            Ok(command) => execute(ctx, gem, command),
+            Err(_) => error!("Unable to process menu event: {:?}", event),
         }
     }
 }
