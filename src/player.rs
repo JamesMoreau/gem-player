@@ -46,22 +46,17 @@ struct VisualizerState {
     display_bands: Vec<f32>,
 }
 
-pub enum TrackTransition {
-    Unchanged,
-    Changed,
-}
-
-pub fn play_next(player: &mut Player) -> Result<TrackTransition> {
+pub fn play_next(player: &mut Player) -> Result<()> {
     if player.repeat {
         if let Some(playing) = player.playing.clone() {
             play_track(player, playing)?;
-            return Ok(TrackTransition::Unchanged);
+            return Ok(());
         }
     }
 
     if player.queue.is_empty() {
         player.playing = None;
-        return Ok(TrackTransition::Changed); // Nothing to play
+        return Ok(()); // Nothing to play
     }
 
     if let Some(current) = player.playing.take() {
@@ -72,10 +67,10 @@ pub fn play_next(player: &mut Player) -> Result<TrackTransition> {
 
     play_track(player, next_track)?;
 
-    Ok(TrackTransition::Changed)
+    Ok(())
 }
 
-pub fn play_previous(player: &mut Player) -> Result<TrackTransition> {
+pub fn play_previous(player: &mut Player) -> Result<()> {
     let Some(previous) = player.history.pop() else {
         bail!("There is no previous track to play.");
     };
@@ -86,7 +81,7 @@ pub fn play_previous(player: &mut Player) -> Result<TrackTransition> {
 
     play_track(player, previous)?;
 
-    Ok(TrackTransition::Changed)
+    Ok(())
 }
 
 fn play_track(player: &mut Player, track: Track) -> Result<()> {
@@ -141,7 +136,6 @@ pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_tra
         player.queue.push(track.clone());
     }
 }
-
 
 pub fn clear_the_queue(player: &mut Player) {
     player.history.clear();

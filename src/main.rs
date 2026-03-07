@@ -44,7 +44,6 @@ use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
     nosleep_manager::NoSleepManager,
-    player::TrackTransition,
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
@@ -449,10 +448,9 @@ fn check_for_next_track(gem: &mut GemPlayer) {
 
 fn maybe_play_next(gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
-        Ok(transition) => match transition {
-            TrackTransition::Unchanged => {}
-            TrackTransition::Changed => on_transition(gem),
-        },
+        Ok(_) => {
+            on_track_change(gem);
+        }
         Err(e) => {
             error!("{}", e);
             gem.ui.toasts.error("Error playing the next track");
@@ -477,10 +475,7 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
         match play_previous(&mut gem.player) {
-            Ok(transition) => match transition {
-                TrackTransition::Unchanged => {}
-                TrackTransition::Changed => on_transition(gem),
-            },
+            Ok(_) => on_track_change(gem),
             Err(e) => {
                 error!("{}", e);
                 gem.ui.toasts.error("Error playing the previous track");
@@ -494,7 +489,9 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
     }
 }
 
-fn on_transition(_gem: &mut GemPlayer) {}
+fn on_track_change(_gem: &mut GemPlayer) {
+    // TODO: artwork.
+}
 
 pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
     let visuals = match preference {
