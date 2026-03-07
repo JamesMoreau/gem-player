@@ -1,6 +1,7 @@
+use fully_pub::fully_pub;
 use log::info;
 use rodio::{source::SeekError, ChannelCount, Sample, SampleRate, Source};
-use rustfft::{num_complex::Complex, FftPlanner};
+use rustfft::{num_complex::Complex, Fft, FftPlanner};
 use std::{
     f32::consts::{PI, SQRT_2},
     sync::mpsc::{channel, Receiver, Sender},
@@ -10,6 +11,13 @@ use std::{
 
 const FFT_SIZE: usize = 1 << 10; // 1024
 pub const CENTER_FREQUENCIES: [f32; 6] = [63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0];
+
+#[fully_pub]
+struct VisualizerState {
+    command_sender: Sender<VisualizerCommand>,
+    bands_receiver: Receiver<Vec<f32>>,
+    display_bands: Vec<f32>,
+}
 
 pub enum VisualizerCommand {
     Sample(Sample),
@@ -51,6 +59,10 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
         let mut sample_rate = None;
         let mut samples = Vec::with_capacity(FFT_SIZE);
 
+        // Cache the fft planner for perfomance.
+        let mut planner = FftPlanner::<f32>::new();
+        let fft = planner.plan_fft_forward(FFT_SIZE);
+
         while let Ok(command) = commands_receiver.recv() {
             match command {
                 VisualizerCommand::Sample(sample) => {
@@ -59,7 +71,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 
                         if samples.len() == FFT_SIZE {
                             let half_octave_bandwidth = SQRT_2;
-                            let bands = process_samples(&samples, sr, &CENTER_FREQUENCIES, half_octave_bandwidth);
+                            let bands = process_samples(&samples, sr, fft.as_ref(), &CENTER_FREQUENCIES, half_octave_bandwidth);
 
                             let result = bands_sender.send(bands);
                             if result.is_err() {
@@ -85,7 +97,13 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     (command_sender, bands_receiver)
 }
 
-fn process_samples(samples: &[Sample], sample_rate: SampleRate, band_center_frequencies: &[f32], bandwidth: f32) -> Vec<f32> {
+fn process_samples(
+    samples: &[Sample],
+    sample_rate: SampleRate,
+    fft: &dyn Fft<f32>,
+    band_center_frequencies: &[f32],
+    bandwidth: f32,
+) -> Vec<f32> {
     let n = samples.len();
     let window = hann_window(n);
 
@@ -95,8 +113,6 @@ fn process_samples(samples: &[Sample], sample_rate: SampleRate, band_center_freq
         .map(|(&s, &w)| Complex { re: s * w, im: 0.0 })
         .collect();
 
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(n);
     fft.process(&mut buffer);
 
     let magnitudes: Vec<f32> = buffer.iter().take(n / 2 + 1).map(|c| c.norm()).collect();

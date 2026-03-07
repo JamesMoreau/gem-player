@@ -1,6 +1,6 @@
 use crate::{
     track::{extract_artwork_from_file, Track},
-    visualizer::{visualizer_source, VisualizerCommand},
+    visualizer::{visualizer_source, VisualizerCommand, VisualizerState},
 };
 use anyhow::{bail, Context, Result};
 use fully_pub::fully_pub;
@@ -11,7 +11,6 @@ use std::{
     fs::File,
     io::{Seek, SeekFrom},
     path::Path,
-    sync::mpsc::{Receiver, Sender},
 };
 
 #[fully_pub]
@@ -37,13 +36,6 @@ struct AudioBackend {
     device: Device,
     stream: MixerDeviceSink, // Holds the MixerDeviceSink to keep it alive
     player: rodio::Player,   // Controls playback (play, pause, stop, etc.)
-}
-
-#[fully_pub]
-struct VisualizerState {
-    command_sender: Sender<VisualizerCommand>,
-    bands_receiver: Receiver<Vec<f32>>,
-    display_bands: Vec<f32>,
 }
 
 pub fn play_next(player: &mut Player) -> Result<()> {

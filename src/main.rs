@@ -14,7 +14,7 @@ use fully_pub::fully_pub;
 use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
-use player::{build_audio_backend_from_device, play_next, play_previous, Player, VisualizerState};
+use player::{build_audio_backend_from_device, play_next, play_previous, Player};
 use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
@@ -47,9 +47,9 @@ use crate::{
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
-        root::{gem_player_ui, UIState, View},
+        root::{UIState, View, gem_player_ui},
         widgets::marquee::Marquee,
-    },
+    }, visualizer::VisualizerState,
 };
 
 mod commands;
