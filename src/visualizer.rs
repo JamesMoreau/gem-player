@@ -154,36 +154,15 @@ fn hann_window(n: usize) -> Vec<f32> {
         .collect()
 }
 
-pub fn visualizer_source<I>(input: I, sender: Sender<VisualizerCommand>) -> VisualizerSource<I>
-where
-    I: Source,
-{
-    VisualizerSource { input, sender }
+impl<I> VisualizerSource<I> {
+    pub fn new(input: I, sender: Sender<VisualizerCommand>) -> Self {
+        Self { input, sender }
+    }
 }
 
 pub struct VisualizerSource<I> {
     input: I,
     sender: Sender<VisualizerCommand>, // single f32 samples now
-}
-
-impl<I> VisualizerSource<I> {
-    /// Returns a reference to the inner source.
-    #[inline]
-    pub fn _inner(&self) -> &I {
-        &self.input
-    }
-
-    /// Returns a mutable reference to the inner source.
-    #[inline]
-    pub fn _inner_mut(&mut self) -> &mut I {
-        &mut self.input
-    }
-
-    /// Returns the inner source.
-    #[inline]
-    pub fn _into_inner(self) -> I {
-        self.input
-    }
 }
 
 impl<I> Iterator for VisualizerSource<I>

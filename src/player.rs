@@ -1,6 +1,6 @@
 use crate::{
-    track::{extract_artwork_from_file, Track},
-    visualizer::{visualizer_source, VisualizerCommand, VisualizerState},
+    track::{Track, extract_artwork_from_file},
+    visualizer::{VisualizerCommand, VisualizerSource, VisualizerState},
 };
 use anyhow::{bail, Context, Result};
 use fully_pub::fully_pub;
@@ -96,7 +96,7 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
         error!("Visualizer channel error: {e}. Continuing playback anyway.");
     }
 
-    let visualizer_source = visualizer_source(decoder, player.visualizer.command_sender.clone());
+    let visualizer_source = VisualizerSource::new(decoder, player.visualizer.command_sender.clone());
     backend.player.append(visualizer_source);
     backend.player.play();
 
