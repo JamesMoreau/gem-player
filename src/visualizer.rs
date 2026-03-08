@@ -174,10 +174,7 @@ where
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let sample = self.input.next()?;
-
-        // Send sample to the processing thread, ignore if channel is closed
         let _ = self.sender.send(VisualizerCommand::Sample(sample));
-
         Some(sample)
     }
 
