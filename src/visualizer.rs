@@ -154,15 +154,15 @@ fn hann_window(n: usize) -> Vec<f32> {
         .collect()
 }
 
+pub struct VisualizerSource<I> {
+    input: I,
+    sender: Sender<VisualizerCommand>,
+}
+
 impl<I> VisualizerSource<I> {
     pub fn new(input: I, sender: Sender<VisualizerCommand>) -> Self {
         Self { input, sender }
     }
-}
-
-pub struct VisualizerSource<I> {
-    input: I,
-    sender: Sender<VisualizerCommand>, // single f32 samples now
 }
 
 impl<I> Iterator for VisualizerSource<I>
@@ -186,8 +186,6 @@ where
         self.input.size_hint()
     }
 }
-
-impl<I> ExactSizeIterator for VisualizerSource<I> where I: Source + ExactSizeIterator {}
 
 impl<I> Source for VisualizerSource<I>
 where
