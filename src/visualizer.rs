@@ -14,8 +14,9 @@ pub const CENTER_FREQUENCIES: [f32; 6] = [63.0, 125.0, 250.0, 500.0, 1000.0, 200
 
 #[fully_pub]
 struct VisualizerState {
+    // TODO: rename varaibesl
     command_sender: Sender<VisualizerCommand>,
-    bands_receiver: Receiver<Vec<f32>>,
+    bands_receiver: Receiver<Vec<f32>>, // TODO maybe change type
     display_bands: Vec<f32>,
 }
 
@@ -60,8 +61,6 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
         let mut samples = [0.0; FFT_SIZE];
         let mut cursor = 0;
 
-        let window = hann_window::<FFT_SIZE>();
-
         // Cache the fft planner for perfomance.
         let mut planner = FftPlanner::<f32>::new();
         let fft = planner.plan_fft_forward(FFT_SIZE);
@@ -75,7 +74,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 
                         if cursor == FFT_SIZE {
                             let half_octave_bandwidth = SQRT_2;
-                            let bands = process_samples(&samples, sr, fft.as_ref(), &window, &CENTER_FREQUENCIES, half_octave_bandwidth);
+                            let bands = process_samples(&samples, sr, fft.as_ref(), &CENTER_FREQUENCIES, half_octave_bandwidth);
 
                             let result = bands_sender.send(bands);
                             if result.is_err() {
@@ -102,24 +101,25 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 }
 
 fn process_samples(
-    samples: &[Sample; FFT_SIZE],
+    samples: &[Sample],
     sample_rate: SampleRate,
     fft: &dyn Fft<f32>,
-    window: &[f32; FFT_SIZE],
     band_center_frequencies: &[f32],
     bandwidth: f32,
 ) -> Vec<f32> {
+    let n = samples.len();
+
     let mut buffer: Vec<Complex<f32>> = samples
         .iter()
-        .zip(window.iter())
+        .zip(hann_window(n).iter())
         .map(|(&s, &w)| Complex { re: s * w, im: 0.0 })
         .collect();
 
     fft.process(&mut buffer);
 
-    let magnitudes: Vec<f32> = buffer.iter().take(FFT_SIZE / 2 + 1).map(|c| c.norm()).collect();
+    let magnitudes: Vec<f32> = buffer.iter().take(n / 2 + 1).map(|c| c.norm()).collect();
 
-    let mut bands = vec![0.0f32; band_center_frequencies.len()];
+    let mut bands = vec![0.0; band_center_frequencies.len()];
 
     for (b, &center) in band_center_frequencies.iter().enumerate() {
         let f_start = center / bandwidth;
@@ -151,16 +151,10 @@ fn process_samples(
     bands
 }
 
-fn hann_window<const N: usize>() -> [f32; N] {
-    let mut window = [0.0; N];
-    let mut i = 0;
-
-    while i < N {
-        window[i] = 0.5 * (1.0 - (2.0 * PI * i as f32 / (N as f32 - 1.0)).cos());
-        i += 1;
-    }
-
-    window
+fn hann_window(n: usize) -> Vec<f32> {
+    (0..n)
+        .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / (n as f32 - 1.0)).cos()))
+        .collect()
 }
 
 pub fn visualizer_source<I>(input: I, sender: Sender<VisualizerCommand>) -> VisualizerSource<I>
