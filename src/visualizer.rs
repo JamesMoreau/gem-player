@@ -14,9 +14,8 @@ pub const CENTER_FREQUENCIES: [f32; 6] = [63.0, 125.0, 250.0, 500.0, 1000.0, 200
 
 #[fully_pub]
 struct VisualizerState {
-    // TODO: rename varaibesl
     command_sender: Sender<VisualizerCommand>,
-    bands_receiver: Receiver<Vec<f32>>, // TODO maybe change type
+    bands_receiver: Receiver<Vec<f32>>,
     display_bands: Vec<f32>,
 }
 
