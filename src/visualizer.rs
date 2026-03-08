@@ -57,7 +57,10 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     let cs = command_sender.clone();
     thread::spawn(move || {
         let mut sample_rate = None;
-        let mut samples = Vec::with_capacity(FFT_SIZE);
+        let mut samples = [0.0; FFT_SIZE];
+        let mut cursor = 0;
+
+        let window = hann_window::<FFT_SIZE>();
 
         // Cache the fft planner for perfomance.
         let mut planner = FftPlanner::<f32>::new();
@@ -67,24 +70,25 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
             match command {
                 VisualizerCommand::Sample(sample) => {
                     if let Some(sr) = sample_rate {
-                        samples.push(sample);
+                        samples[cursor] = sample;
+                        cursor += 1;
 
-                        if samples.len() == FFT_SIZE {
+                        if cursor == FFT_SIZE {
                             let half_octave_bandwidth = SQRT_2;
-                            let bands = process_samples(&samples, sr, fft.as_ref(), &CENTER_FREQUENCIES, half_octave_bandwidth);
+                            let bands = process_samples(&samples, sr, fft.as_ref(), &window, &CENTER_FREQUENCIES, half_octave_bandwidth);
 
                             let result = bands_sender.send(bands);
                             if result.is_err() {
                                 let _ = cs.send(VisualizerCommand::Shutdown);
                             }
 
-                            samples.clear();
+                            cursor = 0;
                         }
                     }
                 }
                 VisualizerCommand::SampleRate(sr) => {
                     sample_rate = Some(sr);
-                    samples.clear();
+                    cursor = 0;
                 }
                 VisualizerCommand::Shutdown => {
                     info!("Received shutdown message. Shutting down the visualizer pipeline.");
@@ -98,15 +102,13 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 }
 
 fn process_samples(
-    samples: &[Sample],
+    samples: &[Sample; FFT_SIZE],
     sample_rate: SampleRate,
     fft: &dyn Fft<f32>,
+    window: &[f32; FFT_SIZE],
     band_center_frequencies: &[f32],
     bandwidth: f32,
 ) -> Vec<f32> {
-    let n = samples.len();
-    let window = hann_window(n);
-
     let mut buffer: Vec<Complex<f32>> = samples
         .iter()
         .zip(window.iter())
@@ -115,7 +117,7 @@ fn process_samples(
 
     fft.process(&mut buffer);
 
-    let magnitudes: Vec<f32> = buffer.iter().take(n / 2 + 1).map(|c| c.norm()).collect();
+    let magnitudes: Vec<f32> = buffer.iter().take(FFT_SIZE / 2 + 1).map(|c| c.norm()).collect();
 
     let mut bands = vec![0.0f32; band_center_frequencies.len()];
 
@@ -123,8 +125,8 @@ fn process_samples(
         let f_start = center / bandwidth;
         let f_end = center * bandwidth;
 
-        let i_min = ((f_start * n as f32) / sample_rate.get() as f32).floor() as usize;
-        let i_max = ((f_end * n as f32) / sample_rate.get() as f32).ceil() as usize;
+        let i_min = ((f_start * FFT_SIZE as f32) / sample_rate.get() as f32).floor() as usize;
+        let i_max = ((f_end * FFT_SIZE as f32) / sample_rate.get() as f32).ceil() as usize;
         let i_max = i_max.min(magnitudes.len() - 1); // clamp to available bins
 
         for mag in &magnitudes[i_min..=i_max] {
@@ -149,10 +151,16 @@ fn process_samples(
     bands
 }
 
-fn hann_window(n: usize) -> Vec<f32> {
-    (0..n)
-        .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / (n as f32 - 1.0)).cos()))
-        .collect()
+fn hann_window<const N: usize>() -> [f32; N] {
+    let mut window = [0.0; N];
+    let mut i = 0;
+
+    while i < N {
+        window[i] = 0.5 * (1.0 - (2.0 * PI * i as f32 / (N as f32 - 1.0)).cos());
+        i += 1;
+    }
+
+    window
 }
 
 pub fn visualizer_source<I>(input: I, sender: Sender<VisualizerCommand>) -> VisualizerSource<I>
