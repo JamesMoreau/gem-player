@@ -58,8 +58,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     let cs = command_sender.clone();
     thread::spawn(move || {
         let mut sample_rate = None;
-        let mut samples = [0.0; FFT_SIZE];
-        let mut cursor = 0;
+        let mut samples = Vec::with_capacity(FFT_SIZE);
 
         // Cache the fft planner for perfomance.
         let mut planner = FftPlanner::<f32>::new();
@@ -69,10 +68,9 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
             match command {
                 VisualizerCommand::Sample(sample) => {
                     if let Some(sr) = sample_rate {
-                        samples[cursor] = sample;
-                        cursor += 1;
+                        samples.push(sample);
 
-                        if cursor == FFT_SIZE {
+                        if samples.len() == FFT_SIZE {
                             let half_octave_bandwidth = SQRT_2;
                             let bands = process_samples(&samples, sr, fft.as_ref(), &CENTER_FREQUENCIES, half_octave_bandwidth);
 
@@ -81,13 +79,13 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
                                 let _ = cs.send(VisualizerCommand::Shutdown);
                             }
 
-                            cursor = 0;
+                            samples.clear();
                         }
                     }
                 }
                 VisualizerCommand::SampleRate(sr) => {
                     sample_rate = Some(sr);
-                    cursor = 0;
+                    samples.clear();
                 }
                 VisualizerCommand::Shutdown => {
                     info!("Received shutdown message. Shutting down the visualizer pipeline.");
@@ -125,8 +123,8 @@ fn process_samples(
         let f_start = center / bandwidth;
         let f_end = center * bandwidth;
 
-        let i_min = ((f_start * FFT_SIZE as f32) / sample_rate.get() as f32).floor() as usize;
-        let i_max = ((f_end * FFT_SIZE as f32) / sample_rate.get() as f32).ceil() as usize;
+        let i_min = ((f_start * n as f32) / sample_rate.get() as f32).floor() as usize;
+        let i_max = ((f_end * n as f32) / sample_rate.get() as f32).ceil() as usize;
         let i_max = i_max.min(magnitudes.len() - 1); // clamp to available bins
 
         for mag in &magnitudes[i_min..=i_max] {
