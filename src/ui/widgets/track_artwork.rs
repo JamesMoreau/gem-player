@@ -1,21 +1,29 @@
 use std::path::Path;
 
 use egui::{include_image, Image, TextureFilter, TextureOptions, Ui, Vec2};
+use fully_pub::fully_pub;
+
+#[fully_pub]
+struct Artwork {
+    uri: String,
+    bytes: Vec<u8>,
+}
 
 // Use track path as a unique/stable key for egui
 pub fn compute_uri(path: &Path) -> String {
     format!("bytes://{}", path.to_string_lossy())
 }
 
-pub fn track_artwork_ui(ui: &mut Ui, uri: Option<&str>, raw_artwork: Option<&[u8]>, width: f32) {
+pub fn track_artwork_ui(ui: &mut Ui, maybe_artwork: Option<&Artwork>, width: f32) {
     let texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let size = Vec2::splat(width);
 
     let placeholder = include_image!("../../../assets/icon.png");
 
-    let artwork = match (uri, raw_artwork) {
-        (Some(uri), Some(bytes)) => Image::from_bytes(uri.to_owned(), bytes.to_vec()),
-        _ => Image::new(placeholder),
+    let artwork = if let Some(a) = maybe_artwork {
+        Image::from_bytes(a.uri.to_owned(), a.bytes.to_vec())
+    } else {
+        Image::new(placeholder)
     };
 
     ui.add(

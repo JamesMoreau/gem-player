@@ -8,18 +8,16 @@ use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
 use crate::{
-    custom_window::custom_window,
-    ui::{
+    GemPlayer, custom_window::custom_window, ui::{
         bottom_bar::bottom_bar,
         control_panel::control_panel_ui,
         file_drag_and_drop::drop_files_area_ui,
-        library_view::{library_view, LibraryViewState},
-        playlist_view::{playlists_view, PlaylistsViewState},
+        library_view::{LibraryViewState, library_view},
+        playlist_view::{PlaylistsViewState, playlists_view},
         queue_view::queue_view,
         settings_view::settings_view,
-        widgets::marquee::Marquee,
-    },
-    GemPlayer,
+        widgets::{marquee::Marquee, track_artwork::Artwork},
+    }
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -49,8 +47,7 @@ pub struct UIState {
     search: String,
     volume_popup_is_open: bool,
 
-    cached_artwork_uri: Option<String>,
-    cached_artwork: Option<Vec<u8>>,
+    cached_artwork: Option<Artwork>,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,

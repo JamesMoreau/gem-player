@@ -49,7 +49,10 @@ use crate::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{gem_player_ui, UIState, View},
-        widgets::{marquee::Marquee, track_artwork::compute_uri},
+        widgets::{
+            marquee::Marquee,
+            track_artwork::{compute_uri, Artwork},
+        },
     },
     visualizer::VisualizerState,
 };
@@ -201,7 +204,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
-            cached_artwork_uri: None,
             cached_artwork: None,
             library: LibraryViewState {
                 cached_library: None,
@@ -492,19 +494,19 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
 }
 
 fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
-    // Forget the previous texture
-    if let Some(old_uri) = &gem.ui.cached_artwork_uri {
-        ctx.forget_image(old_uri);
+    // Forget the previous artwork.
+    if let Some(old) = &gem.ui.cached_artwork {
+        ctx.forget_image(&old.uri);
     }
 
-    if let Some(track) = &gem.player.playing {
+    gem.ui.cached_artwork = gem.player.playing.as_ref().and_then(|track| {
         let uri = compute_uri(&track.path);
-        gem.ui.cached_artwork = File::open(&track.path).ok().and_then(|mut f| extract_artwork_from_file(&mut f));
-        gem.ui.cached_artwork_uri = Some(uri);
-    } else {
-        gem.ui.cached_artwork = None;
-        gem.ui.cached_artwork_uri = None;
-    }
+
+        File::open(&track.path)
+            .ok()
+            .and_then(|mut f| extract_artwork_from_file(&mut f))
+            .map(|bytes| Artwork { uri, bytes })
+    });
 }
 
 pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
