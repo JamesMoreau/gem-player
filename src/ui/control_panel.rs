@@ -1,8 +1,6 @@
-use std::{path::Path, time::Duration};
+use std::time::Duration;
 
-use egui::{
-    include_image, Align, Button, Frame, Image, Layout, Margin, Popup, RectAlign, RichText, Slider, TextureFilter, TextureOptions, Ui, Vec2,
-};
+use egui::{Align, Button, Frame, Layout, Margin, Popup, RectAlign, RichText, Slider, Ui, Vec2};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons;
 use log::{error, info};
@@ -17,6 +15,7 @@ use crate::{
             bar_display::BarDisplay,
             marquee::{marquee_ui, Marquee},
             metadata_chip::MetadataChip,
+            track_artwork::track_artwork_ui,
         },
     },
     visualizer::smooth_bars,
@@ -176,7 +175,12 @@ fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32,
                 strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, &mut gem.player, button_size));
                 strip.empty();
                 strip.cell(|ui| {
-                    ui.centered_and_justified(|ui| display_playing_artwork(ui, gem, artwork_width));
+                    ui.centered_and_justified(|ui| {
+                        let maybe_track = gem.player.playing.as_ref();
+                        let maybe_artwork = gem.ui.cached_artwork.as_deref();
+
+                        track_artwork_ui(ui, maybe_track, maybe_artwork, artwork_width);
+                    });
                 });
                 strip.empty();
                 strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
@@ -224,37 +228,6 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     if response.clicked() {
         toggle_shuffle(player);
     }
-}
-
-// Use track path as a unique/stable key for egui
-pub fn compute_uri(path: &Path) -> String {
-    format!("bytes://{}", path.to_string_lossy())
-}
-
-// TODO: worth extracting to own widget?
-fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
-    let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-    let artwork_size = Vec2::splat(artwork_width);
-
-    let placeholder = include_image!("../../assets/icon.png");
-
-    let artwork = if let (Some(track), Some(bytes)) =
-        (&gem.player.playing, &gem.ui.cached_artwork)
-    {
-        let uri = compute_uri(&track.path);
-        Image::from_bytes(uri, bytes.clone())
-    } else {
-        Image::new(placeholder)
-    };
-
-    ui.add(
-        artwork
-            .texture_options(artwork_texture_options)
-            .show_loading_spinner(false)
-            .fit_to_exact_size(artwork_size)
-            .maintain_aspect_ratio(false)
-            .corner_radius(2.0),
-    );
 }
 
 fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {

@@ -46,11 +46,10 @@ use crate::{
     nosleep_manager::NoSleepManager,
     track::extract_artwork_from_file,
     ui::{
-        control_panel::compute_uri,
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
-        root::{gem_player_ui, UIState, View},
-        widgets::marquee::Marquee,
+        root::{UIState, View, gem_player_ui},
+        widgets::{marquee::Marquee, track_artwork::compute_uri},
     },
     visualizer::VisualizerState,
 };
