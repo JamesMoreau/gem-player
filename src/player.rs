@@ -1,5 +1,5 @@
 use crate::{
-    track::{Track, extract_artwork_from_file},
+    track::Track,
     visualizer::{VisualizerCommand, VisualizerSource, VisualizerState},
 };
 use anyhow::{bail, Context, Result};
@@ -7,11 +7,7 @@ use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, Device, DeviceSinkBuilder, MixerDeviceSink, Source};
-use std::{
-    fs::File,
-    io::{Seek, SeekFrom},
-    path::Path,
-};
+use std::{fs::File, path::Path};
 
 #[fully_pub]
 struct Player {
@@ -27,7 +23,6 @@ struct Player {
     muted: bool,
     volume_before_mute: Option<f32>,
 
-    raw_artwork: Option<Vec<u8>>,
     visualizer: VisualizerState,
 }
 
@@ -83,11 +78,7 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
 
     backend.player.stop(); // Stop the current track if any.
 
-    let mut file = File::open(&track.path).with_context(|| format!("Failed to open audio file at {:?}", track.path))?;
-
-    let artwork = extract_artwork_from_file(&mut file);
-    file.seek(SeekFrom::Start(0))
-        .context("Failed to reset file cursor after extracting artwork")?; // Reset the file cursor since accessing artwork moves it forward.
+    let file = File::open(&track.path).with_context(|| format!("Failed to open audio file at {:?}", track.path))?;
 
     let decoder = Decoder::try_from(file).with_context(|| format!("Failed to decode audio file {:?}", track.path))?;
 
@@ -100,7 +91,6 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
     backend.player.append(visualizer_source);
     backend.player.play();
 
-    player.raw_artwork = artwork;
     player.playing = Some(track);
 
     Ok(())

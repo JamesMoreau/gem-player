@@ -248,7 +248,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             paused_before_scrubbing: None,
 
             backend,
-            raw_artwork: None,
             visualizer: VisualizerState {
                 command_sender: visualizer_command_sender,
                 bands_receiver,
