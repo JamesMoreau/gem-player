@@ -19,7 +19,7 @@ use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs::read,
+    fs::{read, File},
     path::PathBuf,
     sync::{
         mpsc::{Receiver, Sender, TryRecvError},
@@ -44,12 +44,15 @@ use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
 
 use crate::{
     nosleep_manager::NoSleepManager,
+    track::extract_artwork_from_file,
     ui::{
+        control_panel::compute_uri,
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
-        root::{UIState, View, gem_player_ui},
+        root::{gem_player_ui, UIState, View},
         widgets::marquee::Marquee,
-    }, visualizer::VisualizerState,
+    },
+    visualizer::VisualizerState,
 };
 
 mod commands;
@@ -199,7 +202,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
-            cached_track_key: None,
+            cached_artwork: None,
             library: LibraryViewState {
                 cached_library: None,
                 selected_tracks: Vec::new(),
@@ -290,7 +293,7 @@ impl App for GemPlayer {
         poll_macos_menu_events(ctx, self);
 
         // Update
-        check_for_next_track(self);
+        check_for_next_track(ctx, self);
         poll_library_watcher(self);
         poll_library_folder_picker(self);
 
@@ -433,7 +436,7 @@ pub fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_pla
     gem.ui.library_and_playlists_are_loading = false;
 }
 
-fn check_for_next_track(gem: &mut GemPlayer) {
+fn check_for_next_track(ctx: &Context, gem: &mut GemPlayer) {
     let Some(backend) = &gem.player.backend else {
         return;
     };
@@ -443,13 +446,13 @@ fn check_for_next_track(gem: &mut GemPlayer) {
         return;
     }
 
-    maybe_play_next(gem);
+    maybe_play_next(ctx, gem);
 }
 
-fn maybe_play_next(gem: &mut GemPlayer) {
+fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
         Ok(_) => {
-            on_track_change(gem);
+            on_track_change(ctx, gem);
         }
         Err(e) => {
             error!("{}", e);
@@ -461,7 +464,7 @@ fn maybe_play_next(gem: &mut GemPlayer) {
 // If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
 // This is what actually gets called by the UI.
-pub fn maybe_play_previous(gem: &mut GemPlayer) {
+pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
     let rewind_threshold = 5.0;
     let mut under_threshold = false;
 
@@ -475,7 +478,7 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
         match play_previous(&mut gem.player) {
-            Ok(_) => on_track_change(gem),
+            Ok(_) => on_track_change(ctx, gem),
             Err(e) => {
                 error!("{}", e);
                 gem.ui.toasts.error("Error playing the previous track");
@@ -489,8 +492,15 @@ pub fn maybe_play_previous(gem: &mut GemPlayer) {
     }
 }
 
-fn on_track_change(_gem: &mut GemPlayer) {
-    // TODO: artwork.
+fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
+    gem.ui.cached_artwork = if let Some(track) = &gem.player.playing {
+        let uri = compute_uri(&track.path);
+        ctx.forget_image(&uri);
+
+        File::open(&track.path).ok().and_then(|mut f| extract_artwork_from_file(&mut f))
+    } else {
+        None
+    };
 }
 
 pub fn apply_theme(ctx: &Context, preference: ThemePreference) {

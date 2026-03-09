@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::Duration};
+use std::time::Duration;
 
 use egui::{pos2, vec2, Color32, Context, Label, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
@@ -47,8 +47,9 @@ pub struct UIState {
     theme_preference: ThemePreference,
     marquee: Marquee,
     search: String,
-    cached_track_key: Option<PathBuf>, // Let's us clear the old artwork texture on track change.
     volume_popup_is_open: bool,
+    
+    cached_artwork: Option<Vec<u8>>,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,

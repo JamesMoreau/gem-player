@@ -28,8 +28,8 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 play_or_pause(&mut backend.player);
             }
         }
-        Command::NextTrack => maybe_play_next(gem),
-        Command::PreviousTrack => maybe_play_previous(gem),
+        Command::NextTrack => maybe_play_next(ctx, gem),
+        Command::PreviousTrack => maybe_play_previous(ctx, gem),
         Command::VolumeUp => {
             if let Some(backend) = &mut gem.player.backend {
                 adjust_volume_by_percentage(&mut backend.player, 0.1);

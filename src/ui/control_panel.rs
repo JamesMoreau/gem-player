@@ -15,8 +15,8 @@ use crate::{
         root::{format_duration_to_mmss, unselectable_label},
         widgets::{
             bar_display::BarDisplay,
-            metadata_chip::MetadataChip,
             marquee::{marquee_ui, Marquee},
+            metadata_chip::MetadataChip,
         },
     },
     visualizer::smooth_bars,
@@ -125,7 +125,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Previous")
         .on_disabled_hover_text("No previous track");
     if response.clicked() {
-        maybe_play_previous(gem)
+        maybe_play_previous(ui.ctx(), gem)
     }
 
     let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.player.is_paused());
@@ -154,7 +154,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Next")
         .on_disabled_hover_text("No next track");
     if response.clicked() {
-        maybe_play_next(gem);
+        maybe_play_next(ui.ctx(), gem);
     }
 }
 
@@ -189,7 +189,7 @@ fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32,
 
 fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_size: f32) {
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
-    
+
     let vertical_pad = 8.0;
     let starting_point = (ui.available_height() / 2.0) - (vertical_pad / 2.0) - button_size; // this is how we align the buttons vertically center.
     ui.add_space(starting_point);
@@ -205,7 +205,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     let color = get_button_color(ui, player.repeat);
     let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
     let response = ui.add(repeat_button).on_hover_text("Repeat");
-    
+
     if response.clicked() {
         player.repeat = !player.repeat;
     }
@@ -215,45 +215,37 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     let color = get_button_color(ui, player.shuffle.is_some());
     let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
     let shuffle_enabled = !player.queue.is_empty();
-    
+
     let response = ui
         .add_enabled(shuffle_enabled, shuffle_button)
         .on_hover_text("Shuffle")
         .on_disabled_hover_text("Queue is empty");
-    
+
     if response.clicked() {
         toggle_shuffle(player);
     }
 }
 
 // Use track path as a unique/stable key for egui
-fn compute_uri(path: &Path) -> String {
+pub fn compute_uri(path: &Path) -> String {
     format!("bytes://{}", path.to_string_lossy())
 }
 
+// TODO: worth extracting to own widget?
 fn display_playing_artwork(ui: &mut Ui, gem: &mut GemPlayer, artwork_width: f32) {
     let artwork_texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
     let artwork_size = Vec2::splat(artwork_width);
 
     let placeholder = include_image!("../../assets/icon.png");
-    let mut artwork = Image::new(placeholder);
 
-    let playing_track_key = gem.player.playing.as_ref().map(|t| &t.path);
-
-    // If the track has changed. Release the old texture (if there was one).
-    if gem.ui.cached_track_key.as_ref() != playing_track_key {
-        if let Some(old_path) = &gem.ui.cached_track_key {
-            let old_uri = compute_uri(old_path);
-            ui.ctx().forget_image(&old_uri);
-        }
-
-        gem.ui.cached_track_key = playing_track_key.cloned();
-    }
-
-    if let (Some(track), Some(bytes)) = (&gem.player.playing, &gem.player.raw_artwork) {
+    let artwork = if let (Some(track), Some(bytes)) =
+        (&gem.player.playing, &gem.ui.cached_artwork)
+    {
         let uri = compute_uri(&track.path);
-        artwork = Image::from_bytes(uri, bytes.clone());
-    }
+        Image::from_bytes(uri, bytes.clone())
+    } else {
+        Image::new(placeholder)
+    };
 
     ui.add(
         artwork
