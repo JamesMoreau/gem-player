@@ -176,10 +176,10 @@ fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32,
                 strip.empty();
                 strip.cell(|ui| {
                     ui.centered_and_justified(|ui| {
-                        let maybe_track = gem.player.playing.as_ref();
+                        let maybe_uri = gem.ui.cached_artwork_uri.as_deref();
                         let maybe_artwork = gem.ui.cached_artwork.as_deref();
 
-                        track_artwork_ui(ui, maybe_track, maybe_artwork, artwork_width);
+                        track_artwork_ui(ui, maybe_uri, maybe_artwork, artwork_width);
                     });
                 });
                 strip.empty();

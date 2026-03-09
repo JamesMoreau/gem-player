@@ -48,7 +48,8 @@ pub struct UIState {
     marquee: Marquee,
     search: String,
     volume_popup_is_open: bool,
-    
+
+    cached_artwork_uri: Option<String>,
     cached_artwork: Option<Vec<u8>>,
 
     library: LibraryViewState,
