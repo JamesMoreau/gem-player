@@ -40,7 +40,7 @@ use {
 };
 
 #[cfg(target_os = "windows")]
-use {platform::windows_shortcuts::SHORTCUTS, std::str::FromStr};
+use {crate::commands::execute, platform::windows_shortcuts::SHORTCUTS};
 
 use crate::{
     nosleep_manager::NoSleepManager,

@@ -69,7 +69,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 #[cfg(target_os = "windows")]
                 {
-                    use crate::commands::windows_shortcuts::{format_shortcut, SHORTCUTS};
+                    use crate::platform::windows_shortcuts::{format_shortcut, SHORTCUTS};
 
                     ui.add(unselectable_label(RichText::new("Controls").heading()));
 
