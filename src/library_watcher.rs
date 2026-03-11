@@ -1,5 +1,5 @@
 use std::{
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::mpsc::{channel, Receiver, Sender},
     thread,
     time::Duration,
@@ -53,8 +53,17 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                             continue;
                         }
 
-                        let library_and_playlists = load_library_and_playlists(path);
-                        let _ = update_sender.send(Some(library_and_playlists));
+                        let library = load_tracks_from_directory(path);
+                        let playlists = load_playlists_from_directory(path);
+
+                        info!(
+                            "Loaded library from {:?}: {} tracks, {} playlists.",
+                            path,
+                            library.len(),
+                            playlists.len()
+                        );
+
+                        let _ = update_sender.send(Some((library, playlists)));
                     } else {
                         warn!("Load command received with no watcher_directory set");
                         let _ = update_sender.send(None);
@@ -96,18 +105,4 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
     });
 
     Ok((command_sender, update_receiver))
-}
-
-fn load_library_and_playlists(directory: &Path) -> LibraryAndPlaylists {
-    let library = load_tracks_from_directory(directory);
-    let playlists = load_playlists_from_directory(directory);
-
-    info!(
-        "Loaded library from {:?}: {} tracks, {} playlists.",
-        directory,
-        library.len(),
-        playlists.len()
-    );
-
-    (library, playlists)
 }
