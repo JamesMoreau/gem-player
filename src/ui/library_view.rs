@@ -58,14 +58,10 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
             .library
             .iter()
             .filter(|track| {
-                let search_lower = gem.ui.search.to_lowercase();
+                let search_lowercase = gem.ui.search.to_lowercase();
 
-                let matches_search = |field: &Option<String>| {
-                    field
-                        .as_ref()
-                        .map(|text| text.to_lowercase().contains(&search_lower))
-                        .unwrap_or(false)
-                };
+                let matches_search =
+                    |field: &Option<String>| field.as_deref().is_some_and(|text| text.to_lowercase().contains(&search_lowercase));
 
                 matches_search(&track.title) || matches_search(&track.artist) || matches_search(&track.album)
             })
@@ -79,10 +75,12 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
     let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
 
-    let available_width = ui.available_width();
     let time_width = 64.0;
     let more_width = 48.0;
+
+    let available_width = ui.available_width();
     let remaining_width = available_width - time_width - more_width;
+
     let title_width = remaining_width * 0.5;
     let artist_width = remaining_width * 0.25;
     let album_width = remaining_width * 0.25;
@@ -124,10 +122,10 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 let track = &cached_library[row.index()];
                 let track_is_playing = gem.player.playing.as_ref().is_some_and(|t| t == track);
 
-                let row_is_selected = gem.ui.library.selected_tracks.contains(&track.path);
-                row.set_selected(row_is_selected);
+                let track_is_selected = gem.ui.library.selected_tracks.contains(&track.path);
+                row.set_selected(track_is_selected);
 
-                let text_color = if track_is_playing && !row_is_selected {
+                let text_color = if track_is_playing && !track_is_selected {
                     Some(playing_color)
                 } else {
                     None
@@ -164,7 +162,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.add_space(8.0);
 
                     more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                    let should_show_more_button: bool = rest_of_row_is_hovered || more_cell_contains_pointer || row_is_selected;
+                    let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || track_is_selected;
 
                     if should_show_more_button {
                         let more_button = Button::new(icons::ICON_MORE_HORIZ);
@@ -195,23 +193,21 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 let secondary_clicked = response.secondary_clicked();
                 let primary_clicked = response.clicked() || response.double_clicked();
-                let already_selected = gem.ui.library.selected_tracks.contains(&track.path);
 
                 if primary_clicked || secondary_clicked {
                     let selected_tracks = &mut gem.ui.library.selected_tracks;
 
                     if secondary_clicked {
-                        if selected_tracks.is_empty() || !already_selected {
+                        if selected_tracks.is_empty() || !track_is_selected {
                             selected_tracks.clear();
                             selected_tracks.push(track.path.clone());
                         }
                     } else if shift_is_pressed && !selected_tracks.is_empty() {
                         let last_selected = selected_tracks.last().unwrap();
                         let last_index = cached_library.iter().position(|t| &t.path == last_selected).unwrap();
-                        let clicked_index = cached_library.iter().position(|t| t.path == track.path).unwrap();
 
-                        let start = last_index.min(clicked_index);
-                        let end = last_index.max(clicked_index);
+                        let start = last_index.min(row.index());
+                        let end = last_index.max(row.index());
                         for t in &cached_library[start..=end] {
                             if !selected_tracks.contains(&t.path) {
                                 selected_tracks.push(t.path.clone());
@@ -229,10 +225,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 Popup::context_menu(&response).show(|ui| {
                     let selected_tracks_count = gem.ui.library.selected_tracks.len();
-                    let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem.playlists);
-                    if let Some(action) = maybe_action {
-                        context_menu_action = Some(action);
-                    }
+                    context_menu_action = library_context_menu_ui(ui, selected_tracks_count, &gem.playlists);
                 });
             });
         });
