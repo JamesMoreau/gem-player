@@ -26,13 +26,15 @@ pub enum SortBy {
     DateAdded,
 }
 
-pub fn sort_by_label(sort_by: SortBy) -> &'static str {
-    match sort_by {
-        SortBy::Title => "Title",
-        SortBy::Artist => "Artist",
-        SortBy::Album => "Album",
-        SortBy::Time => "Time",
-        SortBy::DateAdded => "Date Added",
+impl SortBy {
+    pub fn label(self) -> &'static str {
+        match self {
+            SortBy::Title => "Title",
+            SortBy::Artist => "Artist",
+            SortBy::Album => "Album",
+            SortBy::Time => "Time",
+            SortBy::DateAdded => "Date Added",
+        }
     }
 }
 
