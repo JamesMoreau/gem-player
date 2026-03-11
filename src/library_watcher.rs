@@ -5,6 +5,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::{Context, Result};
 use log::{error, info, warn};
 use notify::RecursiveMode;
 use notify_debouncer_mini::{new_debouncer, DebounceEventResult};
@@ -22,24 +23,27 @@ pub enum LibraryWatcherCommand {
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
 
-pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<Option<LibraryAndPlaylists>>), ()> {
+pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<Option<LibraryAndPlaylists>>)> {
     let (command_sender, command_receiver) = channel();
     let (update_sender, update_receiver) = channel();
 
     let debouncer_command_sender = command_sender.clone();
+
+    let mut debouncer = new_debouncer(Duration::from_secs(2), move |res: DebounceEventResult| match res {
+        Err(e) => error!("watch error: {:?}", e),
+        Ok(events) => {
+            for e in events {
+                info!("Event for {:?}", e.path);
+            }
+            let _ = debouncer_command_sender.send(LibraryWatcherCommand::Load);
+        }
+    })
+    .context("failed to create filesystem debouncer")?;
+
     let watcher_command_sender = command_sender.clone();
+
     thread::spawn(move || {
         // The debouncer, using a channel, will message the watcher thread, notifying it when the library changes.
-        let mut debouncer = new_debouncer(Duration::from_secs(2), {
-            move |res: DebounceEventResult| match res {
-                Err(e) => error!("watch error: {:?}", e),
-                Ok(events) => {
-                    events.iter().for_each(|e| info!("Event for {:?}.", e.path));
-                    let _ = debouncer_command_sender.send(LibraryWatcherCommand::Load);
-                }
-            }
-        })
-        .expect("Failed to create watcher");
 
         let mut watcher_directory: Option<PathBuf> = None;
 
