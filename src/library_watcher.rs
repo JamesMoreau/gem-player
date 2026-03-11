@@ -49,28 +49,29 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
         while let Ok(command) = command_receiver.recv() {
             match command {
                 LibraryWatcherCommand::Load => {
-                    if let Some(path) = &watcher_directory {
-                        if !path.is_dir() {
-                            error!("Cannot load library: invalid path {:?}", path);
-                            let _ = update_sender.send(None);
-                            continue;
-                        }
-
-                        let library = load_tracks_from_directory(path);
-                        let playlists = load_playlists_from_directory(path);
-
-                        info!(
-                            "Loaded library from {:?}: {} tracks, {} playlists.",
-                            path,
-                            library.len(),
-                            playlists.len()
-                        );
-
-                        let _ = update_sender.send(Some((library, playlists)));
-                    } else {
+                    let Some(path) = &watcher_directory else {
                         warn!("Load command received with no watcher_directory set");
                         let _ = update_sender.send(None);
+                        continue;
+                    };
+
+                    if !path.is_dir() {
+                        error!("Cannot load library: invalid path {:?}", path);
+                        let _ = update_sender.send(None);
+                        continue;
                     }
+
+                    let library = load_tracks_from_directory(path);
+                    let playlists = load_playlists_from_directory(path);
+
+                    info!(
+                        "Loaded library from {:?}: {} tracks, {} playlists.",
+                        path,
+                        library.len(),
+                        playlists.len()
+                    );
+
+                    let _ = update_sender.send(Some((library, playlists)));
                 }
                 LibraryWatcherCommand::SetPath(new_directory) => {
                     if !new_directory.is_dir() {
