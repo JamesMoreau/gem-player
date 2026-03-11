@@ -80,8 +80,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                     }
 
                     if let Some(old) = &watcher_directory {
-                        let unwatch_result = debouncer.watcher().unwatch(old);
-                        if let Err(e) = unwatch_result {
+                        if let Err(e) = debouncer.watcher().unwatch(old) {
                             error!("Failed to unwatch old folder {:?}: {:?}", old, e);
                             let _ = update_sender.send(None);
                             continue;
@@ -94,7 +93,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                         continue;
                     }
 
-                    watcher_directory = Some(new_directory.clone());
+                    watcher_directory = Some(new_directory);
                     let _ = watcher_command_sender.send(LibraryWatcherCommand::Load);
                 }
                 LibraryWatcherCommand::Shutdown => {
