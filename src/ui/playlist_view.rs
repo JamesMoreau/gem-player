@@ -441,7 +441,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 row.col(|ui| {
                     ui.add_space(16.0);
-                    let label = table_label(format!("{}", index + 1), text_color);
+                    let label = table_label((index + 1).to_string(), text_color);
                     ui.add(label);
                 });
 
@@ -507,23 +507,21 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 let secondary_clicked = response.secondary_clicked();
                 let primary_clicked = response.clicked() || response.double_clicked();
-                let already_selected = gem.ui.playlists.selected_tracks.contains(&track.path);
 
                 if primary_clicked || secondary_clicked {
                     let selected_tracks = &mut gem.ui.playlists.selected_tracks;
 
                     if secondary_clicked {
-                        if selected_tracks.is_empty() || !already_selected {
+                        if selected_tracks.is_empty() || !row_is_selected {
                             selected_tracks.clear();
                             selected_tracks.push(track.path.clone());
                         }
                     } else if shift_is_pressed && !selected_tracks.is_empty() {
                         let last_selected_track = selected_tracks.last().unwrap();
                         let last_index = cached_playlist_tracks.iter().position(|t| &t.path == last_selected_track).unwrap();
-                        let clicked_index = cached_playlist_tracks.iter().position(|t| t.path == track.path).unwrap();
 
-                        let start = last_index.min(clicked_index);
-                        let end = last_index.max(clicked_index);
+                        let start = last_index.min(row.index());
+                        let end = last_index.max(row.index());
                         for t in &cached_playlist_tracks[start..=end] {
                             if !selected_tracks.contains(&t.path) {
                                 selected_tracks.push(t.path.clone());
@@ -541,10 +539,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 Popup::context_menu(&response).show(|ui| {
                     let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
-                    let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
-                    if let Some(action) = maybe_action {
-                        context_menu_action = Some(action);
-                    }
+                    context_menu_action = playlist_context_menu_ui(ui, selected_tracks_count);
                 });
             });
         });
