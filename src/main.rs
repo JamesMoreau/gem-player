@@ -34,28 +34,25 @@ use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 use {
     crate::{
         commands::{execute, Command},
+        nosleep_manager::NoSleepManager,
         platform::macos_menu::MenuBar,
+        track::extract_artwork_from_file,
+        ui::{
+            library_view::LibraryViewState,
+            playlist_view::PlaylistsViewState,
+            root::{gem_player_ui, UIState, View},
+            widgets::{
+                marquee::Marquee,
+                track_artwork::{compute_uri, Artwork},
+            },
+        },
+        visualizer::VisualizerState,
     },
     std::str::FromStr,
 };
 
 #[cfg(target_os = "windows")]
 use {crate::commands::execute, platform::windows_shortcuts::SHORTCUTS};
-
-use crate::{
-    nosleep_manager::NoSleepManager,
-    track::extract_artwork_from_file,
-    ui::{
-        library_view::LibraryViewState,
-        playlist_view::PlaylistsViewState,
-        root::{gem_player_ui, UIState, View},
-        widgets::{
-            marquee::Marquee,
-            track_artwork::{compute_uri, Artwork},
-        },
-    },
-    visualizer::VisualizerState,
-};
 
 mod commands;
 mod custom_window;
