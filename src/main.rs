@@ -4,10 +4,8 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use dark_light::Mode;
-use eframe::{
-    egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals},
-    icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage,
-};
+use eframe::{App, CreationContext, Frame, NativeOptions, Storage, glow, icon_data, run_native};
+use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -303,7 +301,7 @@ impl App for GemPlayer {
         ctx.request_repaint_after(Duration::from_millis(33)); // ~30 fps
     }
 
-    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+    fn on_exit(&mut self, _gl: Option<&glow::Context>) {
         if let Some(backend) = &self.player.backend {
             backend.player.stop();
         }
