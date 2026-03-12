@@ -128,13 +128,12 @@ pub fn load_from_m3u(path: &Path) -> Result<Playlist> {
 
     let mut tracks = Vec::new();
 
-    for line in file_contents.lines() {
-        let trimmed_line = line.trim();
-        if trimmed_line.is_empty() || trimmed_line.starts_with("#") {
-            continue;
-        }
-
-        let relative_path = Path::new(trimmed_line);
+    for line in file_contents
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+    {
+        let relative_path = Path::new(line);
         let full_path = if relative_path.is_absolute() {
             relative_path.to_path_buf()
         } else {
