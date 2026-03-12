@@ -191,12 +191,7 @@ pub fn mute_or_unmute(player: &mut Player) {
     }
 }
 
-pub fn adjust_volume_by_percentage(player: &mut rodio::Player, percentage: f32) {
-    let current_volume = player.volume();
-
-    let min_volume = 0.0;
-    let max_volume = 1.0;
-
-    let new_volume = (current_volume + percentage).clamp(min_volume, max_volume);
+pub fn adjust_volume_by_delta(player: &mut rodio::Player, delta: f32) {
+    let new_volume = (player.volume() + delta).clamp(0.0, 1.0);
     player.set_volume(new_volume);
 }
