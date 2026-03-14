@@ -3,8 +3,23 @@
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
 compile_error!("Gem Player only supports macOS and Windows.");
 
+use crate::{
+    commands::execute,
+    nosleep_manager::NoSleepManager,
+    track::extract_artwork_from_file,
+    ui::{
+        library_view::LibraryViewState,
+        playlist_view::PlaylistsViewState,
+        root::{gem_player_ui, UIState, View},
+        widgets::{
+            marquee::Marquee,
+            track_artwork::{compute_uri, Artwork},
+        },
+    },
+    visualizer::VisualizerState,
+};
 use dark_light::Mode;
-use eframe::{App, CreationContext, Frame, NativeOptions, Storage, glow, icon_data, run_native};
+use eframe::{glow, icon_data, run_native, App, CreationContext, Frame, NativeOptions, Storage};
 use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
@@ -29,28 +44,10 @@ use track::{SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 #[cfg(target_os = "macos")]
-use {
-    crate::{
-        commands::{execute, Command},
-        nosleep_manager::NoSleepManager,
-        platform::macos_menu::MenuBar,
-        track::extract_artwork_from_file,
-        ui::{
-            library_view::LibraryViewState,
-            playlist_view::PlaylistsViewState,
-            root::{gem_player_ui, UIState, View},
-            widgets::{
-                marquee::Marquee,
-                track_artwork::{compute_uri, Artwork},
-            },
-        },
-        visualizer::VisualizerState,
-    },
-    std::str::FromStr,
-};
+use {crate::platform::macos_menu::MenuBar, std::str::FromStr};
 
 #[cfg(target_os = "windows")]
-use {crate::commands::execute, platform::windows_shortcuts::SHORTCUTS};
+use platform::windows_shortcuts::SHORTCUTS;
 
 mod commands;
 mod custom_window;
