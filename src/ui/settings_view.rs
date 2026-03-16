@@ -37,14 +37,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
 
-                let before = gem.ui.theme_preference;
                 ThemePreference::radio_buttons(&mut gem.ui.theme_preference, ui);
-                let after = gem.ui.theme_preference;
-
-                let theme_was_changed = before != after;
-                if theme_was_changed {
-                    apply_theme(ui.ctx(), after);
-                }
 
                 ui.add(Separator::default().spacing(divider_spacing));
 

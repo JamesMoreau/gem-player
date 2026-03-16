@@ -178,8 +178,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    apply_theme(&cc.egui_ctx, theme_preference);
-
     if let Some(b) = &backend {
         b.player.set_volume(initial_volume);
     }
@@ -291,6 +289,7 @@ impl App for GemPlayer {
         poll_library_folder_picker(self);
 
         // Render
+        apply_theme(ctx, self.ui.theme_preference);
         gem_player_ui(self, ctx);
         self.ui.toasts.show(ctx);
 
