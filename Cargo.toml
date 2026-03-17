@@ -25,6 +25,7 @@ function_name = "0.3.0"
 image = { version = "0.25.10", features = ["jpeg", "png"] }
 lofty = "0.23.2"
 log = "0.4.29"
+m3u = "1.0.0"
 mimalloc = "0.1.48"
 muda = "0.17.1"
 nosleep = "0.2.1"

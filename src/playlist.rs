@@ -2,9 +2,9 @@ use crate::{track::load_from_file, Track};
 use anyhow::{anyhow, bail, Context, Result};
 use fully_pub::fully_pub;
 use log::warn;
+use m3u::{path_entry, Entry, Reader, Writer};
 use std::{
-    fs::{self, metadata, read_to_string, File},
-    io::Write,
+    fs::{self, metadata, File},
     path::{Path, PathBuf},
     time::SystemTime,
 };
@@ -102,11 +102,16 @@ pub fn save_to_m3u(playlist: &mut Playlist) -> Result<()> {
     let mut file =
         File::create(&playlist.m3u_path).with_context(|| format!("Failed to create playlist file '{}'", playlist.m3u_path.display()))?;
 
+    let mut writer = Writer::new(&mut file);
+
     let directory = playlist.m3u_path.parent().unwrap_or_else(|| Path::new(""));
 
     for track in &playlist.tracks {
         let path = track.path.strip_prefix(directory).unwrap_or(&track.path);
-        writeln!(file, "{}", path.to_string_lossy())
+
+        let entry = path_entry(path);
+        writer
+            .write_entry(&entry)
             .with_context(|| format!("Failed to write track '{}' to playlist", track.path.display()))?;
     }
 
@@ -124,27 +129,29 @@ pub fn load_from_m3u(path: &Path) -> Result<Playlist> {
         .unwrap_or_else(|| "Unnamed Playlist".to_string());
 
     let directory = path.parent().unwrap_or_else(|| Path::new(""));
-    let file_contents = read_to_string(path).with_context(|| format!("Failed to read playlist file '{}'", path.display()))?;
+    let mut reader = Reader::open(path).with_context(|| format!("Failed to read playlist file '{}'", path.display()))?;
 
     let mut tracks = Vec::new();
 
-    for line in file_contents
-        .lines()
-        .map(str::trim)
-        .filter(|l| !l.is_empty() && !l.starts_with('#'))
-    {
-        let relative_path = Path::new(line);
-        let full_path = if relative_path.is_absolute() {
-            relative_path.to_path_buf()
-        } else {
-            directory.join(relative_path)
+    for maybe_entry in reader.entries() {
+        let entry = match maybe_entry {
+            Ok(e) => e,
+            Err(err) => {
+                warn!("Skipping invalid M3U entry: {}", err);
+                continue;
+            }
         };
 
-        match load_from_file(&full_path) {
-            Ok(track) => tracks.push(track),
-            Err(err) => {
-                warn!("Skipping invalid track '{}': {}", full_path.display(), err);
+        match entry {
+            Entry::Path(path) => {
+                let full_path = if path.is_absolute() { path } else { directory.join(path) };
+
+                match load_from_file(&full_path) {
+                    Ok(track) => tracks.push(track),
+                    Err(err) => warn!("Skipping invalid track '{}': {}", full_path.display(), err),
+                }
             }
+            Entry::Url(url) => warn!("Skipping URL entry: {}", url), // We do not support url tracks.
         }
     }
 
