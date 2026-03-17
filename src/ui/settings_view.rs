@@ -50,9 +50,10 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 let mut enabled = gem.nosleep_manager.is_enabled();
                 let check_label = if enabled { "enabled" } else { "disabled" };
                 if ui.checkbox(&mut enabled, check_label).changed() {
-                    match enabled {
-                        true => gem.nosleep_manager.enable(),
-                        false => gem.nosleep_manager.disable(),
+                    if enabled {
+                        gem.nosleep_manager.enable();
+                    } else {
+                        gem.nosleep_manager.disable()
                     }
 
                     info!("Sleep inhibitor is now {}.", if enabled { "enabled" } else { "disabled" });
