@@ -44,7 +44,10 @@ use track::{SortBy, SortOrder, Track};
 use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 
 #[cfg(target_os = "macos")]
-use {crate::platform::macos_menu::MenuBar, std::str::FromStr};
+use {
+    crate::{commands::Command, platform::macos_menu::MenuBar},
+    std::str::FromStr,
+};
 
 #[cfg(target_os = "windows")]
 use platform::windows_shortcuts::SHORTCUTS;

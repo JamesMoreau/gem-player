@@ -4,7 +4,7 @@ use egui::{Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use log::info;
 
-use crate::{apply_theme, library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label, GemPlayer};
+use crate::{library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label, GemPlayer};
 
 pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
