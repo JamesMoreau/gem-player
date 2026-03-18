@@ -189,6 +189,7 @@ fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32,
 }
 
 fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_size: f32) {
+    let previous_spacing = ui.spacing().item_spacing;
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
     let vertical_pad = 8.0;
@@ -225,6 +226,8 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     if response.clicked() {
         toggle_shuffle(player);
     }
+
+    ui.spacing_mut().item_spacing = previous_spacing;
 }
 
 fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
@@ -270,8 +273,8 @@ fn display_playback_slider(
     duration: f32,
     slider_width: f32,
 ) {
-    let previous_slider_width = ui.style_mut().spacing.slider_width;
-    ui.style_mut().spacing.slider_width = slider_width;
+    let previous_slider_width = ui.spacing().slider_width;
+    ui.spacing_mut().slider_width = slider_width;
 
     let slider_enabled = maybe_backend.is_some() && is_playing;
 
@@ -306,7 +309,7 @@ fn display_playback_slider(
         *paused_before_scrubbing = None;
     }
 
-    ui.style_mut().spacing.slider_width = previous_slider_width;
+    ui.spacing_mut().slider_width = previous_slider_width;
 }
 
 fn layout_marquee_and_playback_position_and_metadata(

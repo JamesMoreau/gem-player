@@ -38,7 +38,8 @@ pub fn queue_view(ui: &mut Ui, player: &mut Player) {
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
 
-    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() for why we set item_spacing to 0.
+    let previous_spacing = ui.spacing().item_spacing.x;
+    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() as to why we do this.
 
     // We only operate on the queue after we are done iterating over it.
     let mut to_be_removed = None;
@@ -128,4 +129,6 @@ pub fn queue_view(ui: &mut Ui, player: &mut Player) {
     if let Some(index) = to_be_moved_to_front {
         move_to_position(player, index, 0);
     }
+
+    ui.spacing_mut().item_spacing.x = previous_spacing;
 }

@@ -88,6 +88,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     // Since we are setting the widths of the table columns manually by dividing up the available width,
     // if we leave the default item spacing, the width taken up by the table will be greater than the available width,
     // causing the right side of the table to be cut off by the window.
+    let previous_spacing = ui.spacing().item_spacing.x;
     ui.spacing_mut().item_spacing.x = 0.0;
 
     // Used to determine if selection should be extended.
@@ -240,6 +241,8 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     if let Some(action) = context_menu_action {
         handle_library_context_menu_action(gem, action);
     }
+
+    ui.spacing_mut().item_spacing.x = previous_spacing;
 }
 
 #[derive(Debug)]

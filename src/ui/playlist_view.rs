@@ -56,6 +56,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
 
+    let previous_spacing = ui.spacing().item_spacing.x;
     ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view as to why we do this.
 
     StripBuilder::new(ui)
@@ -136,6 +137,8 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
             strip.cell(|ui| playlist_ui(ui, gem));
         });
+
+    ui.spacing_mut().item_spacing.x = previous_spacing;
 }
 
 fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
@@ -394,7 +397,8 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     let artist_width = remaining_width * (1.0 / 4.0);
     let album_width = remaining_width * (1.0 / 4.0);
 
-    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() for why we set item_spacing to 0.
+    let previous_spacing = ui.spacing().item_spacing.x;
+    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() as to why we do this.
 
     // Used to determine if selection should be extended.
     let shift_is_pressed = ui.input(|i| i.modifiers.shift);
@@ -552,6 +556,8 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     if let Some(action) = context_menu_action {
         handle_playlist_context_menu_action(gem, action, &playlist_key);
     }
+
+    ui.spacing_mut().item_spacing.x = previous_spacing;
 }
 
 enum PlaylistContextMenuAction {
