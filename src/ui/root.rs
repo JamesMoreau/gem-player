@@ -59,7 +59,7 @@ pub struct UIState {
 
 pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
     custom_window(ctx, "", |ui| {
-        let is_dropping_files = drop_files_area_ui(ui, gem);
+        let is_dropping_files = drop_files_area_ui(ui, gem); // TODO: is this clean api?
         if is_dropping_files {
             return; // Don't render anything else if files are being dropped.
         }

@@ -39,7 +39,9 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
         return;
     };
 
-    delete_playlist_modal(ui, gem);
+    if gem.ui.playlists.delete_modal_open {
+        delete_playlist_modal(ui, gem);
+    }
 
     let size = ui.available_size();
     let playlists_width = size.x * (1.0 / 4.0);
@@ -130,12 +132,11 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
 }
 
 fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
-    if !gem.ui.playlists.delete_modal_open {
-        return;
-    }
+    debug_assert!(gem.ui.playlists.delete_modal_open);
 
     let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
-        error!("The delete playlist is open but no playlist is selected.");
+        error!("The delete playlist modal is open but no playlist is selected.");
+        gem.ui.playlists.delete_modal_open = false;
         return;
     };
 
