@@ -147,16 +147,13 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let mut config = load_config();
 
-    let mut library_and_playlists_are_loading = false;
     let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &config.library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
-        
+
         if let Err(e) = watcher_command_sender.send(command) {
             error!("Failed to start watching library directory: {e}");
             config.library_directory = None;
-        } else {
-            library_and_playlists_are_loading = true;
         }
     }
 
@@ -190,7 +187,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 delete_modal_open: false,
                 selected_tracks: Vec::new(),
             },
-            library_and_playlists_are_loading,
             toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
                 offset: [0, 0],
                 blur: 1,
@@ -326,7 +322,6 @@ fn poll_library_watcher(gem: &mut GemPlayer) {
                 gem.ui.toasts.error(message);
 
                 gem.library_directory = None;
-                gem.ui.library_and_playlists_are_loading = false;
             }
         }
     }
@@ -352,7 +347,6 @@ pub fn poll_library_folder_picker(gem: &mut GemPlayer) {
                     gem.ui.toasts.error(message);
                 } else {
                     gem.library_directory = Some(directory);
-                    gem.ui.library_and_playlists_are_loading = true;
                 }
             } else {
                 info!("No folder selected");
@@ -400,8 +394,6 @@ pub fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_pla
     } else {
         gem.ui.playlists.selected_tracks.clear();
     }
-
-    gem.ui.library_and_playlists_are_loading = false;
 }
 
 fn check_for_next_track(ctx: &Context, gem: &mut GemPlayer) {

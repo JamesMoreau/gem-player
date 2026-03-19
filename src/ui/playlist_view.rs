@@ -27,18 +27,6 @@ struct PlaylistsViewState {
 }
 
 pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
-    if gem.ui.library_and_playlists_are_loading {
-        Frame::new()
-            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.spinner();
-                });
-            });
-
-        return;
-    }
-
     if gem.library_directory.is_none() {
         Frame::new()
             .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
