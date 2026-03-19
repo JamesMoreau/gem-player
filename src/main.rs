@@ -151,6 +151,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &config.library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
+        
         if let Err(e) = watcher_command_sender.send(command) {
             error!("Failed to start watching library directory: {e}");
             config.library_directory = None;
