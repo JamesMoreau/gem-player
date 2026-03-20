@@ -246,12 +246,12 @@ impl App for GemPlayer {
         handle_shortcuts(ctx, self);
         #[cfg(target_os = "macos")]
         poll_macos_menu_events(ctx, self);
-
-        // Update
-        check_for_next_track(ctx, self);
         poll_library_watcher(self);
         poll_library_folder_picker(self);
         poll_file_drops(ctx, self);
+
+        // Update
+        check_for_next_track(ctx, self);
 
         // Render
         apply_theme(ctx, self.ui.theme_preference);
