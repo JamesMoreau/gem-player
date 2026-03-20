@@ -69,9 +69,9 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     let available_width = ui.available_width();
     let remaining_width = available_width - time_width - more_width;
 
-    let title_width = remaining_width * 0.5;
-    let artist_width = remaining_width * 0.25;
-    let album_width = remaining_width * 0.25;
+    let title_width = remaining_width * (1.0 / 2.0);
+    let artist_width = remaining_width * (1.0 / 4.0);
+    let album_width = remaining_width * (1.0 / 4.0);
 
     // Since we are setting the widths of the table columns manually by dividing up the available width,
     // if we leave the default item spacing, the width taken up by the table will be greater than the available width,
