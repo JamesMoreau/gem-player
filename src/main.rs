@@ -328,7 +328,7 @@ fn poll_library_watcher(gem: &mut GemPlayer) {
     }
 }
 
-pub fn poll_library_folder_picker(gem: &mut GemPlayer) {
+fn poll_library_folder_picker(gem: &mut GemPlayer) {
     let Some(receiver) = &gem.folder_picker_receiver else {
         return;
     };
@@ -361,7 +361,7 @@ pub fn poll_library_folder_picker(gem: &mut GemPlayer) {
     }
 }
 
-pub fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
+fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
     let dropped_files = ctx.input(|i| i.raw.dropped_files.clone());
 
     if dropped_files.is_empty() {
@@ -408,7 +408,7 @@ pub fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
 // Reset / reconcile the relevant ui state so that we don't become out of sync.
 // For example, have selected a playlist that has since been deleted.
-pub fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists: Vec<Playlist>) {
+fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists: Vec<Playlist>) {
     gem.library = new_library;
     gem.playlists = new_playlists;
 
@@ -514,7 +514,7 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     });
 }
 
-pub fn apply_theme(ctx: &Context, preference: ThemePreference) {
+fn apply_theme(ctx: &Context, preference: ThemePreference) {
     let visuals = match preference {
         ThemePreference::Dark => Visuals::dark(),
         ThemePreference::Light => Visuals::light(),
@@ -558,7 +558,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
 }
 
 /// Loads system fonts as fallbacks for various language regions and adds them to the provided `FontDefinitions`.
-pub fn load_system_fonts(fonts: &mut FontDefinitions) {
+fn load_system_fonts(fonts: &mut FontDefinitions) {
     let mut fontdb: HashMap<&str, Vec<&str>> = HashMap::new(); // Map of region identifiers to a list of candidate system font names.
 
     fontdb.insert(
