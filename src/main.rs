@@ -7,7 +7,7 @@ use crate::{
     commands::execute,
     config::{load_config, save_config},
     nosleep_manager::NoSleepManager,
-    track::extract_artwork_from_file,
+    track::{extract_artwork_from_file, is_audio_file},
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
@@ -33,7 +33,7 @@ use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs::{read, File},
+    fs::{copy, read, File},
     path::PathBuf,
     sync::{
         mpsc::{Receiver, Sender, TryRecvError},
@@ -251,6 +251,7 @@ impl App for GemPlayer {
         check_for_next_track(ctx, self);
         poll_library_watcher(self);
         poll_library_folder_picker(self);
+        poll_file_drops(ctx, self);
 
         // Render
         apply_theme(ctx, self.ui.theme_preference);
@@ -357,6 +358,51 @@ pub fn poll_library_folder_picker(gem: &mut GemPlayer) {
             error!("Folder picker channel disconnected unexpectedly.");
             gem.folder_picker_receiver = None;
         }
+    }
+}
+
+pub fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
+    let dropped_files = ctx.input(|i| i.raw.dropped_files.clone());
+
+    if dropped_files.is_empty() {
+        return;
+    }
+
+    let Some(library_path) = gem.library_directory.as_ref() else {
+        error!("No library directory set.");
+        gem.ui.toasts.error("No library directory set.");
+        return;
+    };
+
+    for file in dropped_files {
+        let Some(path) = file.path.as_ref() else {
+            error!("Dropped file '{}' has no path.", file.name);
+            continue;
+        };
+
+        let Some(file_name) = path.file_name() else {
+            error!("Dropped file has no file name.");
+            continue;
+        };
+
+        if !is_audio_file(path) {
+            gem.ui
+                .toasts
+                .error(format!("'{}' is not a supported audio file.", file_name.to_string_lossy()));
+            continue;
+        }
+
+        let destination = library_path.join(file_name);
+
+        if let Err(e) = copy(path, &destination) {
+            error!("Failed to copy '{}': {}", path.display(), e);
+            gem.ui.toasts.error(format!("Failed to add '{}'.", file_name.to_string_lossy()));
+            continue;
+        }
+
+        gem.ui
+            .toasts
+            .success(format!("Added '{}' to Library.", file_name.to_string_lossy()));
     }
 }
 

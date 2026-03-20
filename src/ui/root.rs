@@ -12,7 +12,7 @@ use crate::{
     ui::{
         bottom_bar::bottom_bar,
         control_panel::control_panel_ui,
-        file_drag_and_drop::drop_files_area_ui,
+        file_drop_overlay::file_drop_overlay,
         library_view::{library_view, LibraryViewState},
         playlist_view::{playlists_view, PlaylistsViewState},
         queue_view::queue_view,
@@ -59,9 +59,10 @@ pub struct UIState {
 
 pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
     custom_window(ctx, "", |ui| {
-        let is_dropping_files = drop_files_area_ui(ui, gem); // TODO: is this clean api?
-        if is_dropping_files {
-            return; // Don't render anything else if files are being dropped.
+        let is_hovering_files = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
+        if is_hovering_files {
+            file_drop_overlay(ui); // Don't render anything else if files are being dropped.
+            return;
         }
 
         let control_ui_height = 80.0;
