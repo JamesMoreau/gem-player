@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use egui::{containers, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui};
+use egui::{
+    containers, epaint::MarginF32, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit,
+    Ui,
+};
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
@@ -29,7 +32,7 @@ struct PlaylistsViewState {
 pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
     if gem.library_directory.is_none() {
         Frame::new()
-            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("Try adding your music directory in the settings"));
@@ -320,7 +323,7 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
         Frame::new()
-            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("No playlist selected"));
@@ -333,7 +336,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     let playlist_length = gem.playlists.get_by_path(&playlist_key).tracks.len();
     if playlist_length == 0 {
         Frame::new()
-            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("The playlist is empty."));

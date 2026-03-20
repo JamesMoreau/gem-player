@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use egui::{Align, Button, Frame, Label, Layout, Margin, Popup, RichText, ScrollArea, Sense, Ui};
+use egui::{epaint::MarginF32, Align, Button, Frame, Label, Layout, Popup, RichText, ScrollArea, Sense, Ui};
 use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
@@ -27,7 +27,7 @@ struct LibraryViewState {
 pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     if gem.library.is_empty() {
         Frame::new()
-            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label(

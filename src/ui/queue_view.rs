@@ -1,4 +1,4 @@
-use egui::{Align, Button, Frame, Layout, Margin, RichText, Sense, Ui};
+use egui::{epaint::MarginF32, Align, Button, Frame, Layout, RichText, Sense, Ui};
 use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 
@@ -10,7 +10,7 @@ use crate::{
 pub fn queue_view(ui: &mut Ui, player: &mut Player) {
     if player.queue.is_empty() {
         Frame::new()
-            .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("The queue is empty."));

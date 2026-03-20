@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use egui::{Frame, Margin, RichText, ScrollArea, Separator, ThemePreference, Ui};
+use egui::{epaint::MarginF32, Frame, RichText, ScrollArea, Separator, ThemePreference, Ui};
 use egui_material_icons::icons;
 use log::info;
 
@@ -8,7 +8,7 @@ use crate::{library_folder_picker::spawn_library_folder_picker, ui::root::unsele
 
 pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
-        .outer_margin(Margin::symmetric((ui.available_width() * (1.0 / 4.0)) as i8, 32))
+        .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
                 let divider_spacing = 32.0;
