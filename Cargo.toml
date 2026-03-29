@@ -10,7 +10,6 @@ authors = ["James Moreau"]
 [dependencies]
 anyhow = "1.0.102"
 confy = "2.0.0"
-core-foundation = "0.10.1"
 dark-light = "2.0.0"
 eframe = "0.33.3"
 egui = { version = "0.33.0", features = ["serde"] }
@@ -28,7 +27,6 @@ lofty = "0.23.3"
 log = "0.4.29"
 m3u = "1.0.0"
 mimalloc = "0.1.48"
-muda = "0.17.1" # TODO: put behind cfg
 nosleep = "0.2.1"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
@@ -44,6 +42,10 @@ strum = "0.28.0"
 strum_macros = "0.28.0"
 trash = "5.2.5"
 walkdir = "2.5.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10.1"
+muda = "0.17.1"
 
 [build-dependencies]
 winres = "0.1.12"
