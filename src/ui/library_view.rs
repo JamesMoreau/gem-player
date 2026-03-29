@@ -1,15 +1,25 @@
-use std::{fs::copy, 
-    path::{Path, PathBuf}}
-;
+use std::{
+    fs::copy,
+    path::{Path, PathBuf},
+};
 
-use egui::{epaint::MarginF32, Align, Button, Frame, Label, Layout, Popup, RichText, ScrollArea, Sense, Ui};
+use egui::{Align, Button, Label, Layout, Popup, RichText, ScrollArea, Sense, Ui};
 use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    GemPlayer, maybe_play_next, player::{add_to_queue_in_order, enqueue, enqueue_next}, playlist::{Playlist, PlaylistRetrieval, add_to_playlist}, resources::resource_path, track::{SortBy, SortOrder, Track, TrackRetrieval, open_file_location, sort}, ui::root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label}
+    maybe_play_next,
+    player::{add_to_queue_in_order, enqueue, enqueue_next},
+    playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
+    resources::resource_path,
+    track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
+    ui::{
+        root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
+        widgets::centered_frame::centered_frame_ui,
+    },
+    GemPlayer,
 };
 
 #[fully_pub]
@@ -23,32 +33,28 @@ struct LibraryViewState {
 
 pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     let Some(library_directory) = &gem.library_directory else {
-        Frame::new()
-            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0)) // TODO: factor this out into a widget?
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label(
-                        "No library directory set. Add your music folder in the settings.",
-                    ));
-                });
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label(
+                    "No library directory set. Add your music folder in the settings.",
+                ));
             });
+        });
 
         return;
     };
 
     if gem.library.is_empty() {
-        Frame::new()
-            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("The library is empty."));
-                    ui.add_space(16.0);
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label("The library is empty."));
+                ui.add_space(16.0);
 
-                    if ui.button("Add a sample track").clicked() {
-                        add_sample_track_to_library(library_directory);
-                    }
-                });
+                if ui.button("Add a sample track").clicked() {
+                    add_sample_track_to_library(library_directory);
+                }
             });
+        });
 
         return;
     }
