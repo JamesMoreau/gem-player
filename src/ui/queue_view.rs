@@ -1,21 +1,22 @@
-use egui::{epaint::MarginF32, Align, Button, Frame, Layout, RichText, Sense, Ui};
+use egui::{Align, Button, Layout, RichText, Sense, Ui};
 use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 
 use crate::{
     player::{move_to_position, remove_from_queue, Player},
-    ui::root::{format_duration_to_mmss, unselectable_label},
+    ui::{
+        root::{format_duration_to_mmss, unselectable_label},
+        widgets::centered_frame::centered_frame_ui,
+    },
 };
 
 pub fn queue_view(ui: &mut Ui, player: &mut Player) {
     if player.queue.is_empty() {
-        Frame::new()
-            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("The queue is empty."));
-                });
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label("The queue is empty."));
             });
+        });
 
         return;
     }

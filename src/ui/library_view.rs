@@ -1,6 +1,9 @@
-use std::path::PathBuf;
+use std::{
+    fs::copy,
+    path::{Path, PathBuf},
+};
 
-use egui::{epaint::MarginF32, Align, Button, Frame, Label, Layout, Popup, RichText, ScrollArea, Sense, Ui};
+use egui::{Align, Button, Label, Layout, Popup, RichText, ScrollArea, Sense, Ui};
 use egui_extras::TableBuilder;
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
@@ -10,8 +13,12 @@ use crate::{
     maybe_play_next,
     player::{add_to_queue_in_order, enqueue, enqueue_next},
     playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
+    resources::resource_path,
     track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
-    ui::root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
+    ui::{
+        root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
+        widgets::centered_frame::centered_frame_ui,
+    },
     GemPlayer,
 };
 
@@ -25,16 +32,29 @@ struct LibraryViewState {
 }
 
 pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
-    if gem.library.is_empty() {
-        Frame::new()
-            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label(
-                        "The library is empty. Try adding your music directory in the settings.",
-                    ));
-                });
+    let Some(library_directory) = &gem.library_directory else {
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label(
+                    "No library directory set. Add your music folder in the settings.",
+                ));
             });
+        });
+
+        return;
+    };
+
+    if gem.library.is_empty() {
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label("The library is empty."));
+                ui.add_space(16.0);
+
+                if ui.button("Add a sample track").clicked() {
+                    add_sample_track_to_library(library_directory);
+                }
+            });
+        });
 
         return;
     }
@@ -356,4 +376,18 @@ fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists:
     }
 
     action
+}
+
+const SAMPLE_TRACK_NAME: &str = "clair_de_lune.mp3";
+
+fn add_sample_track_to_library(library_dir: &Path) {
+    let resource_path = resource_path(SAMPLE_TRACK_NAME);
+    let dest_path = library_dir.join(SAMPLE_TRACK_NAME);
+
+    if copy(&resource_path, &dest_path).is_err() {
+        error!("Failed to copy sample track to library directory.");
+        return;
+    }
+
+    info!("Added sample track.");
 }

@@ -1,9 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use egui::{
-    containers, epaint::MarginF32, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit,
-    Ui,
-};
+use egui::{containers, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui};
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons;
 use fully_pub::fully_pub;
@@ -14,7 +11,10 @@ use crate::{
     player::{add_to_queue_in_order, enqueue, enqueue_next},
     playlist::{create, delete, remove_from_playlist, rename, PlaylistRetrieval},
     track::{open_file_location, Track, TrackRetrieval},
-    ui::root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
+    ui::{
+        root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
+        widgets::centered_frame::centered_frame_ui,
+    },
     GemPlayer,
 };
 
@@ -31,13 +31,11 @@ struct PlaylistsViewState {
 
 pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
     if gem.library_directory.is_none() {
-        Frame::new()
-            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("Try adding your music directory in the settings"));
-                });
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label("Try adding your music directory in the settings"));
             });
+        });
 
         return;
     };
@@ -322,26 +320,22 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
 fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
-        Frame::new()
-            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("No playlist selected"));
-                });
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label("No playlist selected"));
             });
+        });
 
         return;
     };
 
     let playlist_length = gem.playlists.get_by_path(&playlist_key).tracks.len();
     if playlist_length == 0 {
-        Frame::new()
-            .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
-            .show(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("The playlist is empty."));
-                });
+        centered_frame_ui(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.add(unselectable_label("The playlist is empty."));
             });
+        });
 
         return;
     }
