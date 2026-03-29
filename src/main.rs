@@ -65,6 +65,7 @@ mod playlist;
 mod track;
 mod ui;
 mod visualizer;
+mod resources;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;

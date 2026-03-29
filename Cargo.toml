@@ -10,6 +10,7 @@ authors = ["James Moreau"]
 [dependencies]
 anyhow = "1.0.102"
 confy = "2.0.0"
+core-foundation = "0.10.1"
 dark-light = "2.0.0"
 eframe = "0.33.3"
 egui = { version = "0.33.0", features = ["serde"] }
@@ -27,7 +28,7 @@ lofty = "0.23.3"
 log = "0.4.29"
 m3u = "1.0.0"
 mimalloc = "0.1.48"
-muda = "0.17.1"
+muda = "0.17.1" # TODO: put behind cfg
 nosleep = "0.2.1"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
@@ -55,3 +56,4 @@ name = "Gem Player"
 identifier = "io.github.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
 category = "public.app-category.music"
+resources = ["assets/clair_de_lune.mp3"]

@@ -7,6 +7,7 @@ DefaultDirName={autopf}\Gem Player
 
 [Files]
 Source: "{#ExePath}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\assets\clair_de_lune.mp3"; DestDir: "{app}\resources"; Flags: ignoreversion
 
 [Icons]
 ; Start menu shortcut

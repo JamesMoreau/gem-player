@@ -30,7 +30,7 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
     let debouncer_command_sender = command_sender.clone();
 
     // The debouncer, using a channel, will message the watcher thread, notifying it when the library changes.
-    let mut debouncer = new_debouncer(Duration::from_secs(2), move |res: DebounceEventResult| match res {
+    let mut debouncer = new_debouncer(Duration::from_millis(500), move |res: DebounceEventResult| match res {
         Err(e) => error!("watch error: {:?}", e),
         Ok(events) => {
             for e in events {
