@@ -20,7 +20,7 @@ use crate::{
     visualizer::VisualizerState,
 };
 use dark_light::Mode;
-use eframe::{glow, icon_data, run_native, App, CreationContext, Frame, NativeOptions};
+use eframe::{icon_data, run_native, App, CreationContext, Frame, NativeOptions};
 use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
@@ -62,10 +62,10 @@ mod nosleep_manager;
 mod platform;
 mod player;
 mod playlist;
+mod resources;
 mod track;
 mod ui;
 mod visualizer;
-mod resources;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -263,7 +263,9 @@ impl App for GemPlayer {
         ctx.request_repaint_after(Duration::from_millis(33)); // ~30 fps
     }
 
-    fn on_exit(&mut self, _gl: Option<&glow::Context>) {
+    fn ui(&mut self, _ui: &mut egui::Ui, _frame: &mut Frame) {} // TODO
+
+    fn on_exit(&mut self) {
         let save_result = save_config(self);
         if let Err(e) = save_result {
             error!("Unable to save config: {}", e);

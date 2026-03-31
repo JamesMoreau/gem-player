@@ -5,7 +5,7 @@ use egui::{
 #[cfg(target_os = "windows")]
 use egui::{Area, CursorIcon, Pos2, ResizeDirection};
 
-use egui_material_icons::icons;
+use egui_material_icons::icons::{ICON_CLOSE, ICON_MINIMIZE, ICON_SQUARE};
 
 use crate::ui::root::unselectable_label;
 
@@ -58,7 +58,7 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
     }
 
     let close_button = |ui: &mut Ui| {
-        let button = Button::new(RichText::new(icons::ICON_CLOSE).size(12.0));
+        let button = Button::new(ICON_CLOSE.rich_text().size(12.0));
         let response = ui.add(button).on_hover_text("Close the window");
         if response.clicked() {
             ui.ctx().send_viewport_cmd(ViewportCommand::Close);
@@ -68,7 +68,7 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
     let fullscreen_button = |ui: &mut Ui| {
         let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
         let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
-        let button = Button::new(RichText::new(icons::ICON_SQUARE).size(12.0));
+        let button = Button::new(ICON_SQUARE.rich_text().size(12.0));
         let response = ui.add(button).on_hover_text(tooltip);
         if response.clicked() {
             ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
@@ -76,7 +76,7 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
     };
 
     let minimize_button = |ui: &mut Ui| {
-        let button = Button::new(RichText::new(icons::ICON_MINIMIZE).size(12.0));
+        let button = Button::new(ICON_MINIMIZE.rich_text().size(12.0));
         let response = ui.add(button).on_hover_text("Minimize the window");
         if response.clicked() {
             ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
@@ -111,10 +111,11 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
         #[cfg(debug_assertions)]
         {
             use egui::Color32;
+            use egui_material_icons::icons::ICON_BUG_REPORT;
 
             ui.add_space(16.0);
 
-            let debug = format!("{} Debug Build", icons::ICON_BUG_REPORT);
+            let debug = format!("{} Debug Build", ICON_BUG_REPORT.codepoint);
             let label = unselectable_label(RichText::new(debug).color(Color32::YELLOW));
             ui.add(label);
         }

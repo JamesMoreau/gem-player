@@ -2,7 +2,10 @@ use std::path::{Path, PathBuf};
 
 use egui::{containers, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui};
 use egui_extras::{Size, StripBuilder, TableBuilder};
-use egui_material_icons::icons;
+use egui_material_icons::icons::{
+    ICON_ADD, ICON_ALBUM, ICON_ARTIST, ICON_CANCEL, ICON_CHECK, ICON_CLOSE, ICON_DELETE, ICON_EDIT, ICON_FOLDER, ICON_HOURGLASS,
+    ICON_MORE_HORIZ, ICON_MUSIC_NOTE, ICON_PLAY_ARROW, ICON_SAVE, ICON_TAG,
+};
 use fully_pub::fully_pub;
 use log::{error, info};
 
@@ -73,7 +76,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                 |ui| {
                                     ui.add_space(8.0);
 
-                                    let add_button = Button::new(icons::ICON_ADD);
+                                    let add_button = Button::new(ICON_ADD);
                                     let response = ui.add(add_button).on_hover_text("Add playlist");
                                     if response.clicked() {
                                         let directory = gem.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
@@ -157,13 +160,13 @@ fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
                 containers::Sides::new().show(
                     ui,
                     |ui| {
-                        let response = ui.button(format!("\t{}\t", icons::ICON_CLOSE));
+                        let response = ui.button(("\t{}\t", ICON_CLOSE));
                         if response.clicked() {
                             cancel_clicked = true;
                         }
                     },
                     |ui| {
-                        let response = ui.button(format!("\t{}\t", icons::ICON_CHECK));
+                        let response = ui.button(("\t{}\t", ICON_CHECK));
                         if response.clicked() {
                             confirm_clicked = true;
 
@@ -214,13 +217,13 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                             |ui| {
                                 ui.add_space(16.0);
 
-                                let cancel_button = Button::new(icons::ICON_CANCEL);
+                                let cancel_button = Button::new(ICON_CANCEL);
                                 let response = ui.add(cancel_button).on_hover_text("Discard");
                                 discard_clicked = response.clicked();
 
                                 ui.add_space(8.0);
 
-                                let confirm_button = Button::new(icons::ICON_SAVE);
+                                let confirm_button = Button::new(ICON_SAVE);
                                 let response = ui.add(confirm_button).on_hover_text("Save");
                                 save_clicked = response.clicked();
                             },
@@ -267,7 +270,7 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                                 if strip_contains_pointer {
                                     ui.add_space(16.0);
 
-                                    let play = Button::new(icons::ICON_PLAY_ARROW);
+                                    let play = Button::new(ICON_PLAY_ARROW);
                                     let response = ui.add(play);
                                     play_clicked = response.clicked();
                                 }
@@ -279,13 +282,13 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
                                 ui.add_space(16.0);
 
-                                let delete_button = Button::new(icons::ICON_DELETE);
+                                let delete_button = Button::new(ICON_DELETE);
                                 let response = ui.add(delete_button).on_hover_text("Delete");
                                 delete_clicked = response.clicked();
 
                                 ui.add_space(8.0);
 
-                                let edit_name_button = Button::new(icons::ICON_EDIT);
+                                let edit_name_button = Button::new(ICON_EDIT);
                                 let response = ui.add(edit_name_button).on_hover_text("Edit name");
                                 edit_clicked = response.clicked();
                             },
@@ -366,13 +369,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         filtered
     });
 
-    let header_labels = [
-        icons::ICON_TAG,
-        icons::ICON_MUSIC_NOTE,
-        icons::ICON_ARTIST,
-        icons::ICON_ALBUM,
-        icons::ICON_HOURGLASS,
-    ];
+    let header_labels = [ICON_TAG, ICON_MUSIC_NOTE, ICON_ARTIST, ICON_ALBUM, ICON_HOURGLASS];
 
     let available_width = ui.available_width();
     let position_width = 64.0;
@@ -469,7 +466,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                     let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || row_is_selected;
 
                     if should_show_more_button {
-                        let more_button = Button::new(icons::ICON_MORE_HORIZ);
+                        let more_button = Button::new(ICON_MORE_HORIZ);
                         let response = ui.add(more_button).on_hover_text("More");
 
                         if response.clicked() {
@@ -639,26 +636,26 @@ fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option
 
     let mut action = None;
 
-    let response = ui.button(format!("{} Remove from Playlist", icons::ICON_DELETE));
+    let response = ui.button(("{} Remove from Playlist", ICON_DELETE));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::RemoveFromPlaylist);
     }
 
     ui.separator();
 
-    let response = ui.button(format!("{} Play Next", icons::ICON_PLAY_ARROW));
+    let response = ui.button(("{} Play Next", ICON_PLAY_ARROW));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::EnqueueNext);
     }
 
-    let response = ui.button(format!("{} Add to Queue", icons::ICON_ADD));
+    let response = ui.button(("{} Add to Queue", ICON_ADD));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::Enqueue);
     }
 
     ui.separator();
 
-    let response = ui.button(format!("{} Open File Location", icons::ICON_FOLDER));
+    let response = ui.button(("{} Open File Location", ICON_FOLDER));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::OpenFileLocation);
     }

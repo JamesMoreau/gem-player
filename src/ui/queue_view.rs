@@ -1,6 +1,6 @@
 use egui::{Align, Button, Layout, RichText, Sense, Ui};
 use egui_extras::TableBuilder;
-use egui_material_icons::icons;
+use egui_material_icons::icons::{ICON_ALBUM, ICON_ARROW_UPWARD, ICON_ARTIST, ICON_CLOSE, ICON_HOURGLASS, ICON_MUSIC_NOTE, ICON_TAG};
 
 use crate::{
     player::{move_to_position, remove_from_queue, Player},
@@ -21,14 +21,7 @@ pub fn queue_view(ui: &mut Ui, player: &mut Player) {
         return;
     }
 
-    let header_labels = [
-        icons::ICON_TAG,
-        icons::ICON_MUSIC_NOTE,
-        icons::ICON_ARTIST,
-        icons::ICON_ALBUM,
-        icons::ICON_HOURGLASS,
-        "",
-    ];
+    let header_labels = [ICON_TAG, ICON_MUSIC_NOTE, ICON_ARTIST, ICON_ALBUM, ICON_HOURGLASS];
 
     let available_width = ui.available_width();
     let position_width = 64.0;
@@ -108,14 +101,14 @@ pub fn queue_view(ui: &mut Ui, player: &mut Player) {
 
                     ui.add_space(8.0);
 
-                    let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_ARROW_UPWARD));
+                    let response = ui.add_visible(should_show_action_buttons, Button::new(ICON_ARROW_UPWARD));
                     if response.clicked() {
                         to_be_moved_to_front = Some(index);
                     }
 
                     ui.add_space(8.0);
 
-                    let response = ui.add_visible(should_show_action_buttons, Button::new(icons::ICON_CLOSE));
+                    let response = ui.add_visible(should_show_action_buttons, Button::new(ICON_CLOSE));
                     if response.clicked() {
                         to_be_removed = Some(index);
                     }

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use egui::{pos2, vec2, Color32, Context, Label, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
-use egui_material_icons::icons;
+use egui_material_icons::icons::{ICON_LIBRARY_MUSIC, ICON_QUEUE_MUSIC, ICON_SETTINGS, ICON_STAR};
 use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use strum_macros::EnumIter;
@@ -33,10 +33,10 @@ pub enum View {
 impl View {
     pub fn icon(&self) -> &'static str {
         match self {
-            View::Library => icons::ICON_LIBRARY_MUSIC,
-            View::Queue => icons::ICON_QUEUE_MUSIC,
-            View::Playlists => icons::ICON_STAR,
-            View::Settings => icons::ICON_SETTINGS,
+            View::Library => ICON_LIBRARY_MUSIC.codepoint,
+            View::Queue => ICON_QUEUE_MUSIC.codepoint,
+            View::Playlists => ICON_STAR.codepoint,
+            View::Settings => ICON_SETTINGS.codepoint,
         }
     }
 }
