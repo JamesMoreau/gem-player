@@ -1,4 +1,4 @@
-use egui::{Context, OpenUrl};
+use egui::{OpenUrl, Ui};
 use strum_macros::{Display, EnumString};
 
 use crate::{
@@ -21,15 +21,15 @@ pub enum Command {
     Pause,
 }
 
-pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
+pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
     match command {
         Command::PlayPause => {
             if let Some(backend) = &mut gem.player.backend {
                 play_or_pause(&mut backend.player);
             }
         }
-        Command::NextTrack => maybe_play_next(ctx, gem),
-        Command::PreviousTrack => maybe_play_previous(ctx, gem),
+        Command::NextTrack => maybe_play_next(ui, gem),
+        Command::PreviousTrack => maybe_play_previous(ui, gem),
         Command::VolumeUp => {
             if let Some(backend) = &mut gem.player.backend {
                 adjust_volume_by_delta(&mut backend.player, 0.1);
@@ -42,7 +42,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
         }
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
-            ctx.open_url(OpenUrl { url, new_tab: true });
+            ui.open_url(OpenUrl { url, new_tab: true });
         }
         Command::Play => {
             if let Some(backend) = &mut gem.player.backend {

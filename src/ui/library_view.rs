@@ -245,7 +245,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
     if let Some(track_key) = should_play_library {
         add_to_queue_in_order(&mut gem.player, cached_library, Some(&track_key));
-        maybe_play_next(ui.ctx(), gem);
+        maybe_play_next(ui, gem);
     }
 
     if let Some(action) = context_menu_action {

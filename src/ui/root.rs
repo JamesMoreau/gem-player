@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use egui::{pos2, vec2, Color32, Context, Label, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
+use egui::{pos2, vec2, Color32, Label, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons::{ICON_LIBRARY_MUSIC, ICON_QUEUE_MUSIC, ICON_SETTINGS, ICON_STAR};
 use egui_notify::Toasts;
@@ -57,9 +57,9 @@ pub struct UIState {
     toasts: Toasts,
 }
 
-pub fn gem_player_ui(gem: &mut GemPlayer, ctx: &Context) {
-    custom_window(ctx, "", |ui| {
-        let is_hovering_files = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
+pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+    custom_window(ui, "", |ui| {
+        let is_hovering_files = ui.input(|i| !i.raw.hovered_files.is_empty());
         if is_hovering_files {
             file_drop_overlay(ui); // Don't render anything else if files are being dropped.
             return;
@@ -104,7 +104,7 @@ pub fn playing_indicator(ui: &mut Ui) {
 
     let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
 
-    let time = ui.ctx().input(|i| i.time) as f32;
+    let time = ui.input(|i| i.time) as f32;
     let display_bars = [
         ((time * 6.0).sin() * 0.4 + 0.6).max(0.2),
         ((time * 7.5).cos() * 0.4 + 0.6).max(0.2),

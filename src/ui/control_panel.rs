@@ -127,7 +127,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Previous")
         .on_disabled_hover_text("No previous track");
     if response.clicked() {
-        maybe_play_previous(ui.ctx(), gem)
+        maybe_play_previous(ui, gem)
     }
 
     let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.player.is_paused());
@@ -152,7 +152,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Next")
         .on_disabled_hover_text("No next track");
     if response.clicked() {
-        maybe_play_next(ui.ctx(), gem);
+        maybe_play_next(ui, gem);
     }
 }
 

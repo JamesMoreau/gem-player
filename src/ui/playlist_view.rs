@@ -300,7 +300,7 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                             let playlist = gem.playlists.get_by_path(&playlist_key);
 
                             add_to_queue_in_order(&mut gem.player, &playlist.tracks, None);
-                            maybe_play_next(ui.ctx(), gem);
+                            maybe_play_next(ui, gem);
                         }
 
                         if delete_clicked {
@@ -533,7 +533,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
     if let Some(track_key) = should_play_playlist {
         add_to_queue_in_order(&mut gem.player, cached_playlist_tracks, Some(&track_key));
-        maybe_play_next(ui.ctx(), gem);
+        maybe_play_next(ui, gem);
     }
 
     if let Some(action) = context_menu_action {
