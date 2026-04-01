@@ -118,6 +118,10 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     egui_extras::install_image_loaders(&cc.egui_ctx);
     egui_material_icons::initialize(&cc.egui_ctx);
 
+    cc.egui_ctx.options_mut(|w| {
+        w.zoom_with_keyboard = false;
+    });
+
     let mut fonts = FontDefinitions::default();
     let font_key = "inconsolata";
     fonts.font_data.insert(
