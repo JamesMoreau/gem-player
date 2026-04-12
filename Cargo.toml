@@ -31,7 +31,7 @@ nosleep = "0.2.1"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
 opener = { version = "0.8.4", features = ["reveal"] }
-rand = "0.10.0"
+rand = "0.10.1"
 rayon = "1.11.0"
 rfd = "0.17.2"
 rodio = { version = "0.22.2", features = ["symphonia-all"] }
@@ -45,7 +45,7 @@ walkdir = "2.5.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10.1"
-muda = "0.17.1"
+muda = "0.17.2"
 
 [build-dependencies]
 winres = "0.1.12"
