@@ -47,8 +47,8 @@ use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 #[cfg(target_os = "macos")]
 use {
     crate::{commands::Command, platform::macos_menu::MenuBar},
+    egui::Ui,
     std::str::FromStr,
-    egui::Ui
 };
 
 #[cfg(target_os = "windows")]
@@ -216,6 +216,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             update_receiver,
             command_sender: watcher_command_sender,
         },
+
         player: Player {
             history: Vec::new(),
             playing: None,
@@ -234,7 +235,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 display_bands: vec![0.0; CENTER_FREQUENCIES.len()],
             },
         },
+
         nosleep_manager: NoSleepManager::new(),
+
         #[cfg(target_os = "macos")]
         menubar: MenuBar { menu, menu_receiver },
     }
