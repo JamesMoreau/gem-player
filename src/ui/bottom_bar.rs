@@ -1,5 +1,5 @@
 use egui::{Align, Button, Direction, Frame, Layout, Margin, Popup, PopupCloseBehavior, TextEdit, Ui};
-use egui_material_icons::icons;
+use egui_material_icons::icons::{ICON_CLEAR, ICON_CLEAR_ALL, ICON_FILTER_LIST, ICON_SEARCH};
 use log::info;
 use strum::IntoEnumIterator;
 
@@ -69,7 +69,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                 View::Queue => {
                     let queue_is_not_empty = !gem.player.queue.is_empty();
 
-                    let clear_button = Button::new(icons::ICON_CLEAR_ALL);
+                    let clear_button = Button::new(ICON_CLEAR_ALL);
                     let response = ui
                         .add_enabled(queue_is_not_empty, clear_button)
                         .on_hover_text("Clear")
@@ -95,7 +95,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
 }
 
 fn sort_and_order_by_ui(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
-    let response = ui.button(icons::ICON_FILTER_LIST).on_hover_text("Sort by and order");
+    let response = ui.button(ICON_FILTER_LIST).on_hover_text("Sort by and order");
 
     let mut sort_by_changed = false;
     let mut sort_order_changed = false;
@@ -120,7 +120,7 @@ fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
     let mut changed = false;
     let clear_button_is_visible = !search_text.is_empty();
     let response = ui
-        .add_visible(clear_button_is_visible, Button::new(icons::ICON_CLEAR))
+        .add_visible(clear_button_is_visible, Button::new(ICON_CLEAR))
         .on_hover_text("Clear search");
     if response.clicked() {
         search_text.clear();
@@ -128,7 +128,8 @@ fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
     }
 
     let search_bar = TextEdit::singleline(search_text)
-        .hint_text(format!("{} Search ...", icons::ICON_SEARCH))
+        .prefix(ICON_SEARCH)
+        .hint_text("Search ...")
         .desired_width(140.0)
         .char_limit(20);
 

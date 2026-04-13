@@ -40,7 +40,7 @@ pub fn marquee_ui(ui: &mut Ui, marquee: &mut Marquee, text: &str) {
     let font_id = TextStyle::Body.resolve(ui.style());
 
     let chars_count = text.chars().count();
-    let text_width: f32 = text.chars().map(|c| ui.ctx().fonts_mut(|r| r.glyph_width(&font_id, c))).sum();
+    let text_width: f32 = text.chars().map(|c| ui.fonts_mut(|r| r.glyph_width(&font_id, c))).sum();
 
     let average_char_width = text_width / chars_count as f32;
 

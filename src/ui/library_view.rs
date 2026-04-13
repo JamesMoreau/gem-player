@@ -5,7 +5,9 @@ use std::{
 
 use egui::{Align, Button, Label, Layout, Popup, RichText, ScrollArea, Sense, Ui};
 use egui_extras::TableBuilder;
-use egui_material_icons::icons;
+use egui_material_icons::icons::{
+    ICON_ALBUM, ICON_ARTIST, ICON_FOLDER, ICON_HOURGLASS, ICON_MORE_HORIZ, ICON_MUSIC_NOTE, ICON_PLAY_ARROW, ICON_QUEUE_MUSIC,
+};
 use fully_pub::fully_pub;
 use log::{error, info};
 
@@ -81,7 +83,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         filtered_and_sorted
     });
 
-    let header_labels = [icons::ICON_MUSIC_NOTE, icons::ICON_ARTIST, icons::ICON_ALBUM, icons::ICON_HOURGLASS];
+    let header_labels = [ICON_MUSIC_NOTE, ICON_ARTIST, ICON_ALBUM, ICON_HOURGLASS];
 
     let time_width = 64.0;
     let more_width = 48.0;
@@ -174,7 +176,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || track_is_selected;
 
                     if should_show_more_button {
-                        let more_button = Button::new(icons::ICON_MORE_HORIZ);
+                        let more_button = Button::new(ICON_MORE_HORIZ);
                         let response = ui.add(more_button).on_hover_text("More");
 
                         if response.clicked() {
@@ -243,7 +245,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
     if let Some(track_key) = should_play_library {
         add_to_queue_in_order(&mut gem.player, cached_library, Some(&track_key));
-        maybe_play_next(ui.ctx(), gem);
+        maybe_play_next(ui, gem);
     }
 
     if let Some(action) = context_menu_action {
@@ -358,19 +360,19 @@ fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists:
 
     ui.separator();
 
-    let response = ui.button(format!("Play Next {}", icons::ICON_PLAY_ARROW));
+    let response = ui.button(("Play Next {}", ICON_PLAY_ARROW));
     if response.clicked() {
         action = Some(LibraryContextMenuAction::EnqueueNext);
     }
 
-    let response = ui.button(format!("Add to Queue {}", icons::ICON_QUEUE_MUSIC));
+    let response = ui.button(("Add to Queue {}", ICON_QUEUE_MUSIC));
     if response.clicked() {
         action = Some(LibraryContextMenuAction::Enqueue);
     }
 
     ui.separator();
 
-    let response = ui.button(format!("Open File Location {}", icons::ICON_FOLDER));
+    let response = ui.button(("Open File Location {}", ICON_FOLDER));
     if response.clicked() {
         action = Some(LibraryContextMenuAction::OpenFileLocation);
     }

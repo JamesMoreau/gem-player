@@ -1,22 +1,22 @@
 use egui::{
-    Align, Align2, Button, CentralPanel, Context, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui, UiBuilder, Vec2,
+    Align, Align2, Button, CentralPanel, FontId, Frame, Id, Layout, PointerButton, Rect, RichText, Sense, Ui, UiBuilder, Vec2,
     ViewportCommand,
 };
 #[cfg(target_os = "windows")]
 use egui::{Area, CursorIcon, Pos2, ResizeDirection};
 
-use egui_material_icons::icons;
+use egui_material_icons::icons::{ICON_CLOSE, ICON_MINIMIZE, ICON_SQUARE};
 
 use crate::ui::root::unselectable_label;
 
-pub fn custom_window(ctx: &Context, title: &str, add_contents: impl FnOnce(&mut Ui)) {
+pub fn custom_window(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui)) {
     let frame = Frame::new()
-        .fill(ctx.style().visuals.window_fill())
+        .fill(ui.style().visuals.window_fill())
         .corner_radius(10.0)
-        .stroke(ctx.style().visuals.widgets.noninteractive.bg_stroke)
+        .stroke(ui.style().visuals.widgets.noninteractive.bg_stroke)
         .outer_margin(1); // so the stroke is within the bounds
 
-    CentralPanel::default().frame(frame).show(ctx, |ui| {
+    CentralPanel::default().frame(frame).show_inside(ui, |ui| {
         let app_rect = ui.max_rect();
 
         let title_bar_height = 24.0;
@@ -50,36 +50,36 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
 
     if response.double_clicked() {
         let is_maximized = ui.input(|i| i.viewport().maximized.unwrap_or(false));
-        ui.ctx().send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
+        ui.send_viewport_cmd(ViewportCommand::Maximized(!is_maximized));
     }
 
     if response.drag_started_by(PointerButton::Primary) {
-        ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
+        ui.send_viewport_cmd(ViewportCommand::StartDrag);
     }
 
     let close_button = |ui: &mut Ui| {
-        let button = Button::new(RichText::new(icons::ICON_CLOSE).size(12.0));
+        let button = Button::new(ICON_CLOSE.rich_text().size(12.0));
         let response = ui.add(button).on_hover_text("Close the window");
         if response.clicked() {
-            ui.ctx().send_viewport_cmd(ViewportCommand::Close);
+            ui.send_viewport_cmd(ViewportCommand::Close);
         }
     };
 
     let fullscreen_button = |ui: &mut Ui| {
         let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
         let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
-        let button = Button::new(RichText::new(icons::ICON_SQUARE).size(12.0));
+        let button = Button::new(ICON_SQUARE.rich_text().size(12.0));
         let response = ui.add(button).on_hover_text(tooltip);
         if response.clicked() {
-            ui.ctx().send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
+            ui.send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
         }
     };
 
     let minimize_button = |ui: &mut Ui| {
-        let button = Button::new(RichText::new(icons::ICON_MINIMIZE).size(12.0));
+        let button = Button::new(ICON_MINIMIZE.rich_text().size(12.0));
         let response = ui.add(button).on_hover_text("Minimize the window");
         if response.clicked() {
-            ui.ctx().send_viewport_cmd(ViewportCommand::Minimized(true));
+            ui.send_viewport_cmd(ViewportCommand::Minimized(true));
         }
     };
 
@@ -111,10 +111,11 @@ fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
         #[cfg(debug_assertions)]
         {
             use egui::Color32;
+            use egui_material_icons::icons::ICON_BUG_REPORT;
 
             ui.add_space(16.0);
 
-            let debug = format!("{} Debug Build", icons::ICON_BUG_REPORT);
+            let debug = format!("{} Debug Build", ICON_BUG_REPORT.codepoint);
             let label = unselectable_label(RichText::new(debug).color(Color32::YELLOW));
             ui.add(label);
         }

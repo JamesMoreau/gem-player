@@ -20,8 +20,10 @@ use crate::{
     visualizer::VisualizerState,
 };
 use dark_light::Mode;
-use eframe::{glow, icon_data, run_native, App, CreationContext, Frame, NativeOptions};
-use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
+use eframe::{icon_data, run_native, App, CreationContext, Frame, NativeOptions};
+#[cfg(target_os = "macos")]
+use egui::Ui;
+use egui::{Color32, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -62,10 +64,10 @@ mod nosleep_manager;
 mod platform;
 mod player;
 mod playlist;
+mod resources;
 mod track;
 mod ui;
 mod visualizer;
-mod resources;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -115,6 +117,13 @@ fn main() -> eframe::Result {
 pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     egui_extras::install_image_loaders(&cc.egui_ctx);
     egui_material_icons::initialize(&cc.egui_ctx);
+
+    cc.egui_ctx.options_mut(|w| {
+        w.zoom_with_keyboard = false;
+    });
+    // This is a temporary solution until false positives with virtualized egui_extras::Table is fixed.
+    // github issue: https://github.com/emilk/egui/issues/8092
+    cc.egui_ctx.global_style_mut(|s| s.debug.warn_if_rect_changes_id = false);
 
     let mut fonts = FontDefinitions::default();
     let font_key = "inconsolata";
@@ -241,29 +250,29 @@ impl App for GemPlayer {
         false
     }
 
-    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut Frame) {
         // Input
         #[cfg(target_os = "windows")]
         handle_shortcuts(ctx, self);
         #[cfg(target_os = "macos")]
-        poll_macos_menu_events(ctx, self);
+        poll_macos_menu_events(ui, self);
         poll_library_watcher(self);
         poll_library_folder_picker(self);
-        poll_file_drops(ctx, self);
+        poll_file_drops(ui, self);
 
         // Update
-        check_for_next_track(ctx, self);
+        check_for_next_track(ui, self);
 
         // Render
-        apply_theme(ctx, self.ui.theme_preference);
-        gem_player_ui(self, ctx);
-        self.ui.toasts.show(ctx);
+        apply_theme(ui, self.ui.theme_preference);
+        gem_player_ui(ui, self);
+        self.ui.toasts.show(ui.ctx());
 
         // Set a minimum refresh rate for the app to keep the ui elements updated.
-        ctx.request_repaint_after(Duration::from_millis(33)); // ~30 fps
+        ui.request_repaint_after(Duration::from_millis(33)); // ~30 fps
     }
 
-    fn on_exit(&mut self, _gl: Option<&glow::Context>) {
+    fn on_exit(&mut self) {
         let save_result = save_config(self);
         if let Err(e) = save_result {
             error!("Unable to save config: {}", e);
@@ -282,12 +291,12 @@ impl App for GemPlayer {
 }
 
 #[cfg(target_os = "macos")]
-fn poll_macos_menu_events(ctx: &Context, gem: &mut GemPlayer) {
+fn poll_macos_menu_events(ui: &mut Ui, gem: &mut GemPlayer) {
     let events: Vec<_> = gem.menubar.menu_receiver.try_iter().collect();
 
     for event in events {
         match Command::from_str(&event.id.0) {
-            Ok(command) => execute(ctx, gem, command),
+            Ok(command) => execute(ui, gem, command),
             Err(_) => error!("Unable to process menu event: {:?}", event),
         }
     }
@@ -362,8 +371,8 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
     }
 }
 
-fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
-    let dropped_files = ctx.input(|i| i.raw.dropped_files.clone());
+fn poll_file_drops(ui: &mut Ui, gem: &mut GemPlayer) {
+    let dropped_files = ui.input(|i| i.raw.dropped_files.clone());
 
     if dropped_files.is_empty() {
         return;
@@ -443,7 +452,7 @@ fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlis
     }
 }
 
-fn check_for_next_track(ctx: &Context, gem: &mut GemPlayer) {
+fn check_for_next_track(ui: &mut Ui, gem: &mut GemPlayer) {
     let Some(backend) = &gem.player.backend else {
         return;
     };
@@ -453,13 +462,13 @@ fn check_for_next_track(ctx: &Context, gem: &mut GemPlayer) {
         return;
     }
 
-    maybe_play_next(ctx, gem);
+    maybe_play_next(ui, gem);
 }
 
-fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
+fn maybe_play_next(ui: &mut Ui, gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
         Ok(_) => {
-            on_track_change(ctx, gem);
+            on_track_change(ui, gem);
         }
         Err(e) => {
             error!("{}", e);
@@ -471,7 +480,7 @@ fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
 // If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
 // This is what actually gets called by the UI.
-pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
+pub fn maybe_play_previous(ui: &mut Ui, gem: &mut GemPlayer) {
     let rewind_threshold = 5.0;
     let mut under_threshold = false;
 
@@ -485,7 +494,7 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
         match play_previous(&mut gem.player) {
-            Ok(_) => on_track_change(ctx, gem),
+            Ok(_) => on_track_change(ui, gem),
             Err(e) => {
                 error!("{}", e);
                 gem.ui.toasts.error("Error playing the previous track");
@@ -499,10 +508,10 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
-fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
+fn on_track_change(ui: &mut Ui, gem: &mut GemPlayer) {
     // Forget the previous artwork.
     if let Some(old) = &gem.ui.cached_artwork {
-        ctx.forget_image(&old.uri);
+        ui.forget_image(&old.uri);
     }
 
     gem.ui.cached_artwork = gem.player.playing.as_ref().and_then(|track| {
@@ -515,7 +524,7 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     });
 }
 
-fn apply_theme(ctx: &Context, preference: ThemePreference) {
+fn apply_theme(ui: &mut Ui, preference: ThemePreference) {
     let visuals = match preference {
         ThemePreference::Dark => Visuals::dark(),
         ThemePreference::Light => Visuals::light(),
@@ -525,7 +534,7 @@ fn apply_theme(ctx: &Context, preference: ThemePreference) {
         },
     };
 
-    ctx.set_visuals(visuals);
+    ui.set_visuals(visuals);
 }
 
 fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {

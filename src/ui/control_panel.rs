@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use egui::{Align, Button, Frame, Layout, Margin, Popup, RectAlign, RichText, Slider, Ui, Vec2};
 use egui_extras::{Size, StripBuilder};
-use egui_material_icons::icons;
+use egui_material_icons::icons::{
+    ICON_PAUSE, ICON_PLAY_ARROW, ICON_REPEAT, ICON_SHUFFLE, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS, ICON_VOLUME_DOWN, ICON_VOLUME_OFF,
+    ICON_VOLUME_UP,
+};
 use log::{error, info};
 
 use crate::{
@@ -60,9 +63,9 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
     let mut volume = gem.player.backend.as_ref().map(|b| b.player.volume()).unwrap_or(0.0);
 
     let volume_icon = match volume {
-        0.0 => icons::ICON_VOLUME_OFF,
-        v if v <= 0.5 => icons::ICON_VOLUME_DOWN,
-        _ => icons::ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
+        0.0 => ICON_VOLUME_OFF,
+        v if v <= 0.5 => ICON_VOLUME_DOWN,
+        _ => ICON_VOLUME_UP, // v > 0.5 && v <= 1.0
     };
 
     let volume_button = Button::new(RichText::new(volume_icon).size(18.0));
@@ -115,7 +118,7 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     let has_backend = gem.player.backend.is_some();
     let track_is_playing = gem.player.playing.is_some();
 
-    let previous_button = Button::new(RichText::new(icons::ICON_SKIP_PREVIOUS).size(18.0));
+    let previous_button = Button::new(ICON_SKIP_PREVIOUS.rich_text().size(18.0));
     let previous_track_exists = !gem.player.history.is_empty();
     let previous_enabled = has_backend && (track_is_playing || previous_track_exists);
 
@@ -124,15 +127,11 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Previous")
         .on_disabled_hover_text("No previous track");
     if response.clicked() {
-        maybe_play_previous(ui.ctx(), gem)
+        maybe_play_previous(ui, gem)
     }
 
     let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.player.is_paused());
-    let play_pause_icon = if sink_is_paused {
-        icons::ICON_PLAY_ARROW
-    } else {
-        icons::ICON_PAUSE
-    };
+    let play_pause_icon = if sink_is_paused { ICON_PLAY_ARROW } else { ICON_PAUSE };
     let tooltip = if sink_is_paused { "Play" } else { "Pause" };
     let play_pause_enabled = has_backend && track_is_playing;
     let play_pause_button = Button::new(RichText::new(play_pause_icon).size(28.0));
@@ -146,14 +145,14 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         }
     }
 
-    let next_button = Button::new(RichText::new(icons::ICON_SKIP_NEXT).size(18.0));
+    let next_button = Button::new(ICON_SKIP_NEXT.rich_text().size(18.0));
     let next_enabled = has_backend && !gem.player.queue.is_empty();
     let response = ui
         .add_enabled(next_enabled, next_button)
         .on_hover_text("Next")
         .on_disabled_hover_text("No next track");
     if response.clicked() {
-        maybe_play_next(ui.ctx(), gem);
+        maybe_play_next(ui, gem);
     }
 }
 
@@ -205,7 +204,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     };
 
     let color = get_button_color(ui, player.repeat);
-    let repeat_button = Button::new(RichText::new(icons::ICON_REPEAT).color(color)).min_size(Vec2::splat(button_size));
+    let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
     let response = ui.add(repeat_button).on_hover_text("Repeat");
 
     if response.clicked() {
@@ -215,7 +214,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     ui.add_space(vertical_pad);
 
     let color = get_button_color(ui, player.shuffle.is_some());
-    let shuffle_button = Button::new(RichText::new(icons::ICON_SHUFFLE).color(color)).min_size(Vec2::splat(button_size));
+    let shuffle_button = Button::new(ICON_SHUFFLE.rich_text().color(color)).min_size(Vec2::splat(button_size));
     let shuffle_enabled = !player.queue.is_empty();
 
     let response = ui
