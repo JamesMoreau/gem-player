@@ -21,8 +21,6 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::{icon_data, run_native, App, CreationContext, Frame, NativeOptions};
-#[cfg(target_os = "macos")]
-use egui::Ui;
 use egui::{Color32, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
@@ -50,6 +48,7 @@ use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
 use {
     crate::{commands::Command, platform::macos_menu::MenuBar},
     std::str::FromStr,
+    egui::Ui
 };
 
 #[cfg(target_os = "windows")]
