@@ -121,6 +121,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     cc.egui_ctx.options_mut(|w| {
         w.zoom_with_keyboard = false;
     });
+    // This is a temporary solution until false positives with virtualized egui_extras::Table is fixed.
+    // github issue: https://github.com/emilk/egui/issues/8092
+    cc.egui_ctx.global_style_mut(|s| s.debug.warn_if_rect_changes_id = false);
 
     let mut fonts = FontDefinitions::default();
     let font_key = "inconsolata";
