@@ -9,20 +9,19 @@ use egui_material_icons::icons::{
 use log::{error, info};
 
 use crate::{
-    maybe_play_next, maybe_play_previous,
-    player::{mute_or_unmute, play_or_pause, toggle_shuffle, AudioBackend, Player},
-    track::{file_type_name, Track},
+    GemPlayer, maybe_play_next, maybe_play_previous,
+    player::{AudioBackend, Player, mute_or_unmute, play_or_pause, toggle_shuffle},
+    track::{Track, file_type_name},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
         widgets::{
             bar_display::BarDisplay,
-            marquee::{marquee_ui, Marquee},
+            marquee::{Marquee, marquee_ui},
             metadata_chip::MetadataChip,
             track_artwork::track_artwork_ui,
         },
     },
     visualizer::smooth_bars,
-    GemPlayer,
 };
 
 pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
@@ -139,10 +138,10 @@ fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         .add_enabled(play_pause_enabled, play_pause_button)
         .on_hover_text(tooltip)
         .on_disabled_hover_text("No current track");
-    if response.clicked() {
-        if let Some(backend) = &mut gem.player.backend {
-            play_or_pause(&mut backend.player);
-        }
+    if response.clicked()
+        && let Some(backend) = &mut gem.player.backend
+    {
+        play_or_pause(&mut backend.player);
     }
 
     let next_button = Button::new(ICON_SKIP_NEXT.rich_text().size(18.0));

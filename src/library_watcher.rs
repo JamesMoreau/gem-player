@@ -1,6 +1,6 @@
 use std::{
     path::PathBuf,
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender, channel},
     thread,
     time::Duration,
 };
@@ -8,11 +8,11 @@ use std::{
 use anyhow::{Context, Result};
 use log::{error, info, warn};
 use notify::RecursiveMode;
-use notify_debouncer_mini::{new_debouncer, DebounceEventResult};
+use notify_debouncer_mini::{DebounceEventResult, new_debouncer};
 
 use crate::{
-    playlist::{load_playlists_from_directory, Playlist},
-    track::{load_tracks_from_directory, Track},
+    playlist::{Playlist, load_playlists_from_directory},
+    track::{Track, load_tracks_from_directory},
 };
 
 pub enum LibraryWatcherCommand {
@@ -80,12 +80,12 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
                         continue;
                     }
 
-                    if let Some(old) = &watcher_directory {
-                        if let Err(e) = debouncer.watcher().unwatch(old) {
-                            error!("Failed to unwatch old folder {:?}: {:?}", old, e);
-                            let _ = update_sender.send(None);
-                            continue;
-                        }
+                    if let Some(old) = &watcher_directory
+                        && let Err(e) = debouncer.watcher().unwatch(old)
+                    {
+                        error!("Failed to unwatch old folder {:?}: {:?}", old, e);
+                        let _ = update_sender.send(None);
+                        continue;
                     }
 
                     if let Err(e) = debouncer.watcher().watch(&new_directory, RecursiveMode::Recursive) {

@@ -1,10 +1,10 @@
 use fully_pub::fully_pub;
 use log::info;
-use rodio::{source::SeekError, ChannelCount, Sample, SampleRate, Source};
-use rustfft::{num_complex::Complex, Fft, FftPlanner};
+use rodio::{ChannelCount, Sample, SampleRate, Source, source::SeekError};
+use rustfft::{Fft, FftPlanner, num_complex::Complex};
 use std::{
     f32::consts::{PI, SQRT_2},
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender, channel},
     thread,
     time::Duration,
 };
@@ -137,11 +137,11 @@ fn process_samples(
     }
 
     // Normalize 0..1
-    if let Some(&max_band) = bands.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
-        if max_band > 0.0 {
-            for band in &mut bands {
-                *band /= max_band;
-            }
+    if let Some(&max_band) = bands.iter().max_by(|a, b| a.partial_cmp(b).unwrap())
+        && max_band > 0.0
+    {
+        for band in &mut bands {
+            *band /= max_band;
         }
     }
 

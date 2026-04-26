@@ -2,7 +2,7 @@ use crate::{
     track::Track,
     visualizer::{VisualizerCommand, VisualizerSource, VisualizerState},
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
@@ -34,11 +34,11 @@ struct AudioBackend {
 }
 
 pub fn play_next(player: &mut Player) -> Result<()> {
-    if player.repeat {
-        if let Some(playing) = player.playing.clone() {
-            play_track(player, playing)?;
-            return Ok(());
-        }
+    if player.repeat
+        && let Some(playing) = player.playing.clone()
+    {
+        play_track(player, playing)?;
+        return Ok(());
     }
 
     if player.queue.is_empty() {
@@ -97,11 +97,7 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
 }
 
 pub fn play_or_pause(player: &mut rodio::Player) {
-    if player.is_paused() {
-        player.play()
-    } else {
-        player.pause()
-    }
+    if player.is_paused() { player.play() } else { player.pause() }
 }
 
 pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) {
