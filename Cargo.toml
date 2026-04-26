@@ -26,7 +26,7 @@ image = { version = "0.25.10", features = ["jpeg", "png"] }
 lofty = "0.24.0"
 log = "0.4.29"
 m3u = "1.0.0"
-mimalloc = "0.1.48"
+mimalloc = "0.1.50"
 nosleep = "0.2.1"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
@@ -45,7 +45,7 @@ walkdir = "2.5.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10.1"
-muda = "0.17.2"
+muda = "0.18.0"
 
 [build-dependencies]
 winres = "0.1.12"
