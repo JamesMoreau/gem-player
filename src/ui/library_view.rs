@@ -360,19 +360,19 @@ fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists:
 
     ui.separator();
 
-    let response = ui.button(("Play Next {}", ICON_PLAY_ARROW));
+    let response = ui.button(("Play Next", ICON_PLAY_ARROW));
     if response.clicked() {
         action = Some(LibraryContextMenuAction::EnqueueNext);
     }
 
-    let response = ui.button(("Add to Queue {}", ICON_QUEUE_MUSIC));
+    let response = ui.button(("Add to Queue", ICON_QUEUE_MUSIC));
     if response.clicked() {
         action = Some(LibraryContextMenuAction::Enqueue);
     }
 
     ui.separator();
 
-    let response = ui.button(("Open File Location {}", ICON_FOLDER));
+    let response = ui.button(("Open File Location", ICON_FOLDER));
     if response.clicked() {
         action = Some(LibraryContextMenuAction::OpenFileLocation);
     }

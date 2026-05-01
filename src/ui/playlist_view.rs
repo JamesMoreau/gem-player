@@ -636,26 +636,26 @@ fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option
 
     let mut action = None;
 
-    let response = ui.button(("{} Remove from Playlist", ICON_DELETE));
+    let response = ui.button(("Remove from Playlist", ICON_DELETE));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::RemoveFromPlaylist);
     }
 
     ui.separator();
 
-    let response = ui.button(("{} Play Next", ICON_PLAY_ARROW));
+    let response = ui.button(("Play Next", ICON_PLAY_ARROW));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::EnqueueNext);
     }
 
-    let response = ui.button(("{} Add to Queue", ICON_ADD));
+    let response = ui.button(("Add to Queue", ICON_ADD));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::Enqueue);
     }
 
     ui.separator();
 
-    let response = ui.button(("{} Open File Location", ICON_FOLDER));
+    let response = ui.button(("Open File Location", ICON_FOLDER));
     if response.clicked() {
         action = Some(PlaylistContextMenuAction::OpenFileLocation);
     }
