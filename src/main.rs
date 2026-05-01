@@ -6,43 +6,44 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use crate::{
     commands::execute,
     config::{load_config, save_config},
+    context_menu::{build_library_context_menu, show_context_menu},
     nosleep_manager::NoSleepManager,
     track::{extract_artwork_from_file, is_audio_file},
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
-        root::{gem_player_ui, UIState, View},
+        root::{UIState, View, gem_player_ui},
         widgets::{
             marquee::Marquee,
-            track_artwork::{compute_uri, Artwork},
+            track_artwork::{Artwork, compute_uri},
         },
     },
     visualizer::VisualizerState,
 };
 use dark_light::Mode;
-use eframe::{icon_data, run_native, App, CreationContext, Frame, NativeOptions};
+use eframe::{App, CreationContext, Frame, NativeOptions, icon_data, run_native, wgpu::rwh::HasWindowHandle};
 use egui::{Color32, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
+use library_watcher::{LibraryAndPlaylists, LibraryWatcherCommand, setup_library_watcher};
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
-use player::{build_audio_backend_from_device, play_next, play_previous, Player};
+use player::{Player, build_audio_backend_from_device, play_next, play_previous};
 use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs::{copy, read, File},
+    fs::{File, copy, read},
     path::PathBuf,
     sync::{
-        mpsc::{Receiver, Sender, TryRecvError},
         Arc,
+        mpsc::{Receiver, Sender, TryRecvError},
     },
     time::Duration,
 };
 use track::{SortBy, SortOrder, Track};
-use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
+use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
 #[cfg(target_os = "macos")]
 use {
@@ -56,6 +57,7 @@ use platform::windows_shortcuts::SHORTCUTS;
 
 mod commands;
 mod config;
+mod context_menu;
 mod custom_window;
 mod library_folder_picker;
 mod library_watcher;
@@ -189,6 +191,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 selected_tracks: Vec::new(),
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
+                context_menu_request: None,
+                active_context_menu: None,
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
@@ -254,6 +258,24 @@ impl App for GemPlayer {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut Frame) {
+        if let Some(position) = self.ui.library.context_menu_request.take() {
+            let handle = match _frame.window_handle() {
+                Ok(h) => h,
+                Err(e) => {
+                    error!("Failed to get window handle: {:#?}", e);
+                    return;
+                }
+            };
+
+            let menu = build_library_context_menu(self.ui.library.selected_tracks.len(), &self.playlists);
+
+            if let Err(e) = show_context_menu(handle, &menu, position) {
+                error!("Failed to show context menu: {:#}", e);
+            }
+
+            self.ui.library.active_context_menu = Some(menu);
+        }
+
         // Input
         #[cfg(target_os = "windows")]
         handle_shortcuts(ctx, self);
