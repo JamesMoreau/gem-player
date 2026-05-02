@@ -1,10 +1,10 @@
-use crate::{track::load_from_file, Track};
-use anyhow::{anyhow, bail, Context, Result};
+use crate::{Track, track::load_from_file};
+use anyhow::{Context, Result, anyhow, bail};
 use fully_pub::fully_pub;
 use log::warn;
-use m3u::{path_entry, Entry, Reader, Writer};
+use m3u::{Entry, Reader, Writer, path_entry};
 use std::{
-    fs::{self, metadata, File},
+    fs::{self, File, metadata},
     path::{Path, PathBuf},
     time::SystemTime,
 };

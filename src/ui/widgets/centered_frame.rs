@@ -1,4 +1,4 @@
-use egui::{epaint::MarginF32, Frame, Ui};
+use egui::{Frame, Ui, epaint::MarginF32};
 
 pub fn centered_frame_ui(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
     let margin_factor = 1.0 / 4.0;

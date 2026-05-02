@@ -4,11 +4,11 @@ use log::info;
 use strum::IntoEnumIterator;
 
 use crate::{
+    GemPlayer,
     player::clear_the_queue,
     playlist::PlaylistRetrieval,
-    track::{calculate_total_duration, SortBy, SortOrder, Track},
-    ui::root::{format_duration_to_hhmmss, unselectable_label, View},
-    GemPlayer,
+    track::{SortBy, SortOrder, Track, calculate_total_duration},
+    ui::root::{View, format_duration_to_hhmmss, unselectable_label},
 };
 
 pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {

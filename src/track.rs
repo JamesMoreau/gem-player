@@ -1,7 +1,7 @@
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use fully_pub::fully_pub;
 use lofty::{
-    file::{AudioFile, FileType, TaggedFileExt, EXTENSIONS},
+    file::{AudioFile, EXTENSIONS, FileType, TaggedFileExt},
     read_from, read_from_path,
     tag::ItemKey,
 };
@@ -9,7 +9,7 @@ use log::warn;
 use rayon::prelude::*;
 use rodio::SampleRate;
 use std::{
-    fs::{metadata, File},
+    fs::{File, metadata},
     num::NonZeroU32,
     path::{Path, PathBuf},
     time::{Duration, SystemTime},

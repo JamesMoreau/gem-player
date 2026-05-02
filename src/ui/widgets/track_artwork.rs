@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use egui::{include_image, Image, TextureFilter, TextureOptions, Ui, Vec2};
+use egui::{Image, TextureFilter, TextureOptions, Ui, Vec2, include_image};
 use fully_pub::fully_pub;
 
 #[fully_pub]

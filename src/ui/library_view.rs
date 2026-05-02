@@ -12,16 +12,15 @@ use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    maybe_play_next,
+    GemPlayer, maybe_play_next,
     player::{add_to_queue_in_order, enqueue, enqueue_next},
-    playlist::{add_to_playlist, Playlist, PlaylistRetrieval},
+    playlist::{Playlist, PlaylistRetrieval, add_to_playlist},
     resources::resource_path,
-    track::{open_file_location, sort, SortBy, SortOrder, Track, TrackRetrieval},
+    track::{SortBy, SortOrder, Track, TrackRetrieval, open_file_location, sort},
     ui::{
         root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
         widgets::centered_frame::centered_frame_ui,
     },
-    GemPlayer,
 };
 
 #[fully_pub]

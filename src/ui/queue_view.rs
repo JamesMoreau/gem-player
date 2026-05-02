@@ -3,7 +3,7 @@ use egui_extras::TableBuilder;
 use egui_material_icons::icons::{ICON_ALBUM, ICON_ARROW_UPWARD, ICON_ARTIST, ICON_CLOSE, ICON_HOURGLASS, ICON_MUSIC_NOTE, ICON_TAG};
 
 use crate::{
-    player::{move_to_position, remove_from_queue, Player},
+    player::{Player, move_to_position, remove_from_queue},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
         widgets::centered_frame::centered_frame_ui,

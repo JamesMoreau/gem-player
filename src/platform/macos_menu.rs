@@ -1,4 +1,4 @@
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::{Receiver, channel};
 
 use fully_pub::fully_pub;
 use muda::accelerator::{Accelerator, Code, Modifiers};

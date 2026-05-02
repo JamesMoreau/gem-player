@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use egui::{containers, Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui};
+use egui::{Align, Button, Color32, Frame, Id, Label, Layout, Margin, Popup, RichText, Sense, Separator, TextEdit, Ui, containers};
 use egui_extras::{Size, StripBuilder, TableBuilder};
 use egui_material_icons::icons::{
     ICON_ADD, ICON_ALBUM, ICON_ARTIST, ICON_CANCEL, ICON_CHECK, ICON_CLOSE, ICON_DELETE, ICON_EDIT, ICON_FOLDER, ICON_HOURGLASS,
@@ -10,15 +10,14 @@ use fully_pub::fully_pub;
 use log::{error, info};
 
 use crate::{
-    maybe_play_next,
+    GemPlayer, maybe_play_next,
     player::{add_to_queue_in_order, enqueue, enqueue_next},
-    playlist::{create, delete, remove_from_playlist, rename, PlaylistRetrieval},
-    track::{open_file_location, Track, TrackRetrieval},
+    playlist::{PlaylistRetrieval, create, delete, remove_from_playlist, rename},
+    track::{Track, TrackRetrieval, open_file_location},
     ui::{
         root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
         widgets::centered_frame::centered_frame_ui,
     },
-    GemPlayer,
 };
 
 #[fully_pub]
