@@ -11,38 +11,38 @@ use crate::{
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
-        root::{gem_player_ui, UIState, View},
+        root::{UIState, View, gem_player_ui},
         widgets::{
             marquee::Marquee,
-            track_artwork::{compute_uri, Artwork},
+            track_artwork::{Artwork, compute_uri},
         },
     },
     visualizer::VisualizerState,
 };
 use dark_light::Mode;
-use eframe::{icon_data, run_native, App, CreationContext, Frame, NativeOptions};
+use eframe::{App, CreationContext, Frame, NativeOptions, icon_data, run_native};
 use egui::{Color32, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use library_watcher::{setup_library_watcher, LibraryAndPlaylists, LibraryWatcherCommand};
+use library_watcher::{LibraryAndPlaylists, LibraryWatcherCommand, setup_library_watcher};
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
-use player::{build_audio_backend_from_device, play_next, play_previous, Player};
+use player::{Player, build_audio_backend_from_device, play_next, play_previous};
 use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs::{copy, read, File},
+    fs::{File, copy, read},
     path::PathBuf,
     sync::{
-        mpsc::{Receiver, Sender, TryRecvError},
         Arc,
+        mpsc::{Receiver, Sender, TryRecvError},
     },
     time::Duration,
 };
 use track::{SortBy, SortOrder, Track};
-use visualizer::{setup_visualizer_pipeline, CENTER_FREQUENCIES};
+use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
 #[cfg(target_os = "macos")]
 use {
@@ -470,8 +470,10 @@ fn check_for_next_track(ui: &mut Ui, gem: &mut GemPlayer) {
 
 fn maybe_play_next(ui: &mut Ui, gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
-        Ok(_) => {
-            on_track_change(ui, gem);
+        Ok(changed) => {
+            if changed {
+                on_track_change(ui, gem);
+            }
         }
         Err(e) => {
             error!("{}", e);
