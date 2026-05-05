@@ -19,7 +19,7 @@ use crate::{
     track::{SortBy, SortOrder, Track, TrackRetrieval, open_file_location, sort},
     ui::{
         root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
-        widgets::centered_frame::centered_frame_ui,
+        widgets::centered_frame::centered_frame,
     },
 };
 
@@ -34,7 +34,7 @@ struct LibraryViewState {
 
 pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     let Some(library_directory) = &gem.library_directory else {
-        centered_frame_ui(ui, |ui| {
+        centered_frame(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add(unselectable_label(
                     "No library directory set. Add your music folder in the settings.",
@@ -46,7 +46,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     };
 
     if gem.library.is_empty() {
-        centered_frame_ui(ui, |ui| {
+        centered_frame(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add(unselectable_label("The library is empty."));
                 ui.add_space(16.0);
@@ -189,7 +189,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                         Popup::menu(&response).show(|ui| {
                             let selected_tracks_count = gem.ui.library.selected_tracks.len();
-                            let maybe_action = library_context_menu_ui(ui, selected_tracks_count, &gem.playlists);
+                            let maybe_action = library_context_menu(ui, selected_tracks_count, &gem.playlists);
                             if let Some(action) = maybe_action {
                                 context_menu_action = Some(action);
                             }
@@ -235,7 +235,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 Popup::context_menu(&response).show(|ui| {
                     let selected_tracks_count = gem.ui.library.selected_tracks.len();
-                    context_menu_action = library_context_menu_ui(ui, selected_tracks_count, &gem.playlists);
+                    context_menu_action = library_context_menu(ui, selected_tracks_count, &gem.playlists);
                 });
             });
         });
@@ -331,7 +331,7 @@ fn handle_library_context_menu_action(gem: &mut GemPlayer, action: LibraryContex
     }
 }
 
-fn library_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize, playlists: &[Playlist]) -> Option<LibraryContextMenuAction> {
+fn library_context_menu(ui: &mut Ui, selected_tracks_count: usize, playlists: &[Playlist]) -> Option<LibraryContextMenuAction> {
     let modal_width = 220.0;
     ui.set_width(modal_width);
 

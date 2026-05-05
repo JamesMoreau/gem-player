@@ -52,7 +52,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| match gem.ui.current_view {
                 View::Library => {
-                    let search_was_changed = search_ui(ui, &mut gem.ui.search);
+                    let search_was_changed = search(ui, &mut gem.ui.search);
                     if search_was_changed {
                         // We reset both caches since there is only one search text state variable.
                         gem.ui.library.cached_library = None;
@@ -61,7 +61,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                         gem.ui.playlists.selected_tracks.clear();
                     }
 
-                    let sort_was_changed = sort_and_order_by_ui(ui, &mut gem.ui.library.sort_by, &mut gem.ui.library.sort_order);
+                    let sort_was_changed = sort_and_order_by(ui, &mut gem.ui.library.sort_by, &mut gem.ui.library.sort_order);
                     if sort_was_changed {
                         gem.ui.library.cached_library = None;
                     }
@@ -79,7 +79,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                     }
                 }
                 View::Playlists => {
-                    let search_changed = search_ui(ui, &mut gem.ui.search);
+                    let search_changed = search(ui, &mut gem.ui.search);
                     if search_changed {
                         // Same as above.
                         gem.ui.library.cached_library = None;
@@ -94,7 +94,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
     });
 }
 
-fn sort_and_order_by_ui(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
+fn sort_and_order_by(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut SortOrder) -> bool {
     let response = ui.button(ICON_FILTER_LIST).on_hover_text("Sort by and order");
 
     let mut sort_by_changed = false;
@@ -116,7 +116,7 @@ fn sort_and_order_by_ui(ui: &mut Ui, sort_by: &mut SortBy, sort_order: &mut Sort
     sort_by_changed || sort_order_changed
 }
 
-fn search_ui(ui: &mut Ui, search_text: &mut String) -> bool {
+fn search(ui: &mut Ui, search_text: &mut String) -> bool {
     let mut changed = false;
     let clear_button_is_visible = !search_text.is_empty();
     let response = ui

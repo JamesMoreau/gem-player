@@ -11,7 +11,7 @@ use crate::{
     custom_window::custom_window,
     ui::{
         bottom_bar::bottom_bar,
-        control_panel::control_panel_ui,
+        control_panel::control_panel,
         file_drop_overlay::file_drop_overlay,
         library_view::{library_view, LibraryViewState},
         playlist_view::{playlists_view, PlaylistsViewState},
@@ -80,7 +80,7 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });
-                strip.cell(|ui| control_panel_ui(ui, gem));
+                strip.cell(|ui| control_panel(ui, gem));
                 strip.cell(|ui| {
                     ui.add(Separator::default().spacing(separator_space));
                 });

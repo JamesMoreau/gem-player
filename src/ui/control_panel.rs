@@ -24,7 +24,7 @@ use crate::{
     visualizer::smooth_bars,
 };
 
-pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+pub fn control_panel(ui: &mut Ui, gem: &mut GemPlayer) {
     // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
     let button_size = 20.0;
     let gap = 10.0;
@@ -38,7 +38,7 @@ pub fn control_panel_ui(ui: &mut Ui, gem: &mut GemPlayer) {
             .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
-                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| playback_controls_ui(ui, gem));
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| playback_controls(ui, gem));
                 });
 
                 strip.cell(|ui| layout_track_ui(ui, gem, button_size, gap, artwork_width, slider_width));
@@ -113,7 +113,7 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn playback_controls_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
     let has_backend = gem.player.backend.is_some();
     let track_is_playing = gem.player.playing.is_some();
 
@@ -178,7 +178,7 @@ fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32,
                     });
                 });
                 strip.empty();
-                strip.cell(|ui| layout_playback_slider_and_track_info_ui(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
+                strip.cell(|ui| layout_playback_slider_and_track_info(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
                 strip.empty();
             });
     });
@@ -228,7 +228,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
     ui.spacing_mut().item_spacing = previous_spacing;
 }
 
-fn layout_playback_slider_and_track_info_ui(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
+fn layout_playback_slider_and_track_info(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
     let (mut position_as_secs, track_duration_as_secs) = if let Some(track) = &player.playing {
         let pos = player.backend.as_ref().map_or(0.0, |b| b.player.get_pos().as_secs_f32());
         (pos, track.duration.as_secs_f32())

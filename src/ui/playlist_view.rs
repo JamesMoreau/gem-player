@@ -16,7 +16,7 @@ use crate::{
     track::{Track, TrackRetrieval, open_file_location},
     ui::{
         root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
-        widgets::centered_frame::centered_frame_ui,
+        widgets::centered_frame::centered_frame,
     },
 };
 
@@ -33,7 +33,7 @@ struct PlaylistsViewState {
 
 pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
     if gem.library_directory.is_none() {
-        centered_frame_ui(ui, |ui| {
+        centered_frame(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add(unselectable_label("Try adding your music directory in the settings"));
             });
@@ -128,7 +128,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add(Separator::default().vertical());
             });
 
-            strip.cell(|ui| playlist_ui(ui, gem));
+            strip.cell(|ui| playlist(ui, gem));
         });
 
     ui.spacing_mut().item_spacing.x = previous_spacing;
@@ -190,7 +190,7 @@ fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
     let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
         return; // No playlist selected, do nothing
     };
@@ -316,13 +316,13 @@ fn playlist_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 });
             });
 
-            strip.cell(|ui| playlist_tracks_ui(ui, gem));
+            strip.cell(|ui| playlist_tracks(ui, gem));
         });
 }
 
-fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
     let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
-        centered_frame_ui(ui, |ui| {
+        centered_frame(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add(unselectable_label("No playlist selected"));
             });
@@ -333,7 +333,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
     let playlist_length = gem.playlists.get_by_path(&playlist_key).tracks.len();
     if playlist_length == 0 {
-        centered_frame_ui(ui, |ui| {
+        centered_frame(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add(unselectable_label("The playlist is empty."));
             });
@@ -479,7 +479,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
                         Popup::menu(&response).show(|ui| {
                             let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
-                            let maybe_action = playlist_context_menu_ui(ui, selected_tracks_count);
+                            let maybe_action = playlist_context_menu(ui, selected_tracks_count);
                             if let Some(action) = maybe_action {
                                 context_menu_action = Some(action);
                             }
@@ -525,7 +525,7 @@ fn playlist_tracks_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 Popup::context_menu(&response).show(|ui| {
                     let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
-                    context_menu_action = playlist_context_menu_ui(ui, selected_tracks_count);
+                    context_menu_action = playlist_context_menu(ui, selected_tracks_count);
                 });
             });
         });
@@ -625,7 +625,7 @@ fn handle_playlist_context_menu_action(gem: &mut GemPlayer, action: PlaylistCont
     }
 }
 
-fn playlist_context_menu_ui(ui: &mut Ui, selected_tracks_count: usize) -> Option<PlaylistContextMenuAction> {
+fn playlist_context_menu(ui: &mut Ui, selected_tracks_count: usize) -> Option<PlaylistContextMenuAction> {
     let modal_width = 220.0;
     ui.set_width(modal_width);
 

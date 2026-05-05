@@ -6,13 +6,13 @@ use crate::{
     player::{Player, move_to_position, remove_from_queue},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
-        widgets::centered_frame::centered_frame_ui,
+        widgets::centered_frame::centered_frame,
     },
 };
 
 pub fn queue_view(ui: &mut Ui, player: &mut Player) {
     if player.queue.is_empty() {
-        centered_frame_ui(ui, |ui| {
+        centered_frame(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add(unselectable_label("The queue is empty."));
             });

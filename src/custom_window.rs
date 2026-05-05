@@ -21,7 +21,7 @@ pub fn custom_window(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui
 
         let title_bar_height = 24.0;
         let title_bar_rect = app_rect.with_max_y(app_rect.min.y + title_bar_height);
-        title_bar_ui(ui, title, title_bar_rect);
+        title_bar(ui, title, title_bar_rect);
 
         let content_rect = app_rect.with_min_y(title_bar_rect.max.y).shrink2(Vec2::new(2.0, 0.0));
         let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
@@ -37,7 +37,7 @@ pub fn custom_window(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui
     }
 }
 
-fn title_bar_ui(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
+fn title_bar(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
     let response = ui.interact(title_bar_rect, Id::new("title_bar"), Sense::click_and_drag());
 
     ui.painter().text(
