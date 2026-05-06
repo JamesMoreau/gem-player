@@ -1,10 +1,10 @@
 use std::path::Path;
 
-use egui::{epaint::MarginF32, Frame, RichText, ScrollArea, Separator, ThemePreference, Ui};
+use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::info;
 
-use crate::{library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label, GemPlayer};
+use crate::{APP_NAME, GemPlayer, library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label};
 
 pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
@@ -63,7 +63,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 #[cfg(target_os = "windows")]
                 {
-                    use crate::platform::windows_shortcuts::{format_shortcut, SHORTCUTS};
+                    use crate::platform::windows_shortcuts::{SHORTCUTS, format_shortcut};
 
                     ui.add(unselectable_label(RichText::new("Controls").heading()));
 
@@ -89,7 +89,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 #[cfg(target_os = "macos")]
                 {
-                    use crate::platform::macos_menu::{format_shortcut, SHORTCUTS};
+                    use crate::platform::macos_menu::{SHORTCUTS, format_shortcut};
 
                     ui.add(unselectable_label(RichText::new("Controls").heading()));
                     ui.add_space(8.0);
@@ -111,7 +111,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.add(Separator::default().spacing(divider_spacing));
                 }
 
-                ui.add(unselectable_label(RichText::new("About Gem Player").heading()));
+                ui.add(unselectable_label(RichText::new(format!("About {}", APP_NAME)).heading()));
                 ui.add_space(8.0);
 
                 let description = env!("CARGO_PKG_DESCRIPTION");
