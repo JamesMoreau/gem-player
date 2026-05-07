@@ -1,7 +1,6 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use eframe::wgpu::rwh::{RawWindowHandle, WindowHandle};
 use fully_pub::fully_pub;
-use log::error;
 use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, MediaPosition, PlatformConfig};
 use std::{
     ffi::c_void,

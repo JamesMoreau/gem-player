@@ -7,7 +7,7 @@ use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, Device, DeviceSinkBuilder, MixerDeviceSink, Source};
-use std::{fs::File, path::Path};
+use std::{fs::File, path::Path, time::Duration};
 
 #[fully_pub]
 struct Player {
@@ -97,8 +97,26 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
     Ok(())
 }
 
-pub fn play_or_pause(player: &mut rodio::Player) {
-    if player.is_paused() { player.play() } else { player.pause() }
+pub fn play_or_pause(player: &mut Player) -> Result<()> {
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    if backend.player.is_paused() {
+        backend.player.play()
+    } else {
+        backend.player.pause()
+    }
+
+    Ok(())
+}
+
+pub fn get_position(player: &Player) -> Result<Option<Duration>> {
+    if player.playing.is_none() {
+        return Ok(None);
+    }
+
+    let backend = player.backend.as_ref().context("player backend is not initialized")?;
+
+    Ok(Some(backend.player.get_pos()))
 }
 
 pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) {

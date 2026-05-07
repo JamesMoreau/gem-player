@@ -1,10 +1,10 @@
 use egui::{OpenUrl, Ui};
+use log::error;
 use strum_macros::{Display, EnumString};
 
 use crate::{
-    maybe_play_next, maybe_play_previous,
+    GemPlayer, maybe_play_next, maybe_play_previous,
     player::{adjust_volume_by_delta, play_or_pause},
-    GemPlayer,
 };
 
 #[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
@@ -24,8 +24,8 @@ pub enum Command {
 pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
     match command {
         Command::PlayPause => {
-            if let Some(backend) = &mut gem.player.backend {
-                play_or_pause(&mut backend.player);
+            if let Err(e) = play_or_pause(&mut gem.player) {
+                error!("{}", e);
             }
         }
         Command::NextTrack => maybe_play_next(ui, gem),
