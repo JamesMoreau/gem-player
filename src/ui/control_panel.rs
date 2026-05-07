@@ -290,7 +290,7 @@ fn playback_slider(ui: &mut Ui, player: &mut Player, slider_width: f32) {
 }
 
 fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, player: &Player, marquee: &mut Marquee) {
-    let (position_as_secs, track_duration_as_secs) = if let Some(track) = &player.playing {
+    let (position, duration) = if let Some(track) = &player.playing {
         let pos = player.backend.as_ref().map_or(Duration::ZERO, |b| b.player.get_pos());
         (pos, track.duration)
     } else {
@@ -308,7 +308,7 @@ fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, player: &Playe
                 StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
                     strip.cell(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                            display_playback_time(ui, position_as_secs, track_duration_as_secs);
+                            display_playback_time(ui, position, duration);
                         });
                     });
 
