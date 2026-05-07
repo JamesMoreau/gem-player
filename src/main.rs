@@ -7,6 +7,7 @@ use crate::{
     commands::execute,
     config::{load_config, save_config},
     nosleep_manager::NoSleepManager,
+    os_media_controls::{OSMediaControlsState, setup_os_media_controls, update_metadata, update_playback},
     track::{extract_artwork_from_file, is_audio_file},
     ui::{
         library_view::LibraryViewState,
@@ -20,7 +21,7 @@ use crate::{
     visualizer::VisualizerState,
 };
 use dark_light::Mode;
-use eframe::{App, CreationContext, Frame, NativeOptions, icon_data, run_native};
+use eframe::{App, CreationContext, Frame, NativeOptions, icon_data, run_native, wgpu::rwh::HasWindowHandle};
 use egui::{Color32, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
@@ -60,6 +61,7 @@ mod custom_window;
 mod library_folder_picker;
 mod library_watcher;
 mod nosleep_manager;
+mod os_media_controls;
 mod platform;
 mod player;
 mod playlist;
@@ -70,6 +72,8 @@ mod visualizer;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
+
+const APP_NAME: &str = "Gem Player";
 
 #[fully_pub]
 struct GemPlayer {
@@ -85,6 +89,8 @@ struct GemPlayer {
     player: Player,
 
     nosleep_manager: NoSleepManager,
+
+    os_media_controls: OSMediaControlsState,
 
     #[cfg(target_os = "macos")]
     menubar: platform::macos_menu::MenuBar,
@@ -110,7 +116,7 @@ fn main() -> eframe::Result {
             .with_icon(icon_data),
         ..Default::default()
     };
-    run_native("Gem Player", options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
+    run_native(APP_NAME, options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
 }
 
 pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
@@ -238,6 +244,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
         nosleep_manager: NoSleepManager::new(),
 
+        os_media_controls: OSMediaControlsState::Pending,
+
         #[cfg(target_os = "macos")]
         menubar: MenuBar { menu, menu_receiver },
     }
@@ -253,7 +261,7 @@ impl App for GemPlayer {
         false
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut Frame) {
+    fn ui(&mut self, ui: &mut Ui, frame: &mut Frame) {
         // Input
         #[cfg(target_os = "windows")]
         handle_shortcuts(ctx, self);
@@ -265,6 +273,7 @@ impl App for GemPlayer {
 
         // Update
         check_for_next_track(ui, self);
+        maybe_initialize_os_media_controls(self, frame);
 
         // Render
         apply_theme(ui, self.ui.theme_preference);
@@ -290,6 +299,20 @@ impl App for GemPlayer {
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
 
         self.nosleep_manager.disable();
+    }
+}
+
+fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
+    if matches!(gem.os_media_controls, OSMediaControlsState::Pending)
+        && let Ok(handle) = frame.window_handle()
+    {
+        gem.os_media_controls = match setup_os_media_controls(handle) {
+            Ok(mc) => OSMediaControlsState::Initialized(mc),
+            Err(e) => {
+                error!("Failed to initialize media controls: {:?}", e);
+                OSMediaControlsState::Failed
+            }
+        };
     }
 }
 
@@ -527,6 +550,16 @@ fn on_track_change(ui: &mut Ui, gem: &mut GemPlayer) {
             .and_then(|mut f| extract_artwork_from_file(&mut f))
             .map(|bytes| Artwork { uri, bytes })
     });
+
+    if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
+        if let Err(e) = update_metadata(&mut osmc.controls, &gem.player) {
+            error!("Failed to set OS media metadata: {}", e);
+        }
+
+        if let Err(e) = update_playback(&mut osmc.controls, &gem.player) {
+            error!("Failed to set OS media playback state{}", e);
+        }
+    }
 }
 
 fn apply_theme(ui: &mut Ui, preference: ThemePreference) {

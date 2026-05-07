@@ -38,6 +38,7 @@ rodio = { version = "0.22.2", features = ["symphonia-all"] }
 rustfft = "6.4.1"
 sanitize-filename = "0.6.0"
 serde = "1.0.228"
+souvlaki = "0.8.3"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 trash = "5.2.5"
