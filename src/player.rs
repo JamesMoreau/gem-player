@@ -109,14 +109,11 @@ pub fn play_or_pause(player: &mut Player) -> Result<()> {
     Ok(())
 }
 
-pub fn get_position(player: &Player) -> Result<Option<Duration>> {
-    if player.playing.is_none() {
-        return Ok(None);
-    }
+pub fn get_position(player: &Player) -> Option<Duration> {
+    let backend = player.backend.as_ref()?;
+    player.playing.as_ref()?;
 
-    let backend = player.backend.as_ref().context("player backend is not initialized")?;
-
-    Ok(Some(backend.player.get_pos()))
+    Some(backend.player.get_pos())
 }
 
 pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) {

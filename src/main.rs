@@ -8,6 +8,7 @@ use crate::{
     config::{load_config, save_config},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, setup_os_media_controls, update_metadata, update_playback},
+    player::get_position,
     track::{extract_artwork_from_file, is_audio_file},
     ui::{
         library_view::LibraryViewState,
@@ -510,12 +511,8 @@ fn maybe_play_next(ui: &mut Ui, gem: &mut GemPlayer) {
 // This is what actually gets called by the UI.
 pub fn maybe_play_previous(ui: &mut Ui, gem: &mut GemPlayer) {
     let rewind_threshold = 5.0;
-    let mut under_threshold = false;
 
-    if let Some(backend) = &gem.player.backend {
-        let playback_position = backend.player.get_pos().as_secs_f32();
-        under_threshold = playback_position < rewind_threshold;
-    }
+    let under_threshold = get_position(&gem.player).is_some_and(|position| position.as_secs_f32() < rewind_threshold);
 
     let previous_track_exists = !gem.player.history.is_empty();
 

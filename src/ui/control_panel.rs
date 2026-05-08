@@ -230,13 +230,9 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
 }
 
 fn layout_playback_slider_and_track_info(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
-    // We retrieve the position here so that scrubbing using the slider will be 
+    // We retrieve the position here so that scrubbing using the slider will be
     // reflected in the playback position ui.
-    let mut position_as_secs = if player.playing.is_some() {
-        player.backend.as_ref().map_or(0.0, |b| b.player.get_pos().as_secs_f32())
-    } else {
-        0.0
-    };
+    let mut position_as_secs = get_position(player).map_or(0.0, |p| p.as_secs_f32());
 
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {

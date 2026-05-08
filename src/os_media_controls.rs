@@ -7,7 +7,10 @@ use std::{
     sync::mpsc::{self, Receiver},
 };
 
-use crate::{APP_NAME, player::Player};
+use crate::{
+    APP_NAME,
+    player::{Player, get_position},
+};
 
 #[derive(Debug)]
 pub enum OSMediaControlsState {
@@ -49,7 +52,7 @@ pub fn update_metadata(controls: &mut MediaControls, player: &Player) -> Result<
 pub fn update_playback(controls: &mut MediaControls, player: &Player) -> Result<()> {
     let backend = player.backend.as_ref();
 
-    let progress = backend.map(|b| MediaPosition(b.player.get_pos()));
+    let progress = get_position(player).map(MediaPosition);
 
     let is_paused = backend.is_some_and(|b| b.player.is_paused());
 
