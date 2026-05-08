@@ -230,46 +230,41 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
 }
 
 fn layout_playback_slider_and_track_info(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
-    let mut position = if player.playing.is_some() {
-        player.backend.as_ref().map_or(Duration::ZERO, |b| b.player.get_pos())
+    // We retrieve the position here so that scrubbing using the slider will be 
+    // reflected in the playback position ui.
+    let mut position_as_secs = if player.playing.is_some() {
+        player.backend.as_ref().map_or(0.0, |b| b.player.get_pos().as_secs_f32())
     } else {
-        Duration::ZERO
+        0.0
     };
 
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                playback_slider(ui, player, &mut position, slider_width)
+                playback_slider(ui, player, &mut position_as_secs, slider_width);
             });
         });
-        strip.cell(|ui| layout_marquee_and_playback_position_and_metadata(ui, player, position, marquee));
+
+        strip.cell(|ui| {
+            layout_marquee_and_playback_position_and_metadata(ui, player, Duration::from_secs_f32(position_as_secs), marquee);
+        });
     });
 }
 
-fn playback_slider(ui: &mut Ui, player: &mut Player, position: &mut Duration, slider_width: f32) {
+fn playback_slider(ui: &mut Ui, player: &mut Player, position_as_secs: &mut f32, slider_width: f32) {
     ui.scope(|ui| {
         ui.spacing_mut().slider_width = slider_width;
 
         let slider_enabled = player.backend.is_some() && player.playing.is_some();
 
-        let mut position_as_secs = position.as_secs_f32();
-        
-        let track_duration_as_secs = if let Some(track) = &player.playing {
-            track.duration.as_secs_f32()
-        } else {
-            0.0
-        };
+        let track_duration_as_secs = player.playing.as_ref().map_or(0.0, |track| track.duration.as_secs_f32());
 
-        let slider = Slider::new(&mut position_as_secs, 0.0..=track_duration_as_secs.max(0.1))
+        let slider = Slider::new(position_as_secs, 0.0..=track_duration_as_secs.max(0.1))
             .trailing_fill(true)
             .show_value(false)
             .step_by(1.0); // Step by 1 second.
 
         let response = ui.add_enabled(slider_enabled, slider);
-
-        // Propagate the current displayed position back to the caller
-        // so the timestamp updates live while scrubbing.
-        *position = Duration::from_secs_f32(position_as_secs);
 
         let Some(backend) = &player.backend else {
             return;
@@ -281,7 +276,7 @@ fn playback_slider(ui: &mut Ui, player: &mut Player, position: &mut Duration, sl
         }
 
         if response.drag_stopped() {
-            let new_position = Duration::from_secs_f32(position_as_secs);
+            let new_position = Duration::from_secs_f32(*position_as_secs);
 
             info!("Seeking to {}", format_duration_to_mmss(new_position));
 
