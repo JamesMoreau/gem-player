@@ -1,7 +1,7 @@
 use anyhow::Result;
 use eframe::wgpu::rwh::{RawWindowHandle, WindowHandle};
 use fully_pub::fully_pub;
-use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, MediaPosition, PlatformConfig};
+use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, MediaPosition, PlatformConfig, SeekDirection};
 use std::{
     ffi::c_void,
     sync::mpsc::{self, Receiver},
@@ -106,12 +106,15 @@ pub fn poll_media_events(gem: &mut GemPlayer) {
             MediaControlEvent::Play => gem.commands.push(Command::Play),
             MediaControlEvent::Pause => gem.commands.push(Command::Pause),
             MediaControlEvent::Toggle => gem.commands.push(Command::Toggle),
-            MediaControlEvent::Next => gem.commands.push(Command::NextTrack),
-            MediaControlEvent::Previous => gem.commands.push(Command::PreviousTrack),
-            MediaControlEvent::Stop => todo!(),
-            MediaControlEvent::Seek(_seek_direction) => todo!(),
+            MediaControlEvent::Next => gem.commands.push(Command::Next),
+            MediaControlEvent::Previous => gem.commands.push(Command::Previous),
+            MediaControlEvent::Stop => gem.commands.push(Command::Stop),
+            MediaControlEvent::Seek(seek_direction) => match seek_direction {
+                SeekDirection::Forward => gem.commands.push(Command::Next),
+                SeekDirection::Backward => gem.commands.push(Command::Previous),
+            },
             MediaControlEvent::SeekBy(_seek_direction, _duration) => todo!(),
-            MediaControlEvent::SetPosition(_media_position) => todo!(),
+            MediaControlEvent::SetPosition(media_position) => gem.commands.push(Command::SeekTo(media_position.0)),
             MediaControlEvent::SetVolume(_) => todo!(),
             MediaControlEvent::OpenUri(_) => todo!(),
             MediaControlEvent::Raise => todo!(),

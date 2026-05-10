@@ -28,14 +28,14 @@ pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
 };
 
 pub const NEXT_TRACK: MenuShortcut = MenuShortcut {
-    command: Command::NextTrack,
+    command: Command::Next,
     modifiers: Modifiers::META,
     key: Code::ArrowRight,
     description: "Next track",
 };
 
 pub const PREVIOUS_TRACK: MenuShortcut = MenuShortcut {
-    command: Command::PreviousTrack,
+    command: Command::Previous,
     modifiers: Modifiers::META,
     key: Code::ArrowLeft,
     description: "Previous track",

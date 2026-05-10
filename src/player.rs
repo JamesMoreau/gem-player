@@ -125,6 +125,14 @@ pub fn pause(player: &mut Player) -> Result<()> {
     Ok(())
 }
 
+pub fn seek(player: &mut Player, position: Duration) -> Result<()> {
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    backend.player.try_seek(position)?;
+
+    Ok(())
+}
+
 pub fn get_position(player: &Player) -> Option<Duration> {
     let backend = player.backend.as_ref()?;
     player.playing.as_ref()?;
