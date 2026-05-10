@@ -7,7 +7,7 @@ use crate::{
     commands::execute,
     config::{load_config, save_config},
     nosleep_manager::NoSleepManager,
-    os_media_controls::{OSMediaControlsState, setup_os_media_controls, update_metadata, update_playback},
+    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
     player::get_position,
     track::{extract_artwork_from_file, is_audio_file},
     ui::{
@@ -36,6 +36,7 @@ use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
     fs::{File, copy, read},
+    mem::take,
     path::PathBuf,
     sync::{
         Arc,
@@ -86,6 +87,8 @@ struct GemPlayer {
     library_directory: Option<PathBuf>,
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
     library_watcher: LibraryWatcher,
+
+    commands: Vec<Command>,
 
     player: Player,
 
@@ -224,6 +227,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             command_sender: watcher_command_sender,
         },
 
+        commands: Vec::new(),
+
         player: Player {
             history: Vec::new(),
             playing: None,
@@ -271,6 +276,8 @@ impl App for GemPlayer {
         poll_library_watcher(self);
         poll_library_folder_picker(self);
         poll_file_drops(ui, self);
+        poll_media_events(self);
+        poll_commands(ui, self);
 
         // Update
         check_for_next_track(ui, self);
@@ -300,6 +307,14 @@ impl App for GemPlayer {
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
 
         self.nosleep_manager.disable();
+    }
+}
+
+fn poll_commands(ui: &mut Ui, gem: &mut GemPlayer) {
+    let commands = take(&mut gem.commands);
+    
+    for command in commands {
+        execute(ui, gem, command);
     }
 }
 

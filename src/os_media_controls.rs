@@ -8,7 +8,8 @@ use std::{
 };
 
 use crate::{
-    APP_NAME,
+    APP_NAME, GemPlayer,
+    commands::Command,
     player::{Player, get_position},
 };
 
@@ -93,18 +94,24 @@ pub fn setup_os_media_controls(window_handle: WindowHandle<'_>) -> Result<OSMedi
     Ok(OSMediaControls { controls, events_receiver })
 }
 
-pub fn handle_media_events(os_media_controls: &mut OSMediaControls, player: &mut Player) {
-    while let Ok(event) = os_media_controls.events_receiver.try_recv() {
+pub fn poll_media_events(gem: &mut GemPlayer) {
+    let OSMediaControlsState::Initialized(osmc) = &gem.os_media_controls else {
+        return;
+    };
+
+    while let Ok(event) = osmc.events_receiver.try_recv() {
+        log::info!("Received os media controls events: {:?}", event);
+
         match event {
-            MediaControlEvent::Play => todo!(),
-            MediaControlEvent::Pause => todo!(),
-            MediaControlEvent::Toggle => todo!(),
-            MediaControlEvent::Next => todo!(),
-            MediaControlEvent::Previous => todo!(),
+            MediaControlEvent::Play => gem.commands.push(Command::Play),
+            MediaControlEvent::Pause => gem.commands.push(Command::Pause),
+            MediaControlEvent::Toggle => gem.commands.push(Command::Toggle),
+            MediaControlEvent::Next => gem.commands.push(Command::NextTrack),
+            MediaControlEvent::Previous => gem.commands.push(Command::PreviousTrack),
             MediaControlEvent::Stop => todo!(),
-            MediaControlEvent::Seek(seek_direction) => todo!(),
-            MediaControlEvent::SeekBy(seek_direction, duration) => todo!(),
-            MediaControlEvent::SetPosition(media_position) => todo!(),
+            MediaControlEvent::Seek(_seek_direction) => todo!(),
+            MediaControlEvent::SeekBy(_seek_direction, _duration) => todo!(),
+            MediaControlEvent::SetPosition(_media_position) => todo!(),
             MediaControlEvent::SetVolume(_) => todo!(),
             MediaControlEvent::OpenUri(_) => todo!(),
             MediaControlEvent::Raise => todo!(),

@@ -97,7 +97,7 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
     Ok(())
 }
 
-pub fn play_or_pause(player: &mut Player) -> Result<()> {
+pub fn toggle(player: &mut Player) -> Result<()> {
     let backend = player.backend.as_mut().context("The player backend is not initialized")?;
 
     if backend.player.is_paused() {
@@ -105,6 +105,22 @@ pub fn play_or_pause(player: &mut Player) -> Result<()> {
     } else {
         backend.player.pause()
     }
+
+    Ok(())
+}
+
+pub fn play(player: &mut Player) -> Result<()> {
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    backend.player.play();
+
+    Ok(())
+}
+
+pub fn pause(player: &mut Player) -> Result<()> {
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    backend.player.pause();
 
     Ok(())
 }

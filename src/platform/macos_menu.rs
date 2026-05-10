@@ -21,7 +21,7 @@ struct MenuShortcut {
 }
 
 pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
-    command: Command::PlayPause,
+    command: Command::Toggle,
     modifiers: Modifiers::META,
     key: Code::KeyP,
     description: "Play / Pause",

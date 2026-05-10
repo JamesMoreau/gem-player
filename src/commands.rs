@@ -1,30 +1,45 @@
+use std::time::Duration;
+
 use egui::{OpenUrl, Ui};
 use log::error;
 use strum_macros::{Display, EnumString};
 
 use crate::{
     GemPlayer, maybe_play_next, maybe_play_previous,
-    player::{adjust_volume_by_delta, play_or_pause},
+    os_media_controls::{OSMediaControlsState, update_playback},
+    player::{adjust_volume_by_delta, pause, play, toggle},
 };
 
 #[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
 pub enum Command {
-    // OpenFile,
-    PlayPause,
-    NextTrack,
-    PreviousTrack,
-    VolumeUp,
-    VolumeDown,
-    // Mute / ummute
-    ReportIssue,
     Play,
     Pause,
+    Toggle,
+    Stop,
+
+    NextTrack,
+    PreviousTrack,
+
+    SeekTo(Duration),
+
+    SetVolume(f32),
+    VolumeUp,
+    VolumeDown,
+    // ToggleMute
+    RaiseWindow,
+    Quit,
+    ReportIssue,
+    // OpenFile,
 }
 
 pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
     match command {
-        Command::PlayPause => {
-            if let Err(e) = play_or_pause(&mut gem.player) {
+        Command::Toggle => {
+            if let Err(e) = toggle(&mut gem.player) {
+                error!("{}", e);
+            } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+            {
                 error!("{}", e);
             }
         }
@@ -45,14 +60,23 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
             ui.open_url(OpenUrl { url, new_tab: true });
         }
         Command::Play => {
-            if let Some(backend) = &mut gem.player.backend {
-                backend.player.play();
+            if let Err(e) = play(&mut gem.player) {
+                error!("{}", e);
+            } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+            {
+                error!("{}", e);
             }
         }
         Command::Pause => {
-            if let Some(backend) = &mut gem.player.backend {
-                backend.player.pause();
+            if let Err(e) = pause(&mut gem.player) {
+                error!("{}", e);
+            } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+            {
+                error!("{}", e);
             }
         }
+        _ => todo!("Command not yet implemented"),
     }
 }

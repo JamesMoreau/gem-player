@@ -10,7 +10,7 @@ use log::{error, info};
 
 use crate::{
     GemPlayer, maybe_play_next, maybe_play_previous,
-    player::{Player, get_position, mute_or_unmute, play_or_pause, toggle_shuffle},
+    player::{Player, get_position, mute_or_unmute, toggle, toggle_shuffle},
     track::{Track, file_type_name},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
@@ -140,7 +140,7 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_disabled_hover_text("No current track");
 
     if response.clicked()
-        && let Err(e) = play_or_pause(&mut gem.player)
+        && let Err(e) = toggle(&mut gem.player)
     {
         error!("{}", e);
     }
