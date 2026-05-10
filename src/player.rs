@@ -98,6 +98,8 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
 }
 
 pub fn toggle(player: &mut Player) -> Result<()> {
+    player.playing.as_ref().context("Cannot toggle without a current track")?;
+
     let backend = player.backend.as_mut().context("The player backend is not initialized")?;
 
     if backend.player.is_paused() {
@@ -110,6 +112,8 @@ pub fn toggle(player: &mut Player) -> Result<()> {
 }
 
 pub fn play(player: &mut Player) -> Result<()> {
+    player.playing.as_ref().context("Cannot play without a current track")?;
+
     let backend = player.backend.as_mut().context("The player backend is not initialized")?;
 
     backend.player.play();
@@ -118,6 +122,8 @@ pub fn play(player: &mut Player) -> Result<()> {
 }
 
 pub fn pause(player: &mut Player) -> Result<()> {
+    player.playing.as_ref().context("Cannot pause without a current track")?;
+
     let backend = player.backend.as_mut().context("The player backend is not initialized")?;
 
     backend.player.pause();
@@ -126,6 +132,8 @@ pub fn pause(player: &mut Player) -> Result<()> {
 }
 
 pub fn seek(player: &mut Player, position: Duration) -> Result<()> {
+    player.playing.as_ref().context("Cannot seek without a current track.")?;
+
     let backend = player.backend.as_mut().context("The player backend is not initialized")?;
 
     backend.player.try_seek(position)?;
@@ -227,7 +235,19 @@ pub fn mute_or_unmute(player: &mut Player) {
     }
 }
 
-pub fn adjust_volume_by_delta(player: &mut rodio::Player, delta: f32) {
-    let new_volume = (player.volume() + delta).clamp(0.0, 1.0);
-    player.set_volume(new_volume);
+pub fn adjust_volume_by_delta(player: &mut Player, delta: f32) -> Result<()> {
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    let new_volume = (backend.player.volume() + delta).clamp(0.0, 1.0);
+    backend.player.set_volume(new_volume);
+
+    Ok(())
+}
+
+pub fn set_volume(player: &mut Player, volume: f32) -> Result<()> {
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    backend.player.set_volume(volume.clamp(0.0, 1.0));
+
+    Ok(())
 }

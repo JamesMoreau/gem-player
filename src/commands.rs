@@ -7,7 +7,7 @@ use strum_macros::{Display, EnumString};
 use crate::{
     GemPlayer, maybe_play_next, maybe_play_previous,
     os_media_controls::{OSMediaControlsState, update_playback},
-    player::{adjust_volume_by_delta, pause, play, seek, toggle},
+    player::{adjust_volume_by_delta, pause, play, seek, set_volume, toggle},
 };
 
 #[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
@@ -24,7 +24,7 @@ pub enum Command {
     SetVolume(f32),
     VolumeUp,
     VolumeDown,
-    // ToggleMute
+    // ToggleMute,
     RaiseWindow,
     Quit,
     ReportIssue,
@@ -71,14 +71,19 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
                 error!("{}", e);
             }
         }
+        Command::SetVolume(volume) => {
+            if let Err(e) = set_volume(&mut gem.player, volume) {
+                error!("{}", e);
+            }
+        }
         Command::VolumeUp => {
-            if let Some(backend) = &mut gem.player.backend {
-                adjust_volume_by_delta(&mut backend.player, 0.1);
+            if let Err(e) = adjust_volume_by_delta(&mut gem.player, 0.1) {
+                error!("{}", e);
             }
         }
         Command::VolumeDown => {
-            if let Some(backend) = &mut gem.player.backend {
-                adjust_volume_by_delta(&mut backend.player, -0.1);
+            if let Err(e) = adjust_volume_by_delta(&mut gem.player, -0.1) {
+                error!("{}", e);
             }
         }
         Command::ReportIssue => {
