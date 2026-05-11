@@ -486,13 +486,10 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 let response = row.response();
 
-                let secondary_clicked = response.secondary_clicked();
-                let primary_clicked = response.clicked() || response.double_clicked();
-
-                if primary_clicked || secondary_clicked {
+                if response.clicked() || response.double_clicked() || response.secondary_clicked() {
                     let selected_tracks = &mut gem.ui.playlists.selected_tracks;
 
-                    if secondary_clicked {
+                    if response.secondary_clicked() {
                         if selected_tracks.is_empty() || !row_is_selected {
                             selected_tracks.clear();
                             selected_tracks.push(track.path.clone());
