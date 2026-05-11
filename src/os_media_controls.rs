@@ -34,7 +34,7 @@ pub fn update_metadata(controls: &mut MediaControls, player: &Player) -> Result<
             album: track.album.as_deref(),
             artist: track.artist.as_deref(),
             duration: Some(track.duration),
-            cover_url: Some("https://c.pxhere.com/photos/34/c1/souvlaki_authentic_greek_greek_food_mezes-497780.jpg!d"),
+            cover_url: None,
         },
         None => MediaMetadata {
             title: None,
