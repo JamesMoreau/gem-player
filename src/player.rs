@@ -34,17 +34,17 @@ struct AudioBackend {
 }
 
 // bool tells us whether the track actually changed or not.
-pub fn play_next(player: &mut Player) -> Result<bool> {
+pub fn play_next(player: &mut Player) -> Result<()> {
     if player.repeat
         && let Some(playing) = player.playing.clone()
     {
         play_track(player, playing)?;
-        return Ok(true);
+        return Ok(());
     }
 
     if player.queue.is_empty() {
         stop(player);
-        return Ok(false); // Nothing to play
+        return Ok(()); // Nothing to play
     }
 
     if let Some(current) = player.playing.take() {
@@ -55,7 +55,7 @@ pub fn play_next(player: &mut Player) -> Result<bool> {
 
     play_track(player, next_track)?;
 
-    Ok(true)
+    Ok(())
 }
 
 pub fn play_previous(player: &mut Player) -> Result<()> {

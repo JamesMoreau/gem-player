@@ -509,11 +509,7 @@ fn check_for_next_track(ui: &mut Ui, gem: &mut GemPlayer) {
 
 fn maybe_play_next(ui: &mut Ui, gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
-        Ok(changed) => {
-            if changed {
-                on_track_change(ui, gem);
-            }
-        }
+        Ok(()) => on_track_change(ui, gem),
         Err(e) => {
             error!("{}", e);
             gem.ui.toasts.error("Error playing the next track");
