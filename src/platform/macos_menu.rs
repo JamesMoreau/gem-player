@@ -21,41 +21,27 @@ struct MenuShortcut {
 }
 
 pub const PLAY_PAUSE: MenuShortcut = MenuShortcut {
-    command: Command::Toggle,
+    command: Command::TogglePlayback,
     modifiers: Modifiers::META,
     key: Code::KeyP,
     description: "Play / Pause",
 };
 
 pub const NEXT_TRACK: MenuShortcut = MenuShortcut {
-    command: Command::Next,
+    command: Command::NextTrack,
     modifiers: Modifiers::META,
     key: Code::ArrowRight,
     description: "Next track",
 };
 
 pub const PREVIOUS_TRACK: MenuShortcut = MenuShortcut {
-    command: Command::Previous,
+    command: Command::PreviousTrack,
     modifiers: Modifiers::META,
     key: Code::ArrowLeft,
     description: "Previous track",
 };
 
-pub const VOLUME_UP: MenuShortcut = MenuShortcut {
-    command: Command::VolumeUp,
-    modifiers: Modifiers::META,
-    key: Code::ArrowUp,
-    description: "Volume up",
-};
-
-pub const VOLUME_DOWN: MenuShortcut = MenuShortcut {
-    command: Command::VolumeDown,
-    modifiers: Modifiers::META,
-    key: Code::ArrowDown,
-    description: "Volume down",
-};
-
-pub const SHORTCUTS: &[MenuShortcut] = &[PLAY_PAUSE, NEXT_TRACK, PREVIOUS_TRACK, VOLUME_UP, VOLUME_DOWN];
+pub const SHORTCUTS: &[MenuShortcut] = &[PLAY_PAUSE, NEXT_TRACK, PREVIOUS_TRACK];
 
 fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
     MenuItem::with_id(
@@ -99,8 +85,6 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
                 &menu_item_from_shortcut(&PLAY_PAUSE),
                 &menu_item_from_shortcut(&NEXT_TRACK),
                 &menu_item_from_shortcut(&PREVIOUS_TRACK),
-                &menu_item_from_shortcut(&VOLUME_UP),
-                &menu_item_from_shortcut(&VOLUME_DOWN),
             ],
         )
         .unwrap(),

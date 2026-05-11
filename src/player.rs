@@ -132,11 +132,13 @@ pub fn pause(player: &mut Player) -> Result<()> {
 }
 
 pub fn seek(player: &mut Player, position: Duration) -> Result<()> {
-    player.playing.as_ref().context("Cannot seek without a current track.")?;
+    let track = player.playing.as_ref().context("Cannot seek without a current track.")?;
 
     let backend = player.backend.as_mut().context("The player backend is not initialized")?;
 
-    backend.player.try_seek(position)?;
+    let valid_position = position.clamp(Duration::ZERO, track.duration.saturating_sub(Duration::from_millis(1)));
+
+    backend.player.try_seek(valid_position)?;
 
     Ok(())
 }
@@ -233,15 +235,6 @@ pub fn mute_or_unmute(player: &mut Player) {
     if let Some(backend) = &player.backend {
         backend.player.set_volume(target_volume);
     }
-}
-
-pub fn adjust_volume_by_delta(player: &mut Player, delta: f32) -> Result<()> {
-    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
-
-    let new_volume = (backend.player.volume() + delta).clamp(0.0, 1.0);
-    backend.player.set_volume(new_volume);
-
-    Ok(())
 }
 
 pub fn set_volume(player: &mut Player, volume: f32) -> Result<()> {
