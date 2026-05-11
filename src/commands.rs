@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(PartialEq, Debug, Clone, EnumString, Display)]
-pub enum Command {
+pub enum GemCommand {
     Play,
     Pause,
     TogglePlayback,
@@ -32,9 +32,9 @@ pub enum Command {
     Quit,
 }
 
-pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
+pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
     match command {
-        Command::Play => {
+        GemCommand::Play => {
             if let Err(e) = play(&mut gem.player) {
                 error!("{}", e);
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
@@ -43,7 +43,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 error!("{}", e);
             }
         }
-        Command::Pause => {
+        GemCommand::Pause => {
             if let Err(e) = pause(&mut gem.player) {
                 error!("{}", e);
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
@@ -52,7 +52,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 error!("{}", e);
             }
         }
-        Command::TogglePlayback => {
+        GemCommand::TogglePlayback => {
             if let Err(e) = toggle(&mut gem.player) {
                 error!("{}", e);
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
@@ -61,7 +61,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 error!("{}", e);
             }
         }
-        Command::Stop => {
+        GemCommand::Stop => {
             stop(&mut gem.player);
 
             if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
@@ -74,9 +74,9 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 }
             }
         }
-        Command::NextTrack => maybe_play_next(ctx, gem),
-        Command::PreviousTrack => maybe_play_previous(ctx, gem),
-        Command::SeekTo(position) => {
+        GemCommand::NextTrack => maybe_play_next(ctx, gem),
+        GemCommand::PreviousTrack => maybe_play_previous(ctx, gem),
+        GemCommand::SeekTo(position) => {
             if let Err(e) = seek(&mut gem.player, position) {
                 error!("{}", e);
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
@@ -85,7 +85,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 error!("{}", e);
             }
         }
-        Command::SeekForward(offset) => {
+        GemCommand::SeekForward(offset) => {
             if let Some(position) = get_position(&gem.player) {
                 let new_position = position + offset;
                 if let Err(e) = seek(&mut gem.player, new_position) {
@@ -99,7 +99,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 error!("Unable to retrieve position");
             }
         }
-        Command::SeekBackward(offset) => {
+        GemCommand::SeekBackward(offset) => {
             if let Some(position) = get_position(&gem.player) {
                 let new_position = position - offset;
                 if let Err(e) = seek(&mut gem.player, new_position) {
@@ -113,19 +113,19 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
                 error!("Unable to retrieve position");
             }
         }
-        Command::SetVolume(volume) => {
+        GemCommand::SetVolume(volume) => {
             if let Err(e) = set_volume(&mut gem.player, volume) {
                 error!("{}", e);
             }
         }
-        Command::OpenUri(uri) => {
+        GemCommand::OpenUri(uri) => {
             warn!("OpenUri is not supported: {uri}");
         }
-        Command::ReportIssue => {
+        GemCommand::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
             ctx.open_url(OpenUrl { url, new_tab: true });
         }
-        Command::RaiseWindow => ctx.send_viewport_cmd(ViewportCommand::Focus),
-        Command::Quit => ctx.send_viewport_cmd(ViewportCommand::Close),
+        GemCommand::RaiseWindow => ctx.send_viewport_cmd(ViewportCommand::Focus),
+        GemCommand::Quit => ctx.send_viewport_cmd(ViewportCommand::Close),
     }
 }

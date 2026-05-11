@@ -4,7 +4,7 @@ use fully_pub::fully_pub;
 use muda::accelerator::{Code, Modifiers};
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
-use crate::commands::Command;
+use crate::commands::GemCommand;
 
 #[fully_pub]
 struct MenuBar {
@@ -14,7 +14,7 @@ struct MenuBar {
 
 #[fully_pub]
 struct MenuShortcut {
-    command: Command,
+    command: GemCommand,
     modifiers: Modifiers,
     key: Code,
     description: &'static str,
@@ -59,7 +59,7 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
         &Submenu::with_items(
             "Help",
             true,
-            &[&MenuItem::with_id(Command::ReportIssue, "Report an issue", true, None)],
+            &[&MenuItem::with_id(GemCommand::ReportIssue, "Report an issue", true, None)],
         )
         .unwrap(),
     ])

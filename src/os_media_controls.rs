@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     APP_NAME, GemPlayer,
-    commands::Command,
+    commands::GemCommand,
     player::{Player, get_position},
 };
 
@@ -101,25 +101,25 @@ pub fn poll_media_events(gem: &mut GemPlayer) {
 
     while let Ok(event) = osmc.events_receiver.try_recv() {
         match event {
-            MediaControlEvent::Play => gem.commands.push(Command::Play),
-            MediaControlEvent::Pause => gem.commands.push(Command::Pause),
-            MediaControlEvent::Toggle => gem.commands.push(Command::TogglePlayback),
-            MediaControlEvent::Next => gem.commands.push(Command::NextTrack),
-            MediaControlEvent::Previous => gem.commands.push(Command::PreviousTrack),
-            MediaControlEvent::Stop => gem.commands.push(Command::Stop),
+            MediaControlEvent::Play => gem.commands.push(GemCommand::Play),
+            MediaControlEvent::Pause => gem.commands.push(GemCommand::Pause),
+            MediaControlEvent::Toggle => gem.commands.push(GemCommand::TogglePlayback),
+            MediaControlEvent::Next => gem.commands.push(GemCommand::NextTrack),
+            MediaControlEvent::Previous => gem.commands.push(GemCommand::PreviousTrack),
+            MediaControlEvent::Stop => gem.commands.push(GemCommand::Stop),
             MediaControlEvent::Seek(seek_direction) => match seek_direction {
-                SeekDirection::Forward => gem.commands.push(Command::NextTrack),
-                SeekDirection::Backward => gem.commands.push(Command::PreviousTrack),
+                SeekDirection::Forward => gem.commands.push(GemCommand::NextTrack),
+                SeekDirection::Backward => gem.commands.push(GemCommand::PreviousTrack),
             },
             MediaControlEvent::SeekBy(seek_direction, duration) => match seek_direction {
-                SeekDirection::Forward => gem.commands.push(Command::SeekForward(duration)),
-                SeekDirection::Backward => gem.commands.push(Command::SeekBackward(duration)),
+                SeekDirection::Forward => gem.commands.push(GemCommand::SeekForward(duration)),
+                SeekDirection::Backward => gem.commands.push(GemCommand::SeekBackward(duration)),
             },
-            MediaControlEvent::SetPosition(MediaPosition(duration)) => gem.commands.push(Command::SeekTo(duration)),
-            MediaControlEvent::SetVolume(volume) => gem.commands.push(Command::SetVolume(volume as f32)),
-            MediaControlEvent::OpenUri(uri) => gem.commands.push(Command::OpenUri(uri)),
-            MediaControlEvent::Raise => gem.commands.push(Command::RaiseWindow),
-            MediaControlEvent::Quit => gem.commands.push(Command::Quit),
+            MediaControlEvent::SetPosition(MediaPosition(duration)) => gem.commands.push(GemCommand::SeekTo(duration)),
+            MediaControlEvent::SetVolume(volume) => gem.commands.push(GemCommand::SetVolume(volume as f32)),
+            MediaControlEvent::OpenUri(uri) => gem.commands.push(GemCommand::OpenUri(uri)),
+            MediaControlEvent::Raise => gem.commands.push(GemCommand::RaiseWindow),
+            MediaControlEvent::Quit => gem.commands.push(GemCommand::Quit),
         }
     }
 }

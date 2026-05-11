@@ -50,7 +50,7 @@ use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
 #[cfg(target_os = "macos")]
 use {
-    crate::{commands::Command, platform::macos_menu::MenuBar},
+    crate::{commands::GemCommand, platform::macos_menu::MenuBar},
     egui::Ui,
     std::str::FromStr,
 };
@@ -86,7 +86,7 @@ struct GemPlayer {
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
     library_watcher: LibraryWatcher,
 
-    commands: Vec<Command>,
+    commands: Vec<GemCommand>,
 
     player: Player,
 
@@ -327,7 +327,7 @@ fn poll_macos_menu_events(gem: &mut GemPlayer) {
     let events: Vec<_> = gem.menubar.menu_receiver.try_iter().collect();
 
     for event in events {
-        match Command::from_str(&event.id.0) {
+        match GemCommand::from_str(&event.id.0) {
             Ok(command) => gem.commands.push(command),
             Err(_) => error!("Unable to process menu event: {:?}", event),
         }
