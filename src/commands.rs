@@ -118,8 +118,8 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
                 error!("{}", e);
             }
         }
-        Command::OpenUri(_uri) => {
-            warn!("URIs not yet implemented");
+        Command::OpenUri(uri) => {
+            warn!("OpenUri is not supported: {uri}");
         }
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
