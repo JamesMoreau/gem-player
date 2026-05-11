@@ -69,10 +69,9 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
             .filter(|track| {
                 let search_lowercase = gem.ui.search.to_lowercase();
 
-                let matches_search =
-                    |field: &Option<String>| field.as_deref().is_some_and(|text| text.to_lowercase().contains(&search_lowercase));
+                let matches_search = |field: Option<&str>| field.is_some_and(|text| text.to_lowercase().contains(&search_lowercase));
 
-                matches_search(&track.title) || matches_search(&track.artist) || matches_search(&track.album)
+                matches_search(track.title.as_deref()) || matches_search(track.artist.as_deref()) || matches_search(track.album.as_deref())
             })
             .cloned()
             .collect();

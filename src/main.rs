@@ -23,7 +23,7 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, icon_data, run_native, wgpu::rwh::HasWindowHandle};
-use egui::{Color32, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
+use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -264,24 +264,27 @@ impl App for GemPlayer {
         false
     }
 
-    fn ui(&mut self, ui: &mut Ui, frame: &mut Frame) {
-        // Input
-        #[cfg(target_os = "macos")]
-        poll_macos_menu_events(ui, self);
-        poll_library_watcher(self);
+    fn logic(&mut self, ctx: &Context, frame: &mut Frame) {
+        poll_file_drops(ctx, self);
         poll_library_folder_picker(self);
-        poll_file_drops(ui, self);
+        poll_library_watcher(self);
         poll_media_events(self);
-        poll_commands(ui, self);
-
-        // Update
-        check_for_next_track(ui, self);
+        
+        #[cfg(target_os = "macos")]
+        poll_macos_menu_events(self);
+        
         maybe_initialize_os_media_controls(self, frame);
+        check_for_next_track(ctx, self);
+        
+        poll_commands(ctx, self);
+    }
 
-        // Render
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut Frame) {
         apply_theme(ui, self.ui.theme_preference);
+
         gem_player_ui(ui, self);
-        self.ui.toasts.show(ui.ctx());
+        
+        self.ui.toasts.show(ui);
 
         // Set a minimum refresh rate for the app to keep the ui elements updated.
         ui.request_repaint_after(Duration::from_millis(33)); // ~30 fps
@@ -305,11 +308,11 @@ impl App for GemPlayer {
     }
 }
 
-fn poll_commands(ui: &mut Ui, gem: &mut GemPlayer) {
+fn poll_commands(ctx: &Context, gem: &mut GemPlayer) {
     let commands = take(&mut gem.commands);
-    
+
     for command in commands {
-        execute(ui, gem, command);
+        execute(ctx, gem, command);
     }
 }
 
@@ -328,12 +331,12 @@ fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
 }
 
 #[cfg(target_os = "macos")]
-fn poll_macos_menu_events(ui: &mut Ui, gem: &mut GemPlayer) {
+fn poll_macos_menu_events(gem: &mut GemPlayer) {
     let events: Vec<_> = gem.menubar.menu_receiver.try_iter().collect();
 
     for event in events {
         match Command::from_str(&event.id.0) {
-            Ok(command) => execute(ui, gem, command),
+            Ok(command) => gem.commands.push(command),
             Err(_) => error!("Unable to process menu event: {:?}", event),
         }
     }
@@ -408,8 +411,8 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
     }
 }
 
-fn poll_file_drops(ui: &mut Ui, gem: &mut GemPlayer) {
-    let dropped_files = ui.input(|i| i.raw.dropped_files.clone());
+fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
+    let dropped_files = ctx.input(|i| i.raw.dropped_files.clone());
 
     if dropped_files.is_empty() {
         return;
@@ -489,7 +492,7 @@ fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlis
     }
 }
 
-fn check_for_next_track(ui: &mut Ui, gem: &mut GemPlayer) {
+fn check_for_next_track(ctx: &Context, gem: &mut GemPlayer) {
     let Some(backend) = &gem.player.backend else {
         return;
     };
@@ -499,12 +502,12 @@ fn check_for_next_track(ui: &mut Ui, gem: &mut GemPlayer) {
         return;
     }
 
-    maybe_play_next(ui, gem);
+    maybe_play_next(ctx, gem);
 }
 
-fn maybe_play_next(ui: &mut Ui, gem: &mut GemPlayer) {
+fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
-        Ok(()) => on_track_change(ui, gem),
+        Ok(()) => on_track_change(ctx, gem),
         Err(e) => {
             error!("{}", e);
             gem.ui.toasts.error("Error playing the next track");
@@ -514,8 +517,7 @@ fn maybe_play_next(ui: &mut Ui, gem: &mut GemPlayer) {
 
 // If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
-// This is what actually gets called by the UI.
-pub fn maybe_play_previous(ui: &mut Ui, gem: &mut GemPlayer) {
+pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
     let rewind_threshold = 5.0;
 
     let under_threshold = get_position(&gem.player).is_some_and(|position| position.as_secs_f32() < rewind_threshold);
@@ -525,7 +527,7 @@ pub fn maybe_play_previous(ui: &mut Ui, gem: &mut GemPlayer) {
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
         match play_previous(&mut gem.player) {
-            Ok(_) => on_track_change(ui, gem),
+            Ok(_) => on_track_change(ctx, gem),
             Err(e) => {
                 error!("{}", e);
                 gem.ui.toasts.error("Error playing the previous track");
@@ -539,10 +541,10 @@ pub fn maybe_play_previous(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn on_track_change(ui: &mut Ui, gem: &mut GemPlayer) {
+fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     // Forget the previous artwork.
     if let Some(old) = &gem.ui.cached_artwork {
-        ui.forget_image(&old.uri);
+        ctx.forget_image(&old.uri);
     }
 
     gem.ui.cached_artwork = gem.player.playing.as_ref().and_then(|track| {

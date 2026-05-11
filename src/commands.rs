@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use egui::{OpenUrl, Ui, ViewportCommand};
+use egui::{Context, OpenUrl, ViewportCommand};
 use log::{error, warn};
 use strum_macros::{Display, EnumString};
 
@@ -32,7 +32,7 @@ pub enum Command {
     Quit,
 }
 
-pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
+pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: Command) {
     match command {
         Command::Play => {
             if let Err(e) = play(&mut gem.player) {
@@ -74,8 +74,8 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
                 }
             }
         }
-        Command::NextTrack => maybe_play_next(ui, gem),
-        Command::PreviousTrack => maybe_play_previous(ui, gem),
+        Command::NextTrack => maybe_play_next(ctx, gem),
+        Command::PreviousTrack => maybe_play_previous(ctx, gem),
         Command::SeekTo(position) => {
             if let Err(e) = seek(&mut gem.player, position) {
                 error!("{}", e);
@@ -123,9 +123,9 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
         }
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
-            ui.open_url(OpenUrl { url, new_tab: true });
+            ctx.open_url(OpenUrl { url, new_tab: true });
         }
-        Command::RaiseWindow => ui.send_viewport_cmd(ViewportCommand::Focus),
-        Command::Quit => ui.send_viewport_cmd(ViewportCommand::Close),
+        Command::RaiseWindow => ctx.send_viewport_cmd(ViewportCommand::Focus),
+        Command::Quit => ctx.send_viewport_cmd(ViewportCommand::Close),
     }
 }
