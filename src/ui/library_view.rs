@@ -200,23 +200,22 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 let response = row.response();
 
-                let secondary_clicked = response.secondary_clicked();
-                let primary_clicked = response.clicked() || response.double_clicked();
-
-                if primary_clicked || secondary_clicked {
+                if response.clicked() || response.double_clicked() || response.secondary_clicked() {
                     let selected_tracks = &mut gem.ui.library.selected_tracks;
 
-                    if secondary_clicked {
+                    if response.secondary_clicked() {
                         if selected_tracks.is_empty() || !track_is_selected {
                             selected_tracks.clear();
                             selected_tracks.push(track.path.clone());
                         }
                     } else if shift_is_pressed && !selected_tracks.is_empty() {
                         let last_selected = selected_tracks.last().unwrap();
+
                         let last_index = cached_library.iter().position(|t| &t.path == last_selected).unwrap();
 
                         let start = last_index.min(row.index());
                         let end = last_index.max(row.index());
+                        
                         for t in &cached_library[start..=end] {
                             if !selected_tracks.contains(&t.path) {
                                 selected_tracks.push(t.path.clone());
