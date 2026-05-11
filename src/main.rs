@@ -6,6 +6,7 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use crate::{
     commands::execute,
     config::{load_config, save_config},
+    library_watcher::LibraryWatcher,
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
     player::get_position,
@@ -27,7 +28,7 @@ use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use library_watcher::{LibraryAndPlaylists, LibraryWatcherCommand, setup_library_watcher};
+use library_watcher::{LibraryWatcherCommand, setup_library_watcher};
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
@@ -40,7 +41,7 @@ use std::{
     path::PathBuf,
     sync::{
         Arc,
-        mpsc::{Receiver, Sender, TryRecvError},
+        mpsc::{Receiver, TryRecvError},
     },
     time::Duration,
 };
@@ -95,12 +96,6 @@ struct GemPlayer {
 
     #[cfg(target_os = "macos")]
     menubar: platform::macos_menu::MenuBar,
-}
-
-#[fully_pub]
-struct LibraryWatcher {
-    command_sender: Sender<LibraryWatcherCommand>,
-    update_receiver: Receiver<Option<LibraryAndPlaylists>>,
 }
 
 fn main() -> eframe::Result {
@@ -164,11 +159,11 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let mut config = load_config();
 
-    let (watcher_command_sender, update_receiver) = setup_library_watcher().expect("Failed to initialize library watcher.");
+    let library_watcher = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &config.library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
 
-        if let Err(e) = watcher_command_sender.send(command) {
+        if let Err(e) = library_watcher.command_sender.send(command) {
             error!("Failed to start watching library directory: {e}");
             config.library_directory = None;
         }
@@ -219,10 +214,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
         library_directory: config.library_directory,
         folder_picker_receiver: None,
-        library_watcher: LibraryWatcher {
-            update_receiver,
-            command_sender: watcher_command_sender,
-        },
+        library_watcher,
 
         commands: Vec::new(),
 
@@ -269,13 +261,13 @@ impl App for GemPlayer {
         poll_library_folder_picker(self);
         poll_library_watcher(self);
         poll_media_events(self);
-        
+
         #[cfg(target_os = "macos")]
         poll_macos_menu_events(self);
-        
+
         maybe_initialize_os_media_controls(self, frame);
         check_for_next_track(ctx, self);
-        
+
         poll_commands(ctx, self);
     }
 
@@ -283,7 +275,7 @@ impl App for GemPlayer {
         apply_theme(ui, self.ui.theme_preference);
 
         gem_player_ui(ui, self);
-        
+
         self.ui.toasts.show(ui);
 
         // Set a minimum refresh rate for the app to keep the ui elements updated.

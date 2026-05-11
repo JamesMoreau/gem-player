@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use fully_pub::fully_pub;
 use log::{error, info, warn};
 use notify::RecursiveMode;
 use notify_debouncer_mini::{DebounceEventResult, new_debouncer};
@@ -15,6 +16,12 @@ use crate::{
     track::{Track, load_tracks_from_directory},
 };
 
+#[fully_pub]
+struct LibraryWatcher {
+    command_sender: Sender<LibraryWatcherCommand>,
+    update_receiver: Receiver<Option<LibraryAndPlaylists>>,
+}
+
 pub enum LibraryWatcherCommand {
     Load,
     SetPath(PathBuf),
@@ -23,7 +30,7 @@ pub enum LibraryWatcherCommand {
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
 
-pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receiver<Option<LibraryAndPlaylists>>)> {
+pub fn setup_library_watcher() -> Result<LibraryWatcher> {
     let (command_sender, command_receiver) = channel();
     let (update_sender, update_receiver) = channel();
 
@@ -107,5 +114,5 @@ pub fn setup_library_watcher() -> Result<(Sender<LibraryWatcherCommand>, Receive
         info!("Command channel closed. Shutting down watcher.");
     });
 
-    Ok((command_sender, update_receiver))
+    Ok(LibraryWatcher { command_sender, update_receiver })
 }
