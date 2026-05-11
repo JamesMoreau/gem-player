@@ -6,8 +6,8 @@ use strum_macros::{Display, EnumString};
 
 use crate::{
     GemPlayer, maybe_play_next, maybe_play_previous,
-    os_media_controls::{OSMediaControlsState, update_playback},
-    player::{get_position, pause, play, seek, set_volume, toggle},
+    os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
+    player::{get_position, pause, play, seek, set_volume, stop, toggle},
 };
 
 #[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
@@ -15,6 +15,7 @@ pub enum Command {
     Play,
     Pause,
     TogglePlayback,
+    Stop,
 
     NextTrack,
     PreviousTrack,
@@ -57,6 +58,19 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
                 && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
             {
                 error!("{}", e);
+            }
+        }
+        Command::Stop => {
+            stop(&mut gem.player);
+
+            if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
+                if let Err(e) = update_metadata(&mut osmc.controls, &gem.player) {
+                    error!("{}", e);
+                }
+
+                if let Err(e) = update_playback(&mut osmc.controls, &gem.player) {
+                    error!("{}", e);
+                }
             }
         }
         Command::NextTrack => maybe_play_next(ui, gem),
@@ -107,6 +121,7 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
             ui.open_url(OpenUrl { url, new_tab: true });
         }
-        _ => todo!("Command not yet implemented"),
+        Command::RaiseWindow => todo!(),
+        Command::Quit => todo!(),
     }
 }

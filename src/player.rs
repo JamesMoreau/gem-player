@@ -43,7 +43,7 @@ pub fn play_next(player: &mut Player) -> Result<bool> {
     }
 
     if player.queue.is_empty() {
-        player.playing = None;
+        stop(player);
         return Ok(false); // Nothing to play
     }
 
@@ -129,6 +129,14 @@ pub fn pause(player: &mut Player) -> Result<()> {
     backend.player.pause();
 
     Ok(())
+}
+
+pub fn stop(player: &mut Player) {
+    if let Some(b) = &mut player.backend {
+        b.player.stop();
+    }
+
+    player.playing = None;
 }
 
 pub fn seek(player: &mut Player, position: Duration) -> Result<()> {
