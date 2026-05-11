@@ -54,9 +54,6 @@ use {
     std::str::FromStr,
 };
 
-#[cfg(target_os = "windows")]
-use platform::windows_shortcuts::SHORTCUTS;
-
 mod commands;
 mod config;
 mod custom_window;
@@ -269,8 +266,6 @@ impl App for GemPlayer {
 
     fn ui(&mut self, ui: &mut Ui, frame: &mut Frame) {
         // Input
-        #[cfg(target_os = "windows")]
-        handle_shortcuts(ctx, self);
         #[cfg(target_os = "macos")]
         poll_macos_menu_events(ui, self);
         poll_library_watcher(self);
