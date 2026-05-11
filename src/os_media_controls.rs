@@ -100,15 +100,13 @@ pub fn poll_media_events(gem: &mut GemPlayer) {
     };
 
     while let Ok(event) = osmc.events_receiver.try_recv() {
-        log::info!("Received os media controls events: {:?}", event);
-
         match event {
             MediaControlEvent::Play => gem.commands.push(Command::Play),
             MediaControlEvent::Pause => gem.commands.push(Command::Pause),
             MediaControlEvent::Toggle => gem.commands.push(Command::TogglePlayback),
             MediaControlEvent::Next => gem.commands.push(Command::NextTrack),
             MediaControlEvent::Previous => gem.commands.push(Command::PreviousTrack),
-            MediaControlEvent::Stop => todo!(),
+            MediaControlEvent::Stop => gem.commands.push(Command::Stop),
             MediaControlEvent::Seek(seek_direction) => match seek_direction {
                 SeekDirection::Forward => gem.commands.push(Command::NextTrack),
                 SeekDirection::Backward => gem.commands.push(Command::PreviousTrack),
@@ -119,9 +117,9 @@ pub fn poll_media_events(gem: &mut GemPlayer) {
             },
             MediaControlEvent::SetPosition(MediaPosition(duration)) => gem.commands.push(Command::SeekTo(duration)),
             MediaControlEvent::SetVolume(volume) => gem.commands.push(Command::SetVolume(volume as f32)),
-            MediaControlEvent::OpenUri(_) => todo!(),
-            MediaControlEvent::Raise => todo!(),
-            MediaControlEvent::Quit => todo!(),
+            MediaControlEvent::OpenUri(uri) => gem.commands.push(Command::OpenUri(uri)),
+            MediaControlEvent::Raise => gem.commands.push(Command::RaiseWindow),
+            MediaControlEvent::Quit => gem.commands.push(Command::Quit),
         }
     }
 }

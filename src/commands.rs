@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use egui::{OpenUrl, Ui};
-use log::error;
+use egui::{OpenUrl, Ui, ViewportCommand};
+use log::{error, warn};
 use strum_macros::{Display, EnumString};
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
     player::{get_position, pause, play, seek, set_volume, stop, toggle},
 };
 
-#[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
+#[derive(PartialEq, Debug, Clone, EnumString, Display)]
 pub enum Command {
     Play,
     Pause,
@@ -26,6 +26,7 @@ pub enum Command {
 
     SetVolume(f32),
 
+    OpenUri(String),
     ReportIssue,
     RaiseWindow,
     Quit,
@@ -117,11 +118,14 @@ pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
                 error!("{}", e);
             }
         }
+        Command::OpenUri(_uri) => {
+            warn!("URIs not yet implemented");
+        }
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
             ui.open_url(OpenUrl { url, new_tab: true });
         }
-        Command::RaiseWindow => todo!(),
-        Command::Quit => todo!(),
+        Command::RaiseWindow => ui.send_viewport_cmd(ViewportCommand::Focus),
+        Command::Quit => ui.send_viewport_cmd(ViewportCommand::Close),
     }
 }

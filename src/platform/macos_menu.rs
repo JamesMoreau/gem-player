@@ -45,7 +45,7 @@ pub const SHORTCUTS: &[MenuShortcut] = &[PLAY_PAUSE, NEXT_TRACK, PREVIOUS_TRACK]
 
 fn menu_item_from_shortcut(shortcut: &MenuShortcut) -> MenuItem {
     MenuItem::with_id(
-        shortcut.command,
+        shortcut.command.clone(),
         shortcut.description,
         true,
         Some(Accelerator::new(Some(shortcut.modifiers), shortcut.key)),
