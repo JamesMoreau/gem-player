@@ -157,76 +157,74 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
 }
 
 fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
-    let previous_item_spacing = ui.spacing().item_spacing;
-    ui.spacing_mut().item_spacing = Vec2::splat(0.0);
+    ui.scope(|ui| {
+        ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
-    Frame::new().corner_radius(4.0).fill(ui.visuals().faint_bg_color).show(ui, |ui| {
-        StripBuilder::new(ui)
-            .size(Size::exact(gap))
-            .size(Size::exact(button_size))
-            .size(Size::exact(gap))
-            .size(Size::exact(artwork_width))
-            .size(Size::exact(gap))
-            .size(Size::exact(slider_width))
-            .size(Size::exact(gap))
-            .horizontal(|mut strip| {
-                strip.empty();
-                strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, &mut gem.player, button_size));
-                strip.empty();
-                strip.cell(|ui| {
-                    ui.centered_and_justified(|ui| {
-                        track_artwork_ui(ui, gem.ui.cached_artwork.as_ref(), artwork_width);
+        Frame::new().corner_radius(4.0).fill(ui.visuals().faint_bg_color).show(ui, |ui| {
+            StripBuilder::new(ui)
+                .size(Size::exact(gap))
+                .size(Size::exact(button_size))
+                .size(Size::exact(gap))
+                .size(Size::exact(artwork_width))
+                .size(Size::exact(gap))
+                .size(Size::exact(slider_width))
+                .size(Size::exact(gap))
+                .horizontal(|mut strip| {
+                    strip.empty();
+                    strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, &mut gem.player, button_size));
+                    strip.empty();
+                    strip.cell(|ui| {
+                        ui.centered_and_justified(|ui| {
+                            track_artwork_ui(ui, gem.ui.cached_artwork.as_ref(), artwork_width);
+                        });
                     });
+                    strip.empty();
+                    strip.cell(|ui| layout_playback_slider_and_track_info(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
+                    strip.empty();
                 });
-                strip.empty();
-                strip.cell(|ui| layout_playback_slider_and_track_info(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
-                strip.empty();
-            });
+        });
     });
-
-    ui.spacing_mut().item_spacing = previous_item_spacing;
 }
 
 fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_size: f32) {
-    let previous_spacing = ui.spacing().item_spacing;
-    ui.spacing_mut().item_spacing = Vec2::splat(0.0);
+    ui.scope(|ui| {
+        ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
-    let vertical_pad = 8.0;
-    let starting_point = (ui.available_height() / 2.0) - (vertical_pad / 2.0) - button_size; // this is how we align the buttons vertically center.
-    ui.add_space(starting_point);
+        let vertical_pad = 8.0;
+        let starting_point = (ui.available_height() / 2.0) - (vertical_pad / 2.0) - button_size; // this is how we align the buttons vertically center.
+        ui.add_space(starting_point);
 
-    let get_button_color = |ui: &Ui, is_enabled: bool| {
-        if is_enabled {
-            ui.visuals().selection.bg_fill
-        } else {
-            ui.visuals().text_color()
+        let get_button_color = |ui: &Ui, is_enabled: bool| {
+            if is_enabled {
+                ui.visuals().selection.bg_fill
+            } else {
+                ui.visuals().text_color()
+            }
+        };
+
+        let color = get_button_color(ui, player.repeat);
+        let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
+        let response = ui.add(repeat_button).on_hover_text("Repeat");
+
+        if response.clicked() {
+            player.repeat = !player.repeat;
         }
-    };
 
-    let color = get_button_color(ui, player.repeat);
-    let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
-    let response = ui.add(repeat_button).on_hover_text("Repeat");
+        ui.add_space(vertical_pad);
 
-    if response.clicked() {
-        player.repeat = !player.repeat;
-    }
+        let color = get_button_color(ui, player.shuffle.is_some());
+        let shuffle_button = Button::new(ICON_SHUFFLE.rich_text().color(color)).min_size(Vec2::splat(button_size));
+        let shuffle_enabled = !player.queue.is_empty();
 
-    ui.add_space(vertical_pad);
+        let response = ui
+            .add_enabled(shuffle_enabled, shuffle_button)
+            .on_hover_text("Shuffle")
+            .on_disabled_hover_text("Queue is empty");
 
-    let color = get_button_color(ui, player.shuffle.is_some());
-    let shuffle_button = Button::new(ICON_SHUFFLE.rich_text().color(color)).min_size(Vec2::splat(button_size));
-    let shuffle_enabled = !player.queue.is_empty();
-
-    let response = ui
-        .add_enabled(shuffle_enabled, shuffle_button)
-        .on_hover_text("Shuffle")
-        .on_disabled_hover_text("Queue is empty");
-
-    if response.clicked() {
-        toggle_shuffle(player);
-    }
-
-    ui.spacing_mut().item_spacing = previous_spacing;
+        if response.clicked() {
+            toggle_shuffle(player);
+        }
+    });
 }
 
 fn layout_playback_slider_and_track_info(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {

@@ -32,106 +32,105 @@ struct PlaylistsViewState {
 }
 
 pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
-    if gem.library_directory.is_none() {
-        centered_frame(ui, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.add(unselectable_label("Try adding your music directory in the settings"));
+    ui.scope(|ui| {
+        if gem.library_directory.is_none() {
+            centered_frame(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(unselectable_label("Try adding your music directory in the settings"));
+                });
             });
-        });
 
-        return;
-    };
+            return;
+        };
 
-    if gem.ui.playlists.delete_modal_open {
-        delete_playlist_modal(ui, gem);
-    }
+        if gem.ui.playlists.delete_modal_open {
+            delete_playlist_modal(ui, gem);
+        }
 
-    let size = ui.available_size();
-    let playlists_width = size.x * (1.0 / 4.0);
+        let size = ui.available_size();
+        let playlists_width = size.x * (1.0 / 4.0);
 
-    let previous_spacing = ui.spacing().item_spacing.x;
-    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view as to why we do this.
+        ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view as to why we do this.
 
-    StripBuilder::new(ui)
-        .size(Size::exact(playlists_width))
-        .size(Size::exact(6.0))
-        .size(Size::remainder())
-        .horizontal(|mut strip| {
-            strip.cell(|ui| {
-                let width = ui.available_width();
-                TableBuilder::new(ui)
-                    .striped(true)
-                    .sense(Sense::click())
-                    .cell_layout(Layout::left_to_right(Align::Center))
-                    .column(egui_extras::Column::exact(width))
-                    .header(36.0, |mut header| {
-                        header.col(|ui| {
-                            containers::Sides::new().height(ui.available_height()).show(
-                                ui,
-                                |ui| {
-                                    ui.add_space(8.0);
-                                    ui.add(unselectable_label(RichText::new("Playlists").heading().strong()));
-                                },
-                                |ui| {
-                                    ui.add_space(8.0);
+        StripBuilder::new(ui)
+            .size(Size::exact(playlists_width))
+            .size(Size::exact(6.0))
+            .size(Size::remainder())
+            .horizontal(|mut strip| {
+                strip.cell(|ui| {
+                    let width = ui.available_width();
+                    TableBuilder::new(ui)
+                        .striped(true)
+                        .sense(Sense::click())
+                        .cell_layout(Layout::left_to_right(Align::Center))
+                        .column(egui_extras::Column::exact(width))
+                        .header(36.0, |mut header| {
+                            header.col(|ui| {
+                                containers::Sides::new().height(ui.available_height()).show(
+                                    ui,
+                                    |ui| {
+                                        ui.add_space(8.0);
+                                        ui.add(unselectable_label(RichText::new("Playlists").heading().strong()));
+                                    },
+                                    |ui| {
+                                        ui.add_space(8.0);
 
-                                    let add_button = Button::new(ICON_ADD);
-                                    let response = ui.add(add_button).on_hover_text("Add playlist");
-                                    if response.clicked() {
-                                        let directory = gem.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
-                                        let new_playlist_name = format!("Playlist {}", gem.playlists.len() + 1);
-                                        let result = create(new_playlist_name, directory);
-                                        match result {
-                                            Err(e) => {
-                                                let error_message = format!("Failed to create: {}.", e);
-                                                error!("{}", &error_message);
-                                                gem.ui.toasts.error(&error_message);
-                                            }
-                                            Ok(new_playlist) => {
-                                                info!("Created and saved {} to {:?}", &new_playlist.name, &new_playlist.m3u_path);
-                                                gem.playlists.push(new_playlist);
+                                        let add_button = Button::new(ICON_ADD);
+                                        let response = ui.add(add_button).on_hover_text("Add playlist");
+                                        if response.clicked() {
+                                            let directory = gem.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
+                                            let new_playlist_name = format!("Playlist {}", gem.playlists.len() + 1);
+                                            let result = create(new_playlist_name, directory);
+                                            match result {
+                                                Err(e) => {
+                                                    let error_message = format!("Failed to create: {}.", e);
+                                                    error!("{}", &error_message);
+                                                    gem.ui.toasts.error(&error_message);
+                                                }
+                                                Ok(new_playlist) => {
+                                                    info!("Created and saved {} to {:?}", &new_playlist.name, &new_playlist.m3u_path);
+                                                    gem.playlists.push(new_playlist);
+                                                }
                                             }
                                         }
-                                    }
-                                },
-                            );
-                        });
-                    })
-                    .body(|body| {
-                        body.rows(36.0, gem.playlists.len(), |mut row| {
-                            let playlist = &mut gem.playlists[row.index()];
-
-                            if let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key {
-                                let playlist_is_selected = playlist.m3u_path == *playlist_key;
-                                row.set_selected(playlist_is_selected);
-                            }
-
-                            row.col(|ui| {
-                                ui.add_space(8.0);
-                                ui.add(unselectable_label(&playlist.name));
+                                    },
+                                );
                             });
+                        })
+                        .body(|body| {
+                            body.rows(36.0, gem.playlists.len(), |mut row| {
+                                let playlist = &mut gem.playlists[row.index()];
 
-                            let response = row.response();
-                            if response.clicked() {
-                                info!("Selected playlist: {}", playlist.name);
-                                gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
+                                if let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key {
+                                    let playlist_is_selected = playlist.m3u_path == *playlist_key;
+                                    row.set_selected(playlist_is_selected);
+                                }
 
-                                gem.ui.playlists.rename_buffer = None; // In case we were currently editing
-                                gem.ui.playlists.cached_playlist_tracks = None;
-                                gem.ui.playlists.selected_tracks.clear();
-                            }
+                                row.col(|ui| {
+                                    ui.add_space(8.0);
+                                    ui.add(unselectable_label(&playlist.name));
+                                });
+
+                                let response = row.response();
+                                if response.clicked() {
+                                    info!("Selected playlist: {}", playlist.name);
+                                    gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
+
+                                    gem.ui.playlists.rename_buffer = None; // In case we were currently editing
+                                    gem.ui.playlists.cached_playlist_tracks = None;
+                                    gem.ui.playlists.selected_tracks.clear();
+                                }
+                            });
                         });
-                    });
+                });
+
+                strip.cell(|ui| {
+                    ui.add(Separator::default().vertical());
+                });
+
+                strip.cell(|ui| playlist(ui, gem));
             });
-
-            strip.cell(|ui| {
-                ui.add(Separator::default().vertical());
-            });
-
-            strip.cell(|ui| playlist(ui, gem));
-        });
-
-    ui.spacing_mut().item_spacing.x = previous_spacing;
+    });
 }
 
 fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
@@ -321,217 +320,218 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
 }
 
 fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
-    let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
-        centered_frame(ui, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.add(unselectable_label("No playlist selected"));
+    ui.scope(|ui| {
+        let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
+            centered_frame(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(unselectable_label("No playlist selected"));
+                });
             });
+
+            return;
+        };
+
+        let playlist_length = gem.playlists.get_by_path(&playlist_key).tracks.len();
+        if playlist_length == 0 {
+            centered_frame(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add(unselectable_label("The playlist is empty."));
+                });
+            });
+
+            return;
+        }
+
+        let cached_playlist_tracks = gem.ui.playlists.cached_playlist_tracks.get_or_insert_with(|| {
+            // Regenerate the cache.
+
+            let filtered: Vec<Track> = gem
+                .playlists
+                .get_by_path(&playlist_key)
+                .tracks
+                .iter()
+                .filter(|track| {
+                    let search_lower = gem.ui.search.to_lowercase();
+
+                    let matches_search = |field: Option<&str>| field.is_some_and(|text| text.to_lowercase().contains(&search_lower));
+
+                    matches_search(track.title.as_deref())
+                        || matches_search(track.artist.as_deref())
+                        || matches_search(track.album.as_deref())
+                })
+                .cloned()
+                .collect();
+
+            filtered
         });
 
-        return;
-    };
+        let header_labels = [ICON_TAG, ICON_MUSIC_NOTE, ICON_ARTIST, ICON_ALBUM, ICON_HOURGLASS];
 
-    let playlist_length = gem.playlists.get_by_path(&playlist_key).tracks.len();
-    if playlist_length == 0 {
-        centered_frame(ui, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.add(unselectable_label("The playlist is empty."));
-            });
-        });
+        let available_width = ui.available_width();
+        let position_width = 64.0;
+        let time_width = 64.0;
+        let more_width = 48.0;
+        let remaining_width = available_width - position_width - time_width - more_width;
+        let title_width = remaining_width * (2.0 / 4.0);
+        let artist_width = remaining_width * (1.0 / 4.0);
+        let album_width = remaining_width * (1.0 / 4.0);
 
-        return;
-    }
+        ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() as to why we do this.
 
-    let cached_playlist_tracks = gem.ui.playlists.cached_playlist_tracks.get_or_insert_with(|| {
-        // Regenerate the cache.
+        // Used to determine if selection should be extended.
+        let shift_is_pressed = ui.input(|i| i.modifiers.shift);
 
-        let filtered: Vec<Track> = gem
-            .playlists
-            .get_by_path(&playlist_key)
-            .tracks
-            .iter()
-            .filter(|track| {
-                let search_lower = gem.ui.search.to_lowercase();
+        let mut should_play_playlist = None;
+        let mut context_menu_action = None;
 
-                let matches_search = |field: Option<&str>| field.is_some_and(|text| text.to_lowercase().contains(&search_lower));
+        let playing_color = ui.visuals().selection.bg_fill;
 
-                matches_search(track.title.as_deref()) || matches_search(track.artist.as_deref()) || matches_search(track.album.as_deref())
+        TableBuilder::new(ui)
+            .striped(true)
+            .sense(Sense::click())
+            .cell_layout(Layout::left_to_right(Align::Center))
+            .column(egui_extras::Column::exact(position_width))
+            .column(egui_extras::Column::exact(title_width))
+            .column(egui_extras::Column::exact(artist_width))
+            .column(egui_extras::Column::exact(album_width))
+            .column(egui_extras::Column::exact(time_width))
+            .column(egui_extras::Column::exact(more_width))
+            .header(16.0, |mut header| {
+                for (i, h) in header_labels.iter().enumerate() {
+                    header.col(|ui| {
+                        if i == 0 {
+                            ui.add_space(16.0);
+                        }
+                        ui.add(unselectable_label(RichText::new(*h).strong()));
+                    });
+                }
             })
-            .cloned()
-            .collect();
+            .body(|body| {
+                body.rows(26.0, cached_playlist_tracks.len(), |mut row| {
+                    let index = row.index();
+                    let track = &cached_playlist_tracks[index];
+                    let track_is_playing = gem.player.playing.as_ref().is_some_and(|t| t == track);
 
-        filtered
-    });
+                    let row_is_selected = gem.ui.playlists.selected_tracks.contains(&track.path);
+                    row.set_selected(row_is_selected);
 
-    let header_labels = [ICON_TAG, ICON_MUSIC_NOTE, ICON_ARTIST, ICON_ALBUM, ICON_HOURGLASS];
+                    let text_color = if track_is_playing && !row_is_selected {
+                        Some(playing_color)
+                    } else {
+                        None
+                    };
 
-    let available_width = ui.available_width();
-    let position_width = 64.0;
-    let time_width = 64.0;
-    let more_width = 48.0;
-    let remaining_width = available_width - position_width - time_width - more_width;
-    let title_width = remaining_width * (2.0 / 4.0);
-    let artist_width = remaining_width * (1.0 / 4.0);
-    let album_width = remaining_width * (1.0 / 4.0);
-
-    let previous_spacing = ui.spacing().item_spacing.x;
-    ui.spacing_mut().item_spacing.x = 0.0; // See comment in library_view() as to why we do this.
-
-    // Used to determine if selection should be extended.
-    let shift_is_pressed = ui.input(|i| i.modifiers.shift);
-
-    let mut should_play_playlist = None;
-    let mut context_menu_action = None;
-
-    let playing_color = ui.visuals().selection.bg_fill;
-
-    TableBuilder::new(ui)
-        .striped(true)
-        .sense(Sense::click())
-        .cell_layout(Layout::left_to_right(Align::Center))
-        .column(egui_extras::Column::exact(position_width))
-        .column(egui_extras::Column::exact(title_width))
-        .column(egui_extras::Column::exact(artist_width))
-        .column(egui_extras::Column::exact(album_width))
-        .column(egui_extras::Column::exact(time_width))
-        .column(egui_extras::Column::exact(more_width))
-        .header(16.0, |mut header| {
-            for (i, h) in header_labels.iter().enumerate() {
-                header.col(|ui| {
-                    if i == 0 {
+                    row.col(|ui| {
                         ui.add_space(16.0);
-                    }
-                    ui.add(unselectable_label(RichText::new(*h).strong()));
-                });
-            }
-        })
-        .body(|body| {
-            body.rows(26.0, cached_playlist_tracks.len(), |mut row| {
-                let index = row.index();
-                let track = &cached_playlist_tracks[index];
-                let track_is_playing = gem.player.playing.as_ref().is_some_and(|t| t == track);
+                        let label = table_label((index + 1).to_string(), text_color);
+                        ui.add(label);
+                    });
 
-                let row_is_selected = gem.ui.playlists.selected_tracks.contains(&track.path);
-                row.set_selected(row_is_selected);
+                    row.col(|ui| {
+                        ui.add_space(4.0);
+                        let label = table_label(track.title.as_deref().unwrap_or("-"), text_color);
+                        ui.add(label);
+                    });
 
-                let text_color = if track_is_playing && !row_is_selected {
-                    Some(playing_color)
-                } else {
-                    None
-                };
+                    row.col(|ui| {
+                        ui.add_space(4.0);
+                        let label = table_label(track.artist.as_deref().unwrap_or("-"), text_color);
+                        ui.add(label);
+                    });
 
-                row.col(|ui| {
-                    ui.add_space(16.0);
-                    let label = table_label((index + 1).to_string(), text_color);
-                    ui.add(label);
-                });
+                    row.col(|ui| {
+                        ui.add_space(4.0);
+                        let label = table_label(track.album.as_deref().unwrap_or("-"), text_color);
+                        ui.add(label);
+                    });
 
-                row.col(|ui| {
-                    ui.add_space(4.0);
-                    let label = table_label(track.title.as_deref().unwrap_or("-"), text_color);
-                    ui.add(label);
-                });
+                    row.col(|ui| {
+                        ui.add_space(4.0);
+                        let duration_string = format_duration_to_mmss(track.duration);
+                        let label = table_label(duration_string, text_color);
+                        ui.add(label);
+                    });
 
-                row.col(|ui| {
-                    ui.add_space(4.0);
-                    let label = table_label(track.artist.as_deref().unwrap_or("-"), text_color);
-                    ui.add(label);
-                });
+                    let rest_of_row_is_hovered = row.response().hovered();
+                    let mut more_cell_contains_pointer = false;
+                    row.col(|ui| {
+                        ui.add_space(8.0);
 
-                row.col(|ui| {
-                    ui.add_space(4.0);
-                    let label = table_label(track.album.as_deref().unwrap_or("-"), text_color);
-                    ui.add(label);
-                });
+                        more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
+                        let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || row_is_selected;
 
-                row.col(|ui| {
-                    ui.add_space(4.0);
-                    let duration_string = format_duration_to_mmss(track.duration);
-                    let label = table_label(duration_string, text_color);
-                    ui.add(label);
-                });
+                        if should_show_more_button {
+                            let more_button = Button::new(ICON_MORE_HORIZ);
+                            let response = ui.add(more_button).on_hover_text("More");
 
-                let rest_of_row_is_hovered = row.response().hovered();
-                let mut more_cell_contains_pointer = false;
-                row.col(|ui| {
-                    ui.add_space(8.0);
+                            if response.clicked() {
+                                let selected_tracks = &mut gem.ui.playlists.selected_tracks;
 
-                    more_cell_contains_pointer = ui.rect_contains_pointer(ui.max_rect());
-                    let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || row_is_selected;
+                                if selected_tracks.is_empty() || !selected_tracks.contains(&track.path) {
+                                    selected_tracks.clear();
+                                    selected_tracks.push(track.path.clone());
+                                }
+                            }
 
-                    if should_show_more_button {
-                        let more_button = Button::new(ICON_MORE_HORIZ);
-                        let response = ui.add(more_button).on_hover_text("More");
+                            Popup::menu(&response).show(|ui| {
+                                let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
+                                let maybe_action = playlist_context_menu(ui, selected_tracks_count);
+                                if let Some(action) = maybe_action {
+                                    context_menu_action = Some(action);
+                                }
+                            });
+                        } else if track_is_playing {
+                            playing_indicator(ui);
+                        }
+                    });
 
-                        if response.clicked() {
-                            let selected_tracks = &mut gem.ui.playlists.selected_tracks;
+                    let response = row.response();
 
-                            if selected_tracks.is_empty() || !selected_tracks.contains(&track.path) {
+                    if response.clicked() || response.double_clicked() || response.secondary_clicked() {
+                        let selected_tracks = &mut gem.ui.playlists.selected_tracks;
+
+                        if response.secondary_clicked() {
+                            if selected_tracks.is_empty() || !row_is_selected {
                                 selected_tracks.clear();
                                 selected_tracks.push(track.path.clone());
                             }
-                        }
+                        } else if shift_is_pressed && !selected_tracks.is_empty() {
+                            let last_selected_track = selected_tracks.last().unwrap();
+                            let last_index = cached_playlist_tracks.iter().position(|t| &t.path == last_selected_track).unwrap();
 
-                        Popup::menu(&response).show(|ui| {
-                            let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
-                            let maybe_action = playlist_context_menu(ui, selected_tracks_count);
-                            if let Some(action) = maybe_action {
-                                context_menu_action = Some(action);
+                            let start = last_index.min(row.index());
+                            let end = last_index.max(row.index());
+                            for t in &cached_playlist_tracks[start..=end] {
+                                if !selected_tracks.contains(&t.path) {
+                                    selected_tracks.push(t.path.clone());
+                                }
                             }
-                        });
-                    } else if track_is_playing {
-                        playing_indicator(ui);
-                    }
-                });
-
-                let response = row.response();
-
-                if response.clicked() || response.double_clicked() || response.secondary_clicked() {
-                    let selected_tracks = &mut gem.ui.playlists.selected_tracks;
-
-                    if response.secondary_clicked() {
-                        if selected_tracks.is_empty() || !row_is_selected {
+                        } else {
                             selected_tracks.clear();
                             selected_tracks.push(track.path.clone());
                         }
-                    } else if shift_is_pressed && !selected_tracks.is_empty() {
-                        let last_selected_track = selected_tracks.last().unwrap();
-                        let last_index = cached_playlist_tracks.iter().position(|t| &t.path == last_selected_track).unwrap();
-
-                        let start = last_index.min(row.index());
-                        let end = last_index.max(row.index());
-                        for t in &cached_playlist_tracks[start..=end] {
-                            if !selected_tracks.contains(&t.path) {
-                                selected_tracks.push(t.path.clone());
-                            }
-                        }
-                    } else {
-                        selected_tracks.clear();
-                        selected_tracks.push(track.path.clone());
                     }
-                }
 
-                if response.double_clicked() {
-                    should_play_playlist = Some(track.path.clone());
-                }
+                    if response.double_clicked() {
+                        should_play_playlist = Some(track.path.clone());
+                    }
 
-                Popup::context_menu(&response).show(|ui| {
-                    let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
-                    context_menu_action = playlist_context_menu(ui, selected_tracks_count);
+                    Popup::context_menu(&response).show(|ui| {
+                        let selected_tracks_count = gem.ui.playlists.selected_tracks.len();
+                        context_menu_action = playlist_context_menu(ui, selected_tracks_count);
+                    });
                 });
             });
-        });
 
-    if let Some(track_key) = should_play_playlist {
-        add_to_queue_in_order(&mut gem.player, cached_playlist_tracks, Some(&track_key));
-        maybe_play_next(ui, gem);
-    }
+        if let Some(track_key) = should_play_playlist {
+            add_to_queue_in_order(&mut gem.player, cached_playlist_tracks, Some(&track_key));
+            maybe_play_next(ui, gem);
+        }
 
-    if let Some(action) = context_menu_action {
-        handle_playlist_context_menu_action(gem, action, &playlist_key);
-    }
-
-    ui.spacing_mut().item_spacing.x = previous_spacing;
+        if let Some(action) = context_menu_action {
+            handle_playlist_context_menu_action(gem, action, &playlist_key);
+        }
+    });
 }
 
 enum PlaylistContextMenuAction {
