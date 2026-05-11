@@ -41,7 +41,7 @@ pub fn control_panel(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| playback_controls(ui, gem));
                 });
 
-                strip.cell(|ui| layout_track_ui(ui, gem, button_size, gap, artwork_width, slider_width));
+                strip.cell(|ui| layout_track_display(ui, gem, button_size, gap, artwork_width, slider_width));
 
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -156,7 +156,7 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     let previous_item_spacing = ui.spacing().item_spacing;
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
