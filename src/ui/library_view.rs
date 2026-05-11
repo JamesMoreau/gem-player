@@ -215,7 +215,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                         let start = last_index.min(row.index());
                         let end = last_index.max(row.index());
-                        
+
                         for t in &cached_library[start..=end] {
                             if !selected_tracks.contains(&t.path) {
                                 selected_tracks.push(t.path.clone());
