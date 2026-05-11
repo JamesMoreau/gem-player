@@ -1,58 +1,131 @@
-use egui::{OpenUrl, Ui};
+use std::time::Duration;
+
+use egui::{OpenUrl, Ui, ViewportCommand};
+use log::{error, warn};
 use strum_macros::{Display, EnumString};
 
 use crate::{
-    maybe_play_next, maybe_play_previous,
-    player::{adjust_volume_by_delta, play_or_pause},
-    GemPlayer,
+    GemPlayer, maybe_play_next, maybe_play_previous,
+    os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
+    player::{get_position, pause, play, seek, set_volume, stop, toggle},
 };
 
-#[derive(PartialEq, Debug, Clone, Copy, EnumString, Display)]
+#[derive(PartialEq, Debug, Clone, EnumString, Display)]
 pub enum Command {
-    // OpenFile,
-    PlayPause,
-    NextTrack,
-    PreviousTrack,
-    VolumeUp,
-    VolumeDown,
-    // Mute / ummute
-    ReportIssue,
     Play,
     Pause,
+    TogglePlayback,
+    Stop,
+
+    NextTrack,
+    PreviousTrack,
+
+    SeekTo(Duration),
+    SeekForward(Duration),
+    SeekBackward(Duration),
+
+    SetVolume(f32),
+
+    OpenUri(String),
+    ReportIssue,
+    RaiseWindow,
+    Quit,
 }
 
 pub fn execute(ui: &mut Ui, gem: &mut GemPlayer, command: Command) {
     match command {
-        Command::PlayPause => {
-            if let Some(backend) = &mut gem.player.backend {
-                play_or_pause(&mut backend.player);
+        Command::Play => {
+            if let Err(e) = play(&mut gem.player) {
+                error!("{}", e);
+            } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+            {
+                error!("{}", e);
+            }
+        }
+        Command::Pause => {
+            if let Err(e) = pause(&mut gem.player) {
+                error!("{}", e);
+            } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+            {
+                error!("{}", e);
+            }
+        }
+        Command::TogglePlayback => {
+            if let Err(e) = toggle(&mut gem.player) {
+                error!("{}", e);
+            } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+            {
+                error!("{}", e);
+            }
+        }
+        Command::Stop => {
+            stop(&mut gem.player);
+
+            if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
+                if let Err(e) = update_metadata(&mut osmc.controls, &gem.player) {
+                    error!("{}", e);
+                }
+
+                if let Err(e) = update_playback(&mut osmc.controls, &gem.player) {
+                    error!("{}", e);
+                }
             }
         }
         Command::NextTrack => maybe_play_next(ui, gem),
         Command::PreviousTrack => maybe_play_previous(ui, gem),
-        Command::VolumeUp => {
-            if let Some(backend) = &mut gem.player.backend {
-                adjust_volume_by_delta(&mut backend.player, 0.1);
+        Command::SeekTo(position) => {
+            if let Err(e) = seek(&mut gem.player, position) {
+                error!("{}", e);
+            } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+            {
+                error!("{}", e);
             }
         }
-        Command::VolumeDown => {
-            if let Some(backend) = &mut gem.player.backend {
-                adjust_volume_by_delta(&mut backend.player, -0.1);
+        Command::SeekForward(offset) => {
+            if let Some(position) = get_position(&gem.player) {
+                let new_position = position + offset;
+                if let Err(e) = seek(&mut gem.player, new_position) {
+                    error!("{}", e);
+                } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                    && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+                {
+                    error!("{}", e);
+                }
+            } else {
+                error!("Unable to retrieve position");
             }
+        }
+        Command::SeekBackward(offset) => {
+            if let Some(position) = get_position(&gem.player) {
+                let new_position = position - offset;
+                if let Err(e) = seek(&mut gem.player, new_position) {
+                    error!("{}", e);
+                } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
+                    && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
+                {
+                    error!("{}", e);
+                }
+            } else {
+                error!("Unable to retrieve position");
+            }
+        }
+        Command::SetVolume(volume) => {
+            if let Err(e) = set_volume(&mut gem.player, volume) {
+                error!("{}", e);
+            }
+        }
+        Command::OpenUri(uri) => {
+            warn!("OpenUri is not supported: {uri}");
         }
         Command::ReportIssue => {
             let url = format!("{}/issues", env!("CARGO_PKG_REPOSITORY"));
             ui.open_url(OpenUrl { url, new_tab: true });
         }
-        Command::Play => {
-            if let Some(backend) = &mut gem.player.backend {
-                backend.player.play();
-            }
-        }
-        Command::Pause => {
-            if let Some(backend) = &mut gem.player.backend {
-                backend.player.pause();
-            }
-        }
+        Command::RaiseWindow => ui.send_viewport_cmd(ViewportCommand::Focus),
+        Command::Quit => ui.send_viewport_cmd(ViewportCommand::Close),
     }
 }

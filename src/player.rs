@@ -7,7 +7,7 @@ use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, Device, DeviceSinkBuilder, MixerDeviceSink, Source};
-use std::{fs::File, path::Path};
+use std::{fs::File, path::Path, time::Duration};
 
 #[fully_pub]
 struct Player {
@@ -34,17 +34,17 @@ struct AudioBackend {
 }
 
 // bool tells us whether the track actually changed or not.
-pub fn play_next(player: &mut Player) -> Result<bool> {
+pub fn play_next(player: &mut Player) -> Result<()> {
     if player.repeat
         && let Some(playing) = player.playing.clone()
     {
         play_track(player, playing)?;
-        return Ok(true);
+        return Ok(());
     }
 
     if player.queue.is_empty() {
-        player.playing = None;
-        return Ok(false); // Nothing to play
+        stop(player);
+        return Ok(()); // Nothing to play
     }
 
     if let Some(current) = player.playing.take() {
@@ -55,7 +55,7 @@ pub fn play_next(player: &mut Player) -> Result<bool> {
 
     play_track(player, next_track)?;
 
-    Ok(true)
+    Ok(())
 }
 
 pub fn play_previous(player: &mut Player) -> Result<()> {
@@ -97,8 +97,65 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
     Ok(())
 }
 
-pub fn play_or_pause(player: &mut rodio::Player) {
-    if player.is_paused() { player.play() } else { player.pause() }
+pub fn toggle(player: &mut Player) -> Result<()> {
+    player.playing.as_ref().context("Cannot toggle without a current track")?;
+
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    if backend.player.is_paused() {
+        backend.player.play()
+    } else {
+        backend.player.pause()
+    }
+
+    Ok(())
+}
+
+pub fn play(player: &mut Player) -> Result<()> {
+    player.playing.as_ref().context("Cannot play without a current track")?;
+
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    backend.player.play();
+
+    Ok(())
+}
+
+pub fn pause(player: &mut Player) -> Result<()> {
+    player.playing.as_ref().context("Cannot pause without a current track")?;
+
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    backend.player.pause();
+
+    Ok(())
+}
+
+pub fn stop(player: &mut Player) {
+    if let Some(b) = &mut player.backend {
+        b.player.stop();
+    }
+
+    player.playing = None;
+}
+
+pub fn seek(player: &mut Player, position: Duration) -> Result<()> {
+    let track = player.playing.as_ref().context("Cannot seek without a current track.")?;
+
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    let valid_position = position.clamp(Duration::ZERO, track.duration.saturating_sub(Duration::from_millis(1)));
+
+    backend.player.try_seek(valid_position)?;
+
+    Ok(())
+}
+
+pub fn get_position(player: &Player) -> Option<Duration> {
+    let backend = player.backend.as_ref()?;
+    player.playing.as_ref()?;
+
+    Some(backend.player.get_pos())
 }
 
 pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) {
@@ -188,7 +245,10 @@ pub fn mute_or_unmute(player: &mut Player) {
     }
 }
 
-pub fn adjust_volume_by_delta(player: &mut rodio::Player, delta: f32) {
-    let new_volume = (player.volume() + delta).clamp(0.0, 1.0);
-    player.set_volume(new_volume);
+pub fn set_volume(player: &mut Player, volume: f32) -> Result<()> {
+    let backend = player.backend.as_mut().context("The player backend is not initialized")?;
+
+    backend.player.set_volume(volume.clamp(0.0, 1.0));
+
+    Ok(())
 }

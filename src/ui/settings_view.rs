@@ -61,56 +61,6 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                #[cfg(target_os = "windows")]
-                {
-                    use crate::platform::windows_shortcuts::{SHORTCUTS, format_shortcut};
-
-                    ui.add(unselectable_label(RichText::new("Controls").heading()));
-
-                    ui.add_space(8.0);
-
-                    for shortcut in SHORTCUTS {
-                        egui::containers::Sides::new().show(
-                            ui,
-                            |ui| {
-                                let label = unselectable_label(format_shortcut(shortcut.modifiers, shortcut.key));
-                                ui.add(label);
-                            },
-                            |ui| {
-                                ui.add_space(16.0);
-                                let label = unselectable_label(shortcut.description);
-                                ui.add(label);
-                            },
-                        );
-                    }
-
-                    ui.add(Separator::default().spacing(divider_spacing));
-                }
-
-                #[cfg(target_os = "macos")]
-                {
-                    use crate::platform::macos_menu::{SHORTCUTS, format_shortcut};
-
-                    ui.add(unselectable_label(RichText::new("Controls").heading()));
-                    ui.add_space(8.0);
-
-                    for shortcut in SHORTCUTS {
-                        egui::containers::Sides::new().show(
-                            ui,
-                            |ui| {
-                                let label = unselectable_label(format_shortcut(shortcut.modifiers, shortcut.key));
-                                ui.add(label);
-                            },
-                            |ui| {
-                                ui.add_space(16.0);
-                                ui.add(unselectable_label(shortcut.description));
-                            },
-                        );
-                    }
-
-                    ui.add(Separator::default().spacing(divider_spacing));
-                }
-
                 ui.add(unselectable_label(RichText::new(format!("About {}", APP_NAME)).heading()));
                 ui.add_space(8.0);
 

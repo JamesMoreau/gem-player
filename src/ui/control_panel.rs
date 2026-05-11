@@ -10,7 +10,7 @@ use log::{error, info};
 
 use crate::{
     GemPlayer, maybe_play_next, maybe_play_previous,
-    player::{AudioBackend, Player, mute_or_unmute, play_or_pause, toggle_shuffle},
+    player::{Player, get_position, mute_or_unmute, toggle, toggle_shuffle},
     track::{Track, file_type_name},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
@@ -41,7 +41,7 @@ pub fn control_panel(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| playback_controls(ui, gem));
                 });
 
-                strip.cell(|ui| layout_track_ui(ui, gem, button_size, gap, artwork_width, slider_width));
+                strip.cell(|ui| layout_track_display(ui, gem, button_size, gap, artwork_width, slider_width));
 
                 strip.cell(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -138,10 +138,11 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
         .add_enabled(play_pause_enabled, play_pause_button)
         .on_hover_text(tooltip)
         .on_disabled_hover_text("No current track");
+
     if response.clicked()
-        && let Some(backend) = &mut gem.player.backend
+        && let Err(e) = toggle(&mut gem.player)
     {
-        play_or_pause(&mut backend.player);
+        error!("{}", e);
     }
 
     let next_button = Button::new(ICON_SKIP_NEXT.rich_text().size(18.0));
@@ -155,7 +156,7 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn layout_track_ui(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     let previous_item_spacing = ui.spacing().item_spacing;
     ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
@@ -229,101 +230,80 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
 }
 
 fn layout_playback_slider_and_track_info(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
-    let (mut position_as_secs, track_duration_as_secs) = if let Some(track) = &player.playing {
-        let pos = player.backend.as_ref().map_or(0.0, |b| b.player.get_pos().as_secs_f32());
-        (pos, track.duration.as_secs_f32())
-    } else {
-        (0.0, 0.1) // We set to 0.1 so that when no track is playing, the slider is at the start.
-    };
+    // We retrieve the position here so that scrubbing using the slider will be
+    // reflected in the playback position ui.
+    let mut position_as_secs = get_position(player).map_or(0.0, |p| p.as_secs_f32());
 
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                display_playback_slider(
-                    ui,
-                    player.backend.as_mut(),
-                    player.playing.is_some(),
-                    &mut player.paused_before_scrubbing,
-                    &mut position_as_secs,
-                    track_duration_as_secs,
-                    slider_width,
-                )
+                playback_slider(ui, player, &mut position_as_secs, slider_width);
             });
         });
+
         strip.cell(|ui| {
-            layout_marquee_and_playback_position_and_metadata(
-                ui,
-                player.playing.as_ref(),
-                marquee,
-                position_as_secs,
-                track_duration_as_secs,
-            )
+            layout_marquee_and_playback_position_and_metadata(ui, player, Duration::from_secs_f32(position_as_secs), marquee);
         });
     });
 }
 
-fn display_playback_slider(
-    ui: &mut Ui,
-    maybe_backend: Option<&mut AudioBackend>,
-    is_playing: bool,
-    paused_before_scrubbing: &mut Option<bool>,
-    position: &mut f32,
-    duration: f32,
-    slider_width: f32,
-) {
-    let previous_slider_width = ui.spacing().slider_width;
-    ui.spacing_mut().slider_width = slider_width;
+fn playback_slider(ui: &mut Ui, player: &mut Player, position_as_secs: &mut f32, slider_width: f32) {
+    ui.scope(|ui| {
+        ui.spacing_mut().slider_width = slider_width;
 
-    let slider_enabled = maybe_backend.is_some() && is_playing;
+        let slider_enabled = player.backend.is_some() && player.playing.is_some();
 
-    let playback_progress_slider = Slider::new(position, 0.0..=duration)
-        .trailing_fill(true)
-        .show_value(false)
-        .step_by(1.0); // Step by 1 second.
-    let response = ui.add_enabled(slider_enabled, playback_progress_slider);
+        let track_duration_as_secs = player.playing.as_ref().map_or(0.0, |track| track.duration.as_secs_f32());
 
-    let Some(backend) = maybe_backend else {
-        ui.style_mut().spacing.slider_width = previous_slider_width;
-        return;
-    };
+        let slider = Slider::new(position_as_secs, 0.0..=track_duration_as_secs.max(0.1))
+            .trailing_fill(true)
+            .show_value(false)
+            .step_by(1.0); // Step by 1 second.
 
-    if response.dragged() && paused_before_scrubbing.is_none() {
-        *paused_before_scrubbing = Some(backend.player.is_paused());
-        backend.player.pause(); // Pause playback during scrubbing
-    }
+        let response = ui.add_enabled(slider_enabled, slider);
 
-    if response.drag_stopped() {
-        let new_position = Duration::from_secs_f32(*position);
-        info!("Seeking to {}", format_duration_to_mmss(new_position));
-        if let Err(e) = backend.player.try_seek(new_position) {
-            error!("Error seeking to new position: {:?}", e);
+        let Some(backend) = &player.backend else {
+            return;
+        };
+
+        if response.dragged() && player.paused_before_scrubbing.is_none() {
+            player.paused_before_scrubbing = Some(backend.player.is_paused());
+            backend.player.pause(); // Pause playback during scrubbing
         }
 
-        // Resume playback if the player was not paused before scrubbing
-        if *paused_before_scrubbing == Some(false) {
-            backend.player.play();
+        if response.drag_stopped() {
+            let new_position = Duration::from_secs_f32(*position_as_secs);
+
+            info!("Seeking to {}", format_duration_to_mmss(new_position));
+
+            if let Err(e) = backend.player.try_seek(new_position) {
+                error!("Error seeking to new position: {:?}", e);
+            }
+
+            // Resume playback if the player was not paused before scrubbing
+            if player.paused_before_scrubbing == Some(false) {
+                backend.player.play();
+            }
+
+            player.paused_before_scrubbing = None;
         }
-
-        *paused_before_scrubbing = None;
-    }
-
-    ui.spacing_mut().slider_width = previous_slider_width;
+    });
 }
 
-fn layout_marquee_and_playback_position_and_metadata(
-    ui: &mut Ui,
-    playing: Option<&Track>,
-    marquee: &mut Marquee,
-    position: f32,
-    duration: f32,
-) {
+fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, player: &Player, position: Duration, marquee: &mut Marquee) {
+    let duration = if let Some(track) = &player.playing {
+        track.duration
+    } else {
+        Duration::ZERO
+    };
+
     // Placing the track info after the slider ensures that the playback position display is accurate. The seek operation is only
     // executed after the slider thumb is released. If we placed the display before, the current position would not be reflected.
     StripBuilder::new(ui)
         .size(Size::relative(3.0 / 4.0))
         .size(Size::relative(1.0 / 4.0))
         .horizontal(|mut hstrip| {
-            hstrip.cell(|ui| display_track_marquee(ui, playing, marquee));
+            hstrip.cell(|ui| display_track_marquee(ui, player.playing.as_ref(), marquee));
             hstrip.cell(|ui| {
                 StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
                     strip.cell(|ui| {
@@ -334,7 +314,7 @@ fn layout_marquee_and_playback_position_and_metadata(
 
                     strip.cell(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if let Some(playing) = playing {
+                            if let Some(playing) = &player.playing {
                                 display_track_metadata(ui, playing);
                             }
                         });
@@ -361,14 +341,8 @@ fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut
     marquee_ui(ui, marquee, &text);
 }
 
-fn display_playback_time(ui: &mut Ui, position: f32, duration: f32) {
-    let position = Duration::from_secs_f32(position);
-    let track_duration = Duration::from_secs_f32(duration);
-    let time_label_text = format!(
-        "{} / {}",
-        format_duration_to_mmss(position),
-        format_duration_to_mmss(track_duration)
-    );
+fn display_playback_time(ui: &mut Ui, position: Duration, duration: Duration) {
+    let time_label_text = format!("{} / {}", format_duration_to_mmss(position), format_duration_to_mmss(duration));
 
     let time_label = unselectable_label(time_label_text);
     ui.add(time_label);
