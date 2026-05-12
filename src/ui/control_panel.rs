@@ -314,9 +314,9 @@ fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, player: &Playe
 }
 
 fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marquee) {
-    let mut title = "None";
-    let mut artist = "None";
-    let mut album = "None";
+    let mut title = "-";
+    let mut artist = "-";
+    let mut album = "-";
 
     if let Some(playing_track) = maybe_track {
         title = playing_track.title.as_deref().unwrap_or("Unknown Title");
