@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use egui::{Context, OpenUrl, ViewportCommand};
 use log::{error, info, warn};
@@ -7,7 +7,11 @@ use strum_macros::{Display, EnumString};
 use crate::{
     GemPlayer, maybe_play_next, maybe_play_previous,
     os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
-    player::{get_position, mute_or_unmute, pause, play, seek, set_volume, stop, toggle, toggle_repeat, toggle_shuffle},
+    player::{
+        enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, seek, set_volume, stop, toggle, toggle_repeat, toggle_shuffle,
+    },
+    playlist::{PlaylistRetrieval, add_to_playlist},
+    track::{TrackRetrieval, open_file_location},
     ui::root::format_duration_to_mmss,
 };
 
@@ -30,6 +34,11 @@ pub enum GemCommand {
 
     SetVolume(f32),
     ToggleMute,
+
+    AddTracksToPlaylist { playlist_key: PathBuf, track_keys: Vec<PathBuf> },
+    EnqueueTracks { track_keys: Vec<PathBuf> },
+    EnqueueTracksNext { track_keys: Vec<PathBuf> },
+    OpenTrackLocation(PathBuf),
 
     OpenUri(String),
     ReportIssue,
@@ -129,6 +138,66 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
         }
         GemCommand::ToggleMute => {
             mute_or_unmute(&mut gem.player);
+        }
+        GemCommand::AddTracksToPlaylist { playlist_key, track_keys } => {
+            if track_keys.is_empty() {
+                warn!("No track(s) were provided for adding to playlist.");
+                return;
+            }
+
+            let playlist = gem.playlists.get_by_path_mut(&playlist_key);
+
+            let mut added_count = 0;
+            for track_key in &track_keys {
+                let track = gem.library.get_by_path(track_key);
+
+                if let Err(e) = add_to_playlist(playlist, track.clone()) {
+                    error!("Failed to add track to playlist: {}", e);
+                } else {
+                    added_count += 1;
+                }
+            }
+
+            gem.ui.playlists.cached_playlist_tracks = None;
+
+            if added_count > 0 {
+                let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);
+                info!("{}", message);
+                gem.ui.toasts.success(message);
+            } else {
+                gem.ui.toasts.error("No tracks were added.");
+            }
+        }
+        GemCommand::EnqueueTracks { track_keys } => {
+            if track_keys.is_empty() {
+                warn!("No track(s) were provided for enqueue.");
+                return;
+            }
+
+            for track_key in &track_keys {
+                let track = gem.library.get_by_path(track_key);
+                enqueue(&mut gem.player, track.clone());
+            }
+        }
+        GemCommand::OpenTrackLocation(track_key) => {
+            let track = gem.library.get_by_path(&track_key);
+
+            if let Err(e) = open_file_location(track) {
+                error!("Failed to open track location: {}", e);
+            } else {
+                info!("Opening track location: {}", track.path.display());
+            }
+        }
+        GemCommand::EnqueueTracksNext { track_keys } => {
+            if track_keys.is_empty() {
+                warn!("No track(s) were provided for enqueue next.");
+                return;
+            }
+
+            for track_key in &track_keys {
+                let track = gem.library.get_by_path(track_key);
+                enqueue_next(&mut gem.player, track.clone());
+            }
         }
         GemCommand::OpenUri(uri) => {
             warn!("OpenUri is not supported: {uri}");
