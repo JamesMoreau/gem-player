@@ -6,11 +6,11 @@ use egui_material_icons::icons::{
     ICON_PAUSE, ICON_PLAY_ARROW, ICON_REPEAT, ICON_SHUFFLE, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS, ICON_VOLUME_DOWN, ICON_VOLUME_OFF,
     ICON_VOLUME_UP,
 };
-use log::{error, info};
 
 use crate::{
-    GemPlayer, maybe_play_next, maybe_play_previous,
-    player::{Player, get_position, mute_or_unmute, toggle, toggle_shuffle},
+    GemPlayer,
+    commands::GemCommand,
+    player::{Player, get_position},
     track::{Track, file_type_name},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
@@ -109,7 +109,7 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
     gem.ui.volume_popup_is_open = button_is_hovered || popup_is_hovered;
 
     if response.clicked() {
-        mute_or_unmute(&mut gem.player);
+        gem.commands.push(GemCommand::ToggleMute);
     }
 }
 
@@ -126,7 +126,7 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Previous")
         .on_disabled_hover_text("No previous track");
     if response.clicked() {
-        maybe_play_previous(ui, gem)
+        gem.commands.push(GemCommand::PreviousTrack);
     }
 
     let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.player.is_paused());
@@ -139,10 +139,8 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text(tooltip)
         .on_disabled_hover_text("No current track");
 
-    if response.clicked()
-        && let Err(e) = toggle(&mut gem.player)
-    {
-        error!("{}", e);
+    if response.clicked() {
+        gem.commands.push(GemCommand::TogglePlayback);
     }
 
     let next_button = Button::new(ICON_SKIP_NEXT.rich_text().size(18.0));
@@ -152,7 +150,7 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Next")
         .on_disabled_hover_text("No next track");
     if response.clicked() {
-        maybe_play_next(ui, gem);
+        gem.commands.push(GemCommand::NextTrack);
     }
 }
 
@@ -171,7 +169,7 @@ fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap:
                 .size(Size::exact(gap))
                 .horizontal(|mut strip| {
                     strip.empty();
-                    strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, &mut gem.player, button_size));
+                    strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, gem, button_size));
                     strip.empty();
                     strip.cell(|ui| {
                         ui.centered_and_justified(|ui| {
@@ -179,14 +177,14 @@ fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap:
                         });
                     });
                     strip.empty();
-                    strip.cell(|ui| layout_playback_slider_and_track_info(ui, &mut gem.player, &mut gem.ui.marquee, slider_width));
+                    strip.cell(|ui| layout_playback_slider_and_track_info(ui, gem, slider_width));
                     strip.empty();
                 });
         });
     });
 }
 
-fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_size: f32) {
+fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32) {
     ui.scope(|ui| {
         ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
@@ -202,19 +200,19 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
             }
         };
 
-        let color = get_button_color(ui, player.repeat);
+        let color = get_button_color(ui, gem.player.repeat);
         let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
         let response = ui.add(repeat_button).on_hover_text("Repeat");
 
         if response.clicked() {
-            player.repeat = !player.repeat;
+            gem.commands.push(GemCommand::ToggleRepeat);
         }
 
         ui.add_space(vertical_pad);
 
-        let color = get_button_color(ui, player.shuffle.is_some());
+        let color = get_button_color(ui, gem.player.shuffle.is_some());
         let shuffle_button = Button::new(ICON_SHUFFLE.rich_text().color(color)).min_size(Vec2::splat(button_size));
-        let shuffle_enabled = !player.queue.is_empty();
+        let shuffle_enabled = !gem.player.queue.is_empty();
 
         let response = ui
             .add_enabled(shuffle_enabled, shuffle_button)
@@ -222,36 +220,41 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &mut Player, button_s
             .on_disabled_hover_text("Queue is empty");
 
         if response.clicked() {
-            toggle_shuffle(player);
+            gem.commands.push(GemCommand::ToggleShuffle);
         }
     });
 }
 
-fn layout_playback_slider_and_track_info(ui: &mut Ui, player: &mut Player, marquee: &mut Marquee, slider_width: f32) {
+fn layout_playback_slider_and_track_info(ui: &mut Ui, gem: &mut GemPlayer, slider_width: f32) {
     // We retrieve the position here so that scrubbing using the slider will be
     // reflected in the playback position ui.
-    let mut position_as_secs = get_position(player).map_or(0.0, |p| p.as_secs_f32());
+    let mut position_as_secs = get_position(&gem.player).map_or(0.0, |p| p.as_secs_f32()); // TODO: use Duration?
 
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                playback_slider(ui, player, &mut position_as_secs, slider_width);
+                playback_slider(ui, gem, &mut position_as_secs, slider_width);
             });
         });
 
         strip.cell(|ui| {
-            layout_marquee_and_playback_position_and_metadata(ui, player, Duration::from_secs_f32(position_as_secs), marquee);
+            layout_marquee_and_playback_position_and_metadata(
+                ui,
+                &gem.player,
+                Duration::from_secs_f32(position_as_secs),
+                &mut gem.ui.marquee,
+            );
         });
     });
 }
 
-fn playback_slider(ui: &mut Ui, player: &mut Player, position_as_secs: &mut f32, slider_width: f32) {
+fn playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position_as_secs: &mut f32, slider_width: f32) {
     ui.scope(|ui| {
         ui.spacing_mut().slider_width = slider_width;
 
-        let slider_enabled = player.backend.is_some() && player.playing.is_some();
+        let slider_enabled = gem.player.backend.is_some() && gem.player.playing.is_some();
 
-        let track_duration_as_secs = player.playing.as_ref().map_or(0.0, |track| track.duration.as_secs_f32());
+        let track_duration_as_secs = gem.player.playing.as_ref().map_or(0.0, |track| track.duration.as_secs_f32());
 
         let slider = Slider::new(position_as_secs, 0.0..=track_duration_as_secs.max(0.1))
             .trailing_fill(true)
@@ -260,30 +263,18 @@ fn playback_slider(ui: &mut Ui, player: &mut Player, position_as_secs: &mut f32,
 
         let response = ui.add_enabled(slider_enabled, slider);
 
-        let Some(backend) = &player.backend else {
+        let Some(backend) = &gem.player.backend else {
             return;
         };
 
-        if response.dragged() && player.paused_before_scrubbing.is_none() {
-            player.paused_before_scrubbing = Some(backend.player.is_paused());
+        if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
+            gem.player.paused_before_scrubbing = Some(backend.player.is_paused());
             backend.player.pause(); // Pause playback during scrubbing
         }
 
         if response.drag_stopped() {
             let new_position = Duration::from_secs_f32(*position_as_secs);
-
-            info!("Seeking to {}", format_duration_to_mmss(new_position));
-
-            if let Err(e) = backend.player.try_seek(new_position) {
-                error!("Error seeking to new position: {:?}", e);
-            }
-
-            // Resume playback if the player was not paused before scrubbing
-            if player.paused_before_scrubbing == Some(false) {
-                backend.player.play();
-            }
-
-            player.paused_before_scrubbing = None;
+            gem.commands.push(GemCommand::SeekTo(new_position));
         }
     });
 }

@@ -140,13 +140,21 @@ pub fn stop(player: &mut Player) {
 }
 
 pub fn seek(player: &mut Player, position: Duration) -> Result<()> {
-    let track = player.playing.as_ref().context("Cannot seek without a current track.")?;
+    let track = player.playing.as_ref().context("Cannot seek without a currently playing track.")?;
 
     let backend = player.backend.as_mut().context("The player backend is not initialized")?;
 
-    let valid_position = position.clamp(Duration::ZERO, track.duration.saturating_sub(Duration::from_millis(1)));
+    let seek_epsilon = Duration::from_millis(1);
+    let valid_position = position.clamp(Duration::ZERO, track.duration.saturating_sub(seek_epsilon));
 
     backend.player.try_seek(valid_position)?;
+
+    // Resume playback if the player was not paused before scrubbing
+    if player.paused_before_scrubbing == Some(false) {
+        backend.player.play();
+    }
+
+    player.paused_before_scrubbing = None;
 
     Ok(())
 }
@@ -194,6 +202,10 @@ pub fn enqueue_next(player: &mut Player, track: Track) {
 
 pub fn enqueue(player: &mut Player, track: Track) {
     player.queue.push(track);
+}
+
+pub fn toggle_repeat(player: &mut Player) {
+    player.repeat = !player.repeat;
 }
 
 pub fn toggle_shuffle(player: &mut Player) {
