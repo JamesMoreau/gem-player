@@ -187,8 +187,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             search: String::new(),
             cached_artwork: None,
             library: LibraryViewState {
-                cached_library: None,
                 selected_tracks: Vec::new(),
+                cached_library: Vec::new(),
+                cache_dirty: true,
                 sort_by: SortBy::Title,
                 sort_order: SortOrder::Ascending,
             },
@@ -454,7 +455,7 @@ fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlis
     gem.library = new_library;
     gem.playlists = new_playlists;
 
-    gem.ui.library.cached_library = None;
+    gem.ui.library.cache_dirty = true;
     gem.ui.playlists.cached_playlist_tracks = None;
 
     // Reconcile the selected tracks in the library view.

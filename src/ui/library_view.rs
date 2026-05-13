@@ -16,7 +16,7 @@ use crate::{
     player::{add_to_queue_in_order, enqueue, enqueue_next},
     playlist::{Playlist, PlaylistRetrieval, add_to_playlist},
     resources::resource_path,
-    track::{SortBy, SortOrder, Track, TrackRetrieval, open_file_location, sort},
+    track::{SortBy, SortOrder, Track, TrackRetrieval, open_file_location, sort_and_filter_tracks},
     ui::{
         root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
         widgets::centered_frame::centered_frame,
@@ -26,7 +26,9 @@ use crate::{
 #[fully_pub]
 struct LibraryViewState {
     selected_tracks: Vec<PathBuf>,
-    cached_library: Option<Vec<Track>>,
+    
+    cached_library: Vec<Track>,
+    cache_dirty: bool,
 
     sort_by: SortBy,
     sort_order: SortOrder,
@@ -61,28 +63,12 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
             return;
         }
 
-        let cached_library = gem.ui.library.cached_library.get_or_insert_with(|| {
-            // Regenerate the cache.
-
-            let mut filtered_and_sorted: Vec<Track> = gem
-                .library
-                .iter()
-                .filter(|track| {
-                    let search_lowercase = gem.ui.search.to_lowercase();
-
-                    let matches_search = |field: Option<&str>| field.is_some_and(|text| text.to_lowercase().contains(&search_lowercase));
-
-                    matches_search(track.title.as_deref())
-                        || matches_search(track.artist.as_deref())
-                        || matches_search(track.album.as_deref())
-                })
-                .cloned()
-                .collect();
-
-            sort(&mut filtered_and_sorted, gem.ui.library.sort_by, gem.ui.library.sort_order);
-
-            filtered_and_sorted
-        });
+        if gem.ui.library.cache_dirty {
+            gem.ui.library.cached_library =
+                sort_and_filter_tracks(&gem.library, gem.ui.library.sort_by, gem.ui.library.sort_order, &gem.ui.search);
+            gem.ui.library.cache_dirty = false;
+        }
+        let tracks = &gem.ui.library.cached_library;
 
         let header_labels = [ICON_MUSIC_NOTE, ICON_ARTIST, ICON_ALBUM, ICON_HOURGLASS];
 
@@ -129,8 +115,8 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 }
             })
             .body(|body| {
-                body.rows(26.0, cached_library.len(), |mut row| {
-                    let track = &cached_library[row.index()];
+                body.rows(26.0, tracks.len(), |mut row| {
+                    let track = &tracks[row.index()];
                     let track_is_playing = gem.player.playing.as_ref().is_some_and(|t| t == track);
 
                     let track_is_selected = gem.ui.library.selected_tracks.contains(&track.path);
@@ -213,12 +199,12 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                         } else if shift_is_pressed && !selected_tracks.is_empty() {
                             let last_selected = selected_tracks.last().unwrap();
 
-                            let last_index = cached_library.iter().position(|t| &t.path == last_selected).unwrap();
+                            let last_index = tracks.iter().position(|t| &t.path == last_selected).unwrap();
 
                             let start = last_index.min(row.index());
                             let end = last_index.max(row.index());
 
-                            for t in &cached_library[start..=end] {
+                            for t in &gem.ui.library.cached_library[start..=end] {
                                 if !selected_tracks.contains(&t.path) {
                                     selected_tracks.push(t.path.clone());
                                 }
@@ -243,7 +229,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         // Perform actions AFTER rendering the table to avoid borrow checker issues that come with mutating state inside closures.
 
         if let Some(track_key) = should_play_library {
-            add_to_queue_in_order(&mut gem.player, cached_library, Some(&track_key));
+            add_to_queue_in_order(&mut gem.player, tracks, Some(&track_key));
             maybe_play_next(ui, gem);
         }
 

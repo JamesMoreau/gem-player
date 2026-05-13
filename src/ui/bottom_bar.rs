@@ -55,7 +55,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                     let search_was_changed = search(ui, &mut gem.ui.search);
                     if search_was_changed {
                         // We reset both caches since there is only one search text state variable.
-                        gem.ui.library.cached_library = None;
+                        gem.ui.library.cache_dirty = true;
                         gem.ui.library.selected_tracks.clear();
                         gem.ui.playlists.cached_playlist_tracks = None;
                         gem.ui.playlists.selected_tracks.clear();
@@ -63,7 +63,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
 
                     let sort_was_changed = sort_and_order_by(ui, &mut gem.ui.library.sort_by, &mut gem.ui.library.sort_order);
                     if sort_was_changed {
-                        gem.ui.library.cached_library = None;
+                        gem.ui.library.cache_dirty = true;
                     }
                 }
                 View::Queue => {
@@ -82,7 +82,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                     let search_changed = search(ui, &mut gem.ui.search);
                     if search_changed {
                         // Same as above.
-                        gem.ui.library.cached_library = None;
+                        gem.ui.library.cache_dirty = true;
                         gem.ui.library.selected_tracks.clear();
                         gem.ui.playlists.cached_playlist_tracks = None;
                         gem.ui.playlists.selected_tracks.clear();
