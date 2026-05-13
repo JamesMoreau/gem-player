@@ -166,6 +166,7 @@ pub fn get_position(player: &Player) -> Option<Duration> {
     Some(backend.player.get_pos())
 }
 
+//TODO: remove
 pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) {
     clear_the_queue(player);
 
