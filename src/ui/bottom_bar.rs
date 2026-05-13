@@ -57,7 +57,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                         // We reset both caches since there is only one search text state variable.
                         gem.ui.library.cache_dirty = true;
                         gem.ui.library.selected_tracks.clear();
-                        gem.ui.playlists.cached_playlist_tracks = None;
+                        gem.ui.playlists.cache_dirty = true;
                         gem.ui.playlists.selected_tracks.clear();
                     }
 
@@ -84,7 +84,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                         // Same as above.
                         gem.ui.library.cache_dirty = true;
                         gem.ui.library.selected_tracks.clear();
-                        gem.ui.playlists.cached_playlist_tracks = None;
+                        gem.ui.playlists.cache_dirty = true;
                         gem.ui.playlists.selected_tracks.clear();
                     }
                 }

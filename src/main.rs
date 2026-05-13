@@ -195,10 +195,11 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             },
             playlists: PlaylistsViewState {
                 selected_playlist_key: None,
-                cached_playlist_tracks: None,
+                selected_tracks: Vec::new(),
+                cached_playlist_tracks: Vec::new(),
+                cache_dirty: true,
                 rename_buffer: None,
                 delete_modal_open: false,
-                selected_tracks: Vec::new(),
             },
             toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
                 offset: [0, 0],
@@ -456,7 +457,7 @@ fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlis
     gem.playlists = new_playlists;
 
     gem.ui.library.cache_dirty = true;
-    gem.ui.playlists.cached_playlist_tracks = None;
+    gem.ui.playlists.cache_dirty = true;
 
     // Reconcile the selected tracks in the library view.
     gem.ui

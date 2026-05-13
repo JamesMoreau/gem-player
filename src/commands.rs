@@ -158,7 +158,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
                 }
             }
 
-            gem.ui.playlists.cached_playlist_tracks = None;
+            gem.ui.playlists.cache_dirty = true;
 
             if added_count > 0 {
                 let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);

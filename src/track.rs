@@ -91,6 +91,23 @@ pub fn sort(tracks: &mut [Track], sort_by: SortBy, sort_order: SortOrder) {
     });
 }
 
+pub fn filter(tracks: &[Track], search: &str) -> Vec<Track> {
+    let search_lowercase = search.to_lowercase();
+
+    let matches_search = |field: Option<&str>| field.is_some_and(|text| text.to_lowercase().contains(&search_lowercase));
+
+    let filtered: Vec<Track> = tracks
+        .iter()
+        .filter(|track| {
+            matches_search(track.title.as_deref()) || matches_search(track.artist.as_deref()) || matches_search(track.album.as_deref())
+        })
+        .cloned()
+        .collect();
+
+    filtered
+}
+
+
 pub fn load_from_file(path: &Path) -> Result<Track> {
     if !path.is_file() {
         bail!("Path '{}' is not a file", path.display());
@@ -176,24 +193,6 @@ pub fn load_tracks_from_directory(directory: &Path) -> Vec<Track> {
         .collect();
 
     tracks
-}
-
-pub fn sort_and_filter_tracks(tracks: &[Track], sort_by: SortBy, sort_order: SortOrder, search: &str) -> Vec<Track> {
-    let search_lowercase = search.to_lowercase();
-
-    let matches_search = |field: Option<&str>| field.is_some_and(|text| text.to_lowercase().contains(&search_lowercase));
-
-    let mut filtered_and_sorted: Vec<Track> = tracks
-        .iter()
-        .filter(|track| {
-            matches_search(track.title.as_deref()) || matches_search(track.artist.as_deref()) || matches_search(track.album.as_deref())
-        })
-        .cloned()
-        .collect();
-
-    sort(&mut filtered_and_sorted, sort_by, sort_order);
-
-    filtered_and_sorted
 }
 
 pub fn calculate_total_duration(tracks: &[Track]) -> Duration {

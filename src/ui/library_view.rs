@@ -16,7 +16,7 @@ use crate::{
     player::{add_to_queue_in_order, enqueue, enqueue_next},
     playlist::{Playlist, PlaylistRetrieval, add_to_playlist},
     resources::resource_path,
-    track::{SortBy, SortOrder, Track, TrackRetrieval, open_file_location, sort_and_filter_tracks},
+    track::{SortBy, SortOrder, Track, TrackRetrieval, filter, open_file_location, sort},
     ui::{
         root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
         widgets::centered_frame::centered_frame,
@@ -64,8 +64,8 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         }
 
         if gem.ui.library.cache_dirty {
-            gem.ui.library.cached_library =
-                sort_and_filter_tracks(&gem.library, gem.ui.library.sort_by, gem.ui.library.sort_order, &gem.ui.search);
+            gem.ui.library.cached_library = filter(&gem.library, &gem.ui.search);
+            sort(&mut gem.ui.library.cached_library, gem.ui.library.sort_by, gem.ui.library.sort_order);
             gem.ui.library.cache_dirty = false;
         }
         let tracks = &gem.ui.library.cached_library;
@@ -267,7 +267,7 @@ fn handle_library_context_menu_action(gem: &mut GemPlayer, action: LibraryContex
                 }
             }
 
-            gem.ui.playlists.cached_playlist_tracks = None;
+            gem.ui.playlists.cache_dirty = true;
 
             if added_count > 0 {
                 let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);

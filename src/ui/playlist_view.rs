@@ -13,7 +13,7 @@ use crate::{
     GemPlayer, maybe_play_next,
     player::{add_to_queue_in_order, enqueue, enqueue_next},
     playlist::{PlaylistRetrieval, create, delete, remove_from_playlist, rename},
-    track::{Track, TrackRetrieval, open_file_location},
+    track::{Track, TrackRetrieval, filter, open_file_location},
     ui::{
         root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
         widgets::centered_frame::centered_frame,
@@ -25,7 +25,8 @@ struct PlaylistsViewState {
     selected_playlist_key: Option<PathBuf>, // None: no playlist is selected. Some: the path of the selected playlist.
     selected_tracks: Vec<PathBuf>,
 
-    cached_playlist_tracks: Option<Vec<Track>>,
+    cached_playlist_tracks: Vec<Track>,
+    cache_dirty: bool,
 
     rename_buffer: Option<String>, // If Some, the playlist pointed to by selected_track's name is being edited and a buffer for the new name.
     delete_modal_open: bool,       // The menu is open for selected_playlist_path.
@@ -117,7 +118,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                     gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
 
                                     gem.ui.playlists.rename_buffer = None; // In case we were currently editing
-                                    gem.ui.playlists.cached_playlist_tracks = None;
+                                    gem.ui.playlists.cache_dirty = true;
                                     gem.ui.playlists.selected_tracks.clear();
                                 }
                             });
@@ -342,28 +343,11 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
             return;
         }
 
-        let cached_playlist_tracks = gem.ui.playlists.cached_playlist_tracks.get_or_insert_with(|| {
-            // Regenerate the cache.
-
-            let filtered: Vec<Track> = gem
-                .playlists
-                .get_by_path(&playlist_key)
-                .tracks
-                .iter()
-                .filter(|track| {
-                    let search_lower = gem.ui.search.to_lowercase();
-
-                    let matches_search = |field: Option<&str>| field.is_some_and(|text| text.to_lowercase().contains(&search_lower));
-
-                    matches_search(track.title.as_deref())
-                        || matches_search(track.artist.as_deref())
-                        || matches_search(track.album.as_deref())
-                })
-                .cloned()
-                .collect();
-
-            filtered
-        });
+        if gem.ui.playlists.cache_dirty {
+            gem.ui.playlists.cached_playlist_tracks = filter(&gem.playlists.get_by_path(&playlist_key).tracks, &gem.ui.search);
+            gem.ui.library.cache_dirty = false;
+        }
+        let tracks = &gem.ui.playlists.cached_playlist_tracks;
 
         let header_labels = [ICON_TAG, ICON_MUSIC_NOTE, ICON_ARTIST, ICON_ALBUM, ICON_HOURGLASS];
 
@@ -407,9 +391,9 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                 }
             })
             .body(|body| {
-                body.rows(26.0, cached_playlist_tracks.len(), |mut row| {
+                body.rows(26.0, tracks.len(), |mut row| {
                     let index = row.index();
-                    let track = &cached_playlist_tracks[index];
+                    let track = &tracks[index];
                     let track_is_playing = gem.player.playing.as_ref().is_some_and(|t| t == track);
 
                     let row_is_selected = gem.ui.playlists.selected_tracks.contains(&track.path);
@@ -497,11 +481,11 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                             }
                         } else if shift_is_pressed && !selected_tracks.is_empty() {
                             let last_selected_track = selected_tracks.last().unwrap();
-                            let last_index = cached_playlist_tracks.iter().position(|t| &t.path == last_selected_track).unwrap();
+                            let last_index = tracks.iter().position(|t| &t.path == last_selected_track).unwrap();
 
                             let start = last_index.min(row.index());
                             let end = last_index.max(row.index());
-                            for t in &cached_playlist_tracks[start..=end] {
+                            for t in &tracks[start..=end] {
                                 if !selected_tracks.contains(&t.path) {
                                     selected_tracks.push(t.path.clone());
                                 }
@@ -524,7 +508,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
             });
 
         if let Some(track_key) = should_play_playlist {
-            add_to_queue_in_order(&mut gem.player, cached_playlist_tracks, Some(&track_key));
+            add_to_queue_in_order(&mut gem.player, tracks, Some(&track_key));
             maybe_play_next(ui, gem);
         }
 
@@ -565,7 +549,7 @@ fn handle_playlist_context_menu_action(gem: &mut GemPlayer, action: PlaylistCont
                 }
             }
 
-            gem.ui.playlists.cached_playlist_tracks = None;
+            gem.ui.playlists.cache_dirty = true;
 
             if added_count > 0 {
                 let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
