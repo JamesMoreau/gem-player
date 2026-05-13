@@ -26,6 +26,8 @@ use crate::{
 struct LibraryViewState {
     selected_tracks: Vec<PathBuf>,
 
+    // Having a cache avoids filtering and sorting (potentially thousands)
+    // of tracks every frame.
     cached_library: Vec<Track>,
     cache_dirty: bool,
 
