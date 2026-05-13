@@ -181,6 +181,14 @@ pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_tra
     }
 }
 
+pub fn replace_queue(player: &mut Player, tracks: &[Track], start_index: usize) {
+    player.queue.clear();
+
+    player
+        .queue
+        .extend(tracks[start_index..].iter().chain(&tracks[..start_index]).cloned());
+}
+
 pub fn clear_the_queue(player: &mut Player) {
     player.history.clear();
     player.queue.clear();

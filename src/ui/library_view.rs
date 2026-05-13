@@ -14,8 +14,6 @@ use log::{error, info};
 use crate::{
     GemPlayer,
     commands::GemCommand,
-    maybe_play_next,
-    player::add_to_queue_in_order,
     resources::resource_path,
     track::{SortBy, SortOrder, Track, filter, sort},
     ui::{
@@ -94,8 +92,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         // Used to determine if selection should be extended.
         let shift_is_pressed = ui.input(|i| i.modifiers.shift);
 
-        let mut should_play_library = None;
-        let mut context_menu_command = None;
+        let mut maybe_command = None;
 
         let playing_color = ui.visuals().selection.bg_fill;
 
@@ -182,7 +179,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                             Popup::menu(&response).show(|ui| {
                                 if let Some(command) = library_context_menu(ui, gem) {
-                                    context_menu_command = Some(command);
+                                    maybe_command = Some(command);
                                 }
                             });
                         } else if track_is_playing {
@@ -220,25 +217,23 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     }
 
                     if response.double_clicked() {
-                        should_play_library = Some(track_key.clone());
+                        let track_keys = gem.ui.library.cached_library.iter().map(|t| t.path.clone()).collect();
+                        maybe_command = Some(GemCommand::PlayTrackList {
+                            track_keys,
+                            start_at: Some(track_key.clone()),
+                        });
                     }
 
                     Popup::context_menu(&response).show(|ui| {
                         if let Some(command) = library_context_menu(ui, gem) {
-                            context_menu_command = Some(command);
+                            maybe_command = Some(command);
                         }
                     });
                 });
             });
 
-        // Perform actions AFTER rendering the table to avoid borrow checker issues that come with mutating state inside closures.
-
-        if let Some(track_key) = should_play_library {
-            add_to_queue_in_order(&mut gem.player, &gem.ui.library.cached_library, Some(&track_key));
-            maybe_play_next(ui, gem);
-        }
-
-        if let Some(command) = context_menu_command {
+        // Queue commands AFTER rendering the table to avoid borrow checker issues that come with mutating state inside closures.
+        if let Some(command) = maybe_command {
             gem.commands.push(command);
         }
     });

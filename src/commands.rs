@@ -8,10 +8,11 @@ use crate::{
     GemPlayer, maybe_play_next, maybe_play_previous,
     os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
     player::{
-        enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, seek, set_volume, stop, toggle, toggle_repeat, toggle_shuffle,
+        enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_volume, stop, toggle, toggle_repeat,
+        toggle_shuffle,
     },
     playlist::{PlaylistRetrieval, add_to_playlist},
-    track::{TrackRetrieval, open_file_location},
+    track::{Track, TrackRetrieval, open_file_location},
     ui::root::format_duration_to_mmss,
 };
 
@@ -35,9 +36,20 @@ pub enum GemCommand {
     SetVolume(f32),
     ToggleMute,
 
-    AddTracksToPlaylist { playlist_key: PathBuf, track_keys: Vec<PathBuf> },
-    EnqueueTracks { track_keys: Vec<PathBuf> },
-    EnqueueTracksNext { track_keys: Vec<PathBuf> },
+    PlayTrackList {
+        track_keys: Vec<PathBuf>,
+        start_at: Option<PathBuf>,
+    },
+    AddTracksToPlaylist {
+        playlist_key: PathBuf,
+        track_keys: Vec<PathBuf>,
+    },
+    EnqueueTracks {
+        track_keys: Vec<PathBuf>,
+    },
+    EnqueueTracksNext {
+        track_keys: Vec<PathBuf>,
+    },
     OpenTrackLocation(PathBuf),
 
     OpenUri(String),
@@ -138,6 +150,21 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
         }
         GemCommand::ToggleMute => {
             mute_or_unmute(&mut gem.player);
+        }
+        GemCommand::PlayTrackList { track_keys, start_at } => {
+            let tracks: Vec<Track> = track_keys
+                .iter()
+                .map(|track_key| gem.library.get_by_path(track_key).clone())
+                .collect();
+
+            let start_index = start_at
+                .as_ref()
+                .and_then(|path| track_keys.iter().position(|p| p == path))
+                .unwrap_or(0);
+
+            replace_queue(&mut gem.player, &tracks, start_index);
+
+            maybe_play_next(ctx, gem);
         }
         GemCommand::AddTracksToPlaylist { playlist_key, track_keys } => {
             if track_keys.is_empty() {
