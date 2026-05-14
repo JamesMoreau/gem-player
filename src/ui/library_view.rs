@@ -167,8 +167,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                         let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || track_is_selected;
 
                         if should_show_more_button {
-                            let more_button = Button::new(ICON_MORE_HORIZ);
-                            let response = ui.add(more_button).on_hover_text("More");
+                            let response = ui.add(Button::new(ICON_MORE_HORIZ)).on_hover_text("More");
 
                             if response.clicked() {
                                 let selected_tracks = &mut gem.ui.library.selected_tracks;
@@ -261,8 +260,7 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
             ScrollArea::vertical().max_height(164.0).show(ui, |ui| {
                 for playlist in &gem.playlists {
-                    let response = ui.button(&playlist.name);
-                    if response.clicked() {
+                    if ui.button(&playlist.name).clicked() {
                         maybe_command = Some(GemCommand::AddTracksToPlaylist {
                             playlist_key: playlist.m3u_path.clone(),
                             track_keys: gem.ui.library.selected_tracks.clone(),
@@ -275,15 +273,13 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    let response = ui.button(("Play Next", ICON_PLAY_ARROW));
-    if response.clicked() {
+    if ui.button(("Play Next", ICON_PLAY_ARROW)).clicked() {
         maybe_command = Some(GemCommand::EnqueueTracksNext {
             track_keys: gem.ui.library.selected_tracks.clone(),
         });
     }
 
-    let response = ui.button(("Add to Queue", ICON_QUEUE_MUSIC));
-    if response.clicked() {
+    if ui.button(("Add to Queue", ICON_QUEUE_MUSIC)).clicked() {
         maybe_command = Some(GemCommand::EnqueueTracks {
             track_keys: gem.ui.library.selected_tracks.clone(),
         });
@@ -291,8 +287,7 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    let response = ui.button(("Open File Location", ICON_FOLDER));
-    if response.clicked()
+    if ui.button(("Open File Location", ICON_FOLDER)).clicked()
         && let Some(track_path) = gem.ui.library.selected_tracks.first()
     {
         maybe_command = Some(GemCommand::OpenTrackLocation(track_path.clone()));

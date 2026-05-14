@@ -16,10 +16,11 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
         ui.columns_const(|[left, center, right]| {
             left.with_layout(Layout::left_to_right(Align::Center), |ui| {
                 for view in View::iter() {
-                    let response = ui
+                    if ui
                         .selectable_label(gem.ui.current_view == view, format!("  {}  ", view.icon()))
-                        .on_hover_text(format!("{:?}", view));
-                    if response.clicked() {
+                        .on_hover_text(format!("{:?}", view))
+                        .clicked()
+                    {
                         info!("Switching to view: {:?}", view);
                         gem.ui.current_view = view;
                     }
@@ -133,8 +134,7 @@ fn search(ui: &mut Ui, search_text: &mut String) -> bool {
         .desired_width(140.0)
         .char_limit(20);
 
-    let response = ui.add(search_bar);
-    if response.changed() {
+    if ui.add(search_bar).changed() {
         changed = true;
     }
 

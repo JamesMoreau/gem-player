@@ -78,8 +78,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                         ui.add_space(8.0);
 
                                         let add_button = Button::new(ICON_ADD);
-                                        let response = ui.add(add_button).on_hover_text("Add playlist");
-                                        if response.clicked() {
+                                        if ui.add(add_button).on_hover_text("Add playlist").clicked() {
                                             let directory = gem.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
                                             let new_playlist_name = format!("Playlist {}", gem.playlists.len() + 1);
                                             let result = create(new_playlist_name, directory);
@@ -113,8 +112,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                     ui.add(unselectable_label(&playlist.name));
                                 });
 
-                                let response = row.response();
-                                if response.clicked() {
+                                if row.response().clicked() {
                                     info!("Selected playlist: {}", playlist.name);
                                     gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
 
@@ -160,14 +158,12 @@ fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
                 containers::Sides::new().show(
                     ui,
                     |ui| {
-                        let response = ui.button(("\t{}\t", ICON_CLOSE));
-                        if response.clicked() {
+                        if ui.button(("\t{}\t", ICON_CLOSE)).clicked() {
                             cancel_clicked = true;
                         }
                     },
                     |ui| {
-                        let response = ui.button(("\t{}\t", ICON_CHECK));
-                        if response.clicked() {
+                        if ui.button(("\t{}\t", ICON_CHECK)).clicked() {
                             confirm_clicked = true;
 
                             let result = delete(&playlist_key, &mut gem.playlists);
@@ -218,14 +214,11 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                                 ui.add_space(16.0);
 
                                 let cancel_button = Button::new(ICON_CANCEL);
-                                let response = ui.add(cancel_button).on_hover_text("Discard");
-                                discard_clicked = response.clicked();
+                                discard_clicked = ui.add(cancel_button).on_hover_text("Discard").clicked();
 
                                 ui.add_space(8.0);
 
-                                let confirm_button = Button::new(ICON_SAVE);
-                                let response = ui.add(confirm_button).on_hover_text("Save");
-                                save_clicked = response.clicked();
+                                save_clicked = ui.add(Button::new(ICON_SAVE)).on_hover_text("Save").clicked();
                             },
                         );
 
@@ -271,8 +264,7 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                                     ui.add_space(16.0);
 
                                     let play = Button::new(ICON_PLAY_ARROW);
-                                    let response = ui.add(play);
-                                    play_clicked = response.clicked();
+                                    play_clicked = ui.add(play).clicked();
                                 }
                             },
                             |ui| {
@@ -283,14 +275,12 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                                 ui.add_space(16.0);
 
                                 let delete_button = Button::new(ICON_DELETE);
-                                let response = ui.add(delete_button).on_hover_text("Delete");
-                                delete_clicked = response.clicked();
+                                delete_clicked = ui.add(delete_button).on_hover_text("Delete").clicked();
 
                                 ui.add_space(8.0);
 
                                 let edit_name_button = Button::new(ICON_EDIT);
-                                let response = ui.add(edit_name_button).on_hover_text("Edit name");
-                                edit_clicked = response.clicked();
+                                edit_clicked = ui.add(edit_name_button).on_hover_text("Edit name").clicked();
                             },
                         );
 
@@ -438,7 +428,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                         ui.add(label);
                     });
 
-                    let rest_of_row_is_hovered = row.response().hovered();
+                    let rest_of_row_is_hovered = row.response().hovered(); //TODO: cleanup?
                     let mut more_cell_contains_pointer = false;
                     row.col(|ui| {
                         ui.add_space(8.0);
@@ -447,8 +437,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                         let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || track_is_selected;
 
                         if should_show_more_button {
-                            let more_button = Button::new(ICON_MORE_HORIZ);
-                            let response = ui.add(more_button).on_hover_text("More");
+                            let response = ui.add(Button::new(ICON_MORE_HORIZ)).on_hover_text("More");
 
                             if response.clicked() {
                                 let selected_tracks = &mut gem.ui.playlists.selected_tracks;

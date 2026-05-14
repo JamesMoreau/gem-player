@@ -101,15 +101,13 @@ pub fn queue_view(ui: &mut Ui, player: &mut Player) {
 
                         ui.add_space(8.0);
 
-                        let response = ui.add_visible(should_show_action_buttons, Button::new(ICON_ARROW_UPWARD));
-                        if response.clicked() {
+                        if ui.add_visible(should_show_action_buttons, Button::new(ICON_ARROW_UPWARD)).clicked() {
                             to_be_moved_to_front = Some(index);
                         }
 
                         ui.add_space(8.0);
 
-                        let response = ui.add_visible(should_show_action_buttons, Button::new(ICON_CLOSE));
-                        if response.clicked() {
+                        if ui.add_visible(should_show_action_buttons, Button::new(ICON_CLOSE)).clicked() {
                             to_be_removed = Some(index);
                         }
                     });

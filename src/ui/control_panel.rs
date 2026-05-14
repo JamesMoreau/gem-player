@@ -202,9 +202,8 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_s
 
         let color = get_button_color(ui, gem.player.repeat);
         let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
-        let response = ui.add(repeat_button).on_hover_text("Repeat");
 
-        if response.clicked() {
+        if ui.add(repeat_button).on_hover_text("Repeat").clicked() {
             gem.commands.push(GemCommand::ToggleRepeat);
         }
 
