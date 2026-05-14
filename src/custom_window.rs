@@ -59,8 +59,7 @@ fn title_bar(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
 
     let close_button = |ui: &mut Ui| {
         let button = Button::new(ICON_CLOSE.rich_text().size(12.0));
-        let response = ui.add(button).on_hover_text("Close the window");
-        if response.clicked() {
+        if ui.add(button).on_hover_text("Close the window").clicked() {
             ui.send_viewport_cmd(ViewportCommand::Close);
         }
     };
@@ -69,16 +68,14 @@ fn title_bar(ui: &mut Ui, title: &str, title_bar_rect: Rect) {
         let is_fullscreen = ui.input(|i| i.viewport().fullscreen.unwrap_or(false));
         let tooltip = if is_fullscreen { "Restore window" } else { "Maximize window" };
         let button = Button::new(ICON_SQUARE.rich_text().size(12.0));
-        let response = ui.add(button).on_hover_text(tooltip);
-        if response.clicked() {
+        if ui.add(button).on_hover_text(tooltip).clicked() {
             ui.send_viewport_cmd(ViewportCommand::Fullscreen(!is_fullscreen));
         }
     };
 
     let minimize_button = |ui: &mut Ui| {
         let button = Button::new(ICON_MINIMIZE.rich_text().size(12.0));
-        let response = ui.add(button).on_hover_text("Minimize the window");
-        if response.clicked() {
+        if ui.add(button).on_hover_text("Minimize the window").clicked() {
             ui.send_viewport_cmd(ViewportCommand::Minimized(true));
         }
     };
