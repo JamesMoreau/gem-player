@@ -35,15 +35,10 @@ use player::{Player, build_audio_backend_from_device, play_next, play_previous};
 use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
-    collections::HashMap,
-    fs::{File, copy, read},
-    mem::take,
-    path::PathBuf,
-    sync::{
+    collections::HashMap, fs::{File, copy, read}, mem::take, path::PathBuf, sync::{
         Arc,
         mpsc::{Receiver, TryRecvError},
-    },
-    time::Duration,
+    }, thread, time::Duration
 };
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
@@ -180,6 +175,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         (menu, receiver)
     };
 
+    start_logic_wakeup_thread(&cc.egui_ctx);
+
     GemPlayer {
         ui: UIState {
             current_view: View::Library,
@@ -300,6 +297,21 @@ impl App for GemPlayer {
 
         self.nosleep_manager.disable();
     }
+}
+
+// Continuously wake the egui event loop so `logic()` continues running even
+// while the window is minimized or hidden. This keeps media playback,
+// OS media controls, and background polling responsive.
+pub fn start_logic_wakeup_thread(ctx: &Context) {
+    let ctx = ctx.clone();
+
+    thread::spawn(move || {
+        loop {
+            ctx.request_repaint();
+
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
 }
 
 fn poll_commands(ctx: &Context, gem: &mut GemPlayer) {
