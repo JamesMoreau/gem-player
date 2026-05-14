@@ -7,7 +7,7 @@ use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, Device, DeviceSinkBuilder, MixerDeviceSink, Source};
-use std::{fs::File, path::Path, time::Duration};
+use std::{fs::File, time::Duration};
 
 #[fully_pub]
 struct Player {
@@ -166,25 +166,10 @@ pub fn get_position(player: &Player) -> Option<Duration> {
     Some(backend.player.get_pos())
 }
 
-//TODO: remove
-pub fn add_to_queue_in_order(player: &mut Player, tracks: &[Track], starting_track: Option<&Path>) {
-    clear_the_queue(player);
-
-    let start_index = starting_track
-        .and_then(|path| tracks.iter().position(|track| track.path == path))
-        .unwrap_or(0);
-
-    // Queue tracks from the starting track, wrapping around to the beginning.
-    let ordered = tracks[start_index..].iter().chain(&tracks[..start_index]);
-
-    for track in ordered {
-        player.queue.push(track.clone());
-    }
-}
-
 pub fn replace_queue(player: &mut Player, tracks: &[Track], start_index: usize) {
     player.queue.clear();
 
+    // Queue tracks from the starting track, wrapping around to the beginning.
     player
         .queue
         .extend(tracks[start_index..].iter().chain(&tracks[..start_index]).cloned());

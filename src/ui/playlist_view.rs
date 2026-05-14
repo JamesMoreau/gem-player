@@ -11,8 +11,6 @@ use std::path::PathBuf;
 use crate::{
     GemPlayer,
     commands::GemCommand,
-    maybe_play_next,
-    player::add_to_queue_in_order,
     playlist::{PlaylistRetrieval, create, delete, rename},
     track::{Track, filter},
     ui::{
@@ -287,10 +285,18 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                         // We have to do this pattern since we want to access gem across
                         // the two captures used by containers::Sides.
                         if play_clicked {
-                            let playlist = gem.playlists.get_by_path(&playlist_key);
+                            let track_keys = gem
+                                .playlists
+                                .get_by_path(&playlist_key)
+                                .tracks
+                                .iter()
+                                .map(|t| t.path.clone())
+                                .collect();
 
-                            add_to_queue_in_order(&mut gem.player, &playlist.tracks, None);
-                            maybe_play_next(ui, gem);
+                            gem.commands.push(GemCommand::PlayTrackList {
+                                track_keys,
+                                start_at: None,
+                            });
                         }
 
                         if delete_clicked {
