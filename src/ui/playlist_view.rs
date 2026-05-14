@@ -539,17 +539,13 @@ fn playlist_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
     let modal_width = 220.0;
     ui.set_width(modal_width);
 
-    ui.add_enabled(
-        false,
-        Label::new(format!("{} track(s) selected", track_keys.len())),
-    );
+    ui.add_enabled(false, Label::new(format!("{} track(s) selected", track_keys.len())));
 
     ui.separator();
 
     let mut command = None;
 
-    let response = ui.button(("Remove from Playlist", ICON_DELETE));
-    if response.clicked() {
+    if ui.button(("Remove from Playlist", ICON_DELETE)).clicked() {
         command = Some(GemCommand::RemoveTracksFromPlaylist {
             playlist_key: playlist_key.clone(),
             track_keys: track_keys.clone(),
@@ -558,15 +554,13 @@ fn playlist_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    let response = ui.button(("Play Next", ICON_PLAY_ARROW));
-    if response.clicked() {
+    if ui.button(("Play Next", ICON_PLAY_ARROW)).clicked() {
         command = Some(GemCommand::EnqueueTracksNext {
             track_keys: track_keys.clone(),
         });
     }
 
-    let response = ui.button(("Add to Queue", ICON_ADD));
-    if response.clicked() {
+    if ui.button(("Add to Queue", ICON_ADD)).clicked() {
         command = Some(GemCommand::EnqueueTracks {
             track_keys: track_keys.clone(),
         });
@@ -574,14 +568,12 @@ fn playlist_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    let response = ui.button(("Open File Location", ICON_FOLDER));
-    if response.clicked() {
-        // We take the first one since we cannot open / reveal multiple tracks.
+    if ui.button(("Open File Location", ICON_FOLDER)).clicked() {
         if let Some(first) = track_keys.first() {
             command = Some(GemCommand::OpenTrackLocation(first.clone()));
         } else {
             error!("No track(s) selected for opening file location");
-        };
+        }
     }
 
     command
