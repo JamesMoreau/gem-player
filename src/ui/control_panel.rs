@@ -227,40 +227,39 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_s
 fn layout_playback_slider_and_track_info(ui: &mut Ui, gem: &mut GemPlayer, slider_width: f32) {
     // We retrieve the position here so that scrubbing using the slider will be
     // reflected in the playback position ui.
-    let mut position_as_secs = get_position(&gem.player).map_or(0.0, |p| p.as_secs_f32()); // TODO: use Duration?
+    let mut position = get_position(&gem.player).unwrap_or_default();
 
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                playback_slider(ui, gem, &mut position_as_secs, slider_width);
+                playback_slider(ui, gem, &mut position, slider_width);
             });
         });
 
         strip.cell(|ui| {
-            layout_marquee_and_playback_position_and_metadata(
-                ui,
-                &gem.player,
-                Duration::from_secs_f32(position_as_secs),
-                &mut gem.ui.marquee,
-            );
+            layout_marquee_and_playback_position_and_metadata(ui, &gem.player, position, &mut gem.ui.marquee);
         });
     });
 }
 
-fn playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position_as_secs: &mut f32, slider_width: f32) {
+fn playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut Duration, slider_width: f32) {
     ui.scope(|ui| {
         ui.spacing_mut().slider_width = slider_width;
 
         let slider_enabled = gem.player.backend.is_some() && gem.player.playing.is_some();
 
-        let track_duration_as_secs = gem.player.playing.as_ref().map_or(0.0, |track| track.duration.as_secs_f32());
+        let track_duration = gem.player.playing.as_ref().map_or(Duration::ZERO, |t| t.duration);
 
-        let slider = Slider::new(position_as_secs, 0.0..=track_duration_as_secs.max(0.1))
+        let mut position_as_secs = position.as_secs_f32();
+
+        let slider = Slider::new(&mut position_as_secs, 0.0..=track_duration.as_secs_f32().max(0.1))
             .trailing_fill(true)
             .show_value(false)
-            .step_by(1.0); // Step by 1 second.
+            .step_by(1.0);
 
         let response = ui.add_enabled(slider_enabled, slider);
+
+        *position = Duration::from_secs_f32(position_as_secs);
 
         let Some(backend) = &gem.player.backend else {
             return;
@@ -268,12 +267,12 @@ fn playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position_as_secs: &mut f32,
 
         if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
             gem.player.paused_before_scrubbing = Some(backend.player.is_paused());
-            backend.player.pause(); // Pause playback during scrubbing
+
+            backend.player.pause();
         }
 
         if response.drag_stopped() {
-            let new_position = Duration::from_secs_f32(*position_as_secs);
-            gem.commands.push(GemCommand::SeekTo(new_position));
+            gem.commands.push(GemCommand::SeekTo(*position));
         }
     });
 }
