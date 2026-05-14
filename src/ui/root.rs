@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use egui::{pos2, vec2, Color32, Label, Rect, RichText, Sense, Separator, ThemePreference, Ui, WidgetText};
+use egui::{Color32, Label, RichText, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons::{ICON_LIBRARY_MUSIC, ICON_QUEUE_MUSIC, ICON_SETTINGS, ICON_STAR};
 use egui_notify::Toasts;
@@ -8,18 +8,18 @@ use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
 use crate::{
+    GemPlayer,
     custom_window::custom_window,
     ui::{
         bottom_bar::bottom_bar,
         control_panel::control_panel,
         file_drop_overlay::file_drop_overlay,
-        library_view::{library_view, LibraryViewState},
-        playlist_view::{playlists_view, PlaylistsViewState},
+        library_view::{LibraryViewState, library_view},
+        playlist_view::{PlaylistsViewState, playlists_view},
         queue_view::queue_view,
         settings_view::settings_view,
         widgets::{marquee::Marquee, track_artwork::Artwork},
     },
-    GemPlayer,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
@@ -96,34 +96,6 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 strip.cell(|ui| bottom_bar(ui, gem));
             });
     });
-}
-
-pub fn playing_indicator(ui: &mut Ui) {
-    let desired_height = ui.available_height() * 0.4;
-    let desired_width = 18.0;
-
-    let (rect, _response) = ui.allocate_exact_size(vec2(desired_width, desired_height), Sense::hover());
-
-    let time = ui.input(|i| i.time) as f32;
-    let display_bars = [
-        ((time * 6.0).sin() * 0.4 + 0.6).max(0.2),
-        ((time * 7.5).cos() * 0.4 + 0.6).max(0.2),
-        ((time * 5.3).sin() * 0.4 + 0.6).max(0.2),
-    ];
-
-    let bar_gap = 1.0;
-    let bar_radius = 1.0;
-    let bar_width = rect.width() / display_bars.len() as f32;
-    let min_bar_height = 2.0;
-
-    for (i, value) in display_bars.into_iter().enumerate() {
-        let height = (value * rect.height()).max(min_bar_height);
-        let x = rect.left() + i as f32 * bar_width + bar_gap / 2.0;
-        let y = rect.bottom();
-
-        let bar_rect = Rect::from_min_max(pos2(x, y - height), pos2(x + bar_width - bar_gap, y));
-        ui.painter().rect_filled(bar_rect, bar_radius, ui.visuals().selection.bg_fill);
-    }
 }
 
 pub fn unselectable_label(text: impl Into<WidgetText>) -> Label {

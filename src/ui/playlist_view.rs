@@ -14,8 +14,8 @@ use crate::{
     playlist::{PlaylistRetrieval, create, delete, rename},
     track::{Track, filter},
     ui::{
-        root::{format_duration_to_mmss, playing_indicator, table_label, unselectable_label},
-        widgets::centered_frame::centered_frame,
+        root::{format_duration_to_mmss, table_label, unselectable_label},
+        widgets::{centered_frame::centered_frame, playing_indicator::playing_indicator_ui},
     },
 };
 
@@ -455,12 +455,12 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                             }
 
                             Popup::menu(&response).show(|ui| {
-                                if let Some(action) = playlist_context_menu(ui, gem) {
-                                    maybe_command = Some(action);
+                                if let Some(command) = playlist_context_menu(ui, gem) {
+                                    maybe_command = Some(command);
                                 }
                             });
                         } else if track_is_playing {
-                            playing_indicator(ui);
+                            playing_indicator_ui(ui);
                         }
                     });
 
