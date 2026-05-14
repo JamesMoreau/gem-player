@@ -365,7 +365,6 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
         // Used to determine if selection should be extended.
         let shift_is_pressed = ui.input(|i| i.modifiers.shift);
 
-        let mut should_play_playlist = None;
         let mut maybe_command = None;
 
         let playing_color = ui.visuals().selection.bg_fill;
@@ -504,7 +503,11 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                     }
 
                     if response.double_clicked() {
-                        should_play_playlist = Some(track_key.clone());
+                        let track_keys = gem.ui.playlists.cached_playlist_tracks.iter().map(|t| t.path.clone()).collect();
+                        maybe_command = Some(GemCommand::PlayTrackList {
+                            track_keys,
+                            start_at: Some(track_key.clone()),
+                        });
                     }
 
                     Popup::context_menu(&response).show(|ui| {
@@ -514,11 +517,6 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                     });
                 });
             });
-
-        if let Some(track_key) = should_play_playlist {
-            add_to_queue_in_order(&mut gem.player, &gem.ui.playlists.cached_playlist_tracks, Some(&track_key));
-            maybe_play_next(ui, gem);
-        }
 
         if let Some(command) = maybe_command {
             gem.commands.push(command);
