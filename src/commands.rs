@@ -11,7 +11,7 @@ use crate::{
         enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_volume, stop, toggle, toggle_repeat,
         toggle_shuffle,
     },
-    playlist::{PlaylistRetrieval, add_to_playlist},
+    playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist},
     track::{Track, TrackRetrieval, open_file_location},
     ui::root::format_duration_to_mmss,
 };
@@ -43,6 +43,10 @@ pub enum GemCommand {
     AddTracksToPlaylist {
         playlist_key: PathBuf,
         track_keys: Vec<PathBuf>,
+    },
+    RemoveTracksFromPlaylist {
+        playlist_key: PathBuf,
+        track_keys: Vec<PathBuf>
     },
     EnqueueTracks {
         track_keys: Vec<PathBuf>,
@@ -193,6 +197,33 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
                 gem.ui.toasts.success(message);
             } else {
                 gem.ui.toasts.error("No tracks were added.");
+            }
+        }
+        GemCommand::RemoveTracksFromPlaylist { playlist_key, track_keys } => {
+            let playlist = gem.playlists.get_by_path_mut(&playlist_key);
+            
+            if gem.ui.playlists.selected_tracks.is_empty() {
+                error!("No track(s) were provided for removing track from playlist.");
+                return;
+            };
+
+            let mut added_count = 0;
+            for track_key in &track_keys {
+                if let Err(e) = remove_from_playlist(playlist, track_key) {
+                    error!("Failed to remove track from playlist: {}", e);
+                } else {
+                    added_count += 1;
+                }
+            }
+
+            gem.ui.playlists.cache_dirty = true;
+
+            if added_count > 0 {
+                let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
+                info!("{}", message);
+                gem.ui.toasts.success(message);
+            } else {
+                gem.ui.toasts.error("No tracks were removed.");
             }
         }
         GemCommand::EnqueueTracks { track_keys } => {
