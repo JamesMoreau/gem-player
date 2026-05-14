@@ -387,7 +387,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
             })
             .body(|body| {
                 body.rows(26.0, gem.ui.playlists.cached_playlist_tracks.len(), |mut row| {
-                    let index = row.index(); // TODO: remove?
+                    let index = row.index();
 
                     let track = &gem.ui.playlists.cached_playlist_tracks[index];
                     let track_key = track.path.clone();
@@ -434,7 +434,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                         ui.add(label);
                     });
 
-                    let rest_of_row_is_hovered = row.response().hovered(); //TODO: cleanup?
+                    let rest_of_row_is_hovered = row.response().hovered();
                     let mut more_cell_contains_pointer = false;
                     row.col(|ui| {
                         ui.add_space(8.0);
