@@ -15,22 +15,17 @@ pub fn compute_uri(path: &Path) -> String {
 }
 
 pub fn track_artwork_ui(ui: &mut Ui, maybe_artwork: Option<&Artwork>, width: f32) {
-    let texture_options = TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear));
-    let size = Vec2::splat(width);
-
-    let placeholder = include_image!("../../../assets/icon.png");
-
     let artwork = if let Some(a) = maybe_artwork {
         Image::from_bytes(a.uri.to_owned(), a.bytes.to_vec())
     } else {
-        Image::new(placeholder)
+        Image::new(include_image!("../../../assets/icon.png")) // placeholder
     };
 
     ui.add(
         artwork
-            .texture_options(texture_options)
+            .texture_options(TextureOptions::LINEAR.with_mipmap_mode(Some(TextureFilter::Linear)))
             .show_loading_spinner(false)
-            .fit_to_exact_size(size)
+            .fit_to_exact_size(Vec2::splat(width))
             .maintain_aspect_ratio(false)
             .corner_radius(2.0),
     );

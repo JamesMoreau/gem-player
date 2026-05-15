@@ -18,7 +18,7 @@ use crate::{
     track::{SortBy, SortOrder, Track, filter, sort},
     ui::{
         root::{format_duration_to_mmss, table_label, unselectable_label},
-        widgets::{centered_frame::centered_frame, playing_indicator::playing_indicator_ui},
+        widgets::{centered_frame::centered_frame, playing_indicator::playing_indicator},
     },
 };
 
@@ -184,7 +184,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                 }
                             });
                         } else if track_is_playing {
-                            playing_indicator_ui(ui);
+                            playing_indicator(ui);
                         }
                     });
 

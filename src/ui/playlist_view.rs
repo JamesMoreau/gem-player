@@ -15,7 +15,7 @@ use crate::{
     track::{Track, filter},
     ui::{
         root::{format_duration_to_mmss, table_label, unselectable_label},
-        widgets::{centered_frame::centered_frame, playing_indicator::playing_indicator_ui},
+        widgets::{centered_frame::centered_frame, playing_indicator::playing_indicator},
     },
 };
 
@@ -460,7 +460,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                                 }
                             });
                         } else if track_is_playing {
-                            playing_indicator_ui(ui);
+                            playing_indicator(ui);
                         }
                     });
 

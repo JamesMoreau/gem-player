@@ -2,7 +2,7 @@ use egui::Ui;
 
 use crate::ui::widgets::bar_display::BarDisplay;
 
-pub fn playing_indicator_ui(ui: &mut Ui) {
+pub fn playing_indicator(ui: &mut Ui) {
     let time = ui.input(|i| i.time) as f32;
 
     let values = [
