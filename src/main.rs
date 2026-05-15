@@ -5,7 +5,6 @@ compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
     commands::execute,
-    config::{load_config, save_config},
     library_watcher::LibraryWatcher,
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -23,7 +22,7 @@ use crate::{
     visualizer::VisualizerState,
 };
 use dark_light::Mode;
-use eframe::{App, CreationContext, Frame, NativeOptions, icon_data, run_native, wgpu::rwh::HasWindowHandle};
+use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
 use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
@@ -35,10 +34,16 @@ use player::{Player, build_audio_backend_from_device, play_next, play_previous};
 use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
-    collections::HashMap, fs::{File, copy, read}, mem::take, path::PathBuf, sync::{
+    collections::HashMap,
+    fs::{File, copy, read},
+    mem::take,
+    path::PathBuf,
+    sync::{
         Arc,
         mpsc::{Receiver, TryRecvError},
-    }, thread, time::Duration
+    },
+    thread,
+    time::Duration,
 };
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
@@ -51,7 +56,6 @@ use {
 };
 
 mod commands;
-mod config;
 mod custom_window;
 mod library_folder_picker;
 mod library_watcher;
@@ -69,6 +73,10 @@ mod visualizer;
 static GLOBAL: MiMalloc = MiMalloc;
 
 const APP_NAME: &str = "Gem Player";
+
+pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
+pub const THEME_STORAGE_KEY: &str = "theme";
+pub const VOLUME_STORAGE_KEY: &str = "volume";
 
 #[fully_pub]
 struct GemPlayer {
@@ -152,20 +160,40 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
 
-    let mut config = load_config();
+    let mut library_directory = None;
+    let mut theme_preference = ThemePreference::System;
+    let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
+
+    if let Some(storage) = cc.storage {
+        if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
+            library_directory = Some(PathBuf::from(library_directory_string));
+        }
+
+        if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY)
+            && let Ok(theme) = serde_json::from_str(&theme_string)
+        {
+            theme_preference = theme;
+        }
+
+        if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
+            && let Ok(volume) = serde_json::from_str::<f32>(&volume_string)
+        {
+            initial_volume = volume.clamp(0.0, 1.0);
+        }
+    }
 
     let library_watcher = setup_library_watcher().expect("Failed to initialize library watcher.");
-    if let Some(directory) = &config.library_directory {
+    if let Some(directory) = &library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
 
         if let Err(e) = library_watcher.command_sender.send(command) {
             error!("Failed to start watching library directory: {e}");
-            config.library_directory = None;
+            library_directory = None;
         }
     }
 
     if let Some(b) = &backend {
-        b.player.set_volume(config.volume);
+        b.player.set_volume(initial_volume); // TODO: replace.
     }
 
     #[cfg(target_os = "macos")]
@@ -180,7 +208,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     GemPlayer {
         ui: UIState {
             current_view: View::Library,
-            theme_preference: config.theme_preference,
+            theme_preference,
             search: String::new(),
             cached_artwork: None,
             library: LibraryViewState {
@@ -211,7 +239,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         library: Vec::new(),
         playlists: Vec::new(),
 
-        library_directory: config.library_directory,
+        library_directory,
         folder_picker_receiver: None,
         library_watcher,
 
@@ -255,6 +283,20 @@ impl App for GemPlayer {
         false
     }
 
+    fn save(&mut self, storage: &mut dyn Storage) {
+        if let Some(library_directory) = &self.library_directory {
+            storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
+        }
+
+        let theme_json_string = serde_json::to_string(&self.ui.theme_preference).unwrap();
+        storage.set_string(THEME_STORAGE_KEY, theme_json_string);
+
+        if let Some(backend) = &self.player.backend {
+            let volume_json_string = serde_json::to_string(&backend.player.volume()).unwrap();
+            storage.set_string(VOLUME_STORAGE_KEY, volume_json_string);
+        }
+    }
+
     fn logic(&mut self, ctx: &Context, frame: &mut Frame) {
         poll_file_drops(ctx, self);
         poll_library_folder_picker(self);
@@ -282,13 +324,8 @@ impl App for GemPlayer {
     }
 
     fn on_exit(&mut self) {
-        let save_result = save_config(self);
-        if let Err(e) = save_result {
-            error!("Unable to save config: {}", e);
-        }
-
         if let Some(backend) = &self.player.backend {
-            backend.player.stop();
+            backend.player.stop(); // TODO: replace
         }
 
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
