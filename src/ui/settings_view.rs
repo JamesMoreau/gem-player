@@ -4,7 +4,11 @@ use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::info;
 
-use crate::{APP_NAME, GemPlayer, library_folder_picker::spawn_library_folder_picker, ui::root::unselectable_label};
+use crate::{
+    APP_NAME, GemPlayer,
+    library_folder_picker::spawn_library_folder_picker,
+    ui::{root::unselectable_label, widgets::toggle_switch::toggle},
+};
 
 pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new()
@@ -48,8 +52,10 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add(unselectable_label("Prevents the computer from going to sleep during playback."));
 
                 let mut enabled = gem.nosleep_manager.is_enabled();
-                let check_label = if enabled { "enabled" } else { "disabled" };
-                if ui.checkbox(&mut enabled, check_label).changed() {
+
+                ui.add_space(8.0);
+
+                if ui.add(toggle(&mut enabled)).changed() {
                     if enabled {
                         gem.nosleep_manager.enable();
                     } else {
