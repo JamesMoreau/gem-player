@@ -3,18 +3,28 @@ use std::time::Duration;
 use egui::{Align, Label, Layout, TextStyle, Ui};
 
 pub struct Marquee {
-    position: f32,
-    speed: f32, // chars per second
+    offset: usize,
+    accumulator: f32,
+
+    speed: f32,
+
+    state: MarqueeState,
 
     pause_timer: Duration,
     pause_duration: Duration,
+}
+enum MarqueeState {
+    Paused,
+    Scrolling,
 }
 
 impl Marquee {
     pub fn new() -> Self {
         Self {
-            position: 0.0,
+            offset: 0,
+            accumulator: 0.0,
             speed: 5.0,
+            state: MarqueeState::Paused,
             pause_timer: Duration::from_secs(2),
             pause_duration: Duration::from_secs(2),
         }
@@ -31,12 +41,18 @@ impl Marquee {
     }
 
     pub fn reset(&mut self) {
-        self.position = 0.0;
+        self.offset = 0;
+        self.accumulator = 0.0;
         self.pause_timer = self.pause_duration;
+        self.state = MarqueeState::Paused;
     }
 }
 
 pub fn marquee_ui(ui: &mut Ui, marquee: &mut Marquee, text: &str) {
+    if text.is_empty() {
+        return;
+    }
+
     let font_id = TextStyle::Body.resolve(ui.style());
 
     let chars_count = text.chars().count();
@@ -45,36 +61,48 @@ pub fn marquee_ui(ui: &mut Ui, marquee: &mut Marquee, text: &str) {
     let average_char_width = text_width / chars_count as f32;
 
     let available_width = ui.available_width();
-    let visible_chars = (available_width / average_char_width).floor() as usize;
+    let visible_chars = ((available_width / average_char_width).floor() as usize).max(1);
 
-    // If everything fits, no marquee needed
+    // If everything fits, no marquee needed.
     if chars_count <= visible_chars {
         ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
             ui.add(Label::new(text).selectable(false).truncate());
         });
+
+        marquee.reset();
+
         return;
     }
 
     let dt = ui.input(|i| i.stable_dt);
 
-    if marquee.pause_timer > Duration::ZERO {
-        marquee.pause_timer = marquee.pause_timer.saturating_sub(Duration::from_secs_f32(dt));
-    } else {
-        marquee.position += marquee.speed * dt;
+    match marquee.state {
+        MarqueeState::Paused => {
+            marquee.pause_timer = marquee.pause_timer.saturating_sub(Duration::from_secs_f32(dt));
 
-        if marquee.position >= chars_count as f32 {
-            marquee.reset();
+            if marquee.pause_timer.is_zero() {
+                marquee.state = MarqueeState::Scrolling;
+            }
+        }
+
+        MarqueeState::Scrolling => {
+            marquee.accumulator += marquee.speed * dt;
+
+            while marquee.accumulator >= 1.0 {
+                marquee.accumulator -= 1.0;
+                marquee.offset += 1;
+
+                if marquee.offset >= chars_count {
+                    marquee.reset();
+                    break;
+                }
+            }
         }
     }
 
-    let display_text: String = text
-        .chars()
-        .chain(text.chars())
-        .skip(marquee.position.floor() as usize)
-        .take(visible_chars)
-        .collect();
+    let display_text: String = text.chars().cycle().skip(marquee.offset).take(visible_chars).collect();
 
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-        ui.add(Label::new(&display_text).selectable(false).truncate());
+        ui.add(Label::new(display_text).selectable(false).truncate());
     });
 }
