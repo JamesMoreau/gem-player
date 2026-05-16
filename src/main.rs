@@ -599,6 +599,8 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
             .map(|bytes| Artwork { uri, bytes })
     });
 
+    gem.ui.marquee.reset();
+
     if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
         if let Err(e) = update_metadata(&mut osmc.controls, &gem.player) {
             error!("Failed to set OS media metadata: {}", e);
