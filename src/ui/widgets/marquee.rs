@@ -6,13 +6,14 @@ pub struct Marquee {
     offset: usize,
     accumulator: f32,
 
-    speed: f32,
+    speed: f32, // chars per second
 
     state: MarqueeState,
 
-    pause_timer: Duration,
+    pause_remaining: Duration,
     pause_duration: Duration,
 }
+
 enum MarqueeState {
     Paused,
     Scrolling,
@@ -25,7 +26,7 @@ impl Marquee {
             accumulator: 0.0,
             speed: 5.0,
             state: MarqueeState::Paused,
-            pause_timer: Duration::from_secs(2),
+            pause_remaining: Duration::from_secs(2),
             pause_duration: Duration::from_secs(2),
         }
     }
@@ -43,7 +44,7 @@ impl Marquee {
     pub fn reset(&mut self) {
         self.offset = 0;
         self.accumulator = 0.0;
-        self.pause_timer = self.pause_duration;
+        self.pause_remaining = self.pause_duration;
         self.state = MarqueeState::Paused;
     }
 }
@@ -78,9 +79,9 @@ pub fn marquee_ui(ui: &mut Ui, marquee: &mut Marquee, text: &str) {
 
     match marquee.state {
         MarqueeState::Paused => {
-            marquee.pause_timer = marquee.pause_timer.saturating_sub(Duration::from_secs_f32(dt));
+            marquee.pause_remaining = marquee.pause_remaining.saturating_sub(Duration::from_secs_f32(dt));
 
-            if marquee.pause_timer.is_zero() {
+            if marquee.pause_remaining.is_zero() {
                 marquee.state = MarqueeState::Scrolling;
             }
         }
