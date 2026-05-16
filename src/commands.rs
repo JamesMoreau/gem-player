@@ -16,6 +16,8 @@ use crate::{
     ui::root::format_duration_to_mmss,
 };
 
+// The general rule for what justifies a command is whether or not it mutates state
+// and if it used in multiple places.
 #[derive(PartialEq, Debug, Clone, EnumString, Display)]
 pub enum GemCommand {
     Play,

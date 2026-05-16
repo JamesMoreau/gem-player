@@ -257,16 +257,26 @@ fn playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut Duration, sl
 
         let response = ui.add_enabled(slider_enabled, slider);
 
+        if !slider_enabled {
+            return;
+        }
+
+        // Handle scrubbing.
+
         *position = Duration::from_secs_f32(position_as_secs);
 
-        let Some(backend) = &gem.player.backend else {
-            return;
-        };
-
         if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
-            gem.player.paused_before_scrubbing = Some(backend.player.is_paused());
+            let is_paused = gem
+                .player
+                .backend
+                .as_ref()
+                .expect("backend should exist if slider is enabled")
+                .player
+                .is_paused();
 
-            backend.player.pause();
+            gem.player.paused_before_scrubbing = Some(is_paused);
+
+            gem.commands.push(GemCommand::Pause);
         }
 
         if response.drag_stopped() {
