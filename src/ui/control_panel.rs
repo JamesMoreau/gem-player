@@ -92,9 +92,7 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
                 gem.player.muted = false;
                 gem.player.volume_before_mute = if volume == 0.0 { None } else { Some(volume) };
 
-                if let Some(backend) = &gem.player.backend {
-                    backend.player.set_volume(volume);
-                }
+                gem.commands.push(GemCommand::SetVolume(volume));
             }
 
             if ui.rect_contains_pointer(ui.max_rect().expand(8.0)) {

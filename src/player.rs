@@ -33,7 +33,6 @@ struct AudioBackend {
     player: rodio::Player,   // Controls playback (play, pause, stop, etc.)
 }
 
-// bool tells us whether the track actually changed or not.
 pub fn play_next(player: &mut Player) -> Result<()> {
     if player.repeat
         && let Some(playing) = player.playing.clone()
