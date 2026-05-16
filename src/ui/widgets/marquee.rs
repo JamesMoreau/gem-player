@@ -6,7 +6,7 @@ pub struct Marquee {
     offset: usize,
     accumulator: f32,
 
-    speed: f32, // chars per second
+    chars_per_second: f32,
 
     state: MarqueeState,
 
@@ -24,7 +24,7 @@ impl Marquee {
         Self {
             offset: 0,
             accumulator: 0.0,
-            speed: 5.0,
+            chars_per_second: 5.0,
             state: MarqueeState::Paused,
             pause_remaining: Duration::from_secs(2),
             pause_duration: Duration::from_secs(2),
@@ -37,7 +37,7 @@ impl Marquee {
     }
 
     pub fn speed(mut self, chars_per_second: f32) -> Self {
-        self.speed = chars_per_second;
+        self.chars_per_second = chars_per_second;
         self
     }
 
@@ -87,7 +87,7 @@ pub fn marquee_ui(ui: &mut Ui, marquee: &mut Marquee, text: &str) {
         }
 
         MarqueeState::Scrolling => {
-            marquee.accumulator += marquee.speed * dt;
+            marquee.accumulator += marquee.chars_per_second * dt;
 
             while marquee.accumulator >= 1.0 {
                 marquee.accumulator -= 1.0;
