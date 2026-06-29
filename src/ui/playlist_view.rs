@@ -156,12 +156,12 @@ fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
                 containers::Sides::new().show(
                     ui,
                     |ui| {
-                        if ui.button(("\t{}\t", ICON_CLOSE)).clicked() {
+                        if ui.button(("\t", ICON_CLOSE, "\t")).clicked() {
                             cancel_clicked = true;
                         }
                     },
                     |ui| {
-                        if ui.button(("\t{}\t", ICON_CHECK)).clicked() {
+                        if ui.button(("\t", ICON_CHECK, "\t")).clicked() {
                             confirm_clicked = true;
 
                             let result = delete(&playlist_key, &mut gem.playlists);

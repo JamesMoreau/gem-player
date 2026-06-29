@@ -243,8 +243,8 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
 fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
     let mut maybe_command = None;
 
-    let modal_width = 220.0;
-    ui.set_width(modal_width);
+    let menu_width = 220.0;
+    ui.set_width(menu_width);
 
     ui.add_enabled(
         false,
@@ -256,7 +256,7 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
     let add_to_playlists_enabled = !gem.playlists.is_empty();
     ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
         ui.menu_button("Add to Playlist", |ui| {
-            ui.set_min_width(modal_width);
+            ui.set_min_width(menu_width);
 
             ScrollArea::vertical().max_height(164.0).show(ui, |ui| {
                 for playlist in &gem.playlists {
