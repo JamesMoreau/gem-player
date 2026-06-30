@@ -110,8 +110,10 @@ fn main() -> eframe::Result {
     let options = NativeOptions {
         viewport: ViewportBuilder::default()
             .with_min_inner_size(Vec2::new(900.0, 500.0))
-            .with_decorations(false)
-            .with_transparent(true)
+            .with_title_shown(false)
+            // .with_titlebar_shown(false)
+            .with_titlebar_buttons_shown(true)
+            // .with_fullsize_content_view(true)
             .with_icon(icon_data),
         ..Default::default()
     };
