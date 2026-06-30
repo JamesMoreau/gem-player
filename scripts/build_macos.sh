@@ -1,16 +1,18 @@
 #!/bin/bash
 
-set -e  # Exit on any error
+set -euo pipefail # Exit on any error
 
 # Load environment variables
 source .env
 
 # Go to root directory
-cd "$(dirname "$0")/.."
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT_DIR"
 
-APP_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].metadata.bundle.name')
+METADATA=$(cargo metadata --no-deps --format-version 1)
+APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
+APP_VERSION=$(jq -r '.packages[0].version' <<< "$METADATA")
 EXECUTABLE_NAME="gem-player"
-APP_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
 
 BUNDLE_DIR="target/release/bundle/osx"
 
@@ -30,7 +32,7 @@ cargo bundle --release --target aarch64-apple-darwin
 echo "🧬 Creating universal binary..."
 rm -rf "$UNIVERSAL_APP"
 mkdir -p "$(dirname "$UNIVERSAL_APP")"
-cp -R "$ARM_APP" "$UNIVERSAL_APP"
+ditto "$ARM_APP" "$UNIVERSAL_APP"
 
 lipo -create \
   "$INTEL_APP/Contents/MacOS/$EXECUTABLE_NAME" \
@@ -49,7 +51,7 @@ dmgbuild \
   -s platform/macos/dmg_build_settings.py \
   -D app="$BUNDLE_DIR/$APP_NAME.app" \
   "$APP_NAME Installer" \
-  $DMG_PATH
+  "$DMG_PATH"
 
 echo "📝 Notarizing the app..."
 xcrun notarytool submit "$DMG_PATH" \
