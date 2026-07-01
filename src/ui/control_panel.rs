@@ -18,7 +18,7 @@ use crate::{
             bar_display::BarDisplay,
             marquee::{Marquee, marquee_ui},
             metadata_chip::MetadataChip,
-            track_artwork::track_artwork_ui,
+            artwork::artwork_ui,
         },
     },
     visualizer::smooth_bars,
@@ -171,7 +171,7 @@ fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap:
                     strip.empty();
                     strip.cell(|ui| {
                         ui.centered_and_justified(|ui| {
-                            track_artwork_ui(ui, gem.ui.cached_artwork.as_ref(), artwork_width);
+                            artwork_ui(ui, gem.ui.cached_artwork.as_ref(), artwork_width);
                         });
                     });
                     strip.empty();

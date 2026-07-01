@@ -14,7 +14,7 @@ pub fn compute_uri(path: &Path) -> String {
     format!("bytes://{}", path.to_string_lossy())
 }
 
-pub fn track_artwork_ui(ui: &mut Ui, maybe_artwork: Option<&Artwork>, width: f32) {
+pub fn artwork_ui(ui: &mut Ui, maybe_artwork: Option<&Artwork>, width: f32) {
     let artwork = if let Some(a) = maybe_artwork {
         Image::from_bytes(a.uri.to_owned(), a.bytes.to_vec())
     } else {

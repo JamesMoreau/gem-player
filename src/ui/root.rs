@@ -19,7 +19,7 @@ use crate::{
         playlist_view::{PlaylistsViewState, playlists_view},
         queue_view::queue_view,
         settings_view::settings_view,
-        widgets::{marquee::Marquee, track_artwork::Artwork},
+        widgets::{marquee::Marquee, artwork::Artwork},
     },
 };
 

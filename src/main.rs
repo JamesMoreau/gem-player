@@ -16,7 +16,7 @@ use crate::{
         root::{UIState, View, gem_player_ui},
         widgets::{
             marquee::Marquee,
-            track_artwork::{Artwork, compute_uri},
+            artwork::{Artwork, compute_uri},
         },
     },
     visualizer::VisualizerState,
