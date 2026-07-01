@@ -56,7 +56,6 @@ use {
 };
 
 mod commands;
-mod custom_window;
 mod library_folder_picker;
 mod library_watcher;
 mod nosleep_manager;
@@ -111,9 +110,9 @@ fn main() -> eframe::Result {
         viewport: ViewportBuilder::default()
             .with_min_inner_size(Vec2::new(900.0, 500.0))
             .with_title_shown(false)
-            // .with_titlebar_shown(false)
+            .with_titlebar_shown(false)
             .with_titlebar_buttons_shown(true)
-            // .with_fullsize_content_view(true)
+            .with_fullsize_content_view(true)
             .with_icon(icon_data),
         ..Default::default()
     };
