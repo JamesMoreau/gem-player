@@ -21,8 +21,7 @@ pub fn cache_playing_artwork(cache_directory: &Path, data: &[u8]) -> io::Result<
     let path = cache_directory.join(ARTWORK_CACHE_FILENAME);
     write(&path, data)?;
 
-    let uri = Url::from_file_path(path).unwrap().to_string();
-    Ok(uri)
+    Ok(compute_uri(&path))
 }
 
 pub fn artwork_cache_dir() -> io::Result<PathBuf> {
