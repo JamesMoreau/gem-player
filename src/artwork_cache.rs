@@ -18,10 +18,12 @@ struct ArtworkCache {
 const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 
 impl ArtworkCache {
-    pub fn set_playing(&mut self, data: &[u8]) -> io::Result<PathBuf> {
+    pub fn set_playing(&mut self, data: &[u8]) -> io::Result<String> {
         let path = self.directory.join(ARTWORK_CACHE_FILENAME);
         write(&path, data)?;
-        Ok(path)
+
+        let uri = Url::from_file_path(path).unwrap().to_string();
+        Ok(uri)
     }
 
     pub fn new() -> io::Result<Self> {
@@ -32,13 +34,5 @@ impl ArtworkCache {
         create_dir_all(&directory)?;
 
         Ok(Self { directory })
-    }
-
-    pub fn playing(&self) -> PathBuf {
-        self.directory.join(ARTWORK_CACHE_FILENAME)
-    }
-
-    pub fn current_uri(&self) -> String {
-        Url::from_file_path(self.playing()).unwrap().to_string()
     }
 }
