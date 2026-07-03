@@ -10,16 +10,8 @@ use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
 use crate::{
-    GemPlayer,
-    ui::{
-        bottom_bar::bottom_bar,
-        control_panel::control_panel,
-        file_drop_overlay::file_drop_overlay,
-        library_view::{LibraryViewState, library_view},
-        playlist_view::{PlaylistsViewState, playlists_view},
-        queue_view::queue_view,
-        settings_view::settings_view,
-        widgets::{marquee::Marquee, artwork::Artwork},
+    GemPlayer, artwork_cache::ArtworkCache, ui::{
+        bottom_bar::bottom_bar, control_panel::control_panel, file_drop_overlay::file_drop_overlay, library_view::{LibraryViewState, library_view}, playlist_view::{PlaylistsViewState, playlists_view}, queue_view::queue_view, settings_view::settings_view, widgets::{artwork::Artwork, marquee::Marquee},
     },
 };
 
@@ -51,6 +43,7 @@ pub struct UIState {
     volume_popup_is_open: bool,
 
     cached_artwork: Option<Artwork>,
+    artwork_cache: Option<ArtworkCache>,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,

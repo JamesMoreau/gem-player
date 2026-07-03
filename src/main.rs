@@ -4,6 +4,7 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
+    artwork_cache::ArtworkCache,
     commands::execute,
     library_watcher::LibraryWatcher,
     nosleep_manager::NoSleepManager,
@@ -15,8 +16,8 @@ use crate::{
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
         widgets::{
-            marquee::Marquee,
             artwork::{Artwork, compute_uri},
+            marquee::Marquee,
         },
     },
     visualizer::VisualizerState,
@@ -55,6 +56,7 @@ use {
     std::str::FromStr,
 };
 
+mod artwork_cache;
 mod commands;
 mod library_folder_picker;
 mod library_watcher;
@@ -183,6 +185,14 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
+    let artwork_cache = match ArtworkCache::new() {
+        Ok(ac) => Some(ac),
+        Err(e) => {
+            warn!("Failed to initialize artwork cache: {}", e);
+            None
+        }
+    };
+
     let library_watcher = setup_library_watcher().expect("Failed to initialize library watcher.");
     if let Some(directory) = &library_directory {
         let command = LibraryWatcherCommand::SetPath(directory.clone());
@@ -212,6 +222,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             theme_preference,
             search: String::new(),
             cached_artwork: None,
+            artwork_cache,
             library: LibraryViewState {
                 selected_tracks: Vec::new(),
                 cached_library: Vec::new(),
