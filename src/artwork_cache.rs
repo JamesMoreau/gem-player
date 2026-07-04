@@ -17,7 +17,7 @@ pub fn compute_uri(path: &Path) -> String {
         .to_string()
 }
 
-pub fn cache_playing_artwork(cache_directory: &Path, data: &[u8]) -> io::Result<String> {
+pub fn cache_artwork(cache_directory: &Path, data: &[u8]) -> io::Result<String> {
     let path = cache_directory.join(ARTWORK_CACHE_FILENAME);
     write(&path, data)?;
 
