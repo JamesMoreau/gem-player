@@ -1,9 +1,7 @@
 use anyhow::{Context, Result, anyhow, bail};
 use fully_pub::fully_pub;
 use lofty::{
-    file::{AudioFile, EXTENSIONS, FileType, TaggedFileExt},
-    read_from, read_from_path,
-    tag::ItemKey,
+    file::{AudioFile, EXTENSIONS, FileType, TaggedFileExt}, picture::Picture, read_from, read_from_path, tag::ItemKey,
 };
 use log::warn;
 use rayon::prelude::*;
@@ -107,7 +105,6 @@ pub fn filter(tracks: &[Track], search: &str) -> Vec<Track> {
     filtered
 }
 
-
 pub fn load_from_file(path: &Path) -> Result<Track> {
     if !path.is_file() {
         bail!("Path '{}' is not a file", path.display());
@@ -205,10 +202,10 @@ pub fn open_file_location(track: &Track) -> Result<()> {
     Ok(())
 }
 
-pub fn extract_artwork_from_file(file: &mut File) -> Option<Vec<u8>> {
+pub fn extract_artwork_from_file(file: &mut File) -> Option<Picture> {
     let tagged_file = read_from(file).ok()?;
     let tag = tagged_file.primary_tag().or_else(|| tagged_file.first_tag())?;
-    tag.pictures().first().map(|pic| pic.data().to_vec())
+    tag.pictures().first().cloned()
 }
 
 pub fn file_type_name(ft: FileType) -> &'static str {

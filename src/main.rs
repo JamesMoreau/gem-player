@@ -4,6 +4,7 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
+    artwork_cache::cache_artwork,
     commands::execute,
     library_watcher::LibraryWatcher,
     nosleep_manager::NoSleepManager,
@@ -14,10 +15,7 @@ use crate::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
-        widgets::{
-            artwork::{Artwork, compute_uri},
-            marquee::Marquee,
-        },
+        widgets::marquee::Marquee,
     },
     visualizer::VisualizerState,
 };
@@ -28,6 +26,7 @@ use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
 use library_watcher::{LibraryWatcherCommand, setup_library_watcher};
+use lofty::picture::MimeType;
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
@@ -586,20 +585,38 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
+// if let Some(next) = &gem.player.playing {
+//     let maybe_artwork = File::open(next.path.clone())
+//         .ok()
+//         .and_then(|mut f| extract_artwork_from_file(&mut f));
+
+//     if let Some(artwork) = maybe_artwork {
+//         cache_artwork(, mime)
+//     }
+// }
+
+// gem.ui.cached_artwork = gem.player.playing.as_ref().and_then(|track| {
+//     let uri = compute_uri(&track.path);
+
+//     File::open(&track.path)
+//         .ok()
+//         .and_then(|mut f| extract_artwork_from_file(&mut f))
+//         .map(|bytes| Artwork { uri, bytes })
+// });
+
+// // Forget the previous artwork.
+// if let Some(old) = &gem.ui.cached_artwork {
+//     ctx.forget_image(&old.uri);
+// }
+
 fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
-    // Forget the previous artwork.
-    if let Some(old) = &gem.ui.cached_artwork {
-        ctx.forget_image(&old.uri);
+    if let Some(track) = &gem.player.playing
+        && let Ok(mut file) = File::open(&track.path)
+        && let Some(picture) = extract_artwork_from_file(&mut file)
+        && let Err(e) = cache_artwork(picture.data(), picture.mime_type().cloned().unwrap_or(MimeType::Png))
+    {
+        error!("Failed to cache artwork: {}", e);
     }
-
-    gem.ui.cached_artwork = gem.player.playing.as_ref().and_then(|track| {
-        let uri = compute_uri(&track.path);
-
-        File::open(&track.path)
-            .ok()
-            .and_then(|mut f| extract_artwork_from_file(&mut f))
-            .map(|bytes| Artwork { uri, bytes })
-    });
 
     gem.ui.marquee.reset();
 
