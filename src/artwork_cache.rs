@@ -12,13 +12,15 @@ use crate::APP_NAME;
 
 const ARTWORK_CACHE_FILEBASE: &str = "playing";
 
-pub fn compute_uri(path: &Path) -> String {
+fn compute_uri(path: &Path) -> String {
     Url::from_file_path(path)
         .expect("cache path should always be an absolute file path")
         .to_string()
 }
 
 pub fn cache_artwork(cache_directory: &Path, data: &[u8], mime: MimeType) -> io::Result<String> {
+    clear_artwork_cache(cache_directory)?;
+
     let path = artwork_cache_path(cache_directory, &mime);
     write(&path, data)?;
 
