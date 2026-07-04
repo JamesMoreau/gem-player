@@ -5,19 +5,19 @@ use std::{
 };
 
 use directories::ProjectDirs;
-use lofty::picture::MimeType;
+use lofty::picture::{MimeType, Picture};
 use m3u::Url;
 
 use crate::APP_NAME;
 
 const ARTWORK_CACHE_FILEBASE: &str = "playing";
 
-pub fn cache_artwork(data: &[u8], mime: MimeType) -> io::Result<String> {
+pub fn cache_artwork(picture: &Picture) -> io::Result<String> {
     let cache_directory = get_or_init_artwork_cache()?;
     clear_artwork_cache(&cache_directory)?;
 
-    let path = artwork_cache_path(&cache_directory, &mime);
-    write(&path, data)?;
+    let path = artwork_cache_path(&cache_directory, picture.mime_type());
+    write(&path, picture.data())?;
 
     Ok(compute_uri(&path))
 }
@@ -28,8 +28,8 @@ fn compute_uri(path: &Path) -> String {
         .to_string()
 }
 
-fn artwork_cache_path(cache_directory: &Path, mime: &MimeType) -> PathBuf {
-    let ext = mime.ext().unwrap_or("png");
+fn artwork_cache_path(cache_directory: &Path, mime: Option<&MimeType>) -> PathBuf {
+    let ext = mime.and_then(MimeType::ext).unwrap_or("png");
     let filename = format!("{}.{}", ARTWORK_CACHE_FILEBASE, ext);
 
     cache_directory.join(filename)

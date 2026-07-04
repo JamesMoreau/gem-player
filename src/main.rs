@@ -26,7 +26,6 @@ use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
 use library_watcher::{LibraryWatcherCommand, setup_library_watcher};
-use lofty::picture::MimeType;
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
@@ -613,7 +612,7 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     if let Some(track) = &gem.player.playing
         && let Ok(mut file) = File::open(&track.path)
         && let Some(picture) = extract_artwork_from_file(&mut file)
-        && let Err(e) = cache_artwork(picture.data(), picture.mime_type().cloned().unwrap_or(MimeType::Png))
+        && let Err(e) = cache_artwork(&picture)
     {
         error!("Failed to cache artwork: {}", e);
     }
