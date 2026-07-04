@@ -12,25 +12,26 @@ use crate::APP_NAME;
 
 const ARTWORK_CACHE_FILEBASE: &str = "playing";
 
+pub fn cache_artwork(data: &[u8], mime: MimeType) -> io::Result<String> {
+    let cache_directory = get_or_init_artwork_cache()?;
+    clear_artwork_cache(&cache_directory)?;
+
+    let path = artwork_cache_path(&cache_directory, &mime);
+    write(&path, data)?;
+
+    Ok(compute_uri(&path))
+}
+
 fn compute_uri(path: &Path) -> String {
     Url::from_file_path(path)
         .expect("cache path should always be an absolute file path")
         .to_string()
 }
 
-pub fn cache_artwork(cache_directory: &Path, data: &[u8], mime: MimeType) -> io::Result<String> {
-    clear_artwork_cache(cache_directory)?;
-
-    let path = artwork_cache_path(cache_directory, &mime);
-    write(&path, data)?;
-
-    Ok(compute_uri(&path))
-}
-
 fn artwork_cache_path(cache_directory: &Path, mime: &MimeType) -> PathBuf {
     let ext = mime.ext().unwrap_or("png");
     let filename = format!("{}.{}", ARTWORK_CACHE_FILEBASE, ext);
-    
+
     cache_directory.join(filename)
 }
 
@@ -42,7 +43,7 @@ fn clear_artwork_cache(cache_directory: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub fn artwork_cache_dir() -> io::Result<PathBuf> {
+pub fn get_or_init_artwork_cache() -> io::Result<PathBuf> {
     let proj_dirs = ProjectDirs::from("", "", APP_NAME).ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no project dirs"))?;
 
     let directory = proj_dirs.cache_dir().join("artwork");
