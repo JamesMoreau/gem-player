@@ -27,14 +27,14 @@ pub fn cache_artwork(cache_directory: &Path, data: &[u8], mime: MimeType) -> io:
     Ok(compute_uri(&path))
 }
 
-pub fn artwork_cache_path(cache_directory: &Path, mime: &MimeType) -> PathBuf {
+fn artwork_cache_path(cache_directory: &Path, mime: &MimeType) -> PathBuf {
     let ext = mime.ext().unwrap_or("png");
     let filename = format!("{}.{}", ARTWORK_CACHE_FILEBASE, ext);
     
     cache_directory.join(filename)
 }
 
-pub fn clear_artwork_cache(cache_directory: &Path) -> io::Result<()> {
+fn clear_artwork_cache(cache_directory: &Path) -> io::Result<()> {
     for entry in read_dir(cache_directory)? {
         remove_file(entry?.path())?;
     }
