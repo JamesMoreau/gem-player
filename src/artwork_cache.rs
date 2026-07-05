@@ -8,18 +8,26 @@ use directories::ProjectDirs;
 use lofty::picture::{MimeType, Picture};
 use m3u::Url;
 
-use crate::APP_NAME;
+use crate::{
+    APP_NAME,
+    track::{Track, extract_artwork},
+};
 
 const ARTWORK_CACHE_FILEBASE: &str = "playing";
 
-pub fn cache_artwork(picture: &Picture) -> io::Result<String> {
+pub fn cache_track_artwork(track: &Track) -> io::Result<Option<String>> {
     let cache_directory = get_or_init_artwork_cache()?;
     clear_artwork_cache(&cache_directory)?;
+
+    let Some(picture) = extract_artwork(track) else {
+        return Ok(None);
+    };
 
     let path = artwork_cache_path(&cache_directory, picture.mime_type());
     write(&path, picture.data())?;
 
-    Ok(compute_uri(&path))
+    let uri = compute_uri(&path);
+    Ok(Some(uri))
 }
 
 fn compute_uri(path: &Path) -> String {

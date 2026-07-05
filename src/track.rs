@@ -205,7 +205,7 @@ pub fn open_file_location(track: &Track) -> Result<()> {
     Ok(())
 }
 
-pub fn extract_artwork(track: &mut Track) -> Option<Picture> {
+pub fn extract_artwork(track: &Track) -> Option<Picture> {
     let mut file = File::open(&track.path).ok()?;
     let tagged_file = read_from(&mut file).ok()?;
     let tag = tagged_file.primary_tag().or_else(|| tagged_file.first_tag())?;

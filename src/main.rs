@@ -4,7 +4,7 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::cache_artwork,
+    artwork_cache::cache_track_artwork,
     commands::execute,
     library_watcher::LibraryWatcher,
     nosleep_manager::NoSleepManager,
@@ -584,34 +584,9 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
-// if let Some(next) = &gem.player.playing {
-//     let maybe_artwork = File::open(next.path.clone())
-//         .ok()
-//         .and_then(|mut f| extract_artwork_from_file(&mut f));
-
-//     if let Some(artwork) = maybe_artwork {
-//         cache_artwork(, mime)
-//     }
-// }
-
-// gem.ui.cached_artwork = gem.player.playing.as_ref().and_then(|track| {
-//     let uri = compute_uri(&track.path);
-
-//     File::open(&track.path)
-//         .ok()
-//         .and_then(|mut f| extract_artwork_from_file(&mut f))
-//         .map(|bytes| Artwork { uri, bytes })
-// });
-
-// // Forget the previous artwork.
-// if let Some(old) = &gem.ui.cached_artwork {
-//     ctx.forget_image(&old.uri);
-// }
-
 fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
-    if let Some(track) = &mut gem.player.playing
-        && let Some(picture) = extract_artwork(track)
-        && let Err(e) = cache_artwork(&picture)
+    if let Some(track) = &gem.player.playing
+        && let Err(e) = cache_track_artwork(track)
     {
         error!("Failed to cache artwork: {}", e);
     }
