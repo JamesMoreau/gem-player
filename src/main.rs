@@ -10,7 +10,7 @@ use crate::{
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
     player::get_position,
-    track::{extract_artwork_from_file, is_audio_file},
+    track::{extract_artwork, is_audio_file},
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
@@ -33,7 +33,7 @@ use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs::{File, copy, read},
+    fs::{copy, read},
     mem::take,
     path::PathBuf,
     sync::{
@@ -609,9 +609,8 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
 // }
 
 fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
-    if let Some(track) = &gem.player.playing
-        && let Ok(mut file) = File::open(&track.path)
-        && let Some(picture) = extract_artwork_from_file(&mut file)
+    if let Some(track) = &mut gem.player.playing
+        && let Some(picture) = extract_artwork(track)
         && let Err(e) = cache_artwork(&picture)
     {
         error!("Failed to cache artwork: {}", e);

@@ -1,7 +1,10 @@
 use anyhow::{Context, Result, anyhow, bail};
 use fully_pub::fully_pub;
 use lofty::{
-    file::{AudioFile, EXTENSIONS, FileType, TaggedFileExt}, picture::Picture, read_from, read_from_path, tag::ItemKey,
+    file::{AudioFile, EXTENSIONS, FileType, TaggedFileExt},
+    picture::Picture,
+    read_from, read_from_path,
+    tag::ItemKey,
 };
 use log::warn;
 use rayon::prelude::*;
@@ -202,8 +205,9 @@ pub fn open_file_location(track: &Track) -> Result<()> {
     Ok(())
 }
 
-pub fn extract_artwork_from_file(file: &mut File) -> Option<Picture> {
-    let tagged_file = read_from(file).ok()?;
+pub fn extract_artwork(track: &mut Track) -> Option<Picture> {
+    let mut file = File::open(&track.path).ok()?;
+    let tagged_file = read_from(&mut file).ok()?;
     let tag = tagged_file.primary_tag().or_else(|| tagged_file.first_tag())?;
     tag.pictures().first().cloned()
 }
