@@ -5,7 +5,7 @@ use std::{
 };
 
 use directories::ProjectDirs;
-use lofty::picture::{MimeType, Picture};
+use lofty::picture::MimeType;
 use m3u::Url;
 
 use crate::{
@@ -30,7 +30,7 @@ pub fn cache_track_artwork(track: &Track) -> io::Result<Option<String>> {
     Ok(Some(uri))
 }
 
-fn compute_uri(path: &Path) -> String {
+pub fn compute_uri(path: &Path) -> String {
     Url::from_file_path(path)
         .expect("cache path should always be an absolute file path")
         .to_string()

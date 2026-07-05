@@ -4,20 +4,12 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::cache_track_artwork,
-    commands::execute,
-    library_watcher::LibraryWatcher,
-    nosleep_manager::NoSleepManager,
-    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
-    player::get_position,
-    track::{extract_artwork, is_audio_file},
-    ui::{
+    artwork_cache::cache_track_artwork, commands::execute, library_watcher::LibraryWatcher, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::get_position, track::is_audio_file, ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
         widgets::marquee::Marquee,
-    },
-    visualizer::VisualizerState,
+    }, visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
