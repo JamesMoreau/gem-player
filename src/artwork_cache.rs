@@ -1,54 +1,47 @@
 use std::{
-    fs::{create_dir_all, read_dir, remove_file, write},
+    fs::{create_dir_all, remove_file},
     io,
     path::{Path, PathBuf},
 };
 
 use directories::ProjectDirs;
-use lofty::picture::MimeType;
-use m3u::Url;
+use image::{ImageFormat, load_from_memory};
 
 use crate::{
     APP_NAME,
     track::{Track, extract_artwork},
 };
 
-const ARTWORK_CACHE_FILEBASE: &str = "playing";
+const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 
-pub fn cache_track_artwork(track: &Track) -> io::Result<Option<String>> {
+pub fn cache_track_artwork(track: &Track) -> io::Result<bool> {
     let cache_directory = get_or_init_artwork_cache()?;
-    clear_artwork_cache(&cache_directory)?;
 
     let Some(picture) = extract_artwork(track) else {
-        return Ok(None);
+        return Ok(false);
     };
 
-    let path = artwork_cache_path(&cache_directory, picture.mime_type());
-    write(&path, picture.data())?;
+    let image = load_from_memory(picture.data()).map_err(io::Error::other)?;
 
-    let uri = compute_uri(&path);
-    Ok(Some(uri))
+    image
+        .save_with_format(artwork_cache_path(&cache_directory), ImageFormat::Png)
+        .map_err(io::Error::other)?;
+
+    Ok(true)
 }
 
-pub fn compute_uri(path: &Path) -> String {
-    Url::from_file_path(path)
-        .expect("cache path should always be an absolute file path")
-        .to_string()
+fn artwork_cache_path(cache_directory: &Path) -> PathBuf {
+    cache_directory.join(ARTWORK_CACHE_FILENAME)
 }
 
-fn artwork_cache_path(cache_directory: &Path, mime: Option<&MimeType>) -> PathBuf {
-    let ext = mime.and_then(MimeType::ext).unwrap_or("png");
-    let filename = format!("{}.{}", ARTWORK_CACHE_FILEBASE, ext);
+pub fn clear_artwork_cache() -> io::Result<()> {
+    let path = artwork_cache_path(&get_or_init_artwork_cache()?);
 
-    cache_directory.join(filename)
-}
-
-fn clear_artwork_cache(cache_directory: &Path) -> io::Result<()> {
-    for entry in read_dir(cache_directory)? {
-        remove_file(entry?.path())?;
+    match remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e),
     }
-
-    Ok(())
 }
 
 pub fn get_or_init_artwork_cache() -> io::Result<PathBuf> {

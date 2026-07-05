@@ -4,7 +4,7 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::cache_track_artwork, commands::execute, library_watcher::LibraryWatcher, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::get_position, track::is_audio_file, ui::{
+    artwork_cache::{cache_track_artwork, clear_artwork_cache}, commands::execute, library_watcher::LibraryWatcher, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::get_position, track::is_audio_file, ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
@@ -325,6 +325,10 @@ impl App for GemPlayer {
         let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
 
         self.nosleep_manager.disable();
+
+        if let Err(e) = clear_artwork_cache() {
+            warn!("Unable to clear the artwork cache: {}", e);
+        }
     }
 }
 
