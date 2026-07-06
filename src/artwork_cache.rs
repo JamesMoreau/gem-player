@@ -14,6 +14,9 @@ use crate::{
 
 const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 
+// To cache the playing track's artwork, we extract the picture from the 
+// track, then normalize it to a png format. There is only ever a single
+// artwork cached at one time.
 pub fn cache_track_artwork(track: &Track) -> io::Result<bool> {
     let cache_directory = get_or_init_artwork_cache()?;
 
