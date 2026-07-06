@@ -1,5 +1,5 @@
 use std::{
-    fs::{create_dir_all, remove_file},
+    fs::create_dir_all,
     io,
     path::{Path, PathBuf},
 };
@@ -30,16 +30,6 @@ pub fn cache_track_artwork(track: &Track) -> io::Result<bool> {
         .map_err(io::Error::other)?;
 
     Ok(true)
-}
-
-pub fn clear_artwork_cache() -> io::Result<()> {
-    let path = artwork_cache_path()?;
-
-    match remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(e),
-    }
 }
 
 pub fn artwork_uri() -> Option<String> {
