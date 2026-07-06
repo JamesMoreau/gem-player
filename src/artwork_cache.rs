@@ -4,6 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Result;
 use directories::ProjectDirs;
 use image::{ImageFormat, load_from_memory};
 use m3u::Url;
@@ -18,16 +19,14 @@ const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 // To cache the playing track's artwork, we extract the picture from the
 // track, then normalize it to a png format. There is only ever a single
 // artwork cached at one time.
-pub fn cache_track_artwork(track: &Track) -> io::Result<bool> {
+pub fn cache_track_artwork(track: &Track) -> Result<bool> {
     let Some(picture) = extract_artwork(track) else {
         return Ok(false);
     };
 
-    let image = load_from_memory(picture.data()).map_err(io::Error::other)?;
+    let image = load_from_memory(picture.data())?;
 
-    image
-        .save_with_format(artwork_cache_path()?, ImageFormat::Png)
-        .map_err(io::Error::other)?;
+    image.save_with_format(artwork_cache_path()?, ImageFormat::Png)?;
 
     Ok(true)
 }
@@ -38,7 +37,7 @@ pub fn artwork_uri() -> Option<String> {
     path.is_file().then(|| compute_uri(&path))
 }
 
-fn artwork_cache_path() -> io::Result<PathBuf> {
+fn artwork_cache_path() -> Result<PathBuf> {
     Ok(get_or_init_artwork_cache()?.join(ARTWORK_CACHE_FILENAME))
 }
 
