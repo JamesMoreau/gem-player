@@ -6,6 +6,7 @@ use std::{
 
 use directories::ProjectDirs;
 use image::{ImageFormat, load_from_memory};
+use m3u::Url;
 
 use crate::{
     APP_NAME,
@@ -14,12 +15,10 @@ use crate::{
 
 const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 
-// To cache the playing track's artwork, we extract the picture from the 
+// To cache the playing track's artwork, we extract the picture from the
 // track, then normalize it to a png format. There is only ever a single
 // artwork cached at one time.
 pub fn cache_track_artwork(track: &Track) -> io::Result<bool> {
-    let cache_directory = get_or_init_artwork_cache()?;
-
     let Some(picture) = extract_artwork(track) else {
         return Ok(false);
     };
@@ -27,18 +26,14 @@ pub fn cache_track_artwork(track: &Track) -> io::Result<bool> {
     let image = load_from_memory(picture.data()).map_err(io::Error::other)?;
 
     image
-        .save_with_format(artwork_cache_path(&cache_directory), ImageFormat::Png)
+        .save_with_format(artwork_cache_path()?, ImageFormat::Png)
         .map_err(io::Error::other)?;
 
     Ok(true)
 }
 
-fn artwork_cache_path(cache_directory: &Path) -> PathBuf {
-    cache_directory.join(ARTWORK_CACHE_FILENAME)
-}
-
 pub fn clear_artwork_cache() -> io::Result<()> {
-    let path = artwork_cache_path(&get_or_init_artwork_cache()?);
+    let path = artwork_cache_path()?;
 
     match remove_file(path) {
         Ok(()) => Ok(()),
@@ -47,7 +42,23 @@ pub fn clear_artwork_cache() -> io::Result<()> {
     }
 }
 
-pub fn get_or_init_artwork_cache() -> io::Result<PathBuf> {
+pub fn artwork_uri() -> Option<String> {
+    let path = artwork_cache_path().ok()?;
+
+    path.is_file().then(|| compute_uri(&path))
+}
+
+fn artwork_cache_path() -> io::Result<PathBuf> {
+    Ok(get_or_init_artwork_cache()?.join(ARTWORK_CACHE_FILENAME))
+}
+
+fn compute_uri(path: &Path) -> String {
+    Url::from_file_path(path)
+        .expect("cache path must always be a valid file URL path")
+        .to_string()
+}
+
+fn get_or_init_artwork_cache() -> io::Result<PathBuf> {
     let proj_dirs = ProjectDirs::from("", "", APP_NAME).ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no project dirs"))?;
 
     let directory = proj_dirs.cache_dir().join("artwork");
