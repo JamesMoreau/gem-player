@@ -4,12 +4,20 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{cache_track_artwork}, commands::execute, library_watcher::LibraryWatcher, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::get_position, track::is_audio_file, ui::{
+    artwork_cache::{artwork_uri, cache_track_artwork},
+    commands::execute,
+    library_watcher::LibraryWatcher,
+    nosleep_manager::NoSleepManager,
+    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
+    player::get_position,
+    track::is_audio_file,
+    ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
         widgets::marquee::Marquee,
-    }, visualizer::VisualizerState,
+    },
+    visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
@@ -202,7 +210,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
-            cached_artwork: None,
             library: LibraryViewState {
                 selected_tracks: Vec::new(),
                 cached_library: Vec::new(),
@@ -577,10 +584,14 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
 }
 
 fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
+    if let Some(uri) = artwork_uri() {
+        ctx.forget_image(&uri);
+    }
+
     if let Some(track) = &gem.player.playing
         && let Err(e) = cache_track_artwork(track)
     {
-        error!("Failed to cache artwork: {}", e);
+        error!("Failed to cache artwork: {e}");
     }
 
     gem.ui.marquee.reset();

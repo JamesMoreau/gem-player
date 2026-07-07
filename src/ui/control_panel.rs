@@ -171,7 +171,7 @@ fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap:
                     strip.empty();
                     strip.cell(|ui| {
                         ui.centered_and_justified(|ui| {
-                            artwork_ui(ui, gem.ui.cached_artwork.as_ref(), artwork_width);
+                            artwork_ui(ui, artwork_width);
                         });
                     });
                     strip.empty();

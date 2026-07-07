@@ -19,7 +19,7 @@ use crate::{
         playlist_view::{PlaylistsViewState, playlists_view},
         queue_view::queue_view,
         settings_view::settings_view,
-        widgets::{artwork::Artwork, marquee::Marquee},
+        widgets::{marquee::Marquee},
     },
 };
 
@@ -49,8 +49,6 @@ pub struct UIState {
     marquee: Marquee,
     search: String,
     volume_popup_is_open: bool,
-
-    cached_artwork: Option<Artwork>,
 
     library: LibraryViewState,
     playlists: PlaylistsViewState,
