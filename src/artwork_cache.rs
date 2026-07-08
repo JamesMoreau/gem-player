@@ -18,7 +18,7 @@ const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 
 // To cache the playing track's artwork, we extract the picture from the
 // track, then normalize it to a png format. There is only ever a single
-// artwork cached at one time.
+// artwork cached at a time.
 pub fn cache_track_artwork(track: &Track) -> Result<()> {
     let Some(picture) = extract_artwork(track) else {
         clear_artwork_cache()?;
