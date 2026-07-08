@@ -9,16 +9,17 @@ use egui_material_icons::icons::{
 
 use crate::{
     GemPlayer,
+    artwork_cache::artwork_uri,
     commands::GemCommand,
     player::{Player, get_position},
     track::{Track, file_type_name},
     ui::{
         root::{format_duration_to_mmss, unselectable_label},
         widgets::{
+            artwork::artwork_ui,
             bar_display::BarDisplay,
             marquee::{Marquee, marquee_ui},
             metadata_chip::MetadataChip,
-            artwork::artwork_ui,
         },
     },
     visualizer::smooth_bars,
@@ -171,7 +172,8 @@ fn layout_track_display(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap:
                     strip.empty();
                     strip.cell(|ui| {
                         ui.centered_and_justified(|ui| {
-                            artwork_ui(ui, artwork_width);
+                            let uri = artwork_uri();
+                            artwork_ui(ui, uri.as_deref(), artwork_width);
                         });
                     });
                     strip.empty();

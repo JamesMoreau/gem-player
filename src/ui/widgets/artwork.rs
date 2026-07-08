@@ -1,9 +1,7 @@
 use egui::{Image, TextureFilter, TextureOptions, Ui, Vec2, include_image};
 
-use crate::artwork_cache::artwork_uri;
-
-pub fn artwork_ui(ui: &mut Ui, width: f32) {
-    let artwork = if let Some(uri) = artwork_uri() {
+pub fn artwork_ui(ui: &mut Ui, artwork_uri: Option<&str>, width: f32) {
+    let artwork = if let Some(uri) = artwork_uri {
         Image::from_uri(uri)
     } else {
         Image::new(include_image!("../../../assets/icon.png"))
