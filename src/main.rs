@@ -4,7 +4,7 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{artwork_uri, cache_track_artwork},
+    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::execute,
     library_watcher::LibraryWatcher,
     nosleep_manager::NoSleepManager,
@@ -588,21 +588,23 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
         ctx.forget_image(&uri);
     }
 
-    if let Some(track) = &gem.player.playing
-        && let Err(e) = cache_track_artwork(track)
-    {
-        error!("Failed to cache artwork: {e}");
+    if let Some(track) = &gem.player.playing {
+        if let Err(e) = cache_track_artwork(track) {
+            error!("Failed to cache artwork: {e}");
+        }
+    } else if let Err(e) = clear_artwork_cache() {
+        error!("Failed to clear artwork cache: {e}");
     }
 
     gem.ui.marquee.reset();
 
     if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
         if let Err(e) = update_metadata(&mut osmc.controls, &gem.player) {
-            error!("Failed to set OS media metadata: {}", e);
+            error!("Failed to set OS media metadata: {e}");
         }
 
         if let Err(e) = update_playback(&mut osmc.controls, &gem.player) {
-            error!("Failed to set OS media playback state{}", e);
+            error!("Failed to set OS media playback state: {e}");
         }
     }
 }

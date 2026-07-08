@@ -2,9 +2,6 @@ use egui::{Image, TextureFilter, TextureOptions, Ui, Vec2, include_image};
 
 use crate::artwork_cache::artwork_uri;
 
-// TODO: this should take a parameter instead of directly reading artwork_uri().
-// The previous artwork in cache is not being cleared if the current track does not
-// have one. The placeholder of course does not show either.
 pub fn artwork_ui(ui: &mut Ui, width: f32) {
     let artwork = if let Some(uri) = artwork_uri() {
         Image::from_uri(uri)

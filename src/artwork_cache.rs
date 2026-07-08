@@ -1,5 +1,5 @@
 use std::{
-    fs::create_dir_all,
+    fs::{create_dir_all, remove_file},
     io,
     path::{Path, PathBuf},
 };
@@ -19,16 +19,27 @@ const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 // To cache the playing track's artwork, we extract the picture from the
 // track, then normalize it to a png format. There is only ever a single
 // artwork cached at one time.
-pub fn cache_track_artwork(track: &Track) -> Result<bool> {
+pub fn cache_track_artwork(track: &Track) -> Result<()> {
     let Some(picture) = extract_artwork(track) else {
-        return Ok(false);
+        clear_artwork_cache()?;
+        return Ok(());
     };
 
     let image = load_from_memory(picture.data())?;
 
     image.save_with_format(artwork_cache_path()?, ImageFormat::Png)?;
 
-    Ok(true)
+    Ok(())
+}
+
+pub fn clear_artwork_cache() -> Result<()> {
+    let path = artwork_cache_path()?;
+
+    match remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e.into()),
+    }
 }
 
 pub fn artwork_uri() -> Option<String> {
