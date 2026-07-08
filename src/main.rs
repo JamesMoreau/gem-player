@@ -4,20 +4,18 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
+    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::execute,
     library_watcher::LibraryWatcher,
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
     player::get_position,
-    track::{extract_artwork_from_file, is_audio_file},
+    track::is_audio_file,
     ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
-        widgets::{
-            marquee::Marquee,
-            artwork::{Artwork, compute_uri},
-        },
+        widgets::marquee::Marquee,
     },
     visualizer::VisualizerState,
 };
@@ -35,7 +33,7 @@ use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
 use std::{
     collections::HashMap,
-    fs::{File, copy, read},
+    fs::{copy, read},
     mem::take,
     path::PathBuf,
     sync::{
@@ -55,6 +53,7 @@ use {
     std::str::FromStr,
 };
 
+mod artwork_cache;
 mod commands;
 mod library_folder_picker;
 mod library_watcher;
@@ -211,7 +210,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             current_view: View::Library,
             theme_preference,
             search: String::new(),
-            cached_artwork: None,
             library: LibraryViewState {
                 selected_tracks: Vec::new(),
                 cached_library: Vec::new(),
@@ -586,29 +584,27 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
 }
 
 fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
-    // Forget the previous artwork.
-    if let Some(old) = &gem.ui.cached_artwork {
-        ctx.forget_image(&old.uri);
+    if let Some(uri) = artwork_uri() {
+        ctx.forget_image(&uri);
     }
 
-    gem.ui.cached_artwork = gem.player.playing.as_ref().and_then(|track| {
-        let uri = compute_uri(&track.path);
-
-        File::open(&track.path)
-            .ok()
-            .and_then(|mut f| extract_artwork_from_file(&mut f))
-            .map(|bytes| Artwork { uri, bytes })
-    });
+    if let Some(track) = &gem.player.playing {
+        if let Err(e) = cache_track_artwork(track) {
+            error!("Failed to cache artwork: {e}");
+        }
+    } else if let Err(e) = clear_artwork_cache() {
+        error!("Failed to clear artwork cache: {e}");
+    }
 
     gem.ui.marquee.reset();
 
     if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
         if let Err(e) = update_metadata(&mut osmc.controls, &gem.player) {
-            error!("Failed to set OS media metadata: {}", e);
+            error!("Failed to set OS media metadata: {e}");
         }
 
         if let Err(e) = update_playback(&mut osmc.controls, &gem.player) {
-            error!("Failed to set OS media playback state{}", e);
+            error!("Failed to set OS media playback state: {e}");
         }
     }
 }

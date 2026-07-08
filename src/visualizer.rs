@@ -25,7 +25,7 @@ pub enum VisualizerCommand {
     Shutdown,
 }
 
-//  The visualizer pipeline is comprised of three components:
+//  The visualizer pipeline is comprised of the following components:
 //  - A source wrapper that captures audio samples from the audio stream.
 //  - A processing thread that receives the samples, performs FFT, and performs other processing.
 //  - A smoothing function applied between frames.

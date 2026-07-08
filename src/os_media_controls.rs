@@ -9,6 +9,7 @@ use std::{
 
 use crate::{
     APP_NAME, GemPlayer,
+    artwork_cache::artwork_uri,
     commands::GemCommand,
     player::{Player, get_position},
 };
@@ -28,13 +29,15 @@ struct OSMediaControls {
 }
 
 pub fn update_metadata(controls: &mut MediaControls, player: &Player) -> Result<()> {
+    let artwork_uri = artwork_uri();
+
     let metadata = match &player.playing {
         Some(track) => MediaMetadata {
             title: track.title.as_deref(),
             album: track.album.as_deref(),
             artist: track.artist.as_deref(),
             duration: Some(track.duration),
-            cover_url: None,
+            cover_url: artwork_uri.as_deref(),
         },
         None => MediaMetadata {
             title: None,

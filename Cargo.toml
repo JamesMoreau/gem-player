@@ -21,7 +21,6 @@ env_logger = { version = "0.11.11", default-features = false, features = [
 ] }
 font-kit = "0.14.3"
 fully_pub = "0.1.4"
-image = { version = "0.25.10", features = ["jpeg", "png"] }
 lofty = "0.24.0"
 log = "0.4.32"
 m3u = "1.0.0"
@@ -43,6 +42,8 @@ strum = "0.28.0"
 strum_macros = "0.28.0"
 trash = "5.2.6"
 walkdir = "2.5.0"
+directories = "6.0.0"
+image = "0.25.10"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10.1"
