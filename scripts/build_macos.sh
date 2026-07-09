@@ -2,12 +2,12 @@
 
 set -euo pipefail # Exit on any error
 
-# Load environment variables
-source .env
-
 # Go to root directory
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
+
+# Load environment variables
+source "$ROOT_DIR/.env"
 
 METADATA=$(cargo metadata --no-deps --format-version 1)
 APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
