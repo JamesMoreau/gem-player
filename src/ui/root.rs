@@ -23,7 +23,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, Copy)]
 pub enum View {
     Library,
     Playlists,
