@@ -253,7 +253,9 @@ fn layout_playback_slider_and_track_info(ui: &mut Ui, gem: &mut GemPlayer, slide
     StripBuilder::new(ui).sizes(Size::relative(1.0 / 2.0), 2).vertical(|mut strip| {
         strip.cell(|ui| {
             ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                playback_slider(ui, gem, &mut position, slider_width);
+                if let Some(command) = playback_slider(ui, &mut gem.player, &mut position, slider_width) {
+                    gem.commands.push(command);
+                }
             });
         });
 
@@ -263,13 +265,15 @@ fn layout_playback_slider_and_track_info(ui: &mut Ui, gem: &mut GemPlayer, slide
     });
 }
 
-fn playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut Duration, slider_width: f32) {
+fn playback_slider(ui: &mut Ui, player: &mut Player, position: &mut Duration, slider_width: f32) -> Option<GemCommand> {
+    let mut command = None;
+
     ui.scope(|ui| {
         ui.spacing_mut().slider_width = slider_width;
 
-        let slider_enabled = gem.player.backend.is_some() && gem.player.playing.is_some();
+        let slider_enabled = player.backend.is_some() && player.playing.is_some();
 
-        let track_duration = gem.player.playing.as_ref().map_or(Duration::ZERO, |t| t.duration);
+        let track_duration = player.playing.as_ref().map_or(Duration::ZERO, |t| t.duration);
 
         let mut position_as_secs = position.as_secs_f32();
 
@@ -288,24 +292,25 @@ fn playback_slider(ui: &mut Ui, gem: &mut GemPlayer, position: &mut Duration, sl
 
         *position = Duration::from_secs_f32(position_as_secs);
 
-        if response.dragged() && gem.player.paused_before_scrubbing.is_none() {
-            let is_paused = gem
-                .player
+        if response.dragged() && player.paused_before_scrubbing.is_none() {
+            let is_paused = player
                 .backend
                 .as_ref()
                 .expect("backend should exist if slider is enabled")
                 .player
                 .is_paused();
 
-            gem.player.paused_before_scrubbing = Some(is_paused);
+            player.paused_before_scrubbing = Some(is_paused);
 
-            gem.commands.push(GemCommand::Pause);
+            command = Some(GemCommand::Pause)
         }
 
         if response.drag_stopped() {
-            gem.commands.push(GemCommand::SeekTo(*position));
+            command = Some(GemCommand::SeekTo(*position));
         }
     });
+
+    command
 }
 
 fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, player: &Player, position: Duration, marquee: &mut Marquee) {
