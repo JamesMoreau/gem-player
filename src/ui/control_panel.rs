@@ -181,7 +181,11 @@ fn now_playing(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, art
                 .size(Size::exact(gap))
                 .horizontal(|mut strip| {
                     strip.empty();
-                    strip.cell(|ui| display_repeat_and_shuffle_buttons(ui, gem, button_size));
+                    strip.cell(|ui| {
+                        if let Some(command) = display_repeat_and_shuffle_buttons(ui, &gem.player, button_size) {
+                            gem.commands.push(command);
+                        }
+                    });
                     strip.empty();
                     strip.cell(|ui| {
                         ui.centered_and_justified(|ui| {
@@ -197,7 +201,9 @@ fn now_playing(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, art
     });
 }
 
-fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32) {
+fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size: f32) -> Option<GemCommand> {
+    let mut command = None;
+
     ui.scope(|ui| {
         ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
@@ -213,18 +219,18 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_s
             }
         };
 
-        let color = get_button_color(ui, gem.player.repeat);
+        let color = get_button_color(ui, player.repeat);
         let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
 
         if ui.add(repeat_button).on_hover_text("Repeat").clicked() {
-            gem.commands.push(GemCommand::ToggleRepeat);
+            command = Some(GemCommand::ToggleRepeat);
         }
 
         ui.add_space(vertical_pad);
 
-        let color = get_button_color(ui, gem.player.shuffle.is_some());
+        let color = get_button_color(ui, player.shuffle.is_some());
         let shuffle_button = Button::new(ICON_SHUFFLE.rich_text().color(color)).min_size(Vec2::splat(button_size));
-        let shuffle_enabled = !gem.player.queue.is_empty();
+        let shuffle_enabled = !player.queue.is_empty();
 
         let response = ui
             .add_enabled(shuffle_enabled, shuffle_button)
@@ -232,9 +238,11 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, gem: &mut GemPlayer, button_s
             .on_disabled_hover_text("Queue is empty");
 
         if response.clicked() {
-            gem.commands.push(GemCommand::ToggleShuffle);
+            command = Some(GemCommand::ToggleShuffle);
         }
     });
+
+    command
 }
 
 fn layout_playback_slider_and_track_info(ui: &mut Ui, gem: &mut GemPlayer, slider_width: f32) {
