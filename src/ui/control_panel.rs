@@ -26,7 +26,8 @@ use crate::{
 };
 
 pub fn control_panel(ui: &mut Ui, gem: &mut GemPlayer) {
-    // Specifying the widths of the elements in the track info component before-hand allows us to center them horizontally.
+    // Specifying the widths of the elements in the now playing component before-hand
+    // allows us to center it horizontally.
     let button_size = 20.0;
     let gap = 10.0;
     let artwork_width = ui.available_height() - 4.0; // leave some space for the track info frame background.
@@ -39,21 +40,33 @@ pub fn control_panel(ui: &mut Ui, gem: &mut GemPlayer) {
             .size(Size::remainder())
             .horizontal(|mut strip| {
                 strip.cell(|ui| {
-                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| playback_controls(ui, gem));
+                    left_controls(ui, gem);
                 });
-
-                strip.cell(|ui| layout_now_playing(ui, gem, button_size, gap, artwork_width, slider_width));
 
                 strip.cell(|ui| {
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        display_visualizer(ui, gem);
+                    now_playing(ui, gem, button_size, gap, artwork_width, slider_width);
+                });
 
-                        ui.add_space(16.0);
-
-                        volume_control_button(ui, gem);
-                    });
+                strip.cell(|ui| {
+                    right_controls(ui, gem);
                 });
             });
+    });
+}
+
+fn left_controls(ui: &mut Ui, gem: &mut GemPlayer) {
+    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+        playback_controls(ui, gem);
+    });
+}
+
+fn right_controls(ui: &mut Ui, gem: &mut GemPlayer) {
+    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+        display_visualizer(ui, &mut gem.player);
+
+        ui.add_space(16.0);
+
+        volume_control_button(ui, gem);
     });
 }
 
@@ -153,7 +166,7 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn layout_now_playing(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
+fn now_playing(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
     ui.scope(|ui| {
         ui.spacing_mut().item_spacing = Vec2::splat(0.0);
 
@@ -357,14 +370,14 @@ fn display_track_metadata(ui: &mut Ui, track: &Track) {
     }
 }
 
-fn display_visualizer(ui: &mut Ui, gem: &mut GemPlayer) {
+fn display_visualizer(ui: &mut Ui, player: &mut Player) {
     let dt = ui.input(|i| i.stable_dt);
 
-    let targets = gem.player.visualizer.bands_receiver.try_iter().last();
+    let targets = player.visualizer.bands_receiver.try_iter().last();
 
-    smooth_bars(&mut gem.player.visualizer.display_bands, targets.as_deref(), dt);
+    smooth_bars(&mut player.visualizer.display_bands, targets.as_deref(), dt);
 
-    let display_bands = &gem.player.visualizer.display_bands;
+    let display_bands = &player.visualizer.display_bands;
 
     let display = BarDisplay::new(display_bands, ui.available_height() * 0.5, 10.0, 4.0, ui.visuals().text_color());
 
