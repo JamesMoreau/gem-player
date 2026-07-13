@@ -43,8 +43,24 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
             return;
         };
 
-        if gem.ui.playlists.delete_modal_open {
-            delete_playlist_modal(ui, gem);
+        if gem.ui.playlists.delete_modal_open
+            && let Some(result) = delete_playlist_modal(ui)
+        {
+            gem.ui.playlists.delete_modal_open = false;
+
+            if let DeletePlaylistResult::Confirm = result {
+                if let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.take() {
+                    if let Err(e) = delete(&playlist_key, &mut gem.playlists) {
+                        error!("{}", e);
+                    } else {
+                        let message = "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
+                        info!("{}", message);
+                        gem.ui.toasts.success(message);
+                    }
+                } else {
+                    error!("Request for deleting a playlist but no playlist is selected.");
+                };
+            }
         }
 
         let size = ui.available_size();
@@ -131,17 +147,13 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
     });
 }
 
-fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
-    debug_assert!(gem.ui.playlists.delete_modal_open);
+enum DeletePlaylistResult {
+    Confirm,
+    Cancel,
+}
 
-    let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
-        error!("The delete playlist modal is open but no playlist is selected.");
-        gem.ui.playlists.delete_modal_open = false;
-        return;
-    };
-
-    let mut cancel_clicked = false;
-    let mut confirm_clicked = false;
+fn delete_playlist_modal(ui: &mut Ui) -> Option<DeletePlaylistResult> {
+    let mut result = None;
 
     let modal = containers::Modal::new(Id::new("delete_playlist_modal"))
         .backdrop_color(Color32::TRANSPARENT)
@@ -153,36 +165,27 @@ fn delete_playlist_modal(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.separator();
 
-                containers::Sides::new().show(
+                let (cancel, confirm) = containers::Sides::new().show(
                     ui,
-                    |ui| {
-                        if ui.button(("\t", ICON_CLOSE, "\t")).clicked() {
-                            cancel_clicked = true;
-                        }
-                    },
-                    |ui| {
-                        if ui.button(("\t", ICON_CHECK, "\t")).clicked() {
-                            confirm_clicked = true;
-
-                            let result = delete(&playlist_key, &mut gem.playlists);
-                            if let Err(e) = result {
-                                error!("{}", e);
-                            } else {
-                                let message =
-                                    "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
-                                info!("{}", message);
-                                gem.ui.toasts.success(message);
-                                gem.ui.playlists.selected_playlist_key = None;
-                            }
-                        }
-                    },
+                    |ui| ui.button(("\t", ICON_CLOSE, "\t")).clicked(),
+                    |ui| ui.button(("\t", ICON_CHECK, "\t")).clicked(),
                 );
+
+                if cancel {
+                    result = Some(DeletePlaylistResult::Cancel)
+                }
+
+                if confirm {
+                    result = Some(DeletePlaylistResult::Confirm)
+                }
             });
         });
 
-    if confirm_clicked || cancel_clicked || modal.should_close() {
-        gem.ui.playlists.delete_modal_open = false;
+    if modal.should_close() {
+        result = Some(DeletePlaylistResult::Cancel)
     }
+
+    result
 }
 
 fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
