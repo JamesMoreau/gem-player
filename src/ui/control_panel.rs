@@ -56,7 +56,9 @@ pub fn control_panel(ui: &mut Ui, gem: &mut GemPlayer) {
 
 fn left_controls(ui: &mut Ui, gem: &mut GemPlayer) {
     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-        playback_controls(ui, gem);
+        if let Some(command) = playback_controls(ui, &mut gem.player) {
+            gem.commands.push(command);
+        }
     });
 }
 
@@ -125,12 +127,14 @@ fn volume_control_button(ui: &mut Ui, gem: &mut GemPlayer) {
     }
 }
 
-fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
-    let has_backend = gem.player.backend.is_some();
-    let track_is_playing = gem.player.playing.is_some();
+fn playback_controls(ui: &mut Ui, player: &mut Player) -> Option<GemCommand> {
+    let mut command = None;
+
+    let has_backend = player.backend.is_some();
+    let track_is_playing = player.playing.is_some();
 
     let previous_button = Button::new(ICON_SKIP_PREVIOUS.rich_text().size(18.0));
-    let previous_track_exists = !gem.player.history.is_empty();
+    let previous_track_exists = !player.history.is_empty();
     let previous_enabled = has_backend && (track_is_playing || previous_track_exists);
 
     let response = ui
@@ -138,10 +142,10 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_hover_text("Previous")
         .on_disabled_hover_text("No previous track");
     if response.clicked() {
-        gem.commands.push(GemCommand::PreviousTrack);
+        command = Some(GemCommand::PreviousTrack);
     }
 
-    let sink_is_paused = gem.player.backend.as_ref().is_some_and(|b| b.player.is_paused());
+    let sink_is_paused = player.backend.as_ref().is_some_and(|b| b.player.is_paused());
     let play_pause_icon = if sink_is_paused { ICON_PLAY_ARROW } else { ICON_PAUSE };
     let tooltip = if sink_is_paused { "Play" } else { "Pause" };
     let play_pause_enabled = has_backend && track_is_playing;
@@ -152,18 +156,20 @@ fn playback_controls(ui: &mut Ui, gem: &mut GemPlayer) {
         .on_disabled_hover_text("No current track");
 
     if response.clicked() {
-        gem.commands.push(GemCommand::TogglePlayback);
+        command = Some(GemCommand::TogglePlayback);
     }
 
     let next_button = Button::new(ICON_SKIP_NEXT.rich_text().size(18.0));
-    let next_enabled = has_backend && !gem.player.queue.is_empty();
+    let next_enabled = has_backend && !player.queue.is_empty();
     let response = ui
         .add_enabled(next_enabled, next_button)
         .on_hover_text("Next")
         .on_disabled_hover_text("No next track");
     if response.clicked() {
-        gem.commands.push(GemCommand::NextTrack);
+        command = Some(GemCommand::NextTrack);
     }
+
+    command
 }
 
 fn now_playing(ui: &mut Ui, gem: &mut GemPlayer, button_size: f32, gap: f32, artwork_width: f32, slider_width: f32) {
