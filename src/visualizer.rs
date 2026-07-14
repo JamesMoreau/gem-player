@@ -10,6 +10,7 @@ use std::{
 };
 
 const FFT_SIZE: usize = 1 << 10; // 1024
+const HALF_OCTAVE_BANDWIDTH: f32 = SQRT_2;
 pub const CENTER_FREQUENCIES: [f32; 6] = [63.0, 125.0, 250.0, 500.0, 1000.0, 2000.0];
 
 #[fully_pub]
@@ -70,8 +71,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
                         samples.push(sample);
 
                         if samples.len() == FFT_SIZE {
-                            let half_octave_bandwidth = SQRT_2;
-                            let bands = fft_pipeline(&samples, sr, fft.as_ref(), &CENTER_FREQUENCIES, half_octave_bandwidth);
+                            let bands = fft_pipeline(&samples, sr, fft.as_ref());
 
                             let result = bands_sender.send(bands);
                             if result.is_err() {
@@ -97,13 +97,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     (command_sender, bands_receiver)
 }
 
-fn fft_pipeline(
-    samples: &[Sample],
-    sample_rate: SampleRate,
-    fft: &dyn Fft<f32>,
-    band_center_frequencies: &[f32],
-    bandwidth: f32,
-) -> Vec<f32> {
+fn fft_pipeline(samples: &[Sample], sample_rate: SampleRate, fft: &dyn Fft<f32>) -> Vec<f32> {
     let n = samples.len();
 
     let mut buffer: Vec<Complex<f32>> = samples
@@ -116,11 +110,11 @@ fn fft_pipeline(
 
     let magnitudes: Vec<f32> = buffer.iter().take(n / 2 + 1).map(|c| c.norm()).collect();
 
-    let mut bands = vec![0.0; band_center_frequencies.len()];
+    let mut bands = vec![0.0; CENTER_FREQUENCIES.len()];
 
-    for (b, &center) in band_center_frequencies.iter().enumerate() {
-        let f_start = center / bandwidth;
-        let f_end = center * bandwidth;
+    for (b, &center) in CENTER_FREQUENCIES.iter().enumerate() {
+        let f_start = center / HALF_OCTAVE_BANDWIDTH;
+        let f_end = center * HALF_OCTAVE_BANDWIDTH;
 
         let i_min = ((f_start * n as f32) / sample_rate.get() as f32).floor() as usize;
         let i_max = ((f_end * n as f32) / sample_rate.get() as f32).ceil() as usize;
