@@ -136,16 +136,28 @@ fn process_samples(
         *band = 20.0 * band.log10();
     }
 
-    // Normalize 0..1
-    if let Some(&max_band) = bands.iter().max_by(|a, b| a.partial_cmp(b).unwrap())
-        && max_band > 0.0
-    {
-        for band in &mut bands {
+    normalize(&mut bands);
+
+    noise_floor(&mut bands, 0.05);
+
+    bands
+}
+
+// Normalizes between 0 and 1.
+fn normalize(bands: &mut [f32]) {
+    let max_band = bands.iter().copied().fold(0.0, f32::max);
+
+    if max_band > 0.0 {
+        for band in bands {
             *band /= max_band;
         }
     }
+}
 
-    bands
+fn noise_floor(bands: &mut [f32], floor: f32) {
+    for band in bands {
+        *band = (*band - floor).max(0.0);
+    }
 }
 
 fn hann_window(n: usize) -> Vec<f32> {
