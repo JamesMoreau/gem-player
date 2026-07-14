@@ -71,7 +71,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
 
                         if samples.len() == FFT_SIZE {
                             let half_octave_bandwidth = SQRT_2;
-                            let bands = process_samples(&samples, sr, fft.as_ref(), &CENTER_FREQUENCIES, half_octave_bandwidth);
+                            let bands = fft_pipeline(&samples, sr, fft.as_ref(), &CENTER_FREQUENCIES, half_octave_bandwidth);
 
                             let result = bands_sender.send(bands);
                             if result.is_err() {
@@ -97,11 +97,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     (command_sender, bands_receiver)
 }
 
-fn fft_pipeline() {
-    todo!()
-}
-
-fn process_samples(
+fn fft_pipeline(
     samples: &[Sample],
     sample_rate: SampleRate,
     fft: &dyn Fft<f32>,
@@ -144,6 +140,8 @@ fn process_samples(
 
     bands
 }
+
+fn compute_magnitudes(samples: &[Sample], fft: &dyn Fft<f32>) ->
 
 fn log_scale(values: &mut [f32]) {
     let amplitude_to_db_factor = 20.0;
