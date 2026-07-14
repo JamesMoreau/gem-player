@@ -145,30 +145,30 @@ fn process_samples(
     bands
 }
 
-fn log_scale(bands: &mut [f32]) {
+fn log_scale(values: &mut [f32]) {
     let amplitude_to_db_factor = 20.0;
     let minimum_db_epsilon = 1e-10;
 
-    for band in bands {
-        *band = band.sqrt().max(minimum_db_epsilon); // avoid log(0)
-        *band = amplitude_to_db_factor * band.log10();
+    for value in values {
+        *value = value.sqrt().max(minimum_db_epsilon); // avoid log(0)
+        *value = amplitude_to_db_factor * value.log10();
     }
 }
 
 // Normalizes between 0 and 1.
-fn normalize(bands: &mut [f32]) {
-    let max_band = bands.iter().copied().fold(0.0, f32::max);
+fn normalize(value: &mut [f32]) {
+    let max_value = value.iter().copied().fold(0.0, f32::max);
 
-    if max_band > 0.0 {
-        for band in bands {
-            *band /= max_band;
+    if max_value > 0.0 {
+        for value in value {
+            *value /= max_value;
         }
     }
 }
 
-fn noise_floor(bands: &mut [f32], floor: f32) {
-    for band in bands {
-        *band = (*band - floor).max(0.0);
+fn noise_floor(values: &mut [f32], floor: f32) {
+    for value in values {
+        *value = (*value - floor).max(0.0);
     }
 }
 
