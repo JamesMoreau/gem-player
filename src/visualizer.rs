@@ -138,7 +138,8 @@ fn process_samples(
 
     normalize(&mut bands);
 
-    noise_floor(&mut bands, 0.05);
+    let floor = 0.05
+    noise_floor(&mut bands, floor);
 
     bands
 }
