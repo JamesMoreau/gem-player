@@ -97,6 +97,10 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     (command_sender, bands_receiver)
 }
 
+fn fft_pipeline() {
+    todo!()
+}
+
 fn process_samples(
     samples: &[Sample],
     sample_rate: SampleRate,
@@ -131,10 +135,7 @@ fn process_samples(
         }
     }
 
-    for band in &mut bands {
-        *band = band.sqrt().max(1e-10); // avoid log(0)
-        *band = 20.0 * band.log10();
-    }
+    log_scale(&mut bands);
 
     normalize(&mut bands);
 
@@ -142,6 +143,16 @@ fn process_samples(
     noise_floor(&mut bands, floor);
 
     bands
+}
+
+fn log_scale(bands: &mut [f32]) {
+    let amplitude_to_db_factor = 20.0;
+    let minimum_db_epsilon = 1e-10;
+
+    for band in bands {
+        *band = band.sqrt().max(minimum_db_epsilon); // avoid log(0)
+        *band = amplitude_to_db_factor * band.log10();
+    }
 }
 
 // Normalizes between 0 and 1.
