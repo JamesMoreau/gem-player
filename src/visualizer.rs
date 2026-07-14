@@ -141,8 +141,6 @@ fn fft_pipeline(
     bands
 }
 
-fn compute_magnitudes(samples: &[Sample], fft: &dyn Fft<f32>) ->
-
 fn log_scale(values: &mut [f32]) {
     let amplitude_to_db_factor = 20.0;
     let minimum_db_epsilon = 1e-10;
