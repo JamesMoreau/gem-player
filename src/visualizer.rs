@@ -71,7 +71,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
                         samples.push(sample);
 
                         if samples.len() == FFT_SIZE {
-                            let bands = fft_pipeline(&samples, sr, fft.as_ref());
+                            let bands = compute_bands(&samples, sr, fft.as_ref());
 
                             let result = bands_sender.send(bands);
                             if result.is_err() {
@@ -97,7 +97,7 @@ pub fn setup_visualizer_pipeline() -> (Sender<VisualizerCommand>, Receiver<Vec<f
     (command_sender, bands_receiver)
 }
 
-fn fft_pipeline(samples: &[Sample], sample_rate: SampleRate, fft: &dyn Fft<f32>) -> Vec<f32> {
+fn compute_bands(samples: &[Sample], sample_rate: SampleRate, fft: &dyn Fft<f32>) -> Vec<f32> {
     let n = samples.len();
 
     let mut buffer: Vec<Complex<f32>> = samples
