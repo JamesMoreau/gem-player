@@ -32,7 +32,7 @@ pub enum VisualizerCommand {
 //  - A smoothing function applied between frames.
 
 pub fn smooth_bars(bars: &mut [f32], targets: Option<&[f32]>, dt: f32) {
-    let smoothing = 12.0;
+    let smoothing = 10.0;
     let step = smoothing * dt;
     let alpha = 1.0 - (-step).exp();
 
@@ -159,6 +159,12 @@ fn normalize(value: &mut [f32]) {
 fn noise_floor(values: &mut [f32], floor: f32) {
     for value in values {
         *value = (*value - floor).max(0.0);
+    }
+}
+
+fn smooth_across_frames(previous: &mut [f32], current: &[f32], alpha: f32) {
+    for (prev, &curr) in previous.iter_mut().zip(current) {
+        *prev += alpha * (curr - *prev);
     }
 }
 
