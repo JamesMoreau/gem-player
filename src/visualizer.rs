@@ -162,12 +162,6 @@ fn noise_floor(values: &mut [f32], floor: f32) {
     }
 }
 
-fn smooth_across_frames(previous: &mut [f32], current: &[f32], alpha: f32) {
-    for (prev, &curr) in previous.iter_mut().zip(current) {
-        *prev += alpha * (curr - *prev);
-    }
-}
-
 fn hann_window(n: usize) -> Vec<f32> {
     (0..n)
         .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / (n as f32 - 1.0)).cos()))
