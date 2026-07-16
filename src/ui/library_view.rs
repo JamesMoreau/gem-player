@@ -1,7 +1,4 @@
-use std::{
-    fs::copy,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
 use egui::{Align, Button, Label, Layout, Popup, RichText, ScrollArea, Sense, Ui};
 use egui_extras::TableBuilder;
@@ -9,12 +6,10 @@ use egui_material_icons::icons::{
     ICON_ALBUM, ICON_ARTIST, ICON_FOLDER, ICON_HOURGLASS, ICON_MORE_HORIZ, ICON_MUSIC_NOTE, ICON_PLAY_ARROW, ICON_QUEUE_MUSIC,
 };
 use fully_pub::fully_pub;
-use log::{error, info};
 
 use crate::{
     GemPlayer,
     commands::GemCommand,
-    resources::resource_path,
     track::{SortBy, SortOrder, Track, filter, sort},
     ui::{
         root::{format_duration_to_mmss, table_label, unselectable_label},
@@ -37,7 +32,7 @@ struct LibraryViewState {
 
 pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     ui.scope(|ui| {
-        let Some(library_directory) = &gem.library_directory else {
+        if gem.library_directory.is_none() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label(
@@ -53,11 +48,6 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("The library is empty."));
-                    ui.add_space(16.0);
-
-                    if ui.button("Add a sample track").clicked() {
-                        add_sample_track_to_library(library_directory);
-                    }
                 });
             });
 
@@ -294,18 +284,4 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
     }
 
     maybe_command
-}
-
-const SAMPLE_TRACK_NAME: &str = "clair_de_lune.mp3";
-
-fn add_sample_track_to_library(library_dir: &Path) {
-    let resource_path = resource_path(SAMPLE_TRACK_NAME);
-    let dest_path = library_dir.join(SAMPLE_TRACK_NAME);
-
-    if copy(&resource_path, &dest_path).is_err() {
-        error!("Failed to copy sample track to library directory.");
-        return;
-    }
-
-    info!("Added sample track.");
 }

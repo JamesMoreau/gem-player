@@ -54,7 +54,6 @@ mod os_media_controls;
 mod platform;
 mod player;
 mod playlist;
-mod resources;
 mod track;
 mod ui;
 mod visualizer;
