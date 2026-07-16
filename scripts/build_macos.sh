@@ -2,12 +2,19 @@
 
 set -euo pipefail # Exit on any error
 
-# Go to root directory
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$ROOT_DIR"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Load environment variables
-source "$ROOT_DIR/.env"
+# Load build environment
+if [[ ! -f "$SCRIPT_DIR/.env" ]]; then
+    echo "❌ Error: $SCRIPT_DIR/.env not found."
+    exit 1
+fi
+
+source "$SCRIPT_DIR/.env"
+
+# Run all build commands from the project root
+cd "$ROOT_DIR"
 
 METADATA=$(cargo metadata --no-deps --format-version 1)
 APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
