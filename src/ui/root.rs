@@ -1,8 +1,6 @@
 use std::time::Duration;
 
-#[cfg(target_os = "macos")]
-use egui::{Align, Layout};
-use egui::{CentralPanel, Color32, Frame, Label, RichText, Separator, ThemePreference, Ui, WidgetText};
+use egui::{Align, CentralPanel, Color32, Frame, Label, Layout, RichText, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons::{ICON_LIBRARY_MUSIC, ICON_QUEUE_MUSIC, ICON_SETTINGS, ICON_STAR};
 use egui_notify::Toasts;
@@ -19,7 +17,7 @@ use crate::{
         playlist_view::{PlaylistsViewState, playlists_view},
         queue_view::queue_view,
         settings_view::settings_view,
-        widgets::{marquee::Marquee},
+        widgets::marquee::Marquee,
     },
 };
 

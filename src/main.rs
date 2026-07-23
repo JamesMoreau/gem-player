@@ -4,16 +4,24 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache}, commands::execute, library_watcher::LibraryWatcher, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::{get_position, stop}, track::is_audio_file, ui::{
+    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
+    commands::{GemCommand, execute},
+    library_watcher::LibraryWatcher,
+    nosleep_manager::NoSleepManager,
+    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
+    player::{get_position, stop},
+    track::is_audio_file,
+    ui::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
         widgets::marquee::Marquee,
-    }, visualizer::VisualizerState,
+    },
+    visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
-use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Vec2, ViewportBuilder, Visuals};
+use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Ui, Vec2, ViewportBuilder, Visuals};
 use egui_notify::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -39,11 +47,7 @@ use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
 #[cfg(target_os = "macos")]
-use {
-    crate::{commands::GemCommand, platform::macos_menu::MenuBar},
-    egui::Ui,
-    std::str::FromStr,
-};
+use {crate::platform::macos_menu::MenuBar, std::str::FromStr};
 
 mod artwork_cache;
 mod commands;
@@ -371,21 +375,6 @@ fn poll_macos_menu_events(gem: &mut GemPlayer) {
             Err(_) => error!("Unable to process menu event: {:?}", event),
         }
     }
-}
-
-#[cfg(target_os = "windows")]
-pub fn handle_shortcuts(ctx: &Context, gem: &mut GemPlayer) {
-    if ctx.wants_keyboard_input() {
-        return;
-    }
-
-    ctx.input_mut(|i| {
-        for shortcut in SHORTCUTS {
-            if i.consume_key(shortcut.modifiers, shortcut.key) {
-                execute(ctx, gem, shortcut.command);
-            }
-        }
-    });
 }
 
 fn poll_library_watcher(gem: &mut GemPlayer) {
