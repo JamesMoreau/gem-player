@@ -8,7 +8,7 @@ repository = "https://github.com/JamesMoreau/gem-player"
 authors = ["James Moreau"]
 
 [dependencies]
-anyhow = "1.0.103"
+anyhow = "1.0.104"
 dark-light = "2.0.0"
 eframe = { version = "0.34.3", features = ["persistence"] }
 egui = "0.34.3"
@@ -35,8 +35,8 @@ rfd = "0.17.2"
 rodio = { version = "0.22.2", features = ["symphonia-all"] }
 rustfft = "6.4.1"
 sanitize-filename = "0.6.0"
-serde = "1.0.228"
-serde_json = "1.0.150"
+serde = "1.0.229"
+serde_json = "1.0.151"
 souvlaki = "0.8.3"
 strum = "0.28.0"
 strum_macros = "0.28.0"
