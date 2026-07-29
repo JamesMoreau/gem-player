@@ -100,14 +100,19 @@ fn main() -> eframe::Result {
 
     let icon_data = icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("The icon data must be valid");
 
+    let viewport = ViewportBuilder::default()
+        .with_min_inner_size(Vec2::new(900.0, 500.0))
+        .with_icon(icon_data);
+
+    #[cfg(target_os = "macos")]
+    let viewport = viewport
+        .with_title_shown(false)
+        .with_titlebar_shown(false)
+        .with_titlebar_buttons_shown(true)
+        .with_fullsize_content_view(true);
+
     let options = NativeOptions {
-        viewport: ViewportBuilder::default()
-            .with_min_inner_size(Vec2::new(900.0, 500.0))
-            .with_title_shown(false)
-            .with_titlebar_shown(false)
-            .with_titlebar_buttons_shown(true)
-            .with_fullsize_content_view(true)
-            .with_icon(icon_data),
+        viewport,
         ..Default::default()
     };
     run_native(APP_NAME, options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
