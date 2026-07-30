@@ -69,13 +69,13 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
             let navigation_ui_height = 32.0;
             let separator_space = 2.0;
 
-            let mut strip = StripBuilder::new(ui);
+            let strip = StripBuilder::new(ui);
 
             #[cfg(target_os = "macos")]
-            {
+            let strip = {
                 let titlebar_ui_height = 32.0;
-                strip = strip.size(Size::exact(titlebar_ui_height));
-            }
+                strip.size(Size::exact(titlebar_ui_height))
+            };
 
             strip
                 .size(Size::exact(separator_space))
