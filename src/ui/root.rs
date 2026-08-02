@@ -67,7 +67,7 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 
             let control_ui_height = 80.0;
             let navigation_ui_height = 32.0;
-            let separator_space = 2.0;
+            let separator_space = 3.0; // Since the seperator is 1px we want it in the middle.
 
             let strip = StripBuilder::new(ui);
 
