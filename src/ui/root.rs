@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use egui::{Align, CentralPanel, Color32, Frame, Label, Layout, RichText, Separator, ThemePreference, Ui, WidgetText};
+use egui::{CentralPanel, Color32, Frame, Label, RichText, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons::{ICON_LIBRARY_MUSIC, ICON_QUEUE_MUSIC, ICON_SETTINGS, ICON_STAR};
 use egui_notify::Toasts;
@@ -65,13 +65,19 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 return;
             }
 
-            let titlebar_ui_height = 32.0;
             let control_ui_height = 80.0;
             let navigation_ui_height = 32.0;
-            let separator_space = 2.0;
+            let separator_space = 3.0; // Since the seperator is 1px we want it in the middle.
 
-            StripBuilder::new(ui)
-                .size(Size::exact(titlebar_ui_height))
+            let strip = StripBuilder::new(ui);
+
+            #[cfg(target_os = "macos")]
+            let strip = {
+                let titlebar_ui_height = 32.0;
+                strip.size(Size::exact(titlebar_ui_height))
+            };
+
+            strip
                 .size(Size::exact(separator_space))
                 .size(Size::exact(control_ui_height))
                 .size(Size::exact(separator_space))
@@ -79,7 +85,10 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 .size(Size::exact(separator_space))
                 .size(Size::exact(navigation_ui_height))
                 .vertical(|mut strip| {
-                    strip.cell(title_bar);
+                    #[cfg(target_os = "macos")]
+                    {
+                        strip.cell(title_bar);
+                    }
 
                     strip.cell(|ui| {
                         ui.add(Separator::default().spacing(separator_space));
@@ -107,15 +116,13 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
         });
 }
 
-fn title_bar(ui: &mut Ui) {
-    #[cfg(target_os = "macos")]
+#[cfg(target_os = "macos")]
+fn title_bar_macos(ui: &mut Ui) {
     let layout = Layout::left_to_right(Align::Center);
 
-    #[cfg(target_os = "windows")]
     let layout = Layout::right_to_left(Align::Center);
 
     ui.with_layout(layout, |ui| {
-        #[cfg(target_os = "macos")]
         ui.add_space(96.0); // Reserve space for traffic lights.
 
         ui.add_space(16.0);
