@@ -7,6 +7,9 @@ use egui_notify::Toasts;
 use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
+#[cfg(target_os = "macos")]
+use egui::{Align, Layout};
+
 use crate::{
     GemPlayer,
     ui::{
@@ -87,7 +90,7 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 .vertical(|mut strip| {
                     #[cfg(target_os = "macos")]
                     {
-                        strip.cell(title_bar);
+                        strip.cell(title_bar_macos);
                     }
 
                     strip.cell(|ui| {
@@ -119,8 +122,6 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
 #[cfg(target_os = "macos")]
 fn title_bar_macos(ui: &mut Ui) {
     let layout = Layout::left_to_right(Align::Center);
-
-    let layout = Layout::right_to_left(Align::Center);
 
     ui.with_layout(layout, |ui| {
         ui.add_space(96.0); // Reserve space for traffic lights.
