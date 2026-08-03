@@ -9,7 +9,7 @@ $appVersion = $metadata.packages[0].version
 
 Write-Host "Building $appName v$appVersion..."
 
-cargo build --release
+cargo build --release --target x86_64-pc-windows-msvc
 
 $installerDir = "target\release\installer"
 New-Item -ItemType Directory -Force $installerDir | Out-Null
