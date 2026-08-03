@@ -1,3 +1,5 @@
+; Gem Player Inno Setup installer script
+
 [Setup]
 AppName=Gem Player
 AppVersion={#AppVersion}
