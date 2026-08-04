@@ -59,4 +59,3 @@ name = "Gem Player"
 identifier = "io.github.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
 category = "public.app-category.music"
-resources = ["assets/clair_de_lune.mp3"]
