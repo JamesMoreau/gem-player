@@ -99,11 +99,11 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                             match result {
                                                 Err(e) => {
                                                     let error_message = format!("Failed to create: {}.", e);
-                                                    error!("{}", &error_message);
+                                                    error!("{}", error_message);
                                                     gem.ui.toasts.error(&error_message);
                                                 }
                                                 Ok(new_playlist) => {
-                                                    info!("Created and saved {} to {:?}", &new_playlist.name, &new_playlist.m3u_path);
+                                                    info!("Created and saved {} to {:?}", new_playlist.name, new_playlist.m3u_path);
                                                     gem.playlists.push(new_playlist);
                                                 }
                                             }
