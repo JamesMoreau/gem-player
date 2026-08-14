@@ -15,14 +15,15 @@ use crate::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
+        toasts::{error_toast, success_toast},
         widgets::marquee::Marquee,
     },
     visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
-use egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, Shadow, ThemePreference, Ui, Vec2, ViewportBuilder, Visuals};
-use egui_notify::Toasts;
+use egui::{Align2, Context, FontData, FontDefinitions, FontFamily, Rgba, ThemePreference, Ui, Vec2, ViewportBuilder, Visuals};
+use egui_toast::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
 use library_watcher::{LibraryWatcherCommand, setup_library_watcher};
@@ -225,12 +226,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 rename_buffer: None,
                 delete_modal_open: false,
             },
-            toasts: Toasts::default().with_anchor(egui_notify::Anchor::BottomRight).with_shadow(Shadow {
-                offset: [0, 0],
-                blur: 1,
-                spread: 1,
-                color: Color32::BLACK,
-            }),
+            toasts: Toasts::new().anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0)),
             marquee: Marquee::new(),
             volume_popup_is_open: false,
         },
@@ -395,7 +391,7 @@ fn poll_library_watcher(gem: &mut GemPlayer) {
             None => {
                 let message = "Failed to load library folder.";
                 error!("{}", message);
-                gem.ui.toasts.error(message);
+                error_toast(&mut gem.ui.toasts, message);
 
                 gem.library_directory = None;
             }
@@ -420,7 +416,7 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
                 if result.is_err() {
                     let message = "Failed to start watching library directory. Reverting back to old directory.";
                     error!("{}", message);
-                    gem.ui.toasts.error(message);
+                    error_toast(&mut gem.ui.toasts, message);
                 } else {
                     gem.library_directory = Some(directory);
                 }
@@ -445,7 +441,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
     let Some(library_path) = gem.library_directory.as_ref() else {
         error!("No library directory set.");
-        gem.ui.toasts.error("No library directory set.");
+        error_toast(&mut gem.ui.toasts, "No library directory set.");
         return;
     };
 
@@ -461,9 +457,10 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
         };
 
         if !is_audio_file(path) {
-            gem.ui
-                .toasts
-                .error(format!("'{}' is not a supported audio file.", file_name.to_string_lossy()));
+            error_toast(
+                &mut gem.ui.toasts,
+                format!("'{}' is not a supported audio file.", file_name.to_string_lossy()),
+            );
             continue;
         }
 
@@ -471,13 +468,11 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
         if let Err(e) = copy(path, &destination) {
             error!("Failed to copy '{}': {}", path.display(), e);
-            gem.ui.toasts.error(format!("Failed to add '{}'.", file_name.to_string_lossy()));
+            error_toast(&mut gem.ui.toasts, format!("Failed to add '{}'.", file_name.to_string_lossy()));
             continue;
         }
 
-        gem.ui
-            .toasts
-            .success(format!("Added '{}' to Library.", file_name.to_string_lossy()));
+        success_toast(&mut gem.ui.toasts, format!("Added '{}' to Library.", file_name.to_string_lossy()));
     }
 }
 
@@ -535,7 +530,7 @@ fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
         Ok(()) => on_track_change(ctx, gem),
         Err(e) => {
             error!("{}", e);
-            gem.ui.toasts.error("Error playing the next track");
+            error_toast(&mut gem.ui.toasts, "Error playing the next track");
         }
     }
 }
@@ -555,7 +550,7 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
             Ok(_) => on_track_change(ctx, gem),
             Err(e) => {
                 error!("{}", e);
-                gem.ui.toasts.error("Error playing the previous track");
+                error_toast(&mut gem.ui.toasts, "Error playing the previous track");
             }
         }
     } else if let Some(backend) = &gem.player.backend {

@@ -3,7 +3,7 @@ use std::time::Duration;
 use egui::{CentralPanel, Color32, Frame, Label, RichText, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons::{ICON_LIBRARY_MUSIC, ICON_QUEUE_MUSIC, ICON_SETTINGS, ICON_STAR};
-use egui_notify::Toasts;
+use egui_toast::Toasts;
 use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
