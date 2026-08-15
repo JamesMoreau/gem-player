@@ -15,6 +15,7 @@ use crate::{
     track::{Track, filter},
     ui::{
         root::{format_duration_to_mmss, table_label, unselectable_label},
+        toasts::{error_toast, success_toast},
         widgets::{centered_frame::centered_frame, playing_indicator::playing_indicator},
     },
 };
@@ -55,7 +56,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     } else {
                         let message = "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
                         info!("{}", message);
-                        gem.ui.toasts.success(message);
+                        success_toast(&mut gem.ui.toasts, message);
                     }
                 } else {
                     error!("Request for deleting a playlist but no playlist is selected.");
@@ -100,7 +101,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                                 Err(e) => {
                                                     let error_message = format!("Failed to create: {}.", e);
                                                     error!("{}", error_message);
-                                                    gem.ui.toasts.error(&error_message);
+                                                    error_toast(&mut gem.ui.toasts, &error_message);
                                                 }
                                                 Ok(new_playlist) => {
                                                     info!("Created and saved {} to {:?}", new_playlist.name, new_playlist.m3u_path);
@@ -232,7 +233,7 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                                 Err(e) => {
                                     let message = format!("Error renaming playlist: {}", e);
                                     error!("{}", message);
-                                    gem.ui.toasts.error(message);
+                                    error_toast(&mut gem.ui.toasts, message);
                                 }
                                 Ok(_) => {
                                     // Update the selected playlist with the new path so that we remain selected.

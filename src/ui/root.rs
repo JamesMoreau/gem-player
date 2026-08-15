@@ -3,7 +3,7 @@ use std::time::Duration;
 use egui::{CentralPanel, Color32, Frame, Label, RichText, Separator, ThemePreference, Ui, WidgetText};
 use egui_extras::{Size, StripBuilder};
 use egui_material_icons::icons::{ICON_LIBRARY_MUSIC, ICON_QUEUE_MUSIC, ICON_SETTINGS, ICON_STAR};
-use egui_notify::Toasts;
+use egui_toast::Toasts;
 use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
@@ -60,7 +60,7 @@ pub struct UIState {
 pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     CentralPanel::default()
         .frame(Frame::NONE.fill(ui.style().visuals.window_fill()))
-        .show_inside(ui, |ui| {
+        .show(ui, |ui| {
             let is_hovering_files = ui.input(|i| !i.raw.hovered_files.is_empty());
 
             if is_hovering_files {

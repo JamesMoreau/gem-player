@@ -5,15 +5,12 @@ use log::{error, info, warn};
 use strum_macros::{Display, EnumString};
 
 use crate::{
-    GemPlayer, maybe_play_next, maybe_play_previous,
-    os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
-    player::{
+    GemPlayer, maybe_play_next, maybe_play_previous, os_media_controls::{OSMediaControlsState, update_metadata, update_playback}, player::{
         enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_volume, stop, toggle, toggle_repeat,
         toggle_shuffle,
+    }, playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist}, track::{Track, TrackRetrieval, open_file_location}, ui::{
+        root::format_duration_to_mmss, toasts::{error_toast, success_toast, warning_toast},
     },
-    playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist},
-    track::{Track, TrackRetrieval, open_file_location},
-    ui::root::format_duration_to_mmss,
 };
 
 // The general rule for what justifies a command is whether or not it mutates state
@@ -48,7 +45,7 @@ pub enum GemCommand {
     },
     RemoveTracksFromPlaylist {
         playlist_key: PathBuf,
-        track_keys: Vec<PathBuf>
+        track_keys: Vec<PathBuf>,
     },
     EnqueueTracks {
         track_keys: Vec<PathBuf>,
@@ -196,14 +193,14 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             if added_count > 0 {
                 let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);
                 info!("{}", message);
-                gem.ui.toasts.success(message);
+                success_toast(&mut gem.ui.toasts, message);
             } else {
-                gem.ui.toasts.error("No tracks were added.");
+                error_toast(&mut gem.ui.toasts, "No tracks were added.");
             }
         }
         GemCommand::RemoveTracksFromPlaylist { playlist_key, track_keys } => {
             let playlist = gem.playlists.get_by_path_mut(&playlist_key);
-            
+
             if gem.ui.playlists.selected_tracks.is_empty() {
                 error!("No track(s) were provided for removing track from playlist.");
                 return;
@@ -223,9 +220,9 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             if added_count > 0 {
                 let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
                 info!("{}", message);
-                gem.ui.toasts.success(message);
+                success_toast(&mut gem.ui.toasts, message);
             } else {
-                gem.ui.toasts.error("No tracks were removed.");
+                warning_toast(&mut gem.ui.toasts, "No tracks were removed.");
             }
         }
         GemCommand::EnqueueTracks { track_keys } => {

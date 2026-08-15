@@ -7,3 +7,4 @@ pub mod queue_view;
 pub mod root;
 pub mod settings_view;
 pub mod widgets;
+pub mod toasts;
