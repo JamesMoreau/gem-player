@@ -446,10 +446,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
     };
 
     for file in dropped_files {
-        let Some(path) = file.path.as_ref() else {
-            error!("Dropped file '{}' has no path.", file.name);
-            continue;
-        };
+        let path = file.path();
 
         let Some(file_name) = path.file_name() else {
             error!("Dropped file has no file name.");

@@ -60,7 +60,7 @@ pub struct UIState {
 pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
     CentralPanel::default()
         .frame(Frame::NONE.fill(ui.style().visuals.window_fill()))
-        .show_inside(ui, |ui| {
+        .show(ui, |ui| {
             let is_hovering_files = ui.input(|i| !i.raw.hovered_files.is_empty());
 
             if is_hovering_files {
