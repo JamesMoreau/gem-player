@@ -5,7 +5,7 @@ use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::info;
 
 use crate::{
-    APP_NAME, GemPlayer,
+    APP_NAME, GemPlayer, apply_theme,
     library_folder_picker::spawn_library_folder_picker,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
@@ -41,7 +41,13 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ui.add(unselectable_label(RichText::new("Theme").heading()));
                 ui.add_space(8.0);
 
+                let previous_preference = gem.ui.theme_preference;
+
                 ThemePreference::radio_buttons(&mut gem.ui.theme_preference, ui);
+
+                if gem.ui.theme_preference != previous_preference {
+                    apply_theme(ui.ctx(), gem.ui.theme_preference);
+                }
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
