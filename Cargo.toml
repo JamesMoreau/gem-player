@@ -9,7 +9,7 @@ authors = ["James Moreau"]
 
 [dependencies]
 anyhow = "1.0.104"
-dark-light = "2.0.0"
+dark-light = "3.0.0"
 eframe = { version = "0.36.1", features = ["persistence"] }
 egui = "0.36.1"
 egui_extras = { version = "0.36.1", features = ["all_loaders"] }

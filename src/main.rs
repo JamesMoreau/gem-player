@@ -83,6 +83,8 @@ struct GemPlayer {
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
     library_watcher: LibraryWatcher,
 
+    system_theme_watcher: Option<dark_light::Watcher>,
+
     commands: Vec<GemCommand>,
 
     player: Player,
@@ -174,6 +176,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             && let Ok(theme) = serde_json::from_str(&theme_string)
         {
             theme_preference = theme;
+            apply_theme(&cc.egui_ctx, theme_preference);
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
@@ -192,6 +195,14 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             library_directory = None;
         }
     }
+
+    let system_theme_watcher = match dark_light::subscribe() {
+        Ok(w) => Some(w),
+        Err(e) => {
+            error!("Failed to start watching system theme: {}", e);
+            None
+        }
+    };
 
     if let Some(b) = &backend {
         b.player.set_volume(initial_volume);
@@ -237,6 +248,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         library_directory,
         folder_picker_receiver: None,
         library_watcher,
+
+        system_theme_watcher,
 
         commands: Vec::new(),
 
@@ -293,6 +306,7 @@ impl App for GemPlayer {
     }
 
     fn logic(&mut self, ctx: &Context, frame: &mut Frame) {
+        poll_system_theme_change(ctx, self);
         poll_file_drops(ctx, self);
         poll_library_folder_picker(self);
         poll_library_watcher(self);
@@ -308,8 +322,6 @@ impl App for GemPlayer {
     }
 
     fn ui(&mut self, ui: &mut Ui, _frame: &mut Frame) {
-        apply_theme(ui, self.ui.theme_preference);
-
         gem_player_ui(ui, self);
 
         self.ui.toasts.show(ui);
@@ -363,6 +375,20 @@ fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
                 OSMediaControlsState::Failed
             }
         };
+    }
+}
+
+fn poll_system_theme_change(ctx: &Context, gem: &mut GemPlayer) {
+    let Some(watcher) = gem.system_theme_watcher.as_ref() else {
+        return;
+    };
+
+    let Some(mode) = watcher.try_iter().last() else {
+        return;
+    };
+
+    if gem.ui.theme_preference == ThemePreference::System {
+        apply_system_theme(ctx, mode);
     }
 }
 
@@ -584,17 +610,26 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
-fn apply_theme(ui: &mut Ui, preference: ThemePreference) {
-    let visuals = match preference {
-        ThemePreference::Dark => Visuals::dark(),
-        ThemePreference::Light => Visuals::light(),
-        ThemePreference::System => match dark_light::detect() {
-            Ok(Mode::Light) => Visuals::light(),
-            _ => Visuals::dark(),
-        },
-    };
+fn apply_theme(ctx: &Context, preference: ThemePreference) {
+    match preference {
+        ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
+        ThemePreference::Light => ctx.set_visuals(Visuals::light()),
+        ThemePreference::System => {
+            let mode = dark_light::detect().unwrap_or_else(|e| {
+                error!("failed to detect system theme: {}", e);
+                Mode::Unspecified
+            });
 
-    ui.set_visuals(visuals);
+            apply_system_theme(ctx, mode)
+        }
+    }
+}
+
+fn apply_system_theme(ctx: &Context, mode: Mode) {
+    ctx.set_visuals(match mode {
+        Mode::Light => Visuals::light(),
+        Mode::Dark | Mode::Unspecified => Visuals::dark(),
+    });
 }
 
 fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
