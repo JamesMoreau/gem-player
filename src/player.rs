@@ -1,5 +1,5 @@
 use crate::{
-    track::Track,
+    track::{Track, load_from_file},
     visualizer::{VisualizerCommand, VisualizerSource, VisualizerState},
 };
 use anyhow::{Context, Result, bail};
@@ -7,7 +7,7 @@ use fully_pub::fully_pub;
 use log::error;
 use rand::seq::SliceRandom;
 use rodio::{Decoder, Device, DeviceSinkBuilder, MixerDeviceSink, Source};
-use std::{fs::File, time::Duration};
+use std::{fs::File, path::Path, time::Duration};
 
 #[fully_pub]
 struct Player {
@@ -94,6 +94,11 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
     player.playing = Some(track);
 
     Ok(())
+}
+
+pub fn _play_from_file(player: &mut Player, path: &Path) -> Result<()> {
+    let track = load_from_file(path)?;
+    play_track(player, track)
 }
 
 pub fn toggle(player: &mut Player) -> Result<()> {
