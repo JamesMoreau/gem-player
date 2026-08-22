@@ -104,7 +104,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                                     error_toast(&mut gem.ui.toasts, &error_message);
                                                 }
                                                 Ok(new_playlist) => {
-                                                    info!("Created and saved {} to {:?}", new_playlist.name, new_playlist.m3u_path);
+                                                    info!("Created and saved {} to {}", new_playlist.name, new_playlist.m3u_path.display());
                                                     gem.playlists.push(new_playlist);
                                                 }
                                             }

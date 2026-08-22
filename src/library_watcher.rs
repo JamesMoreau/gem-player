@@ -41,7 +41,7 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
         Err(e) => error!("watch error: {:?}", e),
         Ok(events) => {
             for e in events {
-                info!("Event for {:?}", e.path);
+                info!("Event for {}", e.path.display());
             }
             let _ = debouncer_command_sender.send(LibraryWatcherCommand::Load);
         }
@@ -63,7 +63,7 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
                     };
 
                     if !path.is_dir() {
-                        error!("Cannot load library: invalid path {:?}", path);
+                        error!("Cannot load library: invalid path {}", path.display());
                         let _ = update_sender.send(None);
                         continue;
                     }
@@ -72,8 +72,8 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
                     let playlists = load_playlists_from_directory(path);
 
                     info!(
-                        "Loaded library from {:?}: {} tracks, {} playlists.",
-                        path,
+                        "Loaded library from {}: {} tracks, {} playlists.",
+                        path.display(),
                         library.len(),
                         playlists.len()
                     );
@@ -82,7 +82,7 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
                 }
                 LibraryWatcherCommand::SetPath(new_directory) => {
                     if !new_directory.is_dir() {
-                        warn!("Invalid library path: {:?}", new_directory);
+                        warn!("Invalid library path: {}", new_directory.display());
                         let _ = update_sender.send(None);
                         continue;
                     }
@@ -90,13 +90,13 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
                     if let Some(old) = &watcher_directory
                         && let Err(e) = debouncer.watcher().unwatch(old)
                     {
-                        error!("Failed to unwatch old folder {:?}: {:?}", old, e);
+                        error!("Failed to unwatch old folder {}: {:?}", old.display(), e);
                         let _ = update_sender.send(None);
                         continue;
                     }
 
                     if let Err(e) = debouncer.watcher().watch(&new_directory, RecursiveMode::Recursive) {
-                        error!("Failed to watch new folder {:?}: {:?}", new_directory, e);
+                        error!("Failed to watch new folder {}: {:?}", new_directory.display(), e);
                         let _ = update_sender.send(None);
                         continue;
                     }
@@ -114,5 +114,8 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
         info!("Command channel closed. Shutting down watcher.");
     });
 
-    Ok(LibraryWatcher { command_sender, update_receiver })
+    Ok(LibraryWatcher {
+        command_sender,
+        update_receiver,
+    })
 }

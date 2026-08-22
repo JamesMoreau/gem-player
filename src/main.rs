@@ -435,7 +435,7 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
             gem.folder_picker_receiver = None;
 
             if let Some(directory) = maybe_directory {
-                info!("Selected folder: {:?}", directory);
+                info!("Selected folder: {}", directory.display());
 
                 let command = LibraryWatcherCommand::SetPath(directory.clone());
                 let result = gem.library_watcher.command_sender.send(command);
@@ -648,11 +648,11 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
                     return Some(bytes.to_vec());
                 }
                 Handle::Path { ref path, .. } => {
-                    info!("Loaded {name} from path: {:?}", path);
+                    info!("Loaded {name} from path: {}", path.display());
                     if let Ok(data) = read(path) {
                         return Some(data);
                     } else {
-                        error!("Failed to read font data from path: {:?}", path);
+                        error!("Failed to read font data from path: {}", path.display());
                     }
                 }
             },

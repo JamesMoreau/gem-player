@@ -78,9 +78,9 @@ fn play_track(player: &mut Player, track: Track) -> Result<()> {
 
     backend.player.stop(); // Stop the current track if any.
 
-    let file = File::open(&track.path).with_context(|| format!("Failed to open audio file at {:?}", track.path))?;
+    let file = File::open(&track.path).with_context(|| format!("Failed to open audio file at {}", track.path.display()))?;
 
-    let decoder = Decoder::try_from(file).with_context(|| format!("Failed to decode audio file {:?}", track.path))?;
+    let decoder = Decoder::try_from(file).with_context(|| format!("Failed to decode audio file {}", track.path.display()))?;
 
     let sample_rate = decoder.sample_rate();
     if let Err(e) = player.visualizer.command_sender.send(VisualizerCommand::SampleRate(sample_rate)) {
