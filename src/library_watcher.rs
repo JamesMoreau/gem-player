@@ -38,7 +38,7 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
 
     // The debouncer, using a channel, will message the watcher thread, notifying it when the library changes.
     let mut debouncer = new_debouncer(Duration::from_millis(500), move |res: DebounceEventResult| match res {
-        Err(e) => error!("watch error: {:?}", e),
+        Err(e) => error!("watch error: {}", e),
         Ok(events) => {
             for e in events {
                 info!("Event for {}", e.path.display());
@@ -90,13 +90,13 @@ pub fn setup_library_watcher() -> Result<LibraryWatcher> {
                     if let Some(old) = &watcher_directory
                         && let Err(e) = debouncer.watcher().unwatch(old)
                     {
-                        error!("Failed to unwatch old folder {}: {:?}", old.display(), e);
+                        error!("Failed to unwatch old folder {}: {}", old.display(), e);
                         let _ = update_sender.send(None);
                         continue;
                     }
 
                     if let Err(e) = debouncer.watcher().watch(&new_directory, RecursiveMode::Recursive) {
-                        error!("Failed to watch new folder {}: {:?}", new_directory.display(), e);
+                        error!("Failed to watch new folder {}: {}", new_directory.display(), e);
                         let _ = update_sender.send(None);
                         continue;
                     }

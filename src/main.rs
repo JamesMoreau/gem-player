@@ -371,7 +371,7 @@ fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
         gem.os_media_controls = match setup_os_media_controls(handle) {
             Ok(mc) => OSMediaControlsState::Initialized(mc),
             Err(e) => {
-                error!("Failed to initialize media controls: {:?}", e);
+                error!("Failed to initialize media controls: {}", e);
                 OSMediaControlsState::Failed
             }
         };
@@ -578,7 +578,7 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
         }
     } else if let Some(backend) = &gem.player.backend {
         if let Err(e) = backend.player.try_seek(Duration::ZERO) {
-            error!("Error rewinding track: {:?}", e);
+            error!("Error rewinding track: {}", e);
         }
         backend.player.play();
     }
@@ -639,7 +639,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
         let result = system_source.select_best_match(&[FamilyName::Title(name.to_string())], &Properties::new());
         match result {
             Err(e) => {
-                warn!("Could not load {}: {:?}", name, e);
+                warn!("Could not load {}: {}", name, e);
                 continue;
             }
             Ok(handle) => match handle {
