@@ -24,8 +24,6 @@ use crate::{
     },
 };
 
-pub const ACCENT_COLOR : Color32 = Color32::from_rgb(0x63, 0xBF, 0xFF);
-
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, Copy)]
 pub enum View {
     Library,

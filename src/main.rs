@@ -4,13 +4,25 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache}, commands::{GemCommand, execute}, library_watcher::LibraryWatcher, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::{get_position, stop}, track::is_audio_file, ui::{
-        library_view::LibraryViewState, playlist_view::PlaylistsViewState, root::{ACCENT_COLOR, UIState, View, gem_player_ui}, toasts::{error_toast, success_toast}, widgets::marquee::Marquee,
-    }, visualizer::VisualizerState,
+    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
+    commands::{GemCommand, execute},
+    library_watcher::LibraryWatcher,
+    nosleep_manager::NoSleepManager,
+    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
+    player::{get_position, stop},
+    track::is_audio_file,
+    ui::{
+        library_view::LibraryViewState,
+        playlist_view::PlaylistsViewState,
+        root::{UIState, View, gem_player_ui},
+        toasts::{error_toast, success_toast},
+        widgets::marquee::Marquee,
+    },
+    visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
-use egui::{Align2, Context, FontData, FontDefinitions, FontFamily, Rgba, ThemePreference, Ui, Vec2, ViewportBuilder, Visuals};
+use egui::{Align2, Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, ThemePreference, Ui, Vec2, ViewportBuilder, Visuals};
 use egui_toast::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -598,7 +610,10 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
-fn apply_theme(ctx: &Context, preference: ThemePreference) { // TODO: move this to root.
+pub const DARK_ACCENT_COLOR: Color32 = Color32::from_rgb(0x46, 0x7E, 0xDC);
+pub const LIGHT_ACCENT_COLOR: Color32 = Color32::from_rgb(0x66, 0xA2, 0xE4);
+
+fn apply_theme(ctx: &Context, preference: ThemePreference) {
     let mut visuals = match preference {
         ThemePreference::Dark => Visuals::dark(),
         ThemePreference::Light => Visuals::light(),
@@ -612,7 +627,7 @@ fn apply_theme(ctx: &Context, preference: ThemePreference) { // TODO: move this 
         }
     };
 
-    visuals.selection.bg_fill = ACCENT_COLOR;
+    visuals.selection.bg_fill = if visuals.dark_mode { DARK_ACCENT_COLOR } else { LIGHT_ACCENT_COLOR };
 
     ctx.set_visuals(visuals);
 }
@@ -626,7 +641,8 @@ fn system_visuals(mode: Mode) -> Visuals {
 
 fn apply_system_theme(ctx: &Context, mode: Mode) {
     let mut visuals = system_visuals(mode);
-    visuals.selection.bg_fill = ACCENT_COLOR;
+
+    visuals.selection.bg_fill = if visuals.dark_mode { DARK_ACCENT_COLOR } else { LIGHT_ACCENT_COLOR };
 
     ctx.set_visuals(visuals);
 }
