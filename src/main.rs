@@ -614,12 +614,12 @@ pub const DARK_ACCENT_COLOR: Color32 = Color32::from_rgb(0x46, 0x7E, 0xDC);
 pub const LIGHT_ACCENT_COLOR: Color32 = Color32::from_rgb(0x66, 0xA2, 0xE4);
 
 fn apply_theme(ctx: &Context, preference: ThemePreference) {
-    let mut visuals = match preference {
+    let visuals = match preference {
         ThemePreference::Dark => Visuals::dark(),
         ThemePreference::Light => Visuals::light(),
         ThemePreference::System => {
             let mode = dark_light::detect().unwrap_or_else(|e| {
-                error!("failed to detect system theme: {}", e);
+                error!("failed to detect system theme: {e}");
                 Mode::Unspecified
             });
 
@@ -627,6 +627,15 @@ fn apply_theme(ctx: &Context, preference: ThemePreference) {
         }
     };
 
+    apply_visuals(ctx, visuals);
+}
+
+fn apply_system_theme(ctx: &Context, mode: Mode) {
+    let visuals = system_visuals(mode);
+    apply_visuals(ctx, visuals);
+}
+
+fn apply_visuals(ctx: &Context, mut visuals: Visuals) {
     visuals.selection.bg_fill = if visuals.dark_mode { DARK_ACCENT_COLOR } else { LIGHT_ACCENT_COLOR };
 
     ctx.set_visuals(visuals);
@@ -637,14 +646,6 @@ fn system_visuals(mode: Mode) -> Visuals {
         Mode::Light => Visuals::light(),
         Mode::Dark | Mode::Unspecified => Visuals::dark(),
     }
-}
-
-fn apply_system_theme(ctx: &Context, mode: Mode) {
-    let mut visuals = system_visuals(mode);
-
-    visuals.selection.bg_fill = if visuals.dark_mode { DARK_ACCENT_COLOR } else { LIGHT_ACCENT_COLOR };
-
-    ctx.set_visuals(visuals);
 }
 
 fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
