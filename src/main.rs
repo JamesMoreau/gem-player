@@ -4,21 +4,9 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
-    commands::{GemCommand, execute},
-    library_watcher::LibraryWatcher,
-    nosleep_manager::NoSleepManager,
-    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
-    player::{get_position, stop},
-    track::is_audio_file,
-    ui::{
-        library_view::LibraryViewState,
-        playlist_view::PlaylistsViewState,
-        root::{UIState, View, gem_player_ui},
-        toasts::{error_toast, success_toast},
-        widgets::marquee::Marquee,
-    },
-    visualizer::VisualizerState,
+    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache}, commands::{GemCommand, execute}, library_watcher::LibraryWatcher, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::{get_position, stop}, track::is_audio_file, ui::{
+        library_view::LibraryViewState, playlist_view::PlaylistsViewState, root::{ACCENT_COLOR, UIState, View, gem_player_ui}, toasts::{error_toast, success_toast}, widgets::marquee::Marquee,
+    }, visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
@@ -610,26 +598,37 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
-fn apply_theme(ctx: &Context, preference: ThemePreference) {
-    match preference {
-        ThemePreference::Dark => ctx.set_visuals(Visuals::dark()),
-        ThemePreference::Light => ctx.set_visuals(Visuals::light()),
+fn apply_theme(ctx: &Context, preference: ThemePreference) { // TODO: move this to root.
+    let mut visuals = match preference {
+        ThemePreference::Dark => Visuals::dark(),
+        ThemePreference::Light => Visuals::light(),
         ThemePreference::System => {
             let mode = dark_light::detect().unwrap_or_else(|e| {
                 error!("failed to detect system theme: {}", e);
                 Mode::Unspecified
             });
 
-            apply_system_theme(ctx, mode)
+            system_visuals(mode)
         }
+    };
+
+    visuals.selection.bg_fill = ACCENT_COLOR;
+
+    ctx.set_visuals(visuals);
+}
+
+fn system_visuals(mode: Mode) -> Visuals {
+    match mode {
+        Mode::Light => Visuals::light(),
+        Mode::Dark | Mode::Unspecified => Visuals::dark(),
     }
 }
 
 fn apply_system_theme(ctx: &Context, mode: Mode) {
-    ctx.set_visuals(match mode {
-        Mode::Light => Visuals::light(),
-        Mode::Dark | Mode::Unspecified => Visuals::dark(),
-    });
+    let mut visuals = system_visuals(mode);
+    visuals.selection.bg_fill = ACCENT_COLOR;
+
+    ctx.set_visuals(visuals);
 }
 
 fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
