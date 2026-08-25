@@ -611,8 +611,8 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
-pub const DARK_ACCENT_COLOR: Color32 = Color32::from_rgb(0x46, 0x7E, 0xDC);
-pub const LIGHT_ACCENT_COLOR: Color32 = Color32::from_rgb(0x66, 0xA2, 0xE4);
+pub const DARK_ACCENT: Color32 = Color32::from_rgb(0x46, 0x7E, 0xDC);
+pub const LIGHT_ACCENT: Color32 = Color32::from_rgb(0x66, 0xA2, 0xE4);
 
 fn resolve_theme_mode(preference: ThemePreference) -> Mode {
     match preference {
@@ -632,8 +632,8 @@ fn apply_visuals_for_mode(ctx: &Context, mode: Mode) {
     };
 
     visuals.selection.bg_fill = match mode {
-        Mode::Light => LIGHT_ACCENT_COLOR,
-        Mode::Dark | Mode::Unspecified => DARK_ACCENT_COLOR,
+        Mode::Light => LIGHT_ACCENT,
+        Mode::Dark | Mode::Unspecified => DARK_ACCENT,
     };
 
     ctx.set_visuals(visuals);
