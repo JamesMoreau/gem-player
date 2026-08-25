@@ -613,8 +613,8 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
 pub const DARK_ACCENT_COLOR: Color32 = Color32::from_rgb(0x46, 0x7E, 0xDC);
 pub const LIGHT_ACCENT_COLOR: Color32 = Color32::from_rgb(0x66, 0xA2, 0xE4);
 
-fn apply_theme(ctx: &Context, preference: ThemePreference) {
-    let visuals = match preference {
+fn get_visuals_from_preference(preference: ThemePreference) -> Visuals {
+    match preference {
         ThemePreference::Dark => dark_visuals(),
         ThemePreference::Light => light_visuals(),
         ThemePreference::System => {
@@ -623,23 +623,25 @@ fn apply_theme(ctx: &Context, preference: ThemePreference) {
                 Mode::Unspecified
             });
 
-            system_visuals(mode)
+            match mode {
+                Mode::Light => light_visuals(),
+                Mode::Dark | Mode::Unspecified => dark_visuals(),
+            }
         }
-    };
+    }
+}
 
+fn apply_theme(ctx: &Context, preference: ThemePreference) {
+    let visuals = get_visuals_from_preference(preference);
     ctx.set_visuals(visuals);
 }
 
 fn apply_system_theme(ctx: &Context, mode: Mode) {
-    let visuals = system_visuals(mode);
-    ctx.set_visuals(visuals);
-}
-
-fn system_visuals(mode: Mode) -> Visuals {
-    match mode {
+    let visuals = match mode {
         Mode::Light => light_visuals(),
         Mode::Dark | Mode::Unspecified => dark_visuals(),
-    }
+    };
+    ctx.set_visuals(visuals);
 }
 
 fn dark_visuals() -> Visuals {
