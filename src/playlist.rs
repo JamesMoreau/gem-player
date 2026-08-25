@@ -72,7 +72,7 @@ pub fn load_playlists_from_directory(directory: &Path) -> Vec<Playlist> {
 
     for entry in WalkDir::new(directory).into_iter().filter_map(|e| {
         if let Err(err) = &e {
-            warn!("Failed to read directory entry: {}", err);
+            warn!("Failed to read directory entry: {err}");
         }
         e.ok()
     }) {
@@ -85,7 +85,7 @@ pub fn load_playlists_from_directory(directory: &Path) -> Vec<Playlist> {
         match load_from_m3u(path) {
             Ok(playlist) => playlists.push(playlist),
             Err(e) => {
-                warn!("Failed to load playlist {}: {}", path.display(), e);
+                warn!("Failed to load playlist {}: {e}", path.display());
             }
         }
     }
@@ -137,7 +137,7 @@ pub fn load_from_m3u(path: &Path) -> Result<Playlist> {
         let entry = match maybe_entry {
             Ok(e) => e,
             Err(err) => {
-                warn!("Skipping invalid M3U entry: {}", err);
+                warn!("Skipping invalid M3U entry: {err}");
                 continue;
             }
         };
@@ -148,10 +148,10 @@ pub fn load_from_m3u(path: &Path) -> Result<Playlist> {
 
                 match load_from_file(&full_path) {
                     Ok(track) => tracks.push(track),
-                    Err(err) => warn!("Skipping invalid track '{}': {}", full_path.display(), err),
+                    Err(err) => warn!("Skipping invalid track '{}': {err}", full_path.display()),
                 }
             }
-            Entry::Url(url) => warn!("Skipping URL entry: {}", url), // We do not support url tracks.
+            Entry::Url(url) => warn!("Skipping URL entry: {url}"), // We do not support url tracks.
         }
     }
 
@@ -178,7 +178,7 @@ pub fn rename(playlist: &mut Playlist, new_name: String) -> Result<()> {
         bail!("Playlist name cannot be empty.");
     }
 
-    let new_filename = format!("{}.m3u", sanitized_name);
+    let new_filename = format!("{sanitized_name}.m3u");
     let new_path = directory.join(new_filename);
 
     if new_path.exists() {
@@ -205,7 +205,7 @@ pub fn create(name: String, directory: &Path) -> Result<Playlist> {
     }
 
     let extension = ".m3u";
-    let filename = format!("{}{}", sanitized_name, extension);
+    let filename = format!("{sanitized_name}{extension}");
     let file_path = directory.join(&filename);
 
     if file_path.exists() {

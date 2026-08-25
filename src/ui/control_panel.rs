@@ -365,7 +365,7 @@ fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut
     }
 
     let padding = "        ";
-    let text = format!("{} / {} / {}{}", title, artist, album, padding);
+    let text = format!("{title} / {artist} / {album}{padding}");
 
     marquee_ui(ui, marquee, &text);
 }

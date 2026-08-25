@@ -17,7 +17,7 @@ impl NoSleepManager {
             let result = ns.start(NoSleepType::PreventUserIdleDisplaySleep);
             match result {
                 Ok(()) => self.no_sleep = Some(ns),
-                Err(e) => error!("Unable to enable no sleep mode: {}", e),
+                Err(e) => error!("Unable to enable no sleep mode: {e}"),
             }
         }
     }
@@ -26,7 +26,7 @@ impl NoSleepManager {
         if let Some(ns) = self.no_sleep.take()
             && let Err(e) = ns.stop()
         {
-            error!("Failed to stop sleep inhibitor: {}", e);
+            error!("Failed to stop sleep inhibitor: {e}");
         }
     }
 

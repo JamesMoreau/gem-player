@@ -52,10 +52,10 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
             if let DeletePlaylistResult::Confirm = result {
                 if let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.take() {
                     if let Err(e) = delete(&playlist_key, &mut gem.playlists) {
-                        error!("{}", e);
+                        error!("{e}");
                     } else {
                         let message = "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
-                        info!("{}", message);
+                        info!("{message}");
                         success_toast(&mut gem.ui.toasts, message);
                     }
                 } else {
@@ -99,8 +99,8 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                             let result = create(new_playlist_name, directory);
                                             match result {
                                                 Err(e) => {
-                                                    let error_message = format!("Failed to create: {}.", e);
-                                                    error!("{}", error_message);
+                                                    let error_message = format!("Failed to create: {e}.");
+                                                    error!("{error_message}");
                                                     error_toast(&mut gem.ui.toasts, &error_message);
                                                 }
                                                 Ok(new_playlist) => {
@@ -231,8 +231,8 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                             let result = rename(playlist, name_buffer_clone);
                             match result {
                                 Err(e) => {
-                                    let message = format!("Error renaming playlist: {}", e);
-                                    error!("{}", message);
+                                    let message = format!("Error renaming playlist: {e}");
+                                    error!("{message}");
                                     error_toast(&mut gem.ui.toasts, message);
                                 }
                                 Ok(_) => {

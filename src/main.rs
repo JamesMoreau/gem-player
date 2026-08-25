@@ -157,7 +157,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         let backend_result = build_audio_backend_from_device(device);
         match backend_result {
             Ok(b) => backend = Some(b),
-            Err(e) => error!("Failed to start audio device: {}", e),
+            Err(e) => error!("Failed to start audio device: {e}"),
         }
     }
 
@@ -200,7 +200,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let system_theme_watcher = match dark_light::subscribe() {
         Ok(w) => Some(w),
         Err(e) => {
-            error!("Failed to start watching system theme: {}", e);
+            error!("Failed to start watching system theme: {e}");
             None
         }
     };
@@ -491,7 +491,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
         let destination = library_path.join(file_name);
 
         if let Err(e) = copy(path, &destination) {
-            error!("Failed to copy '{}': {}", path.display(), e);
+            error!("Failed to copy '{}': {e}", path.display());
             error_toast(&mut gem.ui.toasts, format!("Failed to add '{}'.", file_name.to_string_lossy()));
             continue;
         }
@@ -553,7 +553,7 @@ fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
     match play_next(&mut gem.player) {
         Ok(()) => on_track_change(ctx, gem),
         Err(e) => {
-            error!("{}", e);
+            error!("{e}");
             error_toast(&mut gem.ui.toasts, "Error playing the next track");
         }
     }
@@ -573,13 +573,13 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
         match play_previous(&mut gem.player) {
             Ok(_) => on_track_change(ctx, gem),
             Err(e) => {
-                error!("{}", e);
+                error!("{e}");
                 error_toast(&mut gem.ui.toasts, "Error playing the previous track");
             }
         }
     } else if let Some(backend) = &gem.player.backend {
         if let Err(e) = backend.player.try_seek(Duration::ZERO) {
-            error!("Error rewinding track: {}", e);
+            error!("Error rewinding track: {e}");
         }
         backend.player.play();
     }
@@ -646,7 +646,7 @@ fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
         let result = system_source.select_best_match(&[FamilyName::Title(name.to_string())], &Properties::new());
         match result {
             Err(e) => {
-                warn!("Could not load {}: {}", name, e);
+                warn!("Could not load {name}: {e}");
                 continue;
             }
             Ok(handle) => match handle {

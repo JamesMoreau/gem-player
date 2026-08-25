@@ -65,29 +65,29 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
     match command {
         GemCommand::Play => {
             if let Err(e) = play(&mut gem.player) {
-                error!("{}", e);
+                error!("{e}");
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
                 && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
             {
-                error!("{}", e);
+                error!("{e}");
             }
         }
         GemCommand::Pause => {
             if let Err(e) = pause(&mut gem.player) {
-                error!("{}", e);
+                error!("{e}");
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
                 && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
             {
-                error!("{}", e);
+                error!("{e}");
             }
         }
         GemCommand::TogglePlayback => {
             if let Err(e) = toggle(&mut gem.player) {
-                error!("{}", e);
+                error!("{e}");
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
                 && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
             {
-                error!("{}", e);
+                error!("{e}");
             }
         }
         GemCommand::Stop => {
@@ -95,11 +95,11 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
 
             if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls {
                 if let Err(e) = update_metadata(&mut osmc.controls, &gem.player) {
-                    error!("{}", e);
+                    error!("{e}");
                 }
 
                 if let Err(e) = update_playback(&mut osmc.controls, &gem.player) {
-                    error!("{}", e);
+                    error!("{e}");
                 }
             }
         }
@@ -107,11 +107,11 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
         GemCommand::PreviousTrack => maybe_play_previous(ctx, gem),
         GemCommand::SeekTo(position) => {
             if let Err(e) = seek(&mut gem.player, position) {
-                error!("{}", e);
+                error!("{e}");
             } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
                 && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
             {
-                error!("{}", e);
+                error!("{e}");
             }
 
             info!("Seeking to {}", format_duration_to_mmss(position));
@@ -122,11 +122,11 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             if let Some(position) = get_position(&gem.player) {
                 let new_position = position + offset;
                 if let Err(e) = seek(&mut gem.player, new_position) {
-                    error!("{}", e);
+                    error!("{e}");
                 } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
                     && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
                 {
-                    error!("{}", e);
+                    error!("{e}");
                 }
             } else {
                 error!("Unable to retrieve position");
@@ -136,11 +136,11 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             if let Some(position) = get_position(&gem.player) {
                 let new_position = position - offset;
                 if let Err(e) = seek(&mut gem.player, new_position) {
-                    error!("{}", e);
+                    error!("{e}");
                 } else if let OSMediaControlsState::Initialized(osmc) = &mut gem.os_media_controls
                     && let Err(e) = update_playback(&mut osmc.controls, &gem.player)
                 {
-                    error!("{}", e);
+                    error!("{e}");
                 }
             } else {
                 error!("Unable to retrieve position");
@@ -148,7 +148,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
         }
         GemCommand::SetVolume(volume) => {
             if let Err(e) = set_volume(&mut gem.player, volume) {
-                error!("{}", e);
+                error!("{e}");
             }
         }
         GemCommand::ToggleMute => {
@@ -182,7 +182,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
                 let track = gem.library.get_by_path(track_key);
 
                 if let Err(e) = add_to_playlist(playlist, track.clone()) {
-                    error!("Failed to add track to playlist: {}", e);
+                    error!("Failed to add track to playlist: {e}");
                 } else {
                     added_count += 1;
                 }
@@ -191,8 +191,8 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             gem.ui.playlists.cache_dirty = true;
 
             if added_count > 0 {
-                let message = format!("Added {} track(s) to playlist '{}'.", added_count, playlist.name);
-                info!("{}", message);
+                let message = format!("Added {added_count} track(s) to playlist '{}'.", playlist.name);
+                info!("{message}");
                 success_toast(&mut gem.ui.toasts, message);
             } else {
                 error_toast(&mut gem.ui.toasts, "No tracks were added.");
@@ -209,7 +209,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             let mut added_count = 0;
             for track_key in &track_keys {
                 if let Err(e) = remove_from_playlist(playlist, track_key) {
-                    error!("Failed to remove track from playlist: {}", e);
+                    error!("Failed to remove track from playlist: {e}");
                 } else {
                     added_count += 1;
                 }
@@ -218,8 +218,8 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             gem.ui.playlists.cache_dirty = true;
 
             if added_count > 0 {
-                let message = format!("Removed {} track(s) from playlist '{}'", added_count, playlist.name);
-                info!("{}", message);
+                let message = format!("Removed {added_count} track(s) from playlist '{}'", playlist.name);
+                info!("{message}");
                 success_toast(&mut gem.ui.toasts, message);
             } else {
                 warning_toast(&mut gem.ui.toasts, "No tracks were removed.");
@@ -240,7 +240,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             let track = gem.library.get_by_path(&track_key);
 
             if let Err(e) = open_file_location(track) {
-                error!("Failed to open track location: {}", e);
+                error!("Failed to open track location: {e}");
             } else {
                 info!("Opening track location: {}", track.path.display());
             }

@@ -75,7 +75,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                ui.add(unselectable_label(RichText::new(format!("About {}", APP_NAME)).heading()));
+                ui.add(unselectable_label(RichText::new(format!("About {APP_NAME}")).heading()));
                 ui.add_space(8.0);
 
                 let description = env!("CARGO_PKG_DESCRIPTION");
@@ -91,7 +91,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                     ui.add(unselectable_label(" / "));
 
-                    let release_link = format!("{}/releases/tag/v{}", repo_link, version);
+                    let release_link = format!("{repo_link}/releases/tag/v{version}");
                     ui.hyperlink_to("release notes", release_link);
 
                     ui.add(unselectable_label(" / "));
@@ -105,7 +105,7 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.add(unselectable_label(
                         "Bug reports, feature requests, and feedback may be submitted to the",
                     ));
-                    let issue_link = format!("{}/issues", repo_link);
+                    let issue_link = format!("{repo_link}/issues");
                     ui.hyperlink_to("issue tracker", issue_link);
                 });
 

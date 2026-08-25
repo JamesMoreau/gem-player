@@ -170,7 +170,7 @@ pub fn load_tracks_from_directory(directory: &Path) -> Vec<Track> {
         .into_iter()
         .filter_map(|e| {
             if let Err(err) = &e {
-                warn!("Failed to read directory entry: {}", err);
+                warn!("Failed to read directory entry: {err}");
             }
             e.ok()
         })
@@ -186,7 +186,7 @@ pub fn load_tracks_from_directory(directory: &Path) -> Vec<Track> {
         .filter_map(|path| match load_from_file(path) {
             Ok(track) => Some(track),
             Err(e) => {
-                warn!("Skipping track '{}': {}", path.display(), e);
+                warn!("Skipping track '{}': {e}", path.display());
                 None
             }
         })

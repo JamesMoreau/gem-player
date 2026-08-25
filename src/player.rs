@@ -225,7 +225,7 @@ pub fn build_audio_backend_from_device(device: Device) -> Result<AudioBackend> {
     let builder = DeviceSinkBuilder::from_device(device.clone())
         .context("Failed to create DeviceSinkBuilder from device")?
         .with_error_callback(|e| {
-            error!("Stream error: {}", e);
+            error!("Stream error: {e}");
         });
 
     let stream = builder.open_sink_or_fallback().context("Failed to open audio sink or fallback")?;

@@ -159,7 +159,7 @@ pub fn format_duration_to_mmss(duration: Duration) -> String {
     let minutes = total_seconds / seconds_per_minute;
     let seconds = total_seconds % seconds_per_minute;
 
-    format!("{}:{:02}", minutes, seconds)
+    format!("{minutes}:{seconds:02}")
 }
 
 pub fn format_duration_to_hhmmss(duration: Duration) -> String {
@@ -170,5 +170,5 @@ pub fn format_duration_to_hhmmss(duration: Duration) -> String {
     let minutes = (total_seconds / seconds_per_minute) % minutes_per_hour;
     let seconds = total_seconds % seconds_per_minute;
 
-    format!("{}:{:02}:{:02}", hours, minutes, seconds)
+    format!("{hours}:{minutes:02}:{seconds:02}")
 }
