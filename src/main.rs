@@ -176,7 +176,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             && let Ok(theme) = serde_json::from_str(&theme_string)
         {
             theme_preference = theme;
-            apply_theme(&cc.egui_ctx, theme_preference);
+            let mode = resolve_theme_mode(theme_preference);
+            apply_visuals_for_mode(&cc.egui_ctx, mode);
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
@@ -388,7 +389,7 @@ fn poll_system_theme_change(ctx: &Context, gem: &mut GemPlayer) {
     };
 
     if gem.ui.theme_preference == ThemePreference::System {
-        apply_system_theme(ctx, mode);
+        apply_visuals_for_mode(ctx, mode);
     }
 }
 
@@ -613,44 +614,33 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
 pub const DARK_ACCENT_COLOR: Color32 = Color32::from_rgb(0x46, 0x7E, 0xDC);
 pub const LIGHT_ACCENT_COLOR: Color32 = Color32::from_rgb(0x66, 0xA2, 0xE4);
 
-fn get_visuals_from_preference(preference: ThemePreference) -> Visuals {
+fn resolve_theme_mode(preference: ThemePreference) -> Mode {
     match preference {
-        ThemePreference::Dark => dark_visuals(),
-        ThemePreference::Light => light_visuals(),
-        ThemePreference::System => {
-            let mode = dark_light::detect().unwrap_or_else(|e| {
-                error!("failed to detect system theme: {e}");
-                Mode::Unspecified
-            });
-
-            match mode {
-                Mode::Light => light_visuals(),
-                Mode::Dark | Mode::Unspecified => dark_visuals(),
-            }
-        }
+        ThemePreference::Dark => Mode::Dark,
+        ThemePreference::Light => Mode::Light,
+        ThemePreference::System => dark_light::detect().unwrap_or_else(|e| {
+            error!("failed to detect system theme: {e}");
+            Mode::Unspecified
+        }),
     }
 }
 
-fn apply_theme(ctx: &Context, preference: ThemePreference) {
-    let visuals = get_visuals_from_preference(preference);
-    ctx.set_visuals(visuals);
-}
-
-fn apply_system_theme(ctx: &Context, mode: Mode) {
+fn apply_visuals_for_mode(ctx: &Context, mode: Mode) {
     let visuals = match mode {
-        Mode::Light => light_visuals(),
-        Mode::Dark | Mode::Unspecified => dark_visuals(),
+        Mode::Light => light_theme_visuals(),
+        Mode::Dark | Mode::Unspecified => dark_theme_visuals(),
     };
+
     ctx.set_visuals(visuals);
 }
 
-fn dark_visuals() -> Visuals {
+fn dark_theme_visuals() -> Visuals {
     let mut visuals = Visuals::dark();
     visuals.selection.bg_fill = DARK_ACCENT_COLOR;
     visuals
 }
 
-fn light_visuals() -> Visuals {
+fn light_theme_visuals() -> Visuals {
     let mut visuals = Visuals::light();
     visuals.selection.bg_fill = LIGHT_ACCENT_COLOR;
     visuals

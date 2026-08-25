@@ -5,8 +5,9 @@ use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::info;
 
 use crate::{
-    APP_NAME, GemPlayer, apply_theme,
+    APP_NAME, GemPlayer, apply_visuals_for_mode,
     library_folder_picker::spawn_library_folder_picker,
+    resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
 
@@ -46,7 +47,8 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 ThemePreference::radio_buttons(&mut gem.ui.theme_preference, ui);
 
                 if gem.ui.theme_preference != previous_preference {
-                    apply_theme(ui.ctx(), gem.ui.theme_preference);
+                    let mode = resolve_theme_mode(gem.ui.theme_preference);
+                    apply_visuals_for_mode(ui.ctx(), mode);
                 }
 
                 ui.add(Separator::default().spacing(divider_spacing));
