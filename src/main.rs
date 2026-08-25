@@ -626,24 +626,17 @@ fn resolve_theme_mode(preference: ThemePreference) -> Mode {
 }
 
 fn apply_visuals_for_mode(ctx: &Context, mode: Mode) {
-    let visuals = match mode {
-        Mode::Light => light_theme_visuals(),
-        Mode::Dark | Mode::Unspecified => dark_theme_visuals(),
+    let mut visuals = match mode {
+        Mode::Light => Visuals::light(),
+        Mode::Dark | Mode::Unspecified => Visuals::dark(),
+    };
+
+    visuals.selection.bg_fill = match mode {
+        Mode::Light => LIGHT_ACCENT_COLOR,
+        Mode::Dark | Mode::Unspecified => DARK_ACCENT_COLOR,
     };
 
     ctx.set_visuals(visuals);
-}
-
-fn dark_theme_visuals() -> Visuals {
-    let mut visuals = Visuals::dark();
-    visuals.selection.bg_fill = DARK_ACCENT_COLOR;
-    visuals
-}
-
-fn light_theme_visuals() -> Visuals {
-    let mut visuals = Visuals::light();
-    visuals.selection.bg_fill = LIGHT_ACCENT_COLOR;
-    visuals
 }
 
 fn load_font_family(family_names: &[&str]) -> Option<Vec<u8>> {
