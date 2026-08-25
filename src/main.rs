@@ -116,6 +116,8 @@ fn main() -> eframe::Result {
 
     let options = NativeOptions {
         viewport,
+        // This fixes the crash on macos when hitting the close window button.
+        run_and_return: false, 
         ..Default::default()
     };
     run_native(APP_NAME, options, Box::new(|cc| Ok(Box::new(init_gem_player(cc)))))
