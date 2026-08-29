@@ -65,19 +65,17 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 return;
             }
 
-            let control_ui_height = 80.0;
-            let navigation_ui_height = 32.0;
+            let control_panel_height = 88.0;
+            let navigation_bar_height = 32.0;
             let separator_space = 1.0;
 
-            let strip = StripBuilder::new(ui);
-
-            strip
+            StripBuilder::new(ui)
                 .size(Size::exact(separator_space))
-                .size(Size::exact(control_ui_height))
+                .size(Size::exact(control_panel_height))
                 .size(Size::exact(separator_space))
                 .size(Size::remainder())
                 .size(Size::exact(separator_space))
-                .size(Size::exact(navigation_ui_height))
+                .size(Size::exact(navigation_bar_height))
                 .vertical(|mut strip| {
                     strip.cell(|ui| {
                         ui.add(Separator::default().spacing(separator_space));
