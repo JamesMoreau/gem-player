@@ -7,9 +7,6 @@ use egui_toast::Toasts;
 use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
-#[cfg(target_os = "macos")]
-use egui::{Align, Layout};
-
 use crate::{
     GemPlayer,
     ui::{
@@ -68,31 +65,18 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                 return;
             }
 
-            let control_ui_height = 80.0;
-            let navigation_ui_height = 32.0;
-            let separator_space = 3.0; // Since the seperator is 1px we want it in the middle.
+            let control_panel_height = 88.0;
+            let navigation_bar_height = 32.0;
+            let separator_space = 1.0;
 
-            let strip = StripBuilder::new(ui);
-
-            #[cfg(target_os = "macos")]
-            let strip = {
-                let titlebar_ui_height = 32.0;
-                strip.size(Size::exact(titlebar_ui_height))
-            };
-
-            strip
+            StripBuilder::new(ui)
                 .size(Size::exact(separator_space))
-                .size(Size::exact(control_ui_height))
+                .size(Size::exact(control_panel_height))
                 .size(Size::exact(separator_space))
                 .size(Size::remainder())
                 .size(Size::exact(separator_space))
-                .size(Size::exact(navigation_ui_height))
+                .size(Size::exact(navigation_bar_height))
                 .vertical(|mut strip| {
-                    #[cfg(target_os = "macos")]
-                    {
-                        strip.cell(title_bar_macos);
-                    }
-
                     strip.cell(|ui| {
                         ui.add(Separator::default().spacing(separator_space));
                     });
@@ -117,28 +101,6 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                     strip.cell(|ui| bottom_bar(ui, gem));
                 });
         });
-}
-
-#[cfg(target_os = "macos")]
-fn title_bar_macos(ui: &mut Ui) {
-    let layout = Layout::left_to_right(Align::Center);
-
-    ui.with_layout(layout, |ui| {
-        ui.add_space(96.0); // Reserve space for traffic lights.
-
-        ui.add_space(16.0);
-
-        let beta = RichText::new("BETA").italics().color(ui.visuals().weak_text_color());
-        ui.add(unselectable_label(beta));
-
-        #[cfg(debug_assertions)]
-        {
-            ui.add_space(16.0);
-
-            let debug = format!("{} Debug Build", egui_material_icons::icons::ICON_BUG_REPORT.codepoint);
-            ui.add(unselectable_label(RichText::new(debug).color(Color32::YELLOW)));
-        }
-    });
 }
 
 pub fn unselectable_label(text: impl Into<WidgetText>) -> Label {
