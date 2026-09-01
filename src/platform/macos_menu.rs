@@ -1,7 +1,6 @@
 use std::sync::mpsc::{Receiver, channel};
 
 use fully_pub::fully_pub;
-use muda::accelerator::{Code, Modifiers};
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
 use crate::commands::GemCommand;
@@ -12,16 +11,9 @@ struct MenuBar {
     menu_receiver: Receiver<MenuEvent>,
 }
 
-#[fully_pub]
-struct MenuShortcut {
-    command: GemCommand,
-    modifiers: Modifiers,
-    key: Code,
-    description: &'static str,
-}
-
-// Create a native macos menu using the Muda crate. Menu items and events are identified using
-// the specific command as an Id. We also return a channel receiver to process these events.
+// Create a native macOS menu using the Muda crate. Custom menu items use
+// GemCommand as their ID, allowing menu events to be forwarded directly
+// into the application's command system.
 pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
     let (sender, receiver) = channel();
     MenuEvent::set_event_handler(Some(move |event| {
