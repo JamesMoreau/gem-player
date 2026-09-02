@@ -37,7 +37,7 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             ],
         )
         .unwrap(),
-        // &Submenu::with_items("File", true, &[&MenuItem::with_id(Command::OpenFile, "Open with", true, None)]).unwrap(),
+        &Submenu::with_items("File", true, &[&PredefinedMenuItem::close_window(None)]).unwrap(),
         &Submenu::with_items(
             "Window",
             true,
