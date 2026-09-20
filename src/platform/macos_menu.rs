@@ -16,11 +16,13 @@ struct MenuBar {
 // into the application's command system.
 pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
     let (sender, receiver) = channel();
+
     MenuEvent::set_event_handler(Some(move |event| {
         let _ = sender.send(event);
     }));
 
     let menu = Menu::with_items(&[
+        #[cfg(target_os = "macos")]
         &Submenu::with_items(
             "App",
             true,
