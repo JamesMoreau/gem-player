@@ -7,14 +7,14 @@ fn main() -> Result<(), ()> {
 
 #[cfg(target_os = "windows")]
 mod windows {
-    use std::{fs::File, path::Path};
     use ico::{IconDir, IconDirEntry, IconImage, ResourceType};
+    use std::{env, fs::File, path::Path};
 
     pub fn build() -> Result<(), ()> {
         let png_path = Path::new("assets/icon.png");
-        let ico_path = Path::new("assets/icon.ico");
+        let ico_path = Path::new(&env::var("OUT_DIR").unwrap()).join("icon.ico");
 
-        if let Err(e) = convert_png_to_ico(png_path, ico_path) {
+        if let Err(e) = convert_png_to_ico(png_path, &ico_path) {
             eprintln!("⚠️ Failed to convert PNG to ICO: {e}");
             return Err(());
         }
