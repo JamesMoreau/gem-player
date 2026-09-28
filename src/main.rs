@@ -7,6 +7,7 @@ use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
     library_watcher::LibraryWatcher,
+    menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
     player::{get_position, stop},
@@ -37,6 +38,7 @@ use std::{
     fs::{copy, read},
     mem::take,
     path::PathBuf,
+    str::FromStr,
     sync::{
         Arc,
         mpsc::{Receiver, TryRecvError},
@@ -47,16 +49,19 @@ use std::{
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
+#[cfg(target_os = "windows")]
+use {eframe::wgpu::rwh::RawWindowHandle, muda::MenuTheme};
+
 #[cfg(target_os = "macos")]
-use {crate::platform::macos_menu::MenuBar, std::str::FromStr};
+use std::str::FromStr;
 
 mod artwork_cache;
 mod commands;
 mod library_folder_picker;
 mod library_watcher;
+mod menu;
 mod nosleep_manager;
 mod os_media_controls;
-mod platform;
 mod player;
 mod playlist;
 mod track;
@@ -93,8 +98,7 @@ struct GemPlayer {
 
     os_media_controls: OSMediaControlsState,
 
-    #[cfg(target_os = "macos")]
-    menubar: platform::macos_menu::MenuBar,
+    menubar: MenuBar,
 }
 
 fn main() -> eframe::Result {
@@ -207,10 +211,37 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         b.player.set_volume(initial_volume);
     }
 
-    #[cfg(target_os = "macos")]
     let (menu, menu_receiver) = {
-        let (menu, receiver) = platform::macos_menu::create_menu();
+        let (menu, receiver) = create_menu();
+
+        #[cfg(target_os = "windows")]
+        unsafe {
+            match cc.window_handle() {
+                Ok(handle) => {
+                    if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+                        let hwnd = handle.hwnd.get();
+
+                        // TODO: For now we don't have the menu on Windows. 
+                        // Eventually we would like it to be visibly toggled using the ALT key.
+                        if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, MenuTheme::Auto) {
+                            error!("Unable to initialize menu for Windows: {}", e);
+                        }
+                    } else {
+                        error!("Unable to initialize menu: window is not a Win32 window");
+                    }
+                }
+                Err(e) => {
+                    error!("Unable to get Windows window handle: {}", e);
+                }
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        menu.init_for_gtk_window(&gtk_window, Some(&vertical_gtk_box));
+
+        #[cfg(target_os = "macos")]
         menu.init_for_nsapp();
+
         (menu, receiver)
     };
 
@@ -275,7 +306,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
         os_media_controls: OSMediaControlsState::Pending,
 
-        #[cfg(target_os = "macos")]
         menubar: MenuBar { menu, menu_receiver },
     }
 }
@@ -310,9 +340,7 @@ impl App for GemPlayer {
         poll_library_folder_picker(self);
         poll_library_watcher(self);
         poll_media_events(self);
-
-        #[cfg(target_os = "macos")]
-        poll_macos_menu_events(self);
+        poll_menu_events(self);
 
         maybe_initialize_os_media_controls(self, frame);
         check_for_next_track(ctx, self);
@@ -391,8 +419,7 @@ fn poll_system_theme_change(ctx: &Context, gem: &mut GemPlayer) {
     }
 }
 
-#[cfg(target_os = "macos")]
-fn poll_macos_menu_events(gem: &mut GemPlayer) {
+fn poll_menu_events(gem: &mut GemPlayer) {
     let events: Vec<_> = gem.menubar.menu_receiver.try_iter().collect();
 
     for event in events {
