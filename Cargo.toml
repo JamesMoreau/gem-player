@@ -25,6 +25,7 @@ lofty = "0.25.2"
 log = "0.4.34"
 m3u = "1.0.0"
 mimalloc = "0.1.52"
+muda = "0.20.0"
 nosleep = "0.2.1"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
@@ -44,9 +45,6 @@ trash = "5.2.9"
 walkdir = "2.5.0"
 directories = "6.0.0"
 image = "0.25.10"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-muda = "0.20.0"
 
 [build-dependencies]
 winres = "0.1.12"
