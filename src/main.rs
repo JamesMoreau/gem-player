@@ -52,9 +52,6 @@ use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 #[cfg(target_os = "windows")]
 use {eframe::wgpu::rwh::RawWindowHandle, muda::MenuTheme};
 
-#[cfg(target_os = "macos")]
-use std::str::FromStr;
-
 mod artwork_cache;
 mod commands;
 mod library_folder_picker;
