@@ -6,16 +6,15 @@ An open-source, lightweight music player built in Rust using [egui](https://gith
 
 # Features
 
-- Supports most audio formats such as mp3, m4a, wav, flac, ogg, etc.
-- Playlisting. Stored as m3u files which can be imported / exported.
+- Supports popular audio formats including MP3, M4A, WAV, FLAC, OGG, and more.
+- Playlists stored as M3U files, with import and export support.
 - Audio visualization.
 - Sorting and filtering.
-- Queue management. Shuffle and repeat.
-- Dark and light mode.
-- Cross-platform (MacOS and Windows).
+- Queue management with shuffle and repeat.
+- Dark and light modes.
 - OS media controls integration.
 - Automatic library reloading.
-- Privacy first. No analytics. All data stays on your machine.
+- Privacy-first. No analytics. Your data stays on your machine.
 
 # Installation
 
