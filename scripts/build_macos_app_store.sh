@@ -70,6 +70,14 @@ echo "🔍 Checking app entitlements..."
 codesign --display --entitlements - \
   "$UNIVERSAL_APP"
 
+security cms -D -i "$PROVISIONING_PROFILE" > /tmp/gem-profile.plist
+
+/usr/libexec/PlistBuddy \
+  -c "Print :Entitlements:application-identifier" \
+  /tmp/gem-profile.plist
+
+exit
+
 productbuild \
   --sign "$INSTALLER_SIGNING_IDENTITY" \
   --component "$UNIVERSAL_APP" \

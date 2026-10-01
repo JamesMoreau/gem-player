@@ -54,6 +54,7 @@ image = "0.25.10"
 # This is used by cargo-bundle
 [package.metadata.bundle]
 name = "Gem Player"
-identifier = "io.github.jamesmoreau.gemplayer"
+identifier = "com.jamesmoreau.gemplayer"
 icon = ["assets/icon.png"]
 category = "public.app-category.music"
+minimum_system_version = "11.0"
