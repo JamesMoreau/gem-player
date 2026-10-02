@@ -1,0 +1,79 @@
+.
+├── assets
+│   ├── icon.icns
+│   ├── icon.png
+│   ├── Inconsolata-VariableFont_wdth,wght.ttf
+│   ├── kapture.gif
+│   └── screenshot.png
+├── build.rs
+├── Cargo.lock
+├── Cargo.toml
+├── documentation
+│   ├── appstore_screenshot_1.png
+│   └── appstore_screenshot_2.png
+├── LICENSE
+├── output.txt
+├── platform
+│   ├── macos
+│   │   ├── dmg_build_settings.py
+│   │   ├── Gem_Player_App_Store.provisionprofile
+│   │   └── macos.entitlements
+│   └── windows
+│       ├── installer_script.iss
+│       └── manifest.xml
+├── README.md
+├── rustfmt.toml
+├── scripts
+│   ├── build_macos_app_store.sh
+│   ├── build_macos.sh
+│   ├── build_windows.ps1
+│   └── make_icns.sh
+├── src
+│   ├── artwork_cache.rs
+│   ├── commands.rs
+│   ├── library_folder_picker.rs
+│   ├── library_watcher.rs
+│   ├── main.rs
+│   ├── menu.rs
+│   ├── nosleep_manager.rs
+│   ├── os_media_controls.rs
+│   ├── player.rs
+│   ├── playlist.rs
+│   ├── track.rs
+│   ├── ui
+│   │   ├── bottom_bar.rs
+│   │   ├── control_panel.rs
+│   │   ├── file_drop_overlay.rs
+│   │   ├── library_view.rs
+│   │   ├── mod.rs
+│   │   ├── playlist_view.rs
+│   │   ├── queue_view.rs
+│   │   ├── root.rs
+│   │   ├── settings_view.rs
+│   │   ├── toasts.rs
+│   │   └── widgets
+│   └── visualizer.rs
+└── target
+    ├── aarch64-apple-darwin
+    │   ├── CACHEDIR.TAG
+    │   └── release
+    ├── CACHEDIR.TAG
+    ├── debug
+    │   ├── build
+    │   ├── deps
+    │   ├── examples
+    │   └── incremental
+    ├── flycheck0
+    │   ├── stderr
+    │   └── stdout
+    ├── release
+    │   ├── build
+    │   ├── bundle
+    │   ├── deps
+    │   ├── examples
+    │   └── incremental
+    └── x86_64-apple-darwin
+        ├── CACHEDIR.TAG
+        └── release
+
+27 directories, 50 files

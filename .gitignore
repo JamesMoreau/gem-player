@@ -23,4 +23,5 @@ Cargo.lock
 .env
 
 .DS_Store
-platform/macos/Gem_Player_App_Store.provisionprofile
+
+private/
