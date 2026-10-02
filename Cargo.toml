@@ -55,6 +55,6 @@ image = "0.25.10"
 [package.metadata.bundle]
 name = "Gem Player"
 identifier = "com.jamesmoreau.gemplayer"
-icon = ["assets/icon.png"]
+icon = ["assets/icon.icns"]
+osx_minimum_system_version = "13.0"
 category = "public.app-category.music"
-minimum_system_version = "11.0"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail # Exit on any error
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -70,14 +70,6 @@ echo "🔍 Checking app entitlements..."
 codesign --display --entitlements - \
   "$UNIVERSAL_APP"
 
-security cms -D -i "$PROVISIONING_PROFILE" > /tmp/gem-profile.plist
-
-/usr/libexec/PlistBuddy \
-  -c "Print :Entitlements:application-identifier" \
-  /tmp/gem-profile.plist
-
-exit
-
 productbuild \
   --sign "$INSTALLER_SIGNING_IDENTITY" \
   --component "$UNIVERSAL_APP" \
@@ -85,6 +77,11 @@ productbuild \
   "$PKG_PATH"
 
 pkgutil --check-signature "$PKG_PATH"
+
+echo "🔍 Verifying minimum macOS version..."
+/usr/libexec/PlistBuddy \
+  -c "Print :LSMinimumSystemVersion" \
+  "$UNIVERSAL_APP/Contents/Info.plist"
 
 echo "🎉 App Store app successfully built and signed! the .pkg may now be uploaded via Transporter."
 echo "📦 App: $UNIVERSAL_APP"
