@@ -30,6 +30,8 @@ UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
 DMG_FILENAME="gem_player_${APP_VERSION}_macos_universal_installer.dmg"
 DMG_PATH="$BUNDLE_DIR/$DMG_FILENAME"
 
+# ------------------------------------------------------------------------------
+
 echo "🚀 Building macOS application (Intel)..."
 cargo bundle --release --target x86_64-apple-darwin
 
