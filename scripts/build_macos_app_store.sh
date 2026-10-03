@@ -5,6 +5,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Run all build commands from the project root
+cd "$ROOT_DIR"
+
 # Load build environment
 if [[ ! -f "$SCRIPT_DIR/.env" ]]; then
     echo "❌ Error: $SCRIPT_DIR/.env not found."
@@ -13,25 +16,21 @@ fi
 
 source "$SCRIPT_DIR/.env"
 
-# Run all build commands from the project root
-cd "$ROOT_DIR"
-
 METADATA=$(cargo metadata --no-deps --format-version 1)
 APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
 APP_VERSION=$(jq -r '.packages[0].version' <<< "$METADATA")
 EXECUTABLE_NAME="gem-player"
 
 BUNDLE_DIR="target/release/bundle/osx"
-
 INTEL_APP="target/x86_64-apple-darwin/release/bundle/osx/$APP_NAME.app"
 ARM_APP="target/aarch64-apple-darwin/release/bundle/osx/$APP_NAME.app"
 UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
-
-PKG_FILENAME="gem_player_${APP_VERSION}_macos_app_store.pkg"
-PKG_PATH="$BUNDLE_DIR/$PKG_FILENAME"
+PKG_PATH="$BUNDLE_DIR/gem_player_${APP_VERSION}_macos_app_store.pkg"
 
 ENTITLEMENTS="platform/macos/entitlements.plist"
-PROVISIONING_PROFILE="platform/macos/Gem_Player_App_Store.provisionprofile"
+PROVISIONING_PROFILE="private/macos/appstore.provisionprofile"
+
+# ------------------------------------------------------------------------------
 
 echo "🚀 Building macOS application (Intel)..."
 cargo bundle --release --target x86_64-apple-darwin
@@ -41,7 +40,8 @@ cargo bundle --release --target aarch64-apple-darwin
 
 echo "🧬 Creating universal binary..."
 rm -rf "$UNIVERSAL_APP"
-mkdir -p "$(dirname "$UNIVERSAL_APP")"
+mkdir -p "$BUNDLE_DIR"
+
 ditto "$ARM_APP" "$UNIVERSAL_APP"
 
 lipo -create \
@@ -70,6 +70,7 @@ echo "🔍 Checking app entitlements..."
 codesign --display --entitlements - \
   "$UNIVERSAL_APP"
 
+echo "📦 Creating installer package..."
 productbuild \
   --sign "$INSTALLER_SIGNING_IDENTITY" \
   --component "$UNIVERSAL_APP" \
@@ -83,6 +84,7 @@ echo "🔍 Verifying minimum macOS version..."
   -c "Print :LSMinimumSystemVersion" \
   "$UNIVERSAL_APP/Contents/Info.plist"
 
-echo "🎉 App Store app successfully built and signed! the .pkg may now be uploaded via Transporter."
-echo "📦 App: $UNIVERSAL_APP"
+echo "🎉 App Store package successfully built and signed!"
+echo "📦 App:     $UNIVERSAL_APP"
+echo "📦 Package: $PKG_PATH"
 
