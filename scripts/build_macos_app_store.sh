@@ -56,7 +56,7 @@ echo "📜 Embedding provisioning profile..."
 cp "$PROVISIONING_PROFILE" \
   "$UNIVERSAL_APP/Contents/embedded.provisionprofile"
 
-echo "🔏 Signing the universal app..."
+echo "🔏 Signing the universal app with entitlements..."
 codesign --force --options runtime --timestamp \
   --entitlements "$ENTITLEMENTS" \
   --sign "$APP_STORE_SIGNING_IDENTITY" \
