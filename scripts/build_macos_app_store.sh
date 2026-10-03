@@ -30,7 +30,7 @@ UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
 PKG_FILENAME="gem_player_${APP_VERSION}_macos_app_store.pkg"
 PKG_PATH="$BUNDLE_DIR/$PKG_FILENAME"
 
-ENTITLEMENTS="platform/macos/macos.entitlements"
+ENTITLEMENTS="platform/macos/entitlements.plist"
 PROVISIONING_PROFILE="platform/macos/Gem_Player_App_Store.provisionprofile"
 
 echo "🚀 Building macOS application (Intel)..."
