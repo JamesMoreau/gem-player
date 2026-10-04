@@ -1,4 +1,4 @@
-use egui::{Align, Button, Direction, Frame, Layout, Margin, Popup, PopupCloseBehavior, RichText, TextEdit, Ui};
+use egui::{Align, Button, Direction, Frame, Layout, Margin, Popup, PopupCloseBehavior, TextEdit, Ui};
 use egui_material_icons::icons::{ICON_CLEAR, ICON_CLEAR_ALL, ICON_FILTER_LIST, ICON_SEARCH};
 use log::info;
 use strum::IntoEnumIterator;
@@ -20,10 +20,16 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                     gem.ui.current_view = view;
                 }
 
-                ui.add_space(8.0);
+                #[cfg(debug_assertions)]
+                {
+                    ui.add_space(16.0);
 
-                let beta = RichText::new("BETA").italics().color(ui.visuals().weak_text_color());
-                ui.add(unselectable_label(beta));
+                    ui.add(unselectable_label(
+                        egui_material_icons::icons::ICON_BUG_REPORT
+                            .rich_text()
+                            .color(egui::Color32::YELLOW),
+                    ));
+                }
             });
 
             center.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
