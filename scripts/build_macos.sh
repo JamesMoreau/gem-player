@@ -57,7 +57,7 @@ codesign --force --options runtime --timestamp \
   "$UNIVERSAL_APP"
 
 dmgbuild \
-  -s platform/macos/dmg_build_settings.py \
+  -s package/macos/dmg_build_settings.py \
   -D app="$BUNDLE_DIR/$APP_NAME.app" \
   "$APP_NAME Installer" \
   "$DMG_PATH"

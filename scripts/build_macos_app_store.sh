@@ -27,8 +27,8 @@ ARM_APP="target/aarch64-apple-darwin/release/bundle/osx/$APP_NAME.app"
 UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
 PKG_PATH="$BUNDLE_DIR/gem_player_${APP_VERSION}_macos_app_store.pkg"
 
-ENTITLEMENTS="platform/macos/entitlements.plist"
-PROVISIONING_PROFILE="private/macos/appstore.provisionprofile"
+ENTITLEMENTS="package/macos/entitlements.plist"
+PROVISIONING_PROFILE="package/macos/private/appstore.provisionprofile"
 
 # ------------------------------------------------------------------------------
 
