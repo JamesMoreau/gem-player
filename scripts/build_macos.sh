@@ -21,10 +21,7 @@ APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
 APP_VERSION=$(jq -r '.packages[0].version' <<< "$METADATA")
 EXECUTABLE_NAME="gem-player"
 
-BUNDLE_DIR="target/release/bundle/osx"
-
-INTEL_APP="target/x86_64-apple-darwin/release/bundle/osx/$APP_NAME.app"
-ARM_APP="target/aarch64-apple-darwin/release/bundle/osx/$APP_NAME.app"
+BUNDLE_DIR="target/universal/release/bundle/osx"
 UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
 
 DMG_FILENAME="gem_player_${APP_VERSION}_macos_universal_installer.dmg"
@@ -32,21 +29,16 @@ DMG_PATH="$BUNDLE_DIR/$DMG_FILENAME"
 
 # ------------------------------------------------------------------------------
 
-echo "🚀 Building macOS application (Intel)..."
-cargo bundle --release --target x86_64-apple-darwin
+echo "🚀 Building universal macOS application..."
+cargo bundle --release \
+  --format osx \
+  --target x86_64-apple-darwin \
+  --target aarch64-apple-darwin
 
-echo "🚀 Building macOS application (Apple Silicon)..."
-cargo bundle --release --target aarch64-apple-darwin
-
-echo "🧬 Creating universal binary..."
-rm -rf "$UNIVERSAL_APP"
-mkdir -p "$(dirname "$UNIVERSAL_APP")"
-ditto "$ARM_APP" "$UNIVERSAL_APP"
-
-lipo -create \
-  "$INTEL_APP/Contents/MacOS/$EXECUTABLE_NAME" \
-  "$ARM_APP/Contents/MacOS/$EXECUTABLE_NAME" \
-  -output "$UNIVERSAL_APP/Contents/MacOS/$EXECUTABLE_NAME"
+if [[ ! -d "$UNIVERSAL_APP" ]]; then
+    echo "❌ Error: Expected application bundle not found at $UNIVERSAL_APP"
+    exit 1
+fi
 
 echo "🔍 Verifying universal binary..."
 lipo -info "$UNIVERSAL_APP/Contents/MacOS/$EXECUTABLE_NAME"
@@ -58,11 +50,11 @@ codesign --force --options runtime --timestamp \
 
 dmgbuild \
   -s package/macos/dmg_build_settings.py \
-  -D app="$BUNDLE_DIR/$APP_NAME.app" \
+  -D app="$UNIVERSAL_APP" \
   "$APP_NAME Installer" \
   "$DMG_PATH"
 
-echo "📝 Notarizing the app..."
+echo "📝 Notarizing the DMG..."
 xcrun notarytool submit "$DMG_PATH" \
   --keychain-profile "$NOTARIZATION_KEYCHAIN_PROFILE" \
   --wait
