@@ -21,9 +21,7 @@ APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
 APP_VERSION=$(jq -r '.packages[0].version' <<< "$METADATA")
 EXECUTABLE_NAME="gem-player"
 
-BUNDLE_DIR="target/release/bundle/osx"
-INTEL_APP="target/x86_64-apple-darwin/release/bundle/osx/$APP_NAME.app"
-ARM_APP="target/aarch64-apple-darwin/release/bundle/osx/$APP_NAME.app"
+BUNDLE_DIR="target/universal/release/bundle/osx"
 UNIVERSAL_APP="$BUNDLE_DIR/$APP_NAME.app"
 PKG_PATH="$BUNDLE_DIR/gem_player_${APP_VERSION}_macos_app_store.pkg"
 
@@ -32,22 +30,16 @@ PROVISIONING_PROFILE="package/macos/private/appstore.provisionprofile"
 
 # ------------------------------------------------------------------------------
 
-echo "🚀 Building macOS application (Intel)..."
-cargo bundle --release --target x86_64-apple-darwin
+echo "🚀 Building universal macOS application..."
+cargo bundle --release \
+  --format osx \
+  --target x86_64-apple-darwin \
+  --target aarch64-apple-darwin
 
-echo "🚀 Building macOS application (Apple Silicon)..."
-cargo bundle --release --target aarch64-apple-darwin
-
-echo "🧬 Creating universal binary..."
-rm -rf "$UNIVERSAL_APP"
-mkdir -p "$BUNDLE_DIR"
-
-ditto "$ARM_APP" "$UNIVERSAL_APP"
-
-lipo -create \
-  "$INTEL_APP/Contents/MacOS/$EXECUTABLE_NAME" \
-  "$ARM_APP/Contents/MacOS/$EXECUTABLE_NAME" \
-  -output "$UNIVERSAL_APP/Contents/MacOS/$EXECUTABLE_NAME"
+if [[ ! -d "$UNIVERSAL_APP" ]]; then
+    echo "❌ Error: Expected application bundle not found at $UNIVERSAL_APP"
+    exit 1
+fi
 
 echo "🔍 Verifying universal binary..."
 lipo -info "$UNIVERSAL_APP/Contents/MacOS/$EXECUTABLE_NAME"
@@ -77,12 +69,8 @@ productbuild \
   /Applications \
   "$PKG_PATH"
 
+echo "🔍 Verifying installer signature..."
 pkgutil --check-signature "$PKG_PATH"
-
-echo "🔍 Verifying minimum macOS version..."
-/usr/libexec/PlistBuddy \
-  -c "Print :LSMinimumSystemVersion" \
-  "$UNIVERSAL_APP/Contents/Info.plist"
 
 echo "🎉 App Store package successfully built and signed!"
 echo "📦 App:     $UNIVERSAL_APP"
