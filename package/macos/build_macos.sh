@@ -3,18 +3,13 @@
 set -euo pipefail # Exit on any error
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Load build environment
-if [[ ! -f "$SCRIPT_DIR/.env" ]]; then
-    echo "❌ Error: $SCRIPT_DIR/.env not found."
-    exit 1
-fi
-
-source "$SCRIPT_DIR/.env"
-
-# Run all build commands from the project root
 cd "$ROOT_DIR"
+
+if [[ -f "$ROOT_DIR/.env" ]]; then
+    source "$ROOT_DIR/.env"
+fi
 
 METADATA=$(cargo metadata --no-deps --format-version 1)
 APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
@@ -47,6 +42,9 @@ echo "🔏 Signing the universal app..."
 codesign --force --options runtime --timestamp \
   --sign "$SIGNING_IDENTITY" \
   "$UNIVERSAL_APP"
+
+echo "🔍 Verifying signature..."
+codesign --verify --deep --strict --verbose=2 "$UNIVERSAL_APP"
 
 dmgbuild \
   -s package/macos/dmg_build_settings.py \
