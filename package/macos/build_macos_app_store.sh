@@ -3,18 +3,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Run all build commands from the project root
 cd "$ROOT_DIR"
 
 # Load build environment
-if [[ ! -f "$SCRIPT_DIR/.env" ]]; then
-    echo "❌ Error: $SCRIPT_DIR/.env not found."
+if [[ ! -f "$ROOT_DIR/.env" ]]; then
+    echo "❌ Error: $ROOT_DIR/.env not found."
     exit 1
 fi
 
-source "$SCRIPT_DIR/.env"
+source "$ROOT_DIR/.env"
 
 METADATA=$(cargo metadata --no-deps --format-version 1)
 APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
@@ -43,6 +43,11 @@ fi
 
 echo "🔍 Verifying universal binary..."
 lipo -info "$UNIVERSAL_APP/Contents/MacOS/$EXECUTABLE_NAME"
+
+if [[ ! -f "$PROVISIONING_PROFILE" ]]; then
+    echo "❌ Error: Provisioning profile not found at $PROVISIONING_PROFILE"
+    exit 1
+fi
 
 echo "📜 Embedding provisioning profile..."
 cp "$PROVISIONING_PROFILE" \

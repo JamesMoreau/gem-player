@@ -3,18 +3,17 @@
 set -euo pipefail # Exit on any error
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+cd "$ROOT_DIR"
 
 # Load build environment
-if [[ ! -f "$SCRIPT_DIR/.env" ]]; then
-    echo "❌ Error: $SCRIPT_DIR/.env not found."
+if [[ ! -f "$ROOT_DIR/.env" ]]; then
+    echo "❌ Error: $ROOT_DIR/.env not found."
     exit 1
 fi
 
-source "$SCRIPT_DIR/.env"
-
-# Run all build commands from the project root
-cd "$ROOT_DIR"
+source "$ROOT_DIR/.env"
 
 METADATA=$(cargo metadata --no-deps --format-version 1)
 APP_NAME=$(jq -r '.packages[0].metadata.bundle.name' <<< "$METADATA")
@@ -48,6 +47,10 @@ codesign --force --options runtime --timestamp \
   --sign "$SIGNING_IDENTITY" \
   "$UNIVERSAL_APP"
 
+echo "🔍 Verifying app signature..."
+codesign --verify --deep --strict --verbose=2 "$UNIVERSAL_APP"
+
+echo "📦 Creating DMG..."
 dmgbuild \
   -s package/macos/dmg_build_settings.py \
   -D app="$UNIVERSAL_APP" \
@@ -59,11 +62,13 @@ xcrun notarytool submit "$DMG_PATH" \
   --keychain-profile "$NOTARIZATION_KEYCHAIN_PROFILE" \
   --wait
 
-echo "✅ Stapling the notarization..."
-xcrun stapler staple "$UNIVERSAL_APP"
+echo "✅ Stapling the DMG..."
 xcrun stapler staple "$DMG_PATH"
 
-echo "🔍 Verifying notarization..."
+echo "🔍 Verifying DMG notarization..."
+xcrun stapler validate "$DMG_PATH"
+
+echo "🔍 Verifying application execution policy..."
 spctl --assess --type execute --verbose "$UNIVERSAL_APP"
 
 echo "🎉 Universal build and notarization complete!"
