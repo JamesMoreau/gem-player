@@ -46,6 +46,9 @@ walkdir = "2.5.0"
 directories = "6.0.0"
 image = "0.25.10"
 
+[patch.crates-io]
+winit = { path = "vendor/winit" }
+
 [build-dependencies]
 winres = "0.1.12"
 ico = "0.5.0"
