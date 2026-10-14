@@ -49,8 +49,10 @@ use std::{
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
+/*
 #[cfg(target_os = "windows")]
 use {eframe::wgpu::rwh::RawWindowHandle, muda::MenuTheme};
+*/
 
 mod artwork_cache;
 mod commands;
@@ -211,6 +213,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let (menu, menu_receiver) = {
         let (menu, receiver) = create_menu();
 
+        // TODO: For now we don't have the menu on Windows. 
+        // Eventually we would like it to be visibly toggled using the ALT key.
+        /*
         #[cfg(target_os = "windows")]
         unsafe {
             match cc.window_handle() {
@@ -218,8 +223,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                     if let RawWindowHandle::Win32(handle) = handle.as_raw() {
                         let hwnd = handle.hwnd.get();
 
-                        // TODO: For now we don't have the menu on Windows. 
-                        // Eventually we would like it to be visibly toggled using the ALT key.
                         if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, MenuTheme::Auto) {
                             error!("Unable to initialize menu for Windows: {}", e);
                         }
@@ -232,6 +235,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 }
             }
         }
+        */
 
         #[cfg(target_os = "linux")]
         menu.init_for_gtk_window(&gtk_window, Some(&vertical_gtk_box));

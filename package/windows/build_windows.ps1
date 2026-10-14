@@ -1,28 +1,53 @@
 $ErrorActionPreference = "Stop"
 
-$RootDir = Resolve-Path "$PSScriptRoot\.."
+$ScriptDir = $PSScriptRoot
+$RootDir = Resolve-Path "$ScriptDir\..\.."
 Set-Location $RootDir
 
-$metadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
-$appName = $metadata.packages[0].metadata.bundle.name
-$appVersion = $metadata.packages[0].version
+$InstallerScript = Join-Path $ScriptDir "installer_script.iss"
 
-Write-Host "Building $appName v$appVersion..."
+if (-not (Get-Command "ISCC.exe" -ErrorAction SilentlyContinue)) {
+    throw "Inno Setup Compiler (ISCC.exe) was not found. Install Inno Setup or add ISCC.exe to PATH."
+}
+
+$Metadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
+$Package = $Metadata.packages | Where-Object { $_.name -eq "gem-player" } | Select-Object -First 1
+
+if (-not $Package) {
+    throw "Could not find the gem-player package in Cargo metadata."
+}
+
+$AppName = $Package.metadata.bundle.name
+$AppVersion = $Package.version
+
+if (-not $AppName) {
+    $AppName = $Package.name
+}
+
+Write-Host "Building $AppName v$AppVersion..."
 
 cargo build --release --target x86_64-pc-windows-msvc
 
-$installerDir = "target\release\installer"
-New-Item -ItemType Directory -Force $installerDir | Out-Null
+$InstallerDir = Join-Path $RootDir "target\release\installer"
+New-Item -ItemType Directory -Force $InstallerDir | Out-Null
 
-$exePath = (Resolve-Path "target\release\gem-player.exe").Path
+$ExePath = Join-Path $RootDir "target\x86_64-pc-windows-msvc\release\gem-player.exe"
+
+if (-not (Test-Path $ExePath)) {
+    throw "Build executable not found: $ExePath"
+}
 
 Write-Host "Building installer..."
 
-iscc `
-    "/DAppVersion=$appVersion" `
-    "/DExePath=$exePath" `
-    "/O$installerDir" `
-    "/Fgem_player_${appVersion}_windows_x64_installer" `
-    "platform\windows\installer_script.iss"
+& ISCC.exe `
+    "/DAppVersion=$AppVersion" `
+    "/DExePath=$ExePath" `
+    "/O$InstallerDir" `
+    "/Fgem_player_${AppVersion}_windows_x64_installer" `
+    $InstallerScript
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Inno Setup compilation failed with exit code $LASTEXITCODE."
+}
 
 Write-Host "Windows build complete!"

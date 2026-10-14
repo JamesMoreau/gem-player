@@ -21,7 +21,7 @@ mod windows {
 
         let mut res = winres::WindowsResource::new();
         res.set_icon(ico_path.to_str().unwrap());
-        res.set_manifest_file("platform/windows/manifest.xml");
+        res.set_manifest_file("package/windows/manifest.xml");
 
         if let Err(e) = res.compile() {
             eprintln!("⚠️ Failed to package Windows resources: {e}");
