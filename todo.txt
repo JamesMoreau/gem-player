@@ -1,3 +1,6 @@
+- Embed team id and app identifier into the entitlments.
+- On next app store release, change description formatting.
+
 - Upgrade egui version
 	- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
 	- Then vender/winit can be deleted.
