@@ -4,6 +4,9 @@
 
 <plist version="1.0">
 <dict>
+    <key>com.apple.application-identifier</key>
+    <string>NJXX6CLLB6.com.jamesmoreau.gemplayer</string>
+
     <key>com.apple.security.app-sandbox</key>
     <true/>
 

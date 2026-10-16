@@ -1,5 +1,3 @@
-- Embed team id and app identifier into the entitlments.
-
 - Upgrade egui version
 	- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
 	- Then vender/winit can be deleted.
