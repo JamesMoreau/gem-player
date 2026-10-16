@@ -1,0 +1,10 @@
+- Upgrade egui version
+	- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
+	- Then vender/winit can be deleted.
+
+- Windows support
+	- figure out how to make menu toggolable with "ALT".
+	- use built-in cargo-bundle for Windows installer instead of inno setup.
+
+- Linux support
+	- add build script
