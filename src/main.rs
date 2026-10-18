@@ -49,10 +49,8 @@ use std::{
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
-/*
 #[cfg(target_os = "windows")]
 use {eframe::wgpu::rwh::RawWindowHandle, muda::MenuTheme};
-*/
 
 mod artwork_cache;
 mod commands;
@@ -213,18 +211,19 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let (menu, menu_receiver) = {
         let (menu, receiver) = create_menu();
 
-        // TODO: For now we don't have the menu on Windows. 
-        // Eventually we would like it to be visibly toggled using the ALT key.
-        /*
         #[cfg(target_os = "windows")]
         unsafe {
             match cc.window_handle() {
                 Ok(handle) => {
                     if let RawWindowHandle::Win32(handle) = handle.as_raw() {
                         let hwnd = handle.hwnd.get();
-
+                        
                         if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, MenuTheme::Auto) {
                             error!("Unable to initialize menu for Windows: {}", e);
+                        }
+
+                        if let Err(e) = menu.hide_for_hwnd(hwnd) {
+                            error!("Unable to hide menu: {}", e);
                         }
                     } else {
                         error!("Unable to initialize menu: window is not a Win32 window");
@@ -235,7 +234,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 }
             }
         }
-        */
 
         #[cfg(target_os = "linux")]
         menu.init_for_gtk_window(&gtk_window, Some(&vertical_gtk_box));
@@ -343,6 +341,9 @@ impl App for GemPlayer {
         poll_media_events(self);
         poll_menu_events(self);
 
+        #[cfg(target_os = "windows")]
+        poll_menu_shortcuts(ctx, frame, self);
+
         maybe_initialize_os_media_controls(self, frame);
         check_for_next_track(ctx, self);
 
@@ -427,6 +428,41 @@ fn poll_menu_events(gem: &mut GemPlayer) {
         match GemCommand::from_str(&event.id.0) {
             Ok(command) => gem.commands.push(command),
             Err(_) => error!("Unable to process menu event: {:?}", event),
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn poll_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPlayer) {
+    let alt_pressed = ctx.input(|i| i.key_pressed(egui::Key::AltLeft) || i.key_pressed(egui::Key::AltRight));
+
+    if !alt_pressed {
+        return;
+    }
+
+    unsafe {
+        let handle = match frame.window_handle() {
+            Ok(handle) => handle,
+            Err(e) => {
+                error!("Unable to get Windows window handle: {}", e);
+                return;
+            }
+        };
+
+        let RawWindowHandle::Win32(handle) = handle.as_raw() else {
+            error!("Unable to toggle menu: window is not a Win32 window");
+            return;
+        };
+
+        let hwnd = handle.hwnd.get();
+        let result = if gem.menubar.menu.is_visible_on_hwnd(hwnd) {
+            gem.menubar.menu.hide_for_hwnd(hwnd)
+        } else {
+            gem.menubar.menu.show_for_hwnd(hwnd)
+        };
+
+        if let Err(e) = result {
+            error!("Unable to toggle menu: {}", e);
         }
     }
 }
