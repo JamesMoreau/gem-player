@@ -217,8 +217,16 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 Ok(handle) => {
                     if let RawWindowHandle::Win32(handle) = handle.as_raw() {
                         let hwnd = handle.hwnd.get();
-                        
-                        if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, MenuTheme::Auto) {
+
+                        let mode = resolve_theme_mode(theme_preference);
+
+                        let theme = match mode {
+                            Mode::Dark => MenuTheme::Dark,
+                            Mode::Light => MenuTheme::Light,
+                            Mode::Unspecified => MenuTheme::Auto,
+                        };
+
+                        if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, theme) {
                             error!("Unable to initialize menu for Windows: {}", e);
                         }
 
@@ -342,7 +350,7 @@ impl App for GemPlayer {
         poll_menu_events(self);
 
         #[cfg(target_os = "windows")]
-        poll_menu_shortcuts(ctx, frame, self);
+        poll_windows_menu_shortcuts(ctx, frame, self);
 
         maybe_initialize_os_media_controls(self, frame);
         check_for_next_track(ctx, self);
@@ -433,7 +441,7 @@ fn poll_menu_events(gem: &mut GemPlayer) {
 }
 
 #[cfg(target_os = "windows")]
-fn poll_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPlayer) {
+fn poll_windows_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPlayer) {
     let alt_pressed = ctx.input(|i| i.key_pressed(egui::Key::AltLeft) || i.key_pressed(egui::Key::AltRight));
 
     if !alt_pressed {
