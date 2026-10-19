@@ -1,3 +1,5 @@
+- Toasts are only showing the last item. this probably changed when we switched toasts crate.
+
 - Upgrade egui version
 	- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
 	- Then vender/winit can be deleted.
