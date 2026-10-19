@@ -50,7 +50,10 @@ use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
 #[cfg(target_os = "windows")]
-use {eframe::wgpu::rwh::RawWindowHandle, muda::{Menu, MenuTheme}};
+use {
+    eframe::wgpu::rwh::RawWindowHandle,
+    muda::{Menu, MenuTheme},
+};
 
 mod artwork_cache;
 mod commands;
@@ -436,7 +439,7 @@ fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
             Ok(handle) => {
                 if let RawWindowHandle::Win32(handle) = handle.as_raw() {
                     let hwnd = handle.hwnd.get();
-    
+
                     if let Err(e) = menu.set_theme_for_hwnd(hwnd, menu_theme) {
                         error!("Unable to update menu theme for Windows: {e}");
                     }
