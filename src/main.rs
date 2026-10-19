@@ -219,14 +219,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                         let hwnd = handle.hwnd.get();
 
                         let mode = resolve_theme_mode(theme_preference);
+                        let menu_theme = to_menu_theme(mode);
 
-                        let theme = match mode {
-                            Mode::Dark => MenuTheme::Dark,
-                            Mode::Light => MenuTheme::Light,
-                            Mode::Unspecified => MenuTheme::Auto,
-                        };
-
-                        if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, theme) {
+                        if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, menu_theme) {
                             error!("Unable to initialize menu for Windows: {}", e);
                         }
 
@@ -434,11 +429,7 @@ fn poll_system_theme_change(ctx: &Context, frame: &mut Frame, gem: &mut GemPlaye
 
 #[cfg(target_os = "windows")]
 fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
-    let theme = match mode {
-        Mode::Dark => muda::MenuTheme::Dark,
-        Mode::Light => muda::MenuTheme::Light,
-        Mode::Unspecified => muda::MenuTheme::Auto,
-    };
+    let menu_theme = to_menu_theme(mode);
 
     unsafe {
         match frame.window_handle() {
@@ -446,7 +437,7 @@ fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
                 if let RawWindowHandle::Win32(handle) = handle.as_raw() {
                     let hwnd = handle.hwnd.get();
     
-                    if let Err(e) = menu.set_theme_for_hwnd(hwnd, theme) {
+                    if let Err(e) = menu.set_theme_for_hwnd(hwnd, menu_theme) {
                         error!("Unable to update menu theme for Windows: {e}");
                     }
                 } else {
@@ -457,6 +448,15 @@ fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
                 error!("Unable to get Windows window handle: {e}");
             }
         }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn to_menu_theme(mode: Mode) -> MenuTheme {
+    match mode {
+        Mode::Dark => MenuTheme::Dark,
+        Mode::Light => MenuTheme::Light,
+        Mode::Unspecified => MenuTheme::Auto,
     }
 }
 
