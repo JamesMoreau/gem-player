@@ -342,7 +342,7 @@ impl App for GemPlayer {
     }
 
     fn logic(&mut self, ctx: &Context, frame: &mut Frame) {
-        poll_system_theme_change(ctx, self);
+        poll_system_theme_change(ctx, frame, self);
         poll_file_drops(ctx, self);
         poll_library_folder_picker(self);
         poll_library_watcher(self);
@@ -358,8 +358,8 @@ impl App for GemPlayer {
         poll_commands(ctx, self);
     }
 
-    fn ui(&mut self, ui: &mut Ui, _frame: &mut Frame) {
-        gem_player_ui(ui, self);
+    fn ui(&mut self, ui: &mut Ui, frame: &mut Frame) {
+        gem_player_ui(ui, frame, self);
 
         self.ui.toasts.show(ui);
 
@@ -415,7 +415,7 @@ fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
     }
 }
 
-fn poll_system_theme_change(ctx: &Context, gem: &mut GemPlayer) {
+fn poll_system_theme_change(ctx: &Context, frame: &mut Frame, gem: &mut GemPlayer) {
     let Some(watcher) = gem.system_theme_watcher.as_ref() else {
         return;
     };
@@ -426,6 +426,32 @@ fn poll_system_theme_change(ctx: &Context, gem: &mut GemPlayer) {
 
     if gem.ui.theme_preference == ThemePreference::System {
         apply_visuals_for_mode(ctx, mode);
+
+        #[cfg(target_os = "windows")]
+        unsafe {
+            match frame.window_handle() {
+                Ok(handle) => {
+                    if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+                        let hwnd = handle.hwnd.get();
+
+                        let theme = match mode {
+                            Mode::Dark => MenuTheme::Dark,
+                            Mode::Light => MenuTheme::Light,
+                            Mode::Unspecified => MenuTheme::Auto,
+                        };
+
+                        if let Err(e) = gem.menubar.menu.set_theme_for_hwnd(hwnd, theme) {
+                            error!("Unable to update menu theme for Windows: {e}");
+                        }
+                    } else {
+                        error!("Unable to initialize menu: window is not a Win32 window");
+                    }
+                }
+                Err(e) => {
+                    error!("Unable to get Windows window handle: {e}");
+                }
+            }
+        }
     }
 }
 

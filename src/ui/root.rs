@@ -54,7 +54,7 @@ pub struct UIState {
     toasts: Toasts,
 }
 
-pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
+pub fn gem_player_ui(ui: &mut Ui, frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     CentralPanel::default()
         .frame(Frame::NONE.fill(ui.style().visuals.window_fill()))
         .show(ui, |ui| {
@@ -91,7 +91,7 @@ pub fn gem_player_ui(ui: &mut Ui, gem: &mut GemPlayer) {
                         View::Library => library_view(ui, gem),
                         View::Queue => queue_view(ui, &mut gem.player),
                         View::Playlists => playlists_view(ui, gem),
-                        View::Settings => settings_view(ui, gem),
+                        View::Settings => settings_view(ui, frame, gem),
                     });
 
                     strip.cell(|ui| {

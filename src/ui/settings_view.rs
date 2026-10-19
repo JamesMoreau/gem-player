@@ -11,7 +11,10 @@ use crate::{
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
 
-pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
+#[cfg(target_os = "windows")]
+use {dark_light::Mode, eframe::wgpu::rwh::HasWindowHandle, eframe::wgpu::rwh::RawWindowHandle, log::error, muda::MenuTheme};
+
+pub fn settings_view(ui: &mut Ui, frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
         .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {
@@ -49,6 +52,32 @@ pub fn settings_view(ui: &mut Ui, gem: &mut GemPlayer) {
                 if gem.ui.theme_preference != previous_preference {
                     let mode = resolve_theme_mode(gem.ui.theme_preference);
                     apply_visuals_for_mode(ui.ctx(), mode);
+
+                    #[cfg(target_os = "windows")]
+                    unsafe {
+                        match frame.window_handle() {
+                            Ok(handle) => {
+                                if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+                                    let hwnd = handle.hwnd.get();
+
+                                    let theme = match mode {
+                                        Mode::Dark => MenuTheme::Dark,
+                                        Mode::Light => MenuTheme::Light,
+                                        Mode::Unspecified => MenuTheme::Auto,
+                                    };
+
+                                    if let Err(e) = gem.menubar.menu.set_theme_for_hwnd(hwnd, theme) {
+                                        error!("Unable to update menu theme for Windows: {e}");
+                                    }
+                                } else {
+                                    error!("Unable to initialize menu: window is not a Win32 window");
+                                }
+                            }
+                            Err(e) => {
+                                error!("Unable to get Windows window handle: {e}");
+                            }
+                        }
+                    }
                 }
 
                 ui.add(Separator::default().spacing(divider_spacing));
