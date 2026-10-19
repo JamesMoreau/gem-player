@@ -13,9 +13,6 @@ use crate::{
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
 
-#[cfg(target_os = "windows")]
-use {dark_light::Mode, eframe::wgpu::rwh::HasWindowHandle, eframe::wgpu::rwh::RawWindowHandle, log::error, muda::MenuTheme};
-
 pub fn settings_view(ui: &mut Ui, frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
         .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
