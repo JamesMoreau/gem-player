@@ -50,7 +50,7 @@ use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
 #[cfg(target_os = "windows")]
-use {eframe::wgpu::rwh::RawWindowHandle, muda::MenuTheme};
+use {eframe::wgpu::rwh::RawWindowHandle, muda::{Menu, MenuTheme}};
 
 mod artwork_cache;
 mod commands;
@@ -428,28 +428,33 @@ fn poll_system_theme_change(ctx: &Context, frame: &mut Frame, gem: &mut GemPlaye
         apply_visuals_for_mode(ctx, mode);
 
         #[cfg(target_os = "windows")]
-        unsafe {
-            match frame.window_handle() {
-                Ok(handle) => {
-                    if let RawWindowHandle::Win32(handle) = handle.as_raw() {
-                        let hwnd = handle.hwnd.get();
+        apply_menu_theme_for_windows(frame, &gem.menubar.menu, mode)
+    }
+}
 
-                        let theme = match mode {
-                            Mode::Dark => MenuTheme::Dark,
-                            Mode::Light => MenuTheme::Light,
-                            Mode::Unspecified => MenuTheme::Auto,
-                        };
+#[cfg(target_os = "windows")]
+fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
+    let theme = match mode {
+        Mode::Dark => muda::MenuTheme::Dark,
+        Mode::Light => muda::MenuTheme::Light,
+        Mode::Unspecified => muda::MenuTheme::Auto,
+    };
 
-                        if let Err(e) = gem.menubar.menu.set_theme_for_hwnd(hwnd, theme) {
-                            error!("Unable to update menu theme for Windows: {e}");
-                        }
-                    } else {
-                        error!("Unable to initialize menu: window is not a Win32 window");
+    unsafe {
+        match frame.window_handle() {
+            Ok(handle) => {
+                if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+                    let hwnd = handle.hwnd.get();
+    
+                    if let Err(e) = menu.set_theme_for_hwnd(hwnd, theme) {
+                        error!("Unable to update menu theme for Windows: {e}");
                     }
+                } else {
+                    error!("Unable to update menu theme: window is not a Win32 window");
                 }
-                Err(e) => {
-                    error!("Unable to get Windows window handle: {e}");
-                }
+            }
+            Err(e) => {
+                error!("Unable to get Windows window handle: {e}");
             }
         }
     }

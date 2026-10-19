@@ -4,6 +4,8 @@ use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::info;
 
+#[cfg(target_os = "windows")]
+use crate::apply_menu_theme_for_windows;
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
     library_folder_picker::spawn_library_folder_picker,
@@ -54,30 +56,7 @@ pub fn settings_view(ui: &mut Ui, frame: &mut eframe::Frame, gem: &mut GemPlayer
                     apply_visuals_for_mode(ui.ctx(), mode);
 
                     #[cfg(target_os = "windows")]
-                    unsafe {
-                        match frame.window_handle() {
-                            Ok(handle) => {
-                                if let RawWindowHandle::Win32(handle) = handle.as_raw() {
-                                    let hwnd = handle.hwnd.get();
-
-                                    let theme = match mode {
-                                        Mode::Dark => MenuTheme::Dark,
-                                        Mode::Light => MenuTheme::Light,
-                                        Mode::Unspecified => MenuTheme::Auto,
-                                    };
-
-                                    if let Err(e) = gem.menubar.menu.set_theme_for_hwnd(hwnd, theme) {
-                                        error!("Unable to update menu theme for Windows: {e}");
-                                    }
-                                } else {
-                                    error!("Unable to initialize menu: window is not a Win32 window");
-                                }
-                            }
-                            Err(e) => {
-                                error!("Unable to get Windows window handle: {e}");
-                            }
-                        }
-                    }
+                    apply_menu_theme_for_windows(frame, &gem.menubar.menu, mode);
                 }
 
                 ui.add(Separator::default().spacing(divider_spacing));
