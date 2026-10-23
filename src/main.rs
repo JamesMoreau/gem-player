@@ -23,7 +23,9 @@ use crate::{
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
-use egui::{Align2, Color32, Context, FontData, FontDefinitions, FontFamily, Rgba, ThemePreference, Ui, Vec2, ViewportBuilder, Visuals};
+use egui::{
+    Align2, Color32, Context, Direction, FontData, FontDefinitions, FontFamily, Rgba, ThemePreference, Ui, Vec2, ViewportBuilder, Visuals,
+};
 use egui_toast::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
@@ -272,7 +274,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 rename_buffer: None,
                 delete_modal_open: false,
             },
-            toasts: Toasts::new().anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0)),
+            toasts: Toasts::new()
+                .anchor(Align2::RIGHT_BOTTOM, (-16.0, -16.0))
+                .direction(Direction::BottomUp),
             marquee: Marquee::new(),
             volume_popup_is_open: false,
         },
