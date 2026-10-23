@@ -13,7 +13,7 @@ use crate::{
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
 
-pub fn settings_view(ui: &mut Ui, frame: &mut eframe::Frame, gem: &mut GemPlayer) {
+pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
         .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {

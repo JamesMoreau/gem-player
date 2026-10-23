@@ -413,7 +413,7 @@ fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
     }
 }
 
-fn poll_system_theme_change(ctx: &Context, frame: &mut Frame, gem: &mut GemPlayer) {
+fn poll_system_theme_change(ctx: &Context, _frame: &mut Frame, gem: &mut GemPlayer) {
     let Some(watcher) = gem.system_theme_watcher.as_ref() else {
         return;
     };
