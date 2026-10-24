@@ -1,9 +1,12 @@
-- Upgrade egui version
-	- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
-	- Then vender/winit can be deleted.
+General:
+	- Upgrade egui version
+		- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
+		- Then vender/winit can be deleted.
 
-- Windows support
+MacOS:
+	- When opening the app store version, the music library is set but no tracks appear. 
+Windows: support
 	- use built-in cargo-bundle for Windows installer instead of inno setup.
 
-- Linux support
+Linux:
 	- add build script
