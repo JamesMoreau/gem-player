@@ -4,7 +4,8 @@ General:
 		- Then vender/winit can be deleted.
 
 MacOS:
-	- When opening the app store version, the music library is set but no tracks appear. 
+	- When opening the app store version, the music library is set but no tracks appear.
+	
 Windows: support
 	- use built-in cargo-bundle for Windows installer instead of inno setup.
 
