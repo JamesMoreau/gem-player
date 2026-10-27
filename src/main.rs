@@ -6,7 +6,7 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
-    library_watcher::LibraryWatcher,
+    library_manager::{LibraryManager, load_library, set_watcher_directory},
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -29,7 +29,7 @@ use egui::{
 use egui_toast::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use library_watcher::{LibraryWatcherCommand, setup_library_watcher};
+use library_manager::setup_library_manager;
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
@@ -43,6 +43,7 @@ use std::{
     str::FromStr,
     sync::{
         Arc,
+        atomic::Ordering,
         mpsc::{Receiver, TryRecvError},
     },
     thread,
@@ -60,7 +61,7 @@ use {
 mod artwork_cache;
 mod commands;
 mod library_folder_picker;
-mod library_watcher;
+mod library_manager;
 mod menu;
 mod nosleep_manager;
 mod os_media_controls;
@@ -88,7 +89,7 @@ struct GemPlayer {
 
     library_directory: Option<PathBuf>,
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
-    library_watcher: LibraryWatcher,
+    library_manager: LibraryManager,
 
     system_theme_watcher: Option<dark_light::Watcher>,
 
@@ -191,14 +192,12 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    let library_watcher = setup_library_watcher().expect("Failed to initialize library watcher.");
-    if let Some(directory) = &library_directory {
-        let command = LibraryWatcherCommand::SetPath(directory.clone());
-
-        if let Err(e) = library_watcher.command_sender.send(command) {
-            error!("Failed to start watching library directory: {e}");
-            library_directory = None;
-        }
+    let mut library_manager = setup_library_manager().expect("Failed to initialize library watcher.");
+    if let Some(directory) = &library_directory
+        && let Err(e) = set_watcher_directory(&mut library_manager, None, directory)
+    {
+        error!("Failed to start watching library directory: {e}");
+        library_directory = None;
     }
 
     let system_theme_watcher = match dark_light::subscribe() {
@@ -286,7 +285,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
         library_directory,
         folder_picker_receiver: None,
-        library_watcher,
+        library_manager,
 
         system_theme_watcher,
 
@@ -347,7 +346,7 @@ impl App for GemPlayer {
         poll_system_theme_change(ctx, frame, self);
         poll_file_drops(ctx, self);
         poll_library_folder_picker(self);
-        poll_library_watcher(self);
+        poll_library_manager(self);
         poll_media_events(self);
         poll_menu_events(self);
 
@@ -373,8 +372,6 @@ impl App for GemPlayer {
         stop(&mut self.player);
 
         let _ = self.player.visualizer.command_sender.send(visualizer::VisualizerCommand::Shutdown);
-
-        let _ = self.library_watcher.command_sender.send(LibraryWatcherCommand::Shutdown);
 
         self.nosleep_manager.disable();
     }
@@ -513,23 +510,19 @@ fn poll_windows_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPl
     }
 }
 
-fn poll_library_watcher(gem: &mut GemPlayer) {
-    let mut latest = None;
-
-    for update in gem.library_watcher.update_receiver.try_iter() {
-        latest = Some(update);
+fn poll_library_manager(gem: &mut GemPlayer) {
+    if !gem.library_manager.library_dirty.swap(false, Ordering::Relaxed) {
+        return;
     }
 
-    if let Some(update) = latest {
-        match update {
-            Some((new_library, new_playlists)) => on_library_reloaded(gem, new_library, new_playlists),
-            None => {
-                let message = "Failed to load library folder.";
-                error!("{}", message);
-                error_toast(&mut gem.ui.toasts, message);
+    let Some(directory) = gem.library_directory.as_deref() else {
+        return;
+    };
 
-                gem.library_directory = None;
-            }
+    match load_library(directory) {
+        Ok((new_library, new_playlists)) => on_library_reload(gem, new_library, new_playlists),
+        Err(e) => {
+            error!("Failed to reload library: {e}");
         }
     }
 }
@@ -546,11 +539,10 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
             if let Some(directory) = maybe_directory {
                 info!("Selected folder: {}", directory.display());
 
-                let command = LibraryWatcherCommand::SetPath(directory.clone());
-                let result = gem.library_watcher.command_sender.send(command);
+                let result = set_watcher_directory(&mut gem.library_manager, gem.library_directory.as_deref(), &directory);
                 if result.is_err() {
                     let message = "Failed to start watching library directory. Reverting back to old directory.";
-                    error!("{}", message);
+                    error!("{message}");
                     error_toast(&mut gem.ui.toasts, message);
                 } else {
                     gem.library_directory = Some(directory);
@@ -610,7 +602,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
 // Reset / reconcile the relevant ui state so that we don't become out of sync.
 // For example, have selected a playlist that has since been deleted.
-fn on_library_reloaded(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists: Vec<Playlist>) {
+fn on_library_reload(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists: Vec<Playlist>) {
     gem.library = new_library;
     gem.playlists = new_playlists;
 
