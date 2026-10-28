@@ -34,7 +34,7 @@ struct PlaylistsViewState {
 
 pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
     ui.scope(|ui| {
-        if gem.library_directory.is_none() {
+        if gem.library_manager.library_directory.is_none() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("Try adding your music directory in the settings"));
@@ -94,7 +94,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                                         let add_button = Button::new(ICON_ADD);
                                         if ui.add(add_button).on_hover_text("Add playlist").clicked() {
-                                            let directory = gem.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
+                                            let directory = gem.library_manager.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
                                             let new_playlist_name = format!("Playlist {}", gem.playlists.len() + 1);
                                             let result = create(new_playlist_name, directory);
                                             match result {

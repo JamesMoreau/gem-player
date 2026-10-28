@@ -32,7 +32,7 @@ struct LibraryViewState {
 
 pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
     ui.scope(|ui| {
-        if gem.library_directory.is_none() {
+        if gem.library_manager.library_directory.is_none() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label(

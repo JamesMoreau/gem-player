@@ -1,5 +1,5 @@
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -22,6 +22,7 @@ use crate::{
 struct LibraryManager {
     debouncer: Debouncer<FsEventWatcher>,
     library_dirty: Arc<AtomicBool>,
+    library_directory: Option<PathBuf>,
 }
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
@@ -31,7 +32,7 @@ pub fn setup_library_manager() -> Result<LibraryManager> {
 
     let callback_flag = Arc::clone(&library_dirty);
     let debouncer = new_debouncer(Duration::from_millis(500), move |res: DebounceEventResult| match res {
-        Err(e) => error!("watch error: {e}"),
+        Err(e) => error!("Watch error: {e}"),
         Ok(events) => {
             for e in events {
                 info!("Event for {}", e.path.display());
@@ -40,9 +41,13 @@ pub fn setup_library_manager() -> Result<LibraryManager> {
             callback_flag.store(true, Ordering::Relaxed);
         }
     })
-    .context("failed to create filesystem debouncer")?;
+    .context("Failed to create filesystem debouncer")?;
 
-    Ok(LibraryManager { debouncer, library_dirty })
+    Ok(LibraryManager {
+        debouncer,
+        library_dirty,
+        library_directory: None,
+    })
 }
 
 pub fn load_library(directory: &Path) -> Result<LibraryAndPlaylists> {
@@ -63,26 +68,27 @@ pub fn load_library(directory: &Path) -> Result<LibraryAndPlaylists> {
     Ok((library, playlists))
 }
 
-pub fn set_watcher_directory(watcher: &mut LibraryManager, old_directory: Option<&Path>, new_directory: &Path) -> Result<()> {
+pub fn set_library_directory(manager: &mut LibraryManager, new_directory: &Path) -> Result<()> {
     if !new_directory.is_dir() {
         bail!("Invalid library path: {}", new_directory.display());
     }
 
-    if let Some(old) = old_directory {
-        watcher
+    if let Some(old) = &manager.library_directory {
+        manager
             .debouncer
             .watcher()
             .unwatch(old)
             .with_context(|| format!("Failed to unwatch {}", old.display()))?;
+
+        manager.library_directory = None;
     }
 
-    watcher
-        .debouncer
-        .watcher()
-        .watch(new_directory, RecursiveMode::Recursive)
-        .with_context(|| format!("Failed to watch {}", new_directory.display()))?;
+    if let Err(e) = manager.debouncer.watcher().watch(new_directory, RecursiveMode::Recursive) {
+        bail!("Failed to watch {}: {e}", new_directory.display());
+    }
 
-    watcher.library_dirty.store(true, Ordering::Relaxed);
+    manager.library_directory = Some(new_directory.to_path_buf());
+    manager.library_dirty.store(true, Ordering::Relaxed);
 
     Ok(())
 }
