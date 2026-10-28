@@ -23,10 +23,13 @@ use crate::{
 struct Library {
     tracks: Vec<Track>,
     playlists: Vec<Playlist>,
+
     directory: Option<PathBuf>,
+
     dirty: Arc<AtomicBool>,
     debouncer: Debouncer<FsEventWatcher>,
     reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
+    folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
 }
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
@@ -50,10 +53,11 @@ pub fn setup_library() -> Result<Library> {
     Ok(Library {
         tracks: Vec::new(),
         playlists: Vec::new(),
-        debouncer,
-        dirty,
         directory: None,
+        dirty,
+        debouncer,
         reload_receiver: None,
+        folder_picker_receiver: None,
     })
 }
 

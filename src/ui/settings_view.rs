@@ -35,7 +35,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                     if ui.button(ICON_FOLDER_OPEN).on_hover_text("Change").clicked() {
                         let receiver = spawn_library_folder_picker(&start_dir);
-                        gem.folder_picker_receiver = Some(receiver);
+                        gem.library.folder_picker_receiver = Some(receiver);
                     }
                 });
 

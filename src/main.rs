@@ -44,7 +44,7 @@ use std::{
     sync::{
         Arc,
         atomic::Ordering,
-        mpsc::{Receiver, TryRecvError, channel},
+        mpsc::{TryRecvError, channel},
     },
     thread,
     time::Duration,
@@ -85,7 +85,6 @@ struct GemPlayer {
     ui: UIState,
 
     library: Library,
-    folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
 
     system_theme_watcher: Option<dark_light::Watcher>,
 
@@ -275,7 +274,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             volume_popup_is_open: false,
         },
 
-        folder_picker_receiver: None,
         library,
 
         system_theme_watcher,
@@ -544,13 +542,13 @@ fn poll_library_reload(gem: &mut GemPlayer) {
 }
 
 fn poll_library_folder_picker(gem: &mut GemPlayer) {
-    let Some(receiver) = &gem.folder_picker_receiver else {
+    let Some(receiver) = &gem.library.folder_picker_receiver else {
         return;
     };
 
     match receiver.try_recv() {
         Ok(maybe_directory) => {
-            gem.folder_picker_receiver = None;
+            gem.library.folder_picker_receiver = None;
 
             if let Some(directory) = maybe_directory {
                 info!("Selected folder: {}", directory.display());
@@ -570,7 +568,7 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
         Err(TryRecvError::Empty) => {} // folder picker is still open.
         Err(TryRecvError::Disconnected) => {
             error!("Folder picker channel disconnected unexpectedly.");
-            gem.folder_picker_receiver = None;
+            gem.library.folder_picker_receiver = None;
         }
     }
 }
