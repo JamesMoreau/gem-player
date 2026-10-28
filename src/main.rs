@@ -84,7 +84,7 @@ pub const VOLUME_STORAGE_KEY: &str = "volume";
 struct GemPlayer {
     ui: UIState,
 
-    library: Vec<Track>, //TODO: rename to tracks and put in LibraryManager
+    tracks: Vec<Track>, //TODO: rename to tracks and put in LibraryManager
     playlists: Vec<Playlist>,
 
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
@@ -278,7 +278,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             volume_popup_is_open: false,
         },
 
-        library: Vec::new(),
+        tracks: Vec::new(),
         playlists: Vec::new(),
 
         folder_picker_receiver: None,
@@ -600,7 +600,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 // Reset / reconcile the relevant ui state so that we don't become out of sync.
 // For example, have selected a playlist that has since been deleted.
 fn on_library_reload(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists: Vec<Playlist>) {
-    gem.library = new_library;
+    gem.tracks = new_library;
     gem.playlists = new_playlists;
 
     gem.ui.library.cache_dirty = true;
@@ -610,7 +610,7 @@ fn on_library_reload(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists
     gem.ui
         .library
         .selected_tracks
-        .retain(|track_id| gem.library.iter().any(|t| &t.path == track_id));
+        .retain(|track_id| gem.tracks.iter().any(|t| &t.path == track_id));
 
     // Reconcile the playlist selection + playlist-selected tracks in the playlist view.
     if let Some(selected_playlist_key) = &gem.ui.playlists.selected_playlist_key {

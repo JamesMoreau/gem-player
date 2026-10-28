@@ -44,7 +44,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
             return;
         };
 
-        if gem.library.is_empty() {
+        if gem.tracks.is_empty() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("The library is empty."));
@@ -55,7 +55,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         }
 
         if gem.ui.library.cache_dirty {
-            gem.ui.library.cached_library = filter(&gem.library, &gem.ui.search);
+            gem.ui.library.cached_library = filter(&gem.tracks, &gem.ui.search);
             sort(
                 &mut gem.ui.library.cached_library,
                 gem.ui.library.sort_by,

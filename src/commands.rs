@@ -5,11 +5,17 @@ use log::{error, info, warn};
 use strum_macros::{Display, EnumString};
 
 use crate::{
-    GemPlayer, maybe_play_next, maybe_play_previous, os_media_controls::{OSMediaControlsState, update_metadata, update_playback}, player::{
+    GemPlayer, maybe_play_next, maybe_play_previous,
+    os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
+    player::{
         enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_volume, stop, toggle, toggle_repeat,
         toggle_shuffle,
-    }, playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist}, track::{Track, TrackRetrieval, open_file_location}, ui::{
-        root::format_duration_to_mmss, toasts::{error_toast, success_toast, warning_toast},
+    },
+    playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist},
+    track::{Track, TrackRetrieval, open_file_location},
+    ui::{
+        root::format_duration_to_mmss,
+        toasts::{error_toast, success_toast, warning_toast},
     },
 };
 
@@ -157,7 +163,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
         GemCommand::PlayTrackList { track_keys, start_at } => {
             let tracks: Vec<Track> = track_keys
                 .iter()
-                .map(|track_key| gem.library.get_by_path(track_key).clone())
+                .map(|track_key| gem.tracks.get_by_path(track_key).clone())
                 .collect();
 
             let start_index = start_at
@@ -179,7 +185,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
 
             let mut added_count = 0;
             for track_key in &track_keys {
-                let track = gem.library.get_by_path(track_key);
+                let track = gem.tracks.get_by_path(track_key);
 
                 if let Err(e) = add_to_playlist(playlist, track.clone()) {
                     error!("Failed to add track to playlist: {e}");
@@ -232,12 +238,12 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             }
 
             for track_key in &track_keys {
-                let track = gem.library.get_by_path(track_key);
+                let track = gem.tracks.get_by_path(track_key);
                 enqueue(&mut gem.player, track.clone());
             }
         }
         GemCommand::OpenTrackLocation(track_key) => {
-            let track = gem.library.get_by_path(&track_key);
+            let track = gem.tracks.get_by_path(&track_key);
 
             if let Err(e) = open_file_location(track) {
                 error!("Failed to open track location: {e}");
@@ -252,7 +258,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             }
 
             for track_key in &track_keys {
-                let track = gem.library.get_by_path(track_key);
+                let track = gem.tracks.get_by_path(track_key);
                 enqueue_next(&mut gem.player, track.clone());
             }
         }
