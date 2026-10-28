@@ -29,7 +29,7 @@ struct Library {
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
 
-pub fn setup_library_manager() -> Result<Library> {
+pub fn setup_library() -> Result<Library> {
     let dirty = Arc::new(AtomicBool::new(false));
 
     let callback_flag = Arc::clone(&dirty);

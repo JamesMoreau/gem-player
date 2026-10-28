@@ -29,7 +29,7 @@ use egui::{
 use egui_toast::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use library::setup_library_manager;
+use library::setup_library;
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
@@ -188,7 +188,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    let mut library = setup_library_manager().expect("Failed to initialize library manager.");
+    let mut library = setup_library().expect("Failed to initialize library manager.");
     if let Some(directory) = &library_directory
         && let Err(e) = set_library_directory(&mut library, directory)
     {
@@ -337,7 +337,7 @@ impl App for GemPlayer {
         poll_system_theme_change(ctx, frame, self);
         poll_file_drops(ctx, self);
         poll_library_folder_picker(self);
-        poll_library_manager(self);
+        poll_library_reload(self);
         poll_media_events(self);
         poll_menu_events(self);
 
@@ -501,7 +501,7 @@ fn poll_windows_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPl
     }
 }
 
-fn poll_library_manager(gem: &mut GemPlayer) {
+fn poll_library_reload(gem: &mut GemPlayer) {
     if !gem.library.dirty.swap(false, Ordering::Relaxed) {
         return;
     }
