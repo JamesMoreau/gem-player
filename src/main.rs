@@ -6,7 +6,7 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
-    library_manager::{LibraryManager, load_library, set_library_directory},
+    library::{Library, load_library, set_library_directory},
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -29,7 +29,7 @@ use egui::{
 use egui_toast::Toasts;
 use font_kit::{family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource};
 use fully_pub::fully_pub;
-use library_manager::setup_library_manager;
+use library::setup_library_manager;
 use log::{debug, error, info, warn};
 use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
@@ -61,7 +61,7 @@ use {
 mod artwork_cache;
 mod commands;
 mod library_folder_picker;
-mod library_manager;
+mod library;
 mod menu;
 mod nosleep_manager;
 mod os_media_controls;
@@ -84,11 +84,11 @@ pub const VOLUME_STORAGE_KEY: &str = "volume";
 struct GemPlayer {
     ui: UIState,
 
-    tracks: Vec<Track>, //TODO: rename to tracks and put in LibraryManager
+    tracks: Vec<Track>,
     playlists: Vec<Playlist>,
 
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
-    library_manager: LibraryManager,
+    library: Library,
 
     system_theme_watcher: Option<dark_light::Watcher>,
 
@@ -191,9 +191,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    let mut library_manager = setup_library_manager().expect("Failed to initialize library manager.");
+    let mut library = setup_library_manager().expect("Failed to initialize library manager.");
     if let Some(directory) = &library_directory
-        && let Err(e) = set_library_directory(&mut library_manager, directory)
+        && let Err(e) = set_library_directory(&mut library, directory)
     {
         error!("Failed to watch library directory: {e}");
     }
@@ -282,7 +282,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         playlists: Vec::new(),
 
         folder_picker_receiver: None,
-        library_manager,
+        library,
 
         system_theme_watcher,
 
@@ -326,7 +326,7 @@ impl App for GemPlayer {
     }
 
     fn save(&mut self, storage: &mut dyn Storage) {
-        if let Some(library_directory) = &self.library_manager.library_directory {
+        if let Some(library_directory) = &self.library.directory {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
 
@@ -508,11 +508,11 @@ fn poll_windows_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPl
 }
 
 fn poll_library_manager(gem: &mut GemPlayer) {
-    if !gem.library_manager.library_dirty.swap(false, Ordering::Relaxed) {
+    if !gem.library.dirty.swap(false, Ordering::Relaxed) {
         return;
     }
 
-    let Some(directory) = gem.library_manager.library_directory.as_deref() else {
+    let Some(directory) = gem.library.directory.as_deref() else {
         return;
     };
 
@@ -536,13 +536,13 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
             if let Some(directory) = maybe_directory {
                 info!("Selected folder: {}", directory.display());
 
-                let result = set_library_directory(&mut gem.library_manager, &directory);
+                let result = set_library_directory(&mut gem.library, &directory);
                 if result.is_err() {
                     let message = "Failed to start watching library directory. Reverting back to old directory.";
                     error!("{message}");
                     error_toast(&mut gem.ui.toasts, message);
                 } else {
-                    gem.library_manager.library_directory = Some(directory);
+                    gem.library.directory = Some(directory);
                 }
             } else {
                 info!("No folder selected");
@@ -563,7 +563,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
         return;
     }
 
-    let Some(library_path) = gem.library_manager.library_directory.as_ref() else {
+    let Some(library_path) = gem.library.directory.as_ref() else {
         error!("No library directory set.");
         error_toast(&mut gem.ui.toasts, "No library directory set.");
         return;
