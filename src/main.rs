@@ -44,7 +44,7 @@ use std::{
     sync::{
         Arc,
         atomic::Ordering,
-        mpsc::{Receiver, TryRecvError},
+        mpsc::{Receiver, TryRecvError, channel},
     },
     thread,
     time::Duration,
@@ -502,20 +502,45 @@ fn poll_windows_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPl
 }
 
 fn poll_library_reload(gem: &mut GemPlayer) {
+    // Check whether the worker has finished.
+    if let Some(receiver) = &gem.library.reload_receiver {
+        match receiver.try_recv() {
+            Ok(result) => {
+                gem.library.reload_receiver = None;
+
+                match result {
+                    Ok((new_library, new_playlists)) => {
+                        on_library_reload(gem, new_library, new_playlists);
+                    }
+                    Err(e) => {
+                        error!("Failed to reload library: {e}");
+                    }
+                }
+            }
+            Err(TryRecvError::Empty) => return,
+            Err(TryRecvError::Disconnected) => {
+                gem.library.reload_receiver = None;
+                error!("Library reload worker disconnected");
+            }
+        }
+    }
+
+    // Start a worker if a reload is needed.
     if !gem.library.dirty.swap(false, Ordering::Relaxed) {
         return;
     }
 
-    let Some(directory) = gem.library.directory.as_deref() else {
+    let Some(directory) = gem.library.directory.clone() else {
         return;
     };
 
-    match load_library(directory) {
-        Ok((new_library, new_playlists)) => on_library_reload(gem, new_library, new_playlists),
-        Err(e) => {
-            error!("Failed to reload library: {e}");
-        }
-    }
+    let (sender, receiver) = channel();
+    gem.library.reload_receiver = Some(receiver);
+
+    thread::spawn(move || {
+        let result = load_library(&directory);
+        let _ = sender.send(result);
+    });
 }
 
 fn poll_library_folder_picker(gem: &mut GemPlayer) {

@@ -3,6 +3,7 @@ use std::{
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
+        mpsc::Receiver,
     },
     time::Duration,
 };
@@ -25,6 +26,7 @@ struct Library {
     directory: Option<PathBuf>,
     dirty: Arc<AtomicBool>,
     debouncer: Debouncer<FsEventWatcher>,
+    reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
 }
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
@@ -51,6 +53,7 @@ pub fn setup_library() -> Result<Library> {
         debouncer,
         dirty,
         directory: None,
+        reload_receiver: None,
     })
 }
 
