@@ -44,7 +44,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
             return;
         };
 
-        if gem.tracks.is_empty() {
+        if gem.library.tracks.is_empty() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("The library is empty."));
@@ -55,7 +55,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         }
 
         if gem.ui.library.cache_dirty {
-            gem.ui.library.cached_library = filter(&gem.tracks, &gem.ui.search);
+            gem.ui.library.cached_library = filter(&gem.library.tracks, &gem.ui.search);
             sort(
                 &mut gem.ui.library.cached_library,
                 gem.ui.library.sort_by,
@@ -243,13 +243,13 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    let add_to_playlists_enabled = !gem.playlists.is_empty();
+    let add_to_playlists_enabled = !gem.library.playlists.is_empty();
     ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
         ui.menu_button("Add to Playlist", |ui| {
             ui.set_min_width(menu_width);
 
             ScrollArea::vertical().max_height(164.0).show(ui, |ui| {
-                for playlist in &gem.playlists {
+                for playlist in &gem.library.playlists {
                     if ui.button(&playlist.name).clicked() {
                         maybe_command = Some(GemCommand::AddTracksToPlaylist {
                             playlist_key: playlist.m3u_path.clone(),

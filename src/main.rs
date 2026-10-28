@@ -60,8 +60,8 @@ use {
 
 mod artwork_cache;
 mod commands;
-mod library_folder_picker;
 mod library;
+mod library_folder_picker;
 mod menu;
 mod nosleep_manager;
 mod os_media_controls;
@@ -84,11 +84,8 @@ pub const VOLUME_STORAGE_KEY: &str = "volume";
 struct GemPlayer {
     ui: UIState,
 
-    tracks: Vec<Track>,
-    playlists: Vec<Playlist>,
-
-    folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
     library: Library,
+    folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
 
     system_theme_watcher: Option<dark_light::Watcher>,
 
@@ -277,9 +274,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             marquee: Marquee::new(),
             volume_popup_is_open: false,
         },
-
-        tracks: Vec::new(),
-        playlists: Vec::new(),
 
         folder_picker_receiver: None,
         library,
@@ -600,8 +594,8 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 // Reset / reconcile the relevant ui state so that we don't become out of sync.
 // For example, have selected a playlist that has since been deleted.
 fn on_library_reload(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists: Vec<Playlist>) {
-    gem.tracks = new_library;
-    gem.playlists = new_playlists;
+    gem.library.tracks = new_library;
+    gem.library.playlists = new_playlists;
 
     gem.ui.library.cache_dirty = true;
     gem.ui.playlists.cache_dirty = true;
@@ -610,11 +604,11 @@ fn on_library_reload(gem: &mut GemPlayer, new_library: Vec<Track>, new_playlists
     gem.ui
         .library
         .selected_tracks
-        .retain(|track_id| gem.tracks.iter().any(|t| &t.path == track_id));
+        .retain(|track_id| gem.library.tracks.iter().any(|t| &t.path == track_id));
 
     // Reconcile the playlist selection + playlist-selected tracks in the playlist view.
     if let Some(selected_playlist_key) = &gem.ui.playlists.selected_playlist_key {
-        let maybe_playlist = gem.playlists.iter().find(|p| &p.m3u_path == selected_playlist_key);
+        let maybe_playlist = gem.library.playlists.iter().find(|p| &p.m3u_path == selected_playlist_key);
         if let Some(playlist) = maybe_playlist {
             // Playlist still exists -> reconcile selected tracks
             gem.ui

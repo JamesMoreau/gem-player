@@ -20,6 +20,8 @@ use crate::{
 
 #[fully_pub]
 struct Library {
+    tracks: Vec<Track>,
+    playlists: Vec<Playlist>,
     directory: Option<PathBuf>,
     dirty: Arc<AtomicBool>,
     debouncer: Debouncer<FsEventWatcher>,
@@ -44,6 +46,8 @@ pub fn setup_library_manager() -> Result<Library> {
     .context("Failed to create filesystem debouncer")?;
 
     Ok(Library {
+        tracks: Vec::new(),
+        playlists: Vec::new(),
         debouncer,
         dirty,
         directory: None,
