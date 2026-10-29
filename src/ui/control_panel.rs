@@ -244,7 +244,8 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
             .on_disabled_hover_text("Queue is empty");
 
         if response.clicked() {
-            command = Some(GemCommand::ToggleShuffle);
+            let opposite = player.shuffle.is_none();
+            command = Some(GemCommand::SetShuffle(opposite));
         }
     });
 

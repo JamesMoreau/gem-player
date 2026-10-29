@@ -5,15 +5,9 @@ use log::{error, info, warn};
 use strum_macros::{Display, EnumString};
 
 use crate::{
-    GemPlayer, maybe_play_next, maybe_play_previous,
-    os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
-    player::{
-        enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_volume, stop, toggle, toggle_repeat,
-        toggle_shuffle,
-    },
-    playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist},
-    track::{Track, TrackRetrieval, open_file_location},
-    ui::{
+    GemPlayer, maybe_play_next, maybe_play_previous, os_media_controls::{OSMediaControlsState, update_metadata, update_playback}, player::{
+        enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_shuffle, set_volume, stop, toggle, toggle_repeat,
+    }, playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist}, track::{Track, TrackRetrieval, open_file_location}, ui::{
         root::format_duration_to_mmss,
         toasts::{error_toast, success_toast, warning_toast},
     },
@@ -32,7 +26,7 @@ pub enum GemCommand {
     PreviousTrack,
 
     ToggleRepeat,
-    ToggleShuffle,
+    SetShuffle(bool),
 
     SeekTo(Duration),
     SeekForward(Duration),
@@ -123,7 +117,7 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             info!("Seeking to {}", format_duration_to_mmss(position));
         }
         GemCommand::ToggleRepeat => toggle_repeat(&mut gem.player),
-        GemCommand::ToggleShuffle => toggle_shuffle(&mut gem.player),
+        GemCommand::SetShuffle(enabled) => set_shuffle(&mut gem.player, enabled),
         GemCommand::SeekForward(offset) => {
             if let Some(position) = get_position(&gem.player) {
                 let new_position = position + offset;

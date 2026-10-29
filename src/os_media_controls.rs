@@ -120,9 +120,11 @@ pub fn poll_media_events(gem: &mut GemPlayer) {
             },
             MediaControlEvent::SetPosition(MediaPosition(duration)) => gem.commands.push(GemCommand::SeekTo(duration)),
             MediaControlEvent::SetVolume(volume) => gem.commands.push(GemCommand::SetVolume(volume as f32)),
+            MediaControlEvent::SetShuffle(enabled) => gem.commands.push(GemCommand::SetShuffle(enabled)),
             MediaControlEvent::OpenUri(uri) => gem.commands.push(GemCommand::OpenUri(uri)),
             MediaControlEvent::Raise => gem.commands.push(GemCommand::RaiseWindow),
             MediaControlEvent::Quit => gem.commands.push(GemCommand::Quit),
+            _ => {} // We don't handle wildcard events.
         }
     }
 }

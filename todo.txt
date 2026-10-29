@@ -2,7 +2,6 @@ General:
 	- Upgrade egui version
 		- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
 		- Then vender/winit can be deleted.
-	- should build-dependencies be seperated by platform?
 
 MacOS:
 	- When opening the app store version, the music library is set but no tracks appear.

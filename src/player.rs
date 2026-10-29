@@ -206,18 +206,19 @@ pub fn toggle_repeat(player: &mut Player) {
     player.repeat = !player.repeat;
 }
 
-pub fn toggle_shuffle(player: &mut Player) {
-    match player.shuffle.take() {
-        Some(unshuffled_queue) => {
-            player.queue = unshuffled_queue; // Restore the queue to its original order.
-        }
-        None => {
-            let original_queue = player.queue.clone();
-            player.shuffle = Some(original_queue);
+pub fn set_shuffle(player: &mut Player, enabled: bool) {
+    if player.shuffle.is_some() == enabled {
+        return;
+    }
 
-            let mut rng = rand::rng();
-            player.queue.shuffle(&mut rng);
-        }
+    if enabled {
+        let original_queue = player.queue.clone();
+        player.shuffle = Some(original_queue);
+
+        let mut rng = rand::rng();
+        player.queue.shuffle(&mut rng);
+    } else if let Some(unshuffled_queue) = player.shuffle.take() {
+        player.queue = unshuffled_queue;
     }
 }
 
