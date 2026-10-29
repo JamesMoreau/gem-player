@@ -3,7 +3,6 @@ General:
 		- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
 		- Then vender/winit can be deleted.
 	- should build-dependencies be seperated by platform?
-	- serialization code in save() should not use .unwrap()
 
 MacOS:
 	- When opening the app store version, the music library is set but no tracks appear.

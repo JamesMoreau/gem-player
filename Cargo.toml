@@ -49,7 +49,7 @@ image = "0.25.10"
 [patch.crates-io]
 winit = { path = "vendor/winit" }
 
-[build-dependencies]
+[target.'cfg(target_os = "windows")'.build-dependencies]
 winres = "0.1.12"
 ico = "0.6.0"
 image = "0.25.10"
