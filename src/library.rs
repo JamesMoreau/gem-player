@@ -86,18 +86,25 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
         bail!("Invalid library path: {}", new_directory.display());
     }
 
-    if let Some(old) = &library.directory {
-        library
-            .debouncer
-            .watcher()
-            .unwatch(old)
-            .with_context(|| format!("Failed to unwatch {}", old.display()))?;
-
-        library.directory = None;
+    if library.directory.as_deref() == Some(new_directory) {
+        return Ok(());
     }
 
-    if let Err(e) = library.debouncer.watcher().watch(new_directory, RecursiveMode::Recursive) {
-        bail!("Failed to watch {}: {e}", new_directory.display());
+    library
+        .debouncer
+        .watcher()
+        .watch(new_directory, RecursiveMode::Recursive)
+        .with_context(|| format!("Failed to watch {}", new_directory.display()))?;
+
+    if let Some(old_directory) = &library.directory
+        && let Err(e) = library.debouncer.watcher().unwatch(old_directory)
+    {
+        // Roll back the new watch to preserve the previous configuration.
+        if let Err(rollback_error) = library.debouncer.watcher().unwatch(new_directory) {
+            error!("Failed to roll back watch on {}: {rollback_error}", new_directory.display());
+        }
+
+        return Err(e).with_context(|| format!("Failed to unwatch {}", old_directory.display()));
     }
 
     library.directory = Some(new_directory.to_path_buf());
