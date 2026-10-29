@@ -34,7 +34,7 @@ struct PlaylistsViewState {
 
 pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
     ui.scope(|ui| {
-        if gem.library_directory.is_none() {
+        if gem.library.directory.is_none() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.add(unselectable_label("Try adding your music directory in the settings"));
@@ -51,7 +51,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
             if let DeletePlaylistResult::Confirm = result {
                 if let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.take() {
-                    if let Err(e) = delete(&playlist_key, &mut gem.playlists) {
+                    if let Err(e) = delete(&playlist_key, &mut gem.library.playlists) {
                         error!("{e}");
                     } else {
                         let message = "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
@@ -94,8 +94,8 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
 
                                         let add_button = Button::new(ICON_ADD);
                                         if ui.add(add_button).on_hover_text("Add playlist").clicked() {
-                                            let directory = gem.library_directory.as_ref().unwrap(); // We checked earlier so this is safe.
-                                            let new_playlist_name = format!("Playlist {}", gem.playlists.len() + 1);
+                                            let directory = gem.library.directory.as_ref().unwrap(); // We checked earlier so this is safe.
+                                            let new_playlist_name = format!("Playlist {}", gem.library.playlists.len() + 1);
                                             let result = create(new_playlist_name, directory);
                                             match result {
                                                 Err(e) => {
@@ -105,7 +105,7 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                                 }
                                                 Ok(new_playlist) => {
                                                     info!("Created and saved {} to {}", new_playlist.name, new_playlist.m3u_path.display());
-                                                    gem.playlists.push(new_playlist);
+                                                    gem.library.playlists.push(new_playlist);
                                                 }
                                             }
                                         }
@@ -114,8 +114,8 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                             });
                         })
                         .body(|body| {
-                            body.rows(36.0, gem.playlists.len(), |mut row| {
-                                let playlist = &mut gem.playlists[row.index()];
+                            body.rows(36.0, gem.library.playlists.len(), |mut row| {
+                                let playlist = &mut gem.library.playlists[row.index()];
 
                                 if let Some(playlist_key) = &gem.ui.playlists.selected_playlist_key {
                                     let playlist_is_selected = playlist.m3u_path == *playlist_key;
@@ -227,7 +227,7 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                         if save_clicked {
                             let name_buffer_clone = name_buffer.to_owned();
 
-                            let playlist = &mut gem.playlists.get_by_path_mut(&playlist_key);
+                            let playlist = &mut gem.library.playlists.get_by_path_mut(&playlist_key);
                             let result = rename(playlist, name_buffer_clone);
                             match result {
                                 Err(e) => {
@@ -259,7 +259,7 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                             |ui| {
                                 ui.add_space(16.0);
 
-                                let name = &gem.playlists.get_by_path(&playlist_key).name;
+                                let name = &gem.library.playlists.get_by_path(&playlist_key).name;
                                 ui.add(unselectable_label(RichText::new(name).heading().strong()));
 
                                 if strip_contains_pointer {
@@ -290,6 +290,7 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                         // the two captures used by containers::Sides.
                         if play_clicked {
                             let track_keys = gem
+                                .library
                                 .playlists
                                 .get_by_path(&playlist_key)
                                 .tracks
@@ -309,7 +310,7 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                         }
 
                         if edit_clicked {
-                            let playlist = &mut gem.playlists.get_by_path(&playlist_key);
+                            let playlist = &mut gem.library.playlists.get_by_path(&playlist_key);
                             info!("Editing playlist name: {}", playlist.name);
                             gem.ui.playlists.rename_buffer = Some(playlist.name.clone());
                         }
@@ -333,7 +334,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
             return;
         };
 
-        let playlist_length = gem.playlists.get_by_path(&playlist_key).tracks.len();
+        let playlist_length = gem.library.playlists.get_by_path(&playlist_key).tracks.len();
         if playlist_length == 0 {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
@@ -345,7 +346,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
         }
 
         if gem.ui.playlists.cache_dirty {
-            gem.ui.playlists.cached_playlist_tracks = filter(&gem.playlists.get_by_path(&playlist_key).tracks, &gem.ui.search);
+            gem.ui.playlists.cached_playlist_tracks = filter(&gem.library.playlists.get_by_path(&playlist_key).tracks, &gem.ui.search);
             gem.ui.library.cache_dirty = false;
         }
 

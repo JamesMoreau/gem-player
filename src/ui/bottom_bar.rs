@@ -25,9 +25,7 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                     ui.add_space(16.0);
 
                     ui.add(unselectable_label(
-                        egui_material_icons::icons::ICON_BUG_REPORT
-                            .rich_text()
-                            .color(egui::Color32::YELLOW),
+                        egui_material_icons::icons::ICON_BUG_REPORT.rich_text().color(egui::Color32::YELLOW),
                     ));
                 }
             });
@@ -65,11 +63,11 @@ fn view_selector(ui: &mut Ui, current_view: View) -> Option<View> {
 
 fn get_status(gem: &GemPlayer) -> Option<String> {
     match gem.ui.current_view {
-        View::Library => Some(get_count_and_duration_string_from_tracks(&gem.library)),
+        View::Library => Some(get_count_and_duration_string_from_tracks(&gem.library.tracks)),
         View::Queue => Some(get_count_and_duration_string_from_tracks(&gem.player.queue)),
         View::Playlists => {
             let playlist_key = gem.ui.playlists.selected_playlist_key.as_ref()?;
-            let playlist = gem.playlists.get_by_path(playlist_key);
+            let playlist = gem.library.playlists.get_by_path(playlist_key);
 
             Some(get_count_and_duration_string_from_tracks(&playlist.tracks))
         }

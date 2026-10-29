@@ -8,7 +8,7 @@ use log::info;
 use crate::apply_menu_theme_for_windows;
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
-    library_folder_picker::spawn_library_folder_picker,
+    library::spawn_library_folder_picker,
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
@@ -24,18 +24,18 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add_space(8.0);
                 ui.add(unselectable_label("Playlists are also stored here as m3u files."));
                 ui.horizontal(|ui| {
-                    let (display_path, full_path) = match gem.library_directory.as_ref() {
+                    let (display_path, full_path) = match gem.library.directory.as_ref() {
                         Some(p) => (elide_path(p, 80), p.to_string_lossy().to_string()),
                         None => ("No directory selected".to_string(), "No directory selected".to_string()),
                     };
 
                     ui.label(display_path).on_hover_text(full_path);
 
-                    let start_dir = gem.library_directory.as_deref().unwrap_or_else(|| Path::new("/")).to_path_buf();
+                    let start_dir = gem.library.directory.as_deref().unwrap_or_else(|| Path::new("/")).to_path_buf();
 
                     if ui.button(ICON_FOLDER_OPEN).on_hover_text("Change").clicked() {
                         let receiver = spawn_library_folder_picker(&start_dir);
-                        gem.folder_picker_receiver = Some(receiver);
+                        gem.library.folder_picker_receiver = Some(receiver);
                     }
                 });
 
