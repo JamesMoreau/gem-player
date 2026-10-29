@@ -321,11 +321,11 @@ impl App for GemPlayer {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
 
-        let theme_json_string = serde_json::to_string(&self.ui.theme_preference).unwrap();
+        let theme_json_string = serde_json::to_string(&self.ui.theme_preference).expect("Failed to serialize theme preference");
         storage.set_string(THEME_STORAGE_KEY, theme_json_string);
 
         if let Some(backend) = &self.player.backend {
-            let volume_json_string = serde_json::to_string(&backend.player.volume()).unwrap();
+            let volume_json_string = serde_json::to_string(&backend.player.volume()).expect("Failed to serialize volume");
             storage.set_string(VOLUME_STORAGE_KEY, volume_json_string);
         }
     }
