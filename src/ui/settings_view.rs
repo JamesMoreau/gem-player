@@ -8,7 +8,7 @@ use log::info;
 use crate::apply_menu_theme_for_windows;
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
-    library_folder_picker::spawn_library_folder_picker,
+    library::spawn_library_folder_picker,
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };

@@ -61,7 +61,6 @@ use {
 mod artwork_cache;
 mod commands;
 mod library;
-mod library_folder_picker;
 mod menu;
 mod nosleep_manager;
 mod os_media_controls;
@@ -553,13 +552,10 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
             if let Some(directory) = maybe_directory {
                 info!("Selected folder: {}", directory.display());
 
-                let result = set_library_directory(&mut gem.library, &directory);
-                if result.is_err() {
-                    let message = "Failed to start watching library directory. Reverting back to old directory.";
+                if let Err(e) = set_library_directory(&mut gem.library, &directory) {
+                    let message = format!("Failed to set library directory: {e}");
                     error!("{message}");
                     error_toast(&mut gem.ui.toasts, message);
-                } else {
-                    gem.library.directory = Some(directory);
                 }
             } else {
                 info!("No folder selected");
