@@ -21,6 +21,9 @@ use crate::{
     track::{Track, load_tracks_from_directory},
 };
 
+#[cfg(target_os = "macos")]
+use apple_scoped_bookmarks::{Bookmark, ScopedAccess};
+
 #[fully_pub]
 struct Library {
     tracks: Vec<Track>,
@@ -28,10 +31,20 @@ struct Library {
 
     directory: Option<PathBuf>,
 
+    #[cfg(target_os = "macos")]
+    bookmark: Option<Vec<u8>>, // TODO: should we save the bookmark object instead?
+    #[cfg(target_os = "macos")]
+    access: Option<ScopedAccess>,
+
     dirty: Arc<AtomicBool>,
     debouncer: Debouncer<FsEventWatcher>,
     reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
+
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
+
+    #[cfg(target_os = "macos")]
+    folder_picker_receiver: Option<Receiver<Option<(PathBuf, Vec<u8>)>>>, // Addionally store a security bookmark on macos.
 }
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
@@ -56,6 +69,10 @@ pub fn setup_library() -> Result<Library> {
         tracks: Vec::new(),
         playlists: Vec::new(),
         directory: None,
+        #[cfg(target_os = "macos")]
+        bookmark: None,
+        #[cfg(target_os = "macos")]
+        access: None,
         dirty,
         debouncer,
         reload_receiver: None,
@@ -114,12 +131,41 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
 }
 
 /// Spawns a folder picker in a background thread and returns the receiver where the selected folder will eventually be sent.
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>> {
     let (sender, receiver) = channel();
     let start_dir = start_dir.to_path_buf();
 
     thread::spawn(move || {
-        let selected_directory = FileDialog::new().set_directory(start_dir).pick_folder().map(|p| p.to_path_buf());
+        let selected_directory = FileDialog::new()
+            .set_directory(start_dir)
+            .pick_folder()
+            .map(|path| path.to_path_buf());
+
+        let _ = sender.send(selected_directory);
+    });
+
+    receiver
+}
+
+// Same as above but uses the security bookmark api to save access to the folder / directory.
+#[cfg(target_os = "macos")]
+pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<(PathBuf, Vec<u8>)>> {
+    let (sender, receiver) = channel();
+    let start_dir = start_dir.to_path_buf();
+
+    thread::spawn(move || {
+        let selected_directory = FileDialog::new()
+            .set_directory(start_dir)
+            .pick_folder()
+            .and_then(|path| match Bookmark::create(&path) {
+                Ok(bookmark) => Some((path, bookmark.into_bytes())),
+                Err(e) => {
+                    error!("Failed to create security bookmark: {e}");
+                    None
+                }
+            });
+
         let _ = sender.send(selected_directory);
     });
 
