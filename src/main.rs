@@ -213,7 +213,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 if let Err(e) = set_library_directory(&mut library, &directory) {
                     error!("Failed to restore library directory: {e}");
                 } else {
-                    library.bookmark = Some(bytes);
+                    library.bookmark = Some(Bookmark::from_bytes(bytes));
                     library.access = Some(access);
                 }
             }
@@ -360,7 +360,7 @@ impl App for GemPlayer {
 
         #[cfg(target_os = "macos")]
         if let Some(bookmark) = &self.library.bookmark {
-            let bookmark_json = serde_json::to_string(bookmark).expect("Failed to serialize library bookmark");
+            let bookmark_json = serde_json::to_string(bookmark.as_bytes()).expect("Failed to serialize library bookmark");
 
             storage.set_string(BOOKMARK_STORAGE_KEY, bookmark_json);
         }
@@ -612,9 +612,7 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
                 } else {
                     #[cfg(target_os = "macos")]
                     {
-                        use apple_scoped_bookmarks::Bookmark;
-
-                        let access = match Bookmark::from_bytes(bookmark.clone()).resolve() {
+                        let access = match bookmark.resolve() {
                             Ok(access) => access,
                             Err(e) => {
                                 let message = format!("Failed to resolve security bookmark: {e}");

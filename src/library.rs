@@ -32,7 +32,7 @@ struct Library {
     directory: Option<PathBuf>,
 
     #[cfg(target_os = "macos")]
-    bookmark: Option<Vec<u8>>, // TODO: should we save the bookmark object instead?
+    bookmark: Option<Bookmark>,
     #[cfg(target_os = "macos")]
     access: Option<ScopedAccess>,
 
@@ -44,7 +44,7 @@ struct Library {
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
 
     #[cfg(target_os = "macos")]
-    folder_picker_receiver: Option<Receiver<Option<(PathBuf, Vec<u8>)>>>, // Addionally store a security bookmark on macos.
+    folder_picker_receiver: Option<Receiver<Option<(PathBuf, Bookmark)>>>, // Addionally store a security bookmark on macos.
 }
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
@@ -150,7 +150,7 @@ pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>
 
 // Same as above but uses the security bookmark api to save access to the folder / directory.
 #[cfg(target_os = "macos")]
-pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<(PathBuf, Vec<u8>)>> {
+pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<(PathBuf, Bookmark)>> {
     let (sender, receiver) = channel();
     let start_dir = start_dir.to_path_buf();
 
@@ -159,7 +159,7 @@ pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<(PathBuf
             .set_directory(start_dir)
             .pick_folder()
             .and_then(|path| match Bookmark::create(&path) {
-                Ok(bookmark) => Some((path, bookmark.into_bytes())),
+                Ok(bookmark) => Some((path, bookmark)),
                 Err(e) => {
                     error!("Failed to create security bookmark: {e}");
                     None
