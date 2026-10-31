@@ -354,6 +354,7 @@ impl App for GemPlayer {
     }
 
     fn save(&mut self, storage: &mut dyn Storage) {
+        #[cfg(any(target_os = "windows", target_os = "linux"))]
         if let Some(library_directory) = &self.library.directory {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
