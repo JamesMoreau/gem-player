@@ -543,27 +543,25 @@ fn poll_windows_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPl
 }
 
 fn poll_library_reload(gem: &mut GemPlayer) {
-    let Some(receiver) = &gem.library.reload_receiver else {
-        return;
-    };
+    if let Some(receiver) = &gem.library.reload_receiver {
+        match receiver.try_recv() {
+            Ok(result) => {
+                gem.library.reload_receiver = None;
 
-    match receiver.try_recv() {
-        Ok(result) => {
-            gem.library.reload_receiver = None;
-
-            match result {
-                Ok((new_library, new_playlists)) => {
-                    on_library_reload(gem, new_library, new_playlists);
-                }
-                Err(e) => {
-                    error!("Failed to reload library: {e}");
+                match result {
+                    Ok((new_library, new_playlists)) => {
+                        on_library_reload(gem, new_library, new_playlists);
+                    }
+                    Err(e) => {
+                        error!("Failed to reload library: {e}");
+                    }
                 }
             }
-        }
-        Err(TryRecvError::Empty) => return,
-        Err(TryRecvError::Disconnected) => {
-            gem.library.reload_receiver = None;
-            error!("Library reload worker disconnected");
+            Err(TryRecvError::Empty) => return,
+            Err(TryRecvError::Disconnected) => {
+                gem.library.reload_receiver = None;
+                error!("Library reload worker disconnected");
+            }
         }
     }
 
