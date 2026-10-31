@@ -180,9 +180,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
         #[cfg(target_os = "macos")]
         if let Some(bookmark_string) = storage.get_string(BOOKMARK_STORAGE_KEY)
-            && let Ok(sb) = serde_json::from_str::<Vec<u8>>(&bookmark_string)
+            && let Ok(b) = serde_json::from_str::<Vec<u8>>(&bookmark_string)
         {
-            bookmark = Some(sb);
+            bookmark = Some(b);
         }
 
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY)
@@ -200,7 +200,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    let mut library = setup_library().expect("Failed to initialize library manager.");
+    let mut library = setup_library().expect("Failed to initialize library.");
 
     #[cfg(target_os = "macos")]
     if let Some(bytes) = bookmark {
