@@ -6,7 +6,7 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
-    library::{Library, load_library, set_library_directory},
+    library::{Library, handle_library_folder_selection, load_library, set_library_directory},
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -57,9 +57,6 @@ use {
     muda::{Menu, MenuTheme},
     path::PathBuf,
 };
-
-#[cfg(target_os = "macos")]
-use {apple_scoped_bookmarks::Bookmark, std::path::PathBuf};
 
 mod artwork_cache;
 mod commands;
@@ -595,7 +592,12 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
     match receiver.try_recv() {
         Ok(Some((directory, bookmark))) => {
             gem.library.folder_picker_receiver = None;
-            handle_library_folder_selection(gem, directory, bookmark);
+
+            if let Err(e) = handle_library_folder_selection(&mut gem.library, directory, bookmark) {
+                let message = format!("Failed to set library directory: {e}");
+                error!("{message}");
+                error_toast(&mut gem.ui.toasts, message);
+            }
         }
         Ok(None) => {
             gem.library.folder_picker_receiver = None;
@@ -607,42 +609,6 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
             error!("Folder picker channel disconnected unexpectedly.");
         }
     }
-}
-
-#[cfg(any(target_os = "windows", target_os = "linux"))]
-fn handle_library_folder_selection(gem: &mut GemPlayer, directory: PathBuf) {
-    info!("Selected folder: {}", directory.display());
-
-    if let Err(e) = set_library_directory(&mut gem.library, &directory) {
-        let message = format!("Failed to set library directory: {e}");
-        error!("{message}");
-        error_toast(&mut gem.ui.toasts, message);
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn handle_library_folder_selection(gem: &mut GemPlayer, directory: PathBuf, bookmark: Bookmark) {
-    info!("Selected folder: {}", directory.display());
-
-    let access = match bookmark.resolve() {
-        Ok(access) => access,
-        Err(e) => {
-            let message = format!("Failed to resolve security bookmark: {e}");
-            error!("{message}");
-            error_toast(&mut gem.ui.toasts, message);
-            return;
-        }
-    };
-
-    if let Err(e) = set_library_directory(&mut gem.library, &directory) {
-        let message = format!("Failed to set library directory: {e}");
-        error!("{message}");
-        error_toast(&mut gem.ui.toasts, message);
-        return;
-    }
-
-    gem.library.bookmark = Some(bookmark);
-    gem.library.access = Some(access);
 }
 
 fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {

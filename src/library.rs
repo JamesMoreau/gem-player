@@ -69,11 +69,11 @@ pub fn setup_library() -> Result<Library> {
         playlists: Vec::new(),
 
         directory: None,
-        
+
         dirty,
         debouncer,
         reload_receiver: None,
-        
+
         folder_picker_receiver: None,
         #[cfg(target_os = "macos")]
         bookmark: None,
@@ -98,6 +98,29 @@ pub fn load_library(directory: &Path) -> Result<LibraryAndPlaylists> {
     );
 
     Ok((library, playlists))
+}
+
+#[cfg(target_os = "macos")]
+pub fn handle_library_folder_selection(library: &mut Library, directory: PathBuf, bookmark: Bookmark) -> Result<()> {
+    info!("Selected folder: {}", directory.display());
+
+    let access = bookmark.resolve().context("Failed to resolve security bookmark")?;
+
+    set_library_directory(library, &directory).context("Failed to set library directory")?;
+
+    library.bookmark = Some(bookmark);
+    library.access = Some(access);
+
+    Ok(())
+}
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+fn handle_library_folder_selection(library: &mut Library, directory: PathBuf) -> Result<()> {
+    info!("Selected folder: {}", directory.display());
+
+    set_library_directory(library, &directory).context("Failed to set library directory")?;
+
+    Ok(())
 }
 
 pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Result<()> {
