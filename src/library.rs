@@ -67,15 +67,18 @@ pub fn setup_library() -> Result<Library> {
     Ok(Library {
         tracks: Vec::new(),
         playlists: Vec::new(),
+
         directory: None,
+        
+        dirty,
+        debouncer,
+        reload_receiver: None,
+        
+        folder_picker_receiver: None,
         #[cfg(target_os = "macos")]
         bookmark: None,
         #[cfg(target_os = "macos")]
         access: None,
-        dirty,
-        debouncer,
-        reload_receiver: None,
-        folder_picker_receiver: None,
     })
 }
 
