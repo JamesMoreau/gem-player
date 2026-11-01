@@ -53,7 +53,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     apply_visuals_for_mode(ui.ctx(), mode);
 
                     #[cfg(target_os = "windows")]
-                    apply_menu_theme_for_windows(frame, &gem.menubar.menu, mode);
+                    apply_menu_theme_for_windows(_frame, &gem.menubar.menu, mode);
                 }
 
                 ui.add(Separator::default().spacing(divider_spacing));

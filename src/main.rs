@@ -58,7 +58,7 @@ use apple_scoped_bookmarks::Bookmark;
 use {
     eframe::wgpu::rwh::RawWindowHandle,
     muda::{Menu, MenuTheme},
-    path::PathBuf,
+    std::path::PathBuf,
 };
 
 mod artwork_cache;
@@ -79,6 +79,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 const APP_NAME: &str = "Gem Player";
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
+#[cfg(target_os = "macos")]
 pub const BOOKMARK_STORAGE_KEY: &str = "security_bookmark";
 pub const THEME_STORAGE_KEY: &str = "theme";
 pub const VOLUME_STORAGE_KEY: &str = "volume";
@@ -464,7 +465,7 @@ fn poll_system_theme_change(ctx: &Context, _frame: &mut Frame, gem: &mut GemPlay
         apply_visuals_for_mode(ctx, mode);
 
         #[cfg(target_os = "windows")]
-        apply_menu_theme_for_windows(frame, &gem.menubar.menu, mode)
+        apply_menu_theme_for_windows(_frame, &gem.menubar.menu, mode)
     }
 }
 
@@ -597,11 +598,7 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
         Ok(Some(directory)) => {
             gem.library.folder_picker_receiver = None;
 
-            #[cfg(target_os = "macos")]
-            let result = { set_library_directory(&mut gem.library, &directory) };
-
-            #[cfg(any(target_os = "windows", target_os = "linux"))]
-            let result = set_library_directory(&mut gem.library, &selection);
+            let result = set_library_directory(&mut gem.library, &directory);
 
             if let Err(e) = result {
                 let message = format!("Failed to set library directory: {e:#}");

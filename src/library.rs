@@ -12,7 +12,7 @@ use std::{
 use anyhow::{Context, Result, bail};
 use fully_pub::fully_pub;
 use log::{error, info};
-use notify::{FsEventWatcher, RecursiveMode};
+use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{DebounceEventResult, Debouncer, new_debouncer};
 use rfd::FileDialog;
 
@@ -39,7 +39,7 @@ struct Library {
     access: Option<ScopedAccess>,
 
     dirty: Arc<AtomicBool>,
-    debouncer: Debouncer<FsEventWatcher>,
+    debouncer: Debouncer<RecommendedWatcher>,
     reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
 
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
