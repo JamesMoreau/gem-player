@@ -100,30 +100,7 @@ pub fn load_library(directory: &Path) -> Result<LibraryAndPlaylists> {
     Ok((library, playlists))
 }
 
-#[cfg(target_os = "macos")]
-pub fn handle_library_folder_selection(library: &mut Library, directory: PathBuf, bookmark: Bookmark) -> Result<()> {
-    info!("Selected folder: {}", directory.display());
-
-    let access = bookmark.resolve().context("Failed to resolve security bookmark")?;
-
-    set_library_directory(library, &directory).context("Failed to set library directory")?;
-
-    library.bookmark = Some(bookmark);
-    library.access = Some(access);
-
-    Ok(())
-}
-
-#[cfg(any(target_os = "windows", target_os = "linux"))]
-fn handle_library_folder_selection(library: &mut Library, directory: PathBuf) -> Result<()> {
-    info!("Selected folder: {}", directory.display());
-
-    set_library_directory(library, &directory).context("Failed to set library directory")?;
-
-    Ok(())
-}
-
-pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Result<()> {
+pub fn set_library_directory(library: &mut Library, new_directory: &Path, #[cfg(target_os = "macos")] bookmark: Bookmark) -> Result<()> {
     if !new_directory.is_dir() {
         bail!("Invalid library path: {}", new_directory.display());
     }
@@ -131,6 +108,9 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
     if library.directory.as_deref() == Some(new_directory) {
         return Ok(());
     }
+
+    #[cfg(target_os = "macos")]
+    let access = bookmark.resolve().context("Failed to resolve security bookmark")?;
 
     library
         .debouncer
@@ -141,7 +121,6 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
     if let Some(old_directory) = &library.directory
         && let Err(e) = library.debouncer.watcher().unwatch(old_directory)
     {
-        // Roll back the new watch to preserve the previous configuration.
         if let Err(rollback_error) = library.debouncer.watcher().unwatch(new_directory) {
             error!("Failed to roll back watch on {}: {rollback_error}", new_directory.display());
         }
@@ -151,6 +130,12 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
 
     library.directory = Some(new_directory.to_path_buf());
     library.dirty.store(true, Ordering::Relaxed);
+
+    #[cfg(target_os = "macos")]
+    {
+        library.bookmark = Some(bookmark);
+        library.access = Some(access);
+    }
 
     Ok(())
 }

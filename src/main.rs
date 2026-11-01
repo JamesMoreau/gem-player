@@ -6,7 +6,7 @@ compile_error!("Gem Player only supports macOS and Windows.");
 use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
-    library::{Library, handle_library_folder_selection, load_library, set_library_directory},
+    library::{Library, load_library, set_library_directory},
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -50,6 +50,9 @@ use std::{
 };
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
+
+#[cfg(target_os = "macos")]
+use apple_scoped_bookmarks::Bookmark;
 
 #[cfg(target_os = "windows")]
 use {
@@ -204,22 +207,19 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     #[cfg(target_os = "macos")]
     if let Some(bytes) = bookmark {
-        use apple_scoped_bookmarks::Bookmark;
+        let bookmark = Bookmark::from_bytes(bytes);
 
-        match Bookmark::from_bytes(bytes.clone()).resolve() {
+        match bookmark.resolve() {
             Ok(access) => {
                 let directory = access.path().to_path_buf();
 
-                if let Err(e) = set_library_directory(&mut library, &directory) {
+                if let Err(e) = set_library_directory(&mut library, &directory, bookmark) {
                     error!("Failed to restore library directory: {e}");
                 } else {
-                    library.bookmark = Some(Bookmark::from_bytes(bytes));
                     library.access = Some(access);
                 }
             }
-            Err(e) => {
-                error!("Failed to resolve library bookmark: {e}");
-            }
+            Err(e) => error!("Failed to resolve library bookmark: {e}"),
         }
     }
 
@@ -227,7 +227,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     if let Some(directory) = &library_directory
         && let Err(e) = set_library_directory(&mut library, directory)
     {
-        error!("Failed to watch library directory: {e}");
+        error!("Failed to set the library directory: {e}");
     }
 
     let system_theme_watcher = match dark_light::subscribe() {
@@ -590,11 +590,20 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
     };
 
     match receiver.try_recv() {
-        Ok(Some((directory, bookmark))) => {
+        Ok(Some(selection)) => {
             gem.library.folder_picker_receiver = None;
 
-            if let Err(e) = handle_library_folder_selection(&mut gem.library, directory, bookmark) {
-                let message = format!("Failed to set library directory: {e}");
+            #[cfg(target_os = "macos")]
+            let result = {
+                let (directory, bookmark) = selection;
+                set_library_directory(&mut gem.library, &directory, bookmark)
+            };
+
+            #[cfg(any(target_os = "windows", target_os = "linux"))]
+            let result = set_library_directory(&mut gem.library, &selection);
+
+            if let Err(e) = result {
+                let message = format!("Failed to set library directory: {e:#}");
                 error!("{message}");
                 error_toast(&mut gem.ui.toasts, message);
             }
