@@ -31,11 +31,6 @@ struct Library {
 
     directory: Option<PathBuf>,
 
-    #[cfg(target_os = "macos")]
-    bookmark: Option<Bookmark>,
-    #[cfg(target_os = "macos")]
-    access: Option<ScopedAccess>,
-
     dirty: Arc<AtomicBool>,
     debouncer: Debouncer<FsEventWatcher>,
     reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
@@ -43,6 +38,10 @@ struct Library {
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
 
+    #[cfg(target_os = "macos")]
+    bookmark: Option<Bookmark>,
+    #[cfg(target_os = "macos")]
+    access: Option<ScopedAccess>,
     #[cfg(target_os = "macos")]
     folder_picker_receiver: Option<Receiver<Option<(PathBuf, Bookmark)>>>, // Addionally store a security bookmark on macos.
 }
