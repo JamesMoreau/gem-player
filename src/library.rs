@@ -31,19 +31,18 @@ struct Library {
 
     directory: Option<PathBuf>,
 
-    dirty: Arc<AtomicBool>,
-    debouncer: Debouncer<FsEventWatcher>,
-    reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
-
-    #[cfg(any(target_os = "windows", target_os = "linux"))]
-    folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
-
+    // On macos we must create and store a "security-scoped bookmark" to access the 
+    // same directory across application runs.
     #[cfg(target_os = "macos")]
     bookmark: Option<Bookmark>,
     #[cfg(target_os = "macos")]
     access: Option<ScopedAccess>,
-    #[cfg(target_os = "macos")]
-    folder_picker_receiver: Option<Receiver<Option<(PathBuf, Bookmark)>>>, // Addionally store a security bookmark on macos.
+
+    dirty: Arc<AtomicBool>,
+    debouncer: Debouncer<FsEventWatcher>,
+    reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
+
+    folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
 }
 
 pub type LibraryAndPlaylists = (Vec<Track>, Vec<Playlist>);
@@ -100,7 +99,7 @@ pub fn load_library(directory: &Path) -> Result<LibraryAndPlaylists> {
     Ok((library, playlists))
 }
 
-pub fn set_library_directory(library: &mut Library, new_directory: &Path, #[cfg(target_os = "macos")] bookmark: Bookmark) -> Result<()> {
+pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Result<()> {
     if !new_directory.is_dir() {
         bail!("Invalid library path: {}", new_directory.display());
     }
@@ -110,7 +109,12 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path, #[cfg(
     }
 
     #[cfg(target_os = "macos")]
-    let access = bookmark.resolve().context("Failed to resolve security bookmark")?;
+    let (bookmark, access) = {
+        let bookmark = Bookmark::create(new_directory).context("Failed to create security bookmark")?;
+        let access = bookmark.resolve().context("Failed to resolve security bookmark")?;
+
+        (bookmark, access)
+    };
 
     library
         .debouncer
@@ -141,40 +145,12 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path, #[cfg(
 }
 
 /// Spawns a folder picker in a background thread and returns the receiver where the selected folder will eventually be sent.
-#[cfg(any(target_os = "windows", target_os = "linux"))]
 pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>> {
     let (sender, receiver) = channel();
     let start_dir = start_dir.to_path_buf();
 
     thread::spawn(move || {
-        let selected_directory = FileDialog::new()
-            .set_directory(start_dir)
-            .pick_folder()
-            .map(|path| path.to_path_buf());
-
-        let _ = sender.send(selected_directory);
-    });
-
-    receiver
-}
-
-// Same as above but uses the security bookmark api to save access to the folder / directory.
-#[cfg(target_os = "macos")]
-pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<(PathBuf, Bookmark)>> {
-    let (sender, receiver) = channel();
-    let start_dir = start_dir.to_path_buf();
-
-    thread::spawn(move || {
-        let selected_directory = FileDialog::new()
-            .set_directory(start_dir)
-            .pick_folder()
-            .and_then(|path| match Bookmark::create(&path) {
-                Ok(bookmark) => Some((path, bookmark)),
-                Err(e) => {
-                    error!("Failed to create security bookmark: {e}");
-                    None
-                }
-            });
+        let selected_directory = FileDialog::new().set_directory(start_dir).pick_folder();
 
         let _ = sender.send(selected_directory);
     });

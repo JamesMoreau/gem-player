@@ -206,28 +206,32 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let mut library = setup_library().expect("Failed to initialize library.");
 
     #[cfg(target_os = "macos")]
-    if let Some(bytes) = bookmark {
-        let bookmark = Bookmark::from_bytes(bytes);
+    {
+        if let Some(bytes) = bookmark {
+            let bookmark = Bookmark::from_bytes(bytes);
 
-        match bookmark.resolve() {
-            Ok(access) => {
-                let directory = access.path().to_path_buf();
+            match bookmark.resolve() {
+                Ok(access) => {
+                    let directory = access.path().to_path_buf();
 
-                if let Err(e) = set_library_directory(&mut library, &directory, bookmark) {
-                    error!("Failed to restore library directory: {e}");
-                } else {
-                    library.access = Some(access);
+                    if let Err(e) = set_library_directory(&mut library, &directory) {
+                        error!("Failed to restore library directory: {e}");
+                    } else {
+                        library.access = Some(access);
+                    }
                 }
+                Err(e) => error!("Failed to resolve library bookmark: {e}"),
             }
-            Err(e) => error!("Failed to resolve library bookmark: {e}"),
         }
     }
 
     #[cfg(any(target_os = "windows", target_os = "linux"))]
-    if let Some(directory) = &library_directory
-        && let Err(e) = set_library_directory(&mut library, directory)
     {
-        error!("Failed to set the library directory: {e}");
+        if let Some(directory) = &library_directory
+            && let Err(e) = set_library_directory(&mut library, directory)
+        {
+            error!("Failed to set the library directory: {e}");
+        }
     }
 
     let system_theme_watcher = match dark_light::subscribe() {
@@ -590,14 +594,11 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
     };
 
     match receiver.try_recv() {
-        Ok(Some(selection)) => {
+        Ok(Some(directory)) => {
             gem.library.folder_picker_receiver = None;
 
             #[cfg(target_os = "macos")]
-            let result = {
-                let (directory, bookmark) = selection;
-                set_library_directory(&mut gem.library, &directory, bookmark)
-            };
+            let result = { set_library_directory(&mut gem.library, &directory) };
 
             #[cfg(any(target_os = "windows", target_os = "linux"))]
             let result = set_library_directory(&mut gem.library, &selection);
