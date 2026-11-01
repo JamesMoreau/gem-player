@@ -58,6 +58,9 @@ use {
     path::PathBuf,
 };
 
+#[cfg(target_os = "macos")]
+use {apple_scoped_bookmarks::Bookmark, std::path::PathBuf};
+
 mod artwork_cache;
 mod commands;
 mod library;
@@ -590,59 +593,56 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
     };
 
     match receiver.try_recv() {
-        Ok(maybe_selection) => {
+        Ok(Some((directory, bookmark))) => {
             gem.library.folder_picker_receiver = None;
-
-            if let Some(selection) = maybe_selection {
-                #[cfg(target_os = "macos")]
-                let (directory, bookmark) = selection;
-
-                #[cfg(any(target_os = "windows", target_os = "linux"))]
-                let directory = selection;
-
-                info!("Selected folder: {}", directory.display());
-
-                let result = set_library_directory(&mut gem.library, &directory);
-
-                if let Err(e) = result {
-                    let message = format!("Failed to set library directory: {e}");
-                    error!("{message}");
-                    error_toast(&mut gem.ui.toasts, message);
-                } else {
-                    #[cfg(target_os = "macos")]
-                    {
-                        let access = match bookmark.resolve() {
-                            Ok(access) => access,
-                            Err(e) => {
-                                let message = format!("Failed to resolve security bookmark: {e}");
-                                error!("{message}");
-                                error_toast(&mut gem.ui.toasts, message);
-                                return;
-                            }
-                        };
-
-                        let result = set_library_directory(&mut gem.library, &directory);
-
-                        if let Err(e) = result {
-                            let message = format!("Failed to set library directory: {e}");
-                            error!("{message}");
-                            error_toast(&mut gem.ui.toasts, message);
-                        } else {
-                            gem.library.bookmark = Some(bookmark);
-                            gem.library.access = Some(access);
-                        }
-                    }
-                }
-            } else {
-                info!("No folder selected");
-            }
+            handle_library_folder_selection(gem, directory, bookmark);
         }
-        Err(TryRecvError::Empty) => {} // folder picker is still open.
-        Err(TryRecvError::Disconnected) => {
-            error!("Folder picker channel disconnected unexpectedly.");
+        Ok(None) => {
             gem.library.folder_picker_receiver = None;
+            info!("No folder selected");
+        }
+        Err(TryRecvError::Empty) => {}
+        Err(TryRecvError::Disconnected) => {
+            gem.library.folder_picker_receiver = None;
+            error!("Folder picker channel disconnected unexpectedly.");
         }
     }
+}
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+fn handle_library_folder_selection(gem: &mut GemPlayer, directory: PathBuf) {
+    info!("Selected folder: {}", directory.display());
+
+    if let Err(e) = set_library_directory(&mut gem.library, &directory) {
+        let message = format!("Failed to set library directory: {e}");
+        error!("{message}");
+        error_toast(&mut gem.ui.toasts, message);
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn handle_library_folder_selection(gem: &mut GemPlayer, directory: PathBuf, bookmark: Bookmark) {
+    info!("Selected folder: {}", directory.display());
+
+    let access = match bookmark.resolve() {
+        Ok(access) => access,
+        Err(e) => {
+            let message = format!("Failed to resolve security bookmark: {e}");
+            error!("{message}");
+            error_toast(&mut gem.ui.toasts, message);
+            return;
+        }
+    };
+
+    if let Err(e) = set_library_directory(&mut gem.library, &directory) {
+        let message = format!("Failed to set library directory: {e}");
+        error!("{message}");
+        error_toast(&mut gem.ui.toasts, message);
+        return;
+    }
+
+    gem.library.bookmark = Some(bookmark);
+    gem.library.access = Some(access);
 }
 
 fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
