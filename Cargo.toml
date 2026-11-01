@@ -9,6 +9,7 @@ authors = ["James Moreau"]
 
 [dependencies]
 anyhow = "1.0.104"
+apple-scoped-bookmarks = "0.1.0"
 dark-light = "3.0.0"
 eframe = { version = "0.36.2", features = ["persistence"] }
 egui = "0.36.2"

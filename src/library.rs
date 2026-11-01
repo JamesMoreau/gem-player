@@ -21,6 +21,9 @@ use crate::{
     track::{Track, load_tracks_from_directory},
 };
 
+#[cfg(target_os = "macos")]
+use apple_scoped_bookmarks::{Bookmark, ScopedAccess};
+
 #[fully_pub]
 struct Library {
     tracks: Vec<Track>,
@@ -28,9 +31,17 @@ struct Library {
 
     directory: Option<PathBuf>,
 
+    // On macos we must create and store a "security-scoped bookmark" to access the 
+    // same directory across application runs.
+    #[cfg(target_os = "macos")]
+    bookmark: Option<Bookmark>,
+    #[cfg(target_os = "macos")]
+    access: Option<ScopedAccess>,
+
     dirty: Arc<AtomicBool>,
     debouncer: Debouncer<FsEventWatcher>,
     reload_receiver: Option<Receiver<Result<LibraryAndPlaylists>>>,
+
     folder_picker_receiver: Option<Receiver<Option<PathBuf>>>, // None -> No folder picker dialog. Some -> Folder picker dialog open.
 }
 
@@ -55,11 +66,18 @@ pub fn setup_library() -> Result<Library> {
     Ok(Library {
         tracks: Vec::new(),
         playlists: Vec::new(),
+
         directory: None,
+
         dirty,
         debouncer,
         reload_receiver: None,
+
         folder_picker_receiver: None,
+        #[cfg(target_os = "macos")]
+        bookmark: None,
+        #[cfg(target_os = "macos")]
+        access: None,
     })
 }
 
@@ -90,6 +108,14 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
         return Ok(());
     }
 
+    #[cfg(target_os = "macos")]
+    let (bookmark, access) = {
+        let bookmark = Bookmark::create(new_directory).context("Failed to create security bookmark")?;
+        let access = bookmark.resolve().context("Failed to resolve security bookmark")?;
+
+        (bookmark, access)
+    };
+
     library
         .debouncer
         .watcher()
@@ -99,7 +125,6 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
     if let Some(old_directory) = &library.directory
         && let Err(e) = library.debouncer.watcher().unwatch(old_directory)
     {
-        // Roll back the new watch to preserve the previous configuration.
         if let Err(rollback_error) = library.debouncer.watcher().unwatch(new_directory) {
             error!("Failed to roll back watch on {}: {rollback_error}", new_directory.display());
         }
@@ -110,6 +135,12 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
     library.directory = Some(new_directory.to_path_buf());
     library.dirty.store(true, Ordering::Relaxed);
 
+    #[cfg(target_os = "macos")]
+    {
+        library.bookmark = Some(bookmark);
+        library.access = Some(access);
+    }
+
     Ok(())
 }
 
@@ -119,7 +150,8 @@ pub fn spawn_library_folder_picker(start_dir: &Path) -> Receiver<Option<PathBuf>
     let start_dir = start_dir.to_path_buf();
 
     thread::spawn(move || {
-        let selected_directory = FileDialog::new().set_directory(start_dir).pick_folder().map(|p| p.to_path_buf());
+        let selected_directory = FileDialog::new().set_directory(start_dir).pick_folder();
+
         let _ = sender.send(selected_directory);
     });
 

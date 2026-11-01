@@ -39,7 +39,6 @@ use std::{
     collections::HashMap,
     fs::{copy, read},
     mem::take,
-    path::PathBuf,
     str::FromStr,
     sync::{
         Arc,
@@ -52,10 +51,14 @@ use std::{
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
+#[cfg(target_os = "macos")]
+use apple_scoped_bookmarks::Bookmark;
+
 #[cfg(target_os = "windows")]
 use {
     eframe::wgpu::rwh::RawWindowHandle,
     muda::{Menu, MenuTheme},
+    path::PathBuf,
 };
 
 mod artwork_cache;
@@ -76,6 +79,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 const APP_NAME: &str = "Gem Player";
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
+pub const BOOKMARK_STORAGE_KEY: &str = "security_bookmark";
 pub const THEME_STORAGE_KEY: &str = "theme";
 pub const VOLUME_STORAGE_KEY: &str = "volume";
 
@@ -162,13 +166,26 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
 
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
     let mut library_directory = None;
+
     let mut theme_preference = ThemePreference::System;
     let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
 
+    #[cfg(target_os = "macos")]
+    let mut bookmark = None;
+
     if let Some(storage) = cc.storage {
+        #[cfg(any(target_os = "windows", target_os = "linux"))]
         if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
             library_directory = Some(PathBuf::from(library_directory_string));
+        }
+
+        #[cfg(target_os = "macos")]
+        if let Some(bookmark_string) = storage.get_string(BOOKMARK_STORAGE_KEY)
+            && let Ok(b) = serde_json::from_str::<Vec<u8>>(&bookmark_string)
+        {
+            bookmark = Some(b);
         }
 
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY)
@@ -186,11 +203,35 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    let mut library = setup_library().expect("Failed to initialize library manager.");
-    if let Some(directory) = &library_directory
-        && let Err(e) = set_library_directory(&mut library, directory)
+    let mut library = setup_library().expect("Failed to initialize library.");
+
+    #[cfg(target_os = "macos")]
     {
-        error!("Failed to watch library directory: {e}");
+        if let Some(bytes) = bookmark {
+            let bookmark = Bookmark::from_bytes(bytes);
+
+            match bookmark.resolve() {
+                Ok(access) => {
+                    let directory = access.path().to_path_buf();
+
+                    if let Err(e) = set_library_directory(&mut library, &directory) {
+                        error!("Failed to restore library directory: {e}");
+                    } else {
+                        library.access = Some(access);
+                    }
+                }
+                Err(e) => error!("Failed to resolve library bookmark: {e}"),
+            }
+        }
+    }
+
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        if let Some(directory) = &library_directory
+            && let Err(e) = set_library_directory(&mut library, directory)
+        {
+            error!("Failed to set the library directory: {e}");
+        }
     }
 
     let system_theme_watcher = match dark_light::subscribe() {
@@ -317,8 +358,16 @@ impl App for GemPlayer {
     }
 
     fn save(&mut self, storage: &mut dyn Storage) {
+        #[cfg(any(target_os = "windows", target_os = "linux"))]
         if let Some(library_directory) = &self.library.directory {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
+        }
+
+        #[cfg(target_os = "macos")]
+        if let Some(bookmark) = &self.library.bookmark {
+            let bookmark_json = serde_json::to_string(bookmark.as_bytes()).expect("Failed to serialize library bookmark");
+
+            storage.set_string(BOOKMARK_STORAGE_KEY, bookmark_json);
         }
 
         let theme_json_string = serde_json::to_string(&self.ui.theme_preference).expect("Failed to serialize theme preference");
@@ -499,7 +548,6 @@ fn poll_windows_menu_shortcuts(ctx: &Context, frame: &mut Frame, gem: &mut GemPl
 }
 
 fn poll_library_reload(gem: &mut GemPlayer) {
-    // Check whether the worker has finished.
     if let Some(receiver) = &gem.library.reload_receiver {
         match receiver.try_recv() {
             Ok(result) => {
@@ -546,25 +594,29 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
     };
 
     match receiver.try_recv() {
-        Ok(maybe_directory) => {
+        Ok(Some(directory)) => {
             gem.library.folder_picker_receiver = None;
 
-            if let Some(directory) = maybe_directory {
-                info!("Selected folder: {}", directory.display());
+            #[cfg(target_os = "macos")]
+            let result = { set_library_directory(&mut gem.library, &directory) };
 
-                if let Err(e) = set_library_directory(&mut gem.library, &directory) {
-                    let message = format!("Failed to set library directory: {e}");
-                    error!("{message}");
-                    error_toast(&mut gem.ui.toasts, message);
-                }
-            } else {
-                info!("No folder selected");
+            #[cfg(any(target_os = "windows", target_os = "linux"))]
+            let result = set_library_directory(&mut gem.library, &selection);
+
+            if let Err(e) = result {
+                let message = format!("Failed to set library directory: {e:#}");
+                error!("{message}");
+                error_toast(&mut gem.ui.toasts, message);
             }
         }
-        Err(TryRecvError::Empty) => {} // folder picker is still open.
-        Err(TryRecvError::Disconnected) => {
-            error!("Folder picker channel disconnected unexpectedly.");
+        Ok(None) => {
             gem.library.folder_picker_receiver = None;
+            info!("No folder selected");
+        }
+        Err(TryRecvError::Empty) => {}
+        Err(TryRecvError::Disconnected) => {
+            gem.library.folder_picker_receiver = None;
+            error!("Folder picker channel disconnected unexpectedly.");
         }
     }
 }
