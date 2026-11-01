@@ -3,10 +3,6 @@ General:
 		- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
 		- Then vender/winit can be deleted.
 
-MacOS:
-	- When opening the app store version, the music library is set but no tracks appear.
-	- This is because macos requires security bookmarks to access files/folders across runs.
-
 Windows: support
 	- use built-in cargo-bundle for Windows installer instead of inno setup.
 
