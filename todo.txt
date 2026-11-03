@@ -3,8 +3,5 @@ General:
 		- This will also bump the winit version which doesn't use _CGSSetWindowBackgroundBlurRadius.
 		- Then vender/winit can be deleted.
 
-Windows: support
-	- use built-in cargo-bundle for Windows installer instead of inno setup.
-
 Linux:
 	- add build script
