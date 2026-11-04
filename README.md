@@ -2,6 +2,8 @@
 
 An open-source, lightweight music player built in Rust using [egui](https://github.com/emilk/egui) and [rodio](https://github.com/RustAudio/rodio).
 
+Now available on the [App Store](https://apps.apple.com/ca/app/gem-player-music-player/id6802773292)!
+
 ![kapture](documentation/kapture.gif)
 
 # Features
