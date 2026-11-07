@@ -33,7 +33,7 @@ notify-debouncer-mini = "0.7.0"
 opener = { version = "0.9.0", features = ["reveal"] }
 rand = "0.10.3"
 rayon = "1.12.0"
-rfd = "0.17.2"
+rfd = "0.18.0"
 rodio = { version = "0.23.0", features = ["symphonia-all"] }
 rustfft = "6.4.1"
 sanitize-filename = "0.6.0"
