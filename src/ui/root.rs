@@ -8,16 +8,8 @@ use fully_pub::fully_pub;
 use strum_macros::EnumIter;
 
 use crate::{
-    GemPlayer,
-    ui::{
-        bottom_bar::bottom_bar,
-        control_panel::control_panel,
-        file_drop_overlay::file_drop_overlay,
-        library_view::{LibraryViewState, library_view},
-        playlist_view::{PlaylistsViewState, playlists_view},
-        queue_view::queue_view,
-        settings_view::settings_view,
-        widgets::marquee::Marquee,
+    GemPlayer, ui::{
+        bottom_bar::bottom_bar, control_panel::control_panel, file_drop_overlay::file_drop_overlay, library_view::{LibraryViewState, library_view}, playlist_view::{PlaylistsViewState, playlists_view}, queue_view::queue_view, settings_view::{LanguagePreference, settings_view}, widgets::marquee::Marquee,
     },
 };
 
@@ -44,6 +36,7 @@ impl View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
+    language_preference: LanguagePreference,
     marquee: Marquee,
     search: String,
     volume_popup_is_open: bool,

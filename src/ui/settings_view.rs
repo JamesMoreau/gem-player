@@ -2,6 +2,7 @@ use std::path::Path;
 
 use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
+use fully_pub::fully_pub;
 use log::info;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -16,8 +17,10 @@ use crate::{
 #[cfg(target_os = "windows")]
 use crate::apply_menu_theme_for_windows;
 
-#[derive(PartialEq, Eq, EnumIter)]
+#[fully_pub]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter)]
 enum LanguagePreference {
+    System,
     Eng,
     Fr,
 }
@@ -70,17 +73,13 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add(unselectable_label(RichText::new("Language").heading()));
                 ui.add_space(8.0);
 
-                for language in LanguagePreference::iter() {
-                    // if ui
-                    //     .selectable_label(current_view == view, format!("  {}  ", view.icon()))
-                    //     .on_hover_text(format!("{:?}", view))
-                    //     .clicked()
-                    // {
-                    //     selected = Some(view);
-                    // }
+                ui.horizontal(|ui| {
+                    for language in LanguagePreference::iter() {
+                        ui.selectable_value(&mut gem.ui.language_preference, language, format!("{:?}", language));
 
-                    // ui.add_space(4.0);
-                }
+                        ui.add_space(4.0);
+                    }
+                });
 
                 ui.add(Separator::default().spacing(divider_spacing));
 

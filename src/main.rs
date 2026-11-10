@@ -4,22 +4,9 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
-    commands::{GemCommand, execute},
-    library::{Library, load_library, set_library_directory},
-    menu::{MenuBar, create_menu},
-    nosleep_manager::NoSleepManager,
-    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
-    player::{get_position, stop},
-    track::is_audio_file,
-    ui::{
-        library_view::LibraryViewState,
-        playlist_view::PlaylistsViewState,
-        root::{UIState, View, gem_player_ui},
-        toasts::{error_toast, success_toast},
-        widgets::marquee::Marquee,
-    },
-    visualizer::VisualizerState,
+    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache}, commands::{GemCommand, execute}, library::{Library, load_library, set_library_directory}, menu::{MenuBar, create_menu}, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::{get_position, stop}, track::is_audio_file, ui::{
+        library_view::LibraryViewState, playlist_view::PlaylistsViewState, root::{UIState, View, gem_player_ui}, settings_view::LanguagePreference, toasts::{error_toast, success_toast}, widgets::marquee::Marquee,
+    }, visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
@@ -297,6 +284,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         ui: UIState {
             current_view: View::Library,
             theme_preference,
+            language_preference: LanguagePreference::System, // TODO: add save and load.
             search: String::new(),
             library: LibraryViewState {
                 selected_tracks: Vec::new(),
