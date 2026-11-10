@@ -36,7 +36,6 @@ use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
 use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
-use rust_i18n::set_locale;
 use std::{
     collections::HashMap,
     fs::{copy, read},
@@ -211,7 +210,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             && let Ok(language) = serde_json::from_str(&language_string)
         {
             language_preference = language;
-            set_locale(language_preference.locale())
+            language_preference.apply();
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)

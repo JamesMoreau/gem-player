@@ -18,9 +18,7 @@ impl LanguagePreference {
             Self::French => "FR".to_string(),
         }
     }
-}
 
-impl LanguagePreference {
     pub fn locale(&self) -> &'static str {
         match self {
             Self::System => match sys_locale::get_locale().as_deref() {
@@ -31,6 +29,8 @@ impl LanguagePreference {
             Self::French => "fr-CA",
         }
     }
+
+    pub fn apply(&self) {
+        rust_i18n::set_locale(self.locale());
+    }
 }
-
-

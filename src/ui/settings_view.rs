@@ -3,7 +3,6 @@ use std::path::Path;
 use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::info;
-use rust_i18n::set_locale;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -73,7 +72,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                             .selectable_value(&mut gem.ui.language_preference, language, language.label())
                             .changed()
                         {
-                            set_locale(language.locale());
+                            language.apply();
                         }
 
                         ui.add_space(4.0);
