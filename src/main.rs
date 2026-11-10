@@ -4,9 +4,23 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache}, commands::{GemCommand, execute}, library::{Library, load_library, set_library_directory}, menu::{MenuBar, create_menu}, nosleep_manager::NoSleepManager, os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback}, player::{get_position, stop}, track::is_audio_file, ui::{
-        library_view::LibraryViewState, playlist_view::PlaylistsViewState, root::{UIState, View, gem_player_ui}, settings_view::LanguagePreference, toasts::{error_toast, success_toast}, widgets::marquee::Marquee,
-    }, visualizer::VisualizerState,
+    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
+    commands::{GemCommand, execute},
+    library::{Library, load_library, set_library_directory},
+    menu::{MenuBar, create_menu},
+    nosleep_manager::NoSleepManager,
+    os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
+    player::{get_position, stop},
+    track::is_audio_file,
+    ui::{
+        library_view::LibraryViewState,
+        playlist_view::PlaylistsViewState,
+        root::{UIState, View, gem_player_ui},
+        settings_view::LanguagePreference,
+        toasts::{error_toast, success_toast},
+        widgets::marquee::Marquee,
+    },
+    visualizer::VisualizerState,
 };
 use dark_light::Mode;
 use eframe::{App, CreationContext, Frame, NativeOptions, Storage, icon_data, run_native, wgpu::rwh::HasWindowHandle};
@@ -22,6 +36,7 @@ use mimalloc::MiMalloc;
 use player::{Player, build_audio_backend_from_device, play_next, play_previous};
 use playlist::Playlist;
 use rodio::cpal::{default_host, traits::HostTrait};
+use rust_i18n::set_locale;
 use std::{
     collections::HashMap,
     fs::{copy, read},
@@ -72,6 +87,7 @@ pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 #[cfg(target_os = "macos")]
 pub const BOOKMARK_STORAGE_KEY: &str = "security_bookmark";
 pub const THEME_STORAGE_KEY: &str = "theme";
+pub const LANGUAGE_STORAGE_KEY: &str = "language";
 pub const VOLUME_STORAGE_KEY: &str = "volume";
 
 i18n!("locales", fallback = "en-US");
@@ -163,6 +179,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let mut library_directory = None;
 
     let mut theme_preference = ThemePreference::System;
+    let mut language_preference = LanguagePreference::System;
     let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
 
     #[cfg(target_os = "macos")]
@@ -187,6 +204,13 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             theme_preference = theme;
             let mode = resolve_theme_mode(theme_preference);
             apply_visuals_for_mode(&cc.egui_ctx, mode);
+        }
+
+        if let Some(language_string) = storage.get_string(LANGUAGE_STORAGE_KEY)
+            && let Ok(language) = serde_json::from_str(&language_string)
+        {
+            language_preference = language;
+            set_locale(language_preference.locale())
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
@@ -284,7 +308,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         ui: UIState {
             current_view: View::Library,
             theme_preference,
-            language_preference: LanguagePreference::System, // TODO: add save and load.
+            language_preference,
             search: String::new(),
             library: LibraryViewState {
                 selected_tracks: Vec::new(),
@@ -366,6 +390,9 @@ impl App for GemPlayer {
 
         let theme_json_string = serde_json::to_string(&self.ui.theme_preference).expect("Failed to serialize theme preference");
         storage.set_string(THEME_STORAGE_KEY, theme_json_string);
+
+        let language_json_string = serde_json::to_string(&self.ui.language_preference).expect("Failed to serialize theme preference");
+        storage.set_string(LANGUAGE_STORAGE_KEY, language_json_string);
 
         if let Some(backend) = &self.player.backend {
             let volume_json_string = serde_json::to_string(&backend.player.volume()).expect("Failed to serialize volume");
