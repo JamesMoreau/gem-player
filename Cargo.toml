@@ -46,6 +46,7 @@ trash = "5.3.0"
 walkdir = "2.5.0"
 directories = "6.0.0"
 image = "0.25.10"
+rust-i18n = "4"
 
 [patch.crates-io]
 winit = { path = "vendor/winit" }

@@ -3,15 +3,24 @@ use std::path::Path;
 use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::info;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
-#[cfg(target_os = "windows")]
-use crate::apply_menu_theme_for_windows;
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
     library::spawn_library_folder_picker,
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
+
+#[cfg(target_os = "windows")]
+use crate::apply_menu_theme_for_windows;
+
+#[derive(PartialEq, Eq, EnumIter)]
+enum LanguagePreference {
+    Eng,
+    Fr,
+}
 
 pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
@@ -54,6 +63,23 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                     #[cfg(target_os = "windows")]
                     apply_menu_theme_for_windows(_frame, &gem.menubar.menu, mode);
+                }
+
+                ui.add(Separator::default().spacing(divider_spacing));
+
+                ui.add(unselectable_label(RichText::new("Language").heading()));
+                ui.add_space(8.0);
+
+                for language in LanguagePreference::iter() {
+                    // if ui
+                    //     .selectable_label(current_view == view, format!("  {}  ", view.icon()))
+                    //     .on_hover_text(format!("{:?}", view))
+                    //     .clicked()
+                    // {
+                    //     selected = Some(view);
+                    // }
+
+                    // ui.add_space(4.0);
                 }
 
                 ui.add(Separator::default().spacing(divider_spacing));

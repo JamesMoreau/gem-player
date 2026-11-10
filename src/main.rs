@@ -73,6 +73,9 @@ mod track;
 mod ui;
 mod visualizer;
 
+#[macro_use]
+extern crate rust_i18n;
+
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
@@ -83,6 +86,8 @@ pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 pub const BOOKMARK_STORAGE_KEY: &str = "security_bookmark";
 pub const THEME_STORAGE_KEY: &str = "theme";
 pub const VOLUME_STORAGE_KEY: &str = "volume";
+
+i18n!("locales", fallback = "en-US");
 
 #[fully_pub]
 struct GemPlayer {

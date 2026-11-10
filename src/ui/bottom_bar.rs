@@ -98,8 +98,8 @@ fn controls(ui: &mut Ui, gem: &mut GemPlayer) {
             let clear_button = Button::new(ICON_CLEAR_ALL);
             let response = ui
                 .add_enabled(queue_is_not_empty, clear_button)
-                .on_hover_text("Clear")
-                .on_disabled_hover_text("Queue is empty");
+                .on_hover_text(t!("clear"))
+                .on_disabled_hover_text(t!("queue_empty"));
             if response.clicked() {
                 clear_the_queue(&mut gem.player);
             }
@@ -145,7 +145,7 @@ fn search(ui: &mut Ui, search_text: &mut String) -> bool {
     let clear_button_is_visible = !search_text.is_empty();
     let response = ui
         .add_visible(clear_button_is_visible, Button::new(ICON_CLEAR))
-        .on_hover_text("Clear search");
+        .on_hover_text(t!("clear_search"));
     if response.clicked() {
         search_text.clear();
         changed = true;
@@ -153,7 +153,7 @@ fn search(ui: &mut Ui, search_text: &mut String) -> bool {
 
     let search_bar = TextEdit::singleline(search_text)
         .prefix(ICON_SEARCH)
-        .hint_text("Search ...")
+        .hint_text(t!("search_hint"))
         .desired_width(140.0)
         .char_limit(20);
 
@@ -167,5 +167,5 @@ fn search(ui: &mut Ui, search_text: &mut String) -> bool {
 fn get_count_and_duration_string_from_tracks(tracks: &[Track]) -> String {
     let duration = calculate_total_duration(tracks);
     let duration_string = format_duration_to_hhmmss(duration);
-    format!("{} tracks / {duration_string}", tracks.len())
+    t!("tracks_duration", count = tracks.len(), duration = duration_string).to_string()
 }
