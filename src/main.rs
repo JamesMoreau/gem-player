@@ -7,6 +7,7 @@ use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
     library::{Library, load_library, set_library_directory},
+    localization::LanguagePreference,
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -16,7 +17,6 @@ use crate::{
         library_view::LibraryViewState,
         playlist_view::PlaylistsViewState,
         root::{UIState, View, gem_player_ui},
-        settings_view::LanguagePreference,
         toasts::{error_toast, success_toast},
         widgets::marquee::Marquee,
     },
@@ -66,6 +66,7 @@ use {
 mod artwork_cache;
 mod commands;
 mod library;
+mod localization;
 mod menu;
 mod nosleep_manager;
 mod os_media_controls;

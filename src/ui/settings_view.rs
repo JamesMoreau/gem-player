@@ -2,44 +2,20 @@ use std::path::Path;
 
 use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
-use fully_pub::fully_pub;
 use log::info;
 use rust_i18n::set_locale;
-use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
     library::spawn_library_folder_picker,
+    localization::LanguagePreference,
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
 
 #[cfg(target_os = "windows")]
 use crate::apply_menu_theme_for_windows;
-
-#[fully_pub]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
-enum LanguagePreference {
-    System,
-    Eng,
-    Fr,
-}
-
-impl LanguagePreference {
-    pub fn locale(&self) -> &'static str {
-        match self {
-            // Self::System => match sys_locale::get_locale().as_deref() { TODO
-            //     Some(locale) if locale.starts_with("fr") => "fr-CA",
-            //     _ => "en-US",
-            // },
-            Self::Eng => "en-US",
-            Self::Fr => "fr-CA",
-            _ => "",
-        }
-    }
-}
 
 pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
