@@ -1,7 +1,5 @@
 General:
 	- Localisation:
-		- dont forget the toasts.
-		- also remember errors returned are not translated.
 		- run cargo i18n to check errors.
 		- sort and cleanup. also should we have capitalized first letters?
 		- should we be using canadian english if we are using canadian french? or maybe we use France french instead?
