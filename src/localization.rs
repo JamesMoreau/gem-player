@@ -22,11 +22,11 @@ impl LanguagePreference {
     pub fn locale(&self) -> &'static str {
         match self {
             Self::System => match sys_locale::get_locale().as_deref() {
-                Some(locale) if locale.starts_with("fr") => "fr-CA",
+                Some(locale) if locale.starts_with("fr") => "fr-FR",
                 _ => "en-US",
             },
             Self::English => "en-US",
-            Self::French => "fr-CA",
+            Self::French => "fr-FR",
         }
     }
 
