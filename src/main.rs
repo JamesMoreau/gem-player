@@ -621,9 +621,8 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
             let result = set_library_directory(&mut gem.library, &directory);
 
             if let Err(e) = result {
-                let message = format!("Failed to set library directory: {e:#}");
-                error!("{message}");
-                error_toast(&mut gem.ui.toasts, message);
+                error!("Failed to set library directory: {e:#}");
+                error_toast(&mut gem.ui.toasts, t!("failed_to_set_library_directory"));
             }
         }
         Ok(None) => {
@@ -647,7 +646,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
     let Some(library_path) = gem.library.directory.as_ref() else {
         error!("No library directory set.");
-        error_toast(&mut gem.ui.toasts, "No library directory set.");
+        error_toast(&mut gem.ui.toasts, t!("no_library_directory").to_string());
         return;
     };
 
@@ -662,7 +661,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
         if !is_audio_file(path) {
             error_toast(
                 &mut gem.ui.toasts,
-                format!("'{}' is not a supported audio file.", file_name.to_string_lossy()),
+                t!("unsupported_audio_file", filename = file_name.to_string_lossy()).to_string(),
             );
             continue;
         }
@@ -671,11 +670,17 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
         if let Err(e) = copy(path, &destination) {
             error!("Failed to copy '{}': {e}", path.display());
-            error_toast(&mut gem.ui.toasts, format!("Failed to add '{}'.", file_name.to_string_lossy()));
+            error_toast(
+                &mut gem.ui.toasts,
+                t!("failed_to_add_file", filename = file_name.to_string_lossy()).to_string(),
+            );
             continue;
         }
 
-        success_toast(&mut gem.ui.toasts, format!("Added '{}' to Library.", file_name.to_string_lossy()));
+        success_toast(
+            &mut gem.ui.toasts,
+            t!("added_to_library", filename = file_name.to_string_lossy()).to_string(),
+        );
     }
 }
 
@@ -733,7 +738,7 @@ fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
         Ok(()) => on_track_change(ctx, gem),
         Err(e) => {
             error!("{e}");
-            error_toast(&mut gem.ui.toasts, "Error playing the next track");
+            error_toast(&mut gem.ui.toasts, t!("error_playing_next_track").to_string());
         }
     }
 }
@@ -753,7 +758,7 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
             Ok(_) => on_track_change(ctx, gem),
             Err(e) => {
                 error!("{e}");
-                error_toast(&mut gem.ui.toasts, "Error playing the previous track");
+                error_toast(&mut gem.ui.toasts, t!("error_playing_previous_track").to_string());
             }
         }
     } else if let Some(backend) = &gem.player.backend {
