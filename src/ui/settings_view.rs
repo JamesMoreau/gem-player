@@ -24,20 +24,22 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
             ScrollArea::vertical().show(ui, |ui| {
                 let divider_spacing = 32.0;
 
-                ui.add(unselectable_label(RichText::new("Music Library Path").heading()));
+                ui.add(unselectable_label(RichText::new(t!("music_library_path")).heading()));
                 ui.add_space(8.0);
-                ui.add(unselectable_label("Playlists are also stored here as m3u files."));
+                ui.add(unselectable_label(t!("playlists_stored_here")));
                 ui.horizontal(|ui| {
+                    let no_directory = t!("no_directory_selected").to_string();
+
                     let (display_path, full_path) = match gem.library.directory.as_ref() {
                         Some(p) => (elide_path(p, 80), p.to_string_lossy().to_string()),
-                        None => ("No directory selected".to_string(), "No directory selected".to_string()),
+                        None => (no_directory.clone(), no_directory),
                     };
 
                     ui.label(display_path).on_hover_text(full_path);
 
                     let start_dir = gem.library.directory.as_deref().unwrap_or_else(|| Path::new("/")).to_path_buf();
 
-                    if ui.button(ICON_FOLDER_OPEN).on_hover_text("Change").clicked() {
+                    if ui.button(ICON_FOLDER_OPEN).on_hover_text(t!("change")).clicked() {
                         let receiver = spawn_library_folder_picker(&start_dir);
                         gem.library.folder_picker_receiver = Some(receiver);
                     }
@@ -45,7 +47,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                ui.add(unselectable_label(RichText::new("Theme").heading()));
+                ui.add(unselectable_label(RichText::new(t!("theme")).heading()));
                 ui.add_space(8.0);
 
                 let previous_preference = gem.ui.theme_preference;
@@ -62,13 +64,13 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                ui.add(unselectable_label(RichText::new("Language").heading()));
+                ui.add(unselectable_label(RichText::new(t!("language")).heading()));
                 ui.add_space(8.0);
 
                 ui.horizontal(|ui| {
                     for language in LanguagePreference::iter() {
                         if ui
-                            .selectable_value(&mut gem.ui.language_preference, language, format!("{:?}", language))
+                            .selectable_value(&mut gem.ui.language_preference, language, language.label())
                             .changed()
                         {
                             set_locale(language.locale());
@@ -80,11 +82,11 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                ui.add(unselectable_label(RichText::new("Sleep Mode Blocker").heading()));
+                ui.add(unselectable_label(RichText::new(t!("sleep_mode_blocker")).heading()));
 
                 ui.add_space(8.0);
 
-                ui.add(unselectable_label("Prevents the computer from going to sleep during playback."));
+                ui.add(unselectable_label(t!("sleep_mode_blocker_description")));
 
                 let mut enabled = gem.nosleep_manager.is_enabled();
 
@@ -102,11 +104,10 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.add(Separator::default().spacing(divider_spacing));
 
-                ui.add(unselectable_label(RichText::new(format!("About {APP_NAME}")).heading()));
+                ui.add(unselectable_label(RichText::new(t!("about_app", name = APP_NAME)).heading()));
                 ui.add_space(8.0);
 
-                let description = env!("CARGO_PKG_DESCRIPTION");
-                ui.add(unselectable_label(description));
+                ui.add(unselectable_label(t!("app_description")));
 
                 ui.add_space(8.0);
 
@@ -114,44 +115,43 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.horizontal_wrapped(|ui| {
                     let version = env!("CARGO_PKG_VERSION");
-                    ui.add(unselectable_label(format!("Version: {version}")));
+                    ui.add(unselectable_label(t!("version", version = version)));
 
                     ui.add(unselectable_label(" / "));
 
                     let release_link = format!("{repo_link}/releases/tag/v{version}");
-                    ui.hyperlink_to("release notes", release_link);
+                    ui.hyperlink_to(t!("release_notes"), release_link);
 
                     ui.add(unselectable_label(" / "));
 
-                    ui.hyperlink_to("source", repo_link);
+                    ui.hyperlink_to(t!("source"), repo_link);
                 });
 
                 ui.add_space(8.0);
 
                 ui.horizontal(|ui| {
-                    ui.add(unselectable_label(
-                        "Bug reports, feature requests, and feedback may be submitted to the",
-                    ));
+                    ui.add(unselectable_label(t!("feedback_prompt")));
+
                     let issue_link = format!("{repo_link}/issues");
-                    ui.hyperlink_to("issue tracker", issue_link);
+                    ui.hyperlink_to(t!("issue_tracker"), issue_link);
                 });
 
                 ui.add_space(8.0);
 
                 ui.horizontal_wrapped(|ui| {
-                    ui.add(unselectable_label("Author:"));
+                    ui.add(unselectable_label(t!("author")));
 
-                    ui.add(unselectable_label("James Moreau"));
+                    ui.add(unselectable_label(env!("CARGO_PKG_AUTHORS")));
 
                     ui.add(unselectable_label(" / "));
 
-                    ui.hyperlink_to("jamesmoreau.github.io", "https://jamesmoreau.github.io");
+                    ui.hyperlink_to(t!("website"), "https://jamesmoreau.github.io");
                 });
 
                 ui.add_space(8.0);
 
                 ui.horizontal_wrapped(|ui| {
-                    ui.add(unselectable_label("If you like this project, consider supporting the author:"));
+                    ui.add(unselectable_label(t!("support_author_prompt")));
                     ui.hyperlink_to("Ko-fi", "https://ko-fi.com/jamesmoreau");
                 });
             });

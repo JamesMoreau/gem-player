@@ -2,6 +2,9 @@ General:
 	- Localisation:
 		- dont forget the toasts.
 		- also remember errors returned are not translated.
+		- run cargo i18n to check errors.
+		- sort and cleanup. also should we have capitalized first letters?
+		- should we be using canadian english if we are using canadian french? or maybe we use France french instead?
 	- When eframe upgrades to a newer version of winit that doesn't use _CGSSetWindowBackgroundBlurRadius, 
 	we can remove vendor/winit
 

@@ -1,8 +1,5 @@
 _version = 1
 
-# TODO: sort and cleanup. also should we have capitalized first letters?
-# should we be using canadian english if we are using canadian french? or maybe we use France french instead?
-
 clear = "Clear"
 clear_search = "Clear Search"
 search_hint = "Search ..."
@@ -53,3 +50,19 @@ time = "Time"
 date_added = "Date Added"
 ascending = "Ascending"
 descending = "Descending"
+music_library_path = "Music Library Path"
+playlists_stored_here = "Playlists are also stored here as M3U files."
+theme = "Theme"
+language = "Language"
+sleep_mode_blocker = "Sleep Mode Blocker"
+sleep_mode_blocker_description = "Prevents the computer from going to sleep during playback."
+about_app = "About %{name}"
+app_description = "A lightweight music player."
+version = "Version: %{version}"
+release_notes = "Release notes"
+source = "Source"
+feedback_prompt = "Bug reports, feature requests, and feedback may be submitted to the"
+issue_tracker = "issue tracker"
+author = "Author:"
+website = "jamesmoreau.github.io"
+support_author_prompt = "If you like this project, consider supporting the author:"
