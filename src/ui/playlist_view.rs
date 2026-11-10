@@ -54,9 +54,8 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                     if let Err(e) = delete(&playlist_key, &mut gem.library.playlists) {
                         error!("{e}");
                     } else {
-                        let message = "Playlist was deleted successfully. If this was a mistake, the m3u file can be found in the trash.";
-                        info!("{message}");
-                        success_toast(&mut gem.ui.toasts, message);
+                        info!("Playlist deleted successfully.");
+                        success_toast(&mut gem.ui.toasts, t!("playlist_deleted_successfully"));
                     }
                 } else {
                     error!("Request for deleting a playlist but no playlist is selected.");
@@ -99,9 +98,9 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                             let result = create(new_playlist_name, directory);
                                             match result {
                                                 Err(e) => {
-                                                    let error_message = format!("Failed to create: {e}.");
-                                                    error!("{error_message}");
-                                                    error_toast(&mut gem.ui.toasts, &error_message);
+                                                    error!("Failed to create: {e}.");
+
+                                                    error_toast(&mut gem.ui.toasts, format!("{}: {e}.", t!("failed_to_create")));
                                                 }
                                                 Ok(new_playlist) => {
                                                     info!("Created and saved {} to {}", new_playlist.name, new_playlist.m3u_path.display());
@@ -161,7 +160,7 @@ fn delete_playlist_modal(ui: &mut Ui) -> Option<DeletePlaylistResult> {
         .show(ui.ctx(), |ui| {
             ui.set_width(200.0);
             Frame::new().outer_margin(Margin::same(4)).show(ui, |ui| {
-                let label = unselectable_label(RichText::new("Are you sure you want to delete this playlist?").heading());
+                let label = unselectable_label(RichText::new(t!("confirm_delete_playlist")).heading());
                 ui.add(label);
 
                 ui.separator();
@@ -216,11 +215,11 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                                 ui.add_space(16.0);
 
                                 let cancel_button = Button::new(ICON_CANCEL);
-                                discard_clicked = ui.add(cancel_button).on_hover_text("Discard").clicked();
+                                discard_clicked = ui.add(cancel_button).on_hover_text(t!("discard")).clicked();
 
                                 ui.add_space(8.0);
 
-                                save_clicked = ui.add(Button::new(ICON_SAVE)).on_hover_text("Save").clicked();
+                                save_clicked = ui.add(Button::new(ICON_SAVE)).on_hover_text(t!("save")).clicked();
                             },
                         );
 
@@ -231,9 +230,9 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                             let result = rename(playlist, name_buffer_clone);
                             match result {
                                 Err(e) => {
-                                    let message = format!("Error renaming playlist: {e}");
-                                    error!("{message}");
-                                    error_toast(&mut gem.ui.toasts, message);
+                                    error!("Error renaming playlist: {e}");
+
+                                    error_toast(&mut gem.ui.toasts, format!("{}: {e}", t!("error_renaming_playlist")));
                                 }
                                 Ok(_) => {
                                     // Update the selected playlist with the new path so that we remain selected.
@@ -277,12 +276,12 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                                 ui.add_space(16.0);
 
                                 let delete_button = Button::new(ICON_DELETE);
-                                delete_clicked = ui.add(delete_button).on_hover_text("Delete").clicked();
+                                delete_clicked = ui.add(delete_button).on_hover_text(t!("delete")).clicked();
 
                                 ui.add_space(8.0);
 
                                 let edit_name_button = Button::new(ICON_EDIT);
-                                edit_clicked = ui.add(edit_name_button).on_hover_text("Edit name").clicked();
+                                edit_clicked = ui.add(edit_name_button).on_hover_text(t!("edit_name")).clicked();
                             },
                         );
 
@@ -327,7 +326,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
         let Some(playlist_key) = gem.ui.playlists.selected_playlist_key.clone() else {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("No playlist selected"));
+                    ui.add(unselectable_label(t!("no_playlist_selected")));
                 });
             });
 
@@ -338,7 +337,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
         if playlist_length == 0 {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("The playlist is empty."));
+                    ui.add(unselectable_label(t!("playlist_empty")));
                 });
             });
 
@@ -448,7 +447,7 @@ fn playlist_tracks(ui: &mut Ui, gem: &mut GemPlayer) {
                         let should_show_more_button = rest_of_row_is_hovered || more_cell_contains_pointer || track_is_selected;
 
                         if should_show_more_button {
-                            let response = ui.add(Button::new(ICON_MORE_HORIZ)).on_hover_text("More");
+                            let response = ui.add(Button::new(ICON_MORE_HORIZ)).on_hover_text(t!("more"));
 
                             if response.clicked() {
                                 let selected_tracks = &mut gem.ui.playlists.selected_tracks;
@@ -543,7 +542,7 @@ fn playlist_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     let mut command = None;
 
-    if ui.button(("Remove from Playlist", ICON_DELETE)).clicked() {
+    if ui.button((t!("remove_from_playlist"), ICON_DELETE)).clicked() {
         command = Some(GemCommand::RemoveTracksFromPlaylist {
             playlist_key: playlist_key.clone(),
             track_keys: track_keys.clone(),
@@ -552,13 +551,13 @@ fn playlist_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    if ui.button(("Play Next", ICON_PLAY_ARROW)).clicked() {
+    if ui.button((t!("play_next"), ICON_PLAY_ARROW)).clicked() {
         command = Some(GemCommand::EnqueueTracksNext {
             track_keys: track_keys.clone(),
         });
     }
 
-    if ui.button(("Add to Queue", ICON_ADD)).clicked() {
+    if ui.button((t!("add_to_queue"), ICON_ADD)).clicked() {
         command = Some(GemCommand::EnqueueTracks {
             track_keys: track_keys.clone(),
         });
@@ -566,7 +565,7 @@ fn playlist_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    if ui.button(("Open File Location", ICON_FOLDER)).clicked() {
+    if ui.button((t!("open_file_location"), ICON_FOLDER)).clicked() {
         if let Some(first) = track_keys.first() {
             command = Some(GemCommand::OpenTrackLocation(first.clone()));
         } else {

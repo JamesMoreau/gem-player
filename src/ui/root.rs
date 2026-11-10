@@ -31,6 +31,17 @@ pub enum View {
 }
 
 impl View {
+    pub fn label(&self) -> String {
+        match self {
+            Self::Library => t!("library").to_string(),
+            Self::Playlists => t!("playlists").to_string(),
+            Self::Queue => t!("queue").to_string(),
+            Self::Settings => t!("settings").to_string(),
+        }
+    }
+}
+
+impl View {
     pub fn icon(&self) -> &'static str {
         match self {
             View::Library => ICON_LIBRARY_MUSIC.codepoint,

@@ -1,7 +1,7 @@
 General:
 	- Localisation:
-		- add segmented language control.
 		- dont forget the toasts.
+		- also remember errors returned are not translated.
 	- When eframe upgrades to a newer version of winit that doesn't use _CGSSetWindowBackgroundBlurRadius, 
 	we can remove vendor/winit
 

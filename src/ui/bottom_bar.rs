@@ -49,7 +49,7 @@ fn view_selector(ui: &mut Ui, current_view: View) -> Option<View> {
     for view in View::iter() {
         if ui
             .selectable_label(current_view == view, format!("  {}  ", view.icon()))
-            .on_hover_text(format!("{:?}", view))
+            .on_hover_text(view.label())
             .clicked()
         {
             selected = Some(view);
