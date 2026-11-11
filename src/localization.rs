@@ -1,4 +1,5 @@
 use fully_pub::fully_pub;
+use rust_i18n::set_locale;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
@@ -31,6 +32,6 @@ impl LanguagePreference {
     }
 
     pub fn apply(&self) {
-        rust_i18n::set_locale(self.locale());
+        set_locale(self.locale());
     }
 }

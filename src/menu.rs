@@ -24,7 +24,7 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
     let menu = Menu::with_items(&[
         #[cfg(target_os = "macos")]
         &Submenu::with_items(
-            "App",
+            t!("app"),
             true,
             &[
                 &PredefinedMenuItem::about(None, None),
@@ -39,9 +39,9 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
             ],
         )
         .unwrap(),
-        &Submenu::with_items("File", true, &[&PredefinedMenuItem::close_window(None)]).unwrap(),
+        &Submenu::with_items(t!("file"), true, &[&PredefinedMenuItem::close_window(None)]).unwrap(),
         &Submenu::with_items(
-            "Window",
+            t!("window"),
             true,
             &[
                 &PredefinedMenuItem::minimize(None),
@@ -51,9 +51,9 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
         )
         .unwrap(),
         &Submenu::with_items(
-            "Help",
+            t!("help"),
             true,
-            &[&MenuItem::with_id(GemCommand::ReportIssue, "Report an issue", true, None)],
+            &[&MenuItem::with_id(GemCommand::ReportIssue, t!("report_issue"), true, None)],
         )
         .unwrap(),
     ])

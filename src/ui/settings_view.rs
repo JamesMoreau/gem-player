@@ -9,6 +9,7 @@ use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
     library::spawn_library_folder_picker,
     localization::LanguagePreference,
+    menu::create_menu,
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
@@ -73,6 +74,11 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                             .changed()
                         {
                             language.apply();
+
+                            let (menu, receiver) = create_menu();
+
+                            // delete old menu
+                            // replace new menu
                         }
 
                         ui.add_space(4.0);
