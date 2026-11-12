@@ -179,7 +179,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let mut library_directory = None;
 
     let mut theme_preference = ThemePreference::System;
-    let mut language_settings = LanguageSettings::new(None);
+    let mut selected_locale = None;
     let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
 
     #[cfg(target_os = "macos")]
@@ -208,9 +208,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
         if let Some(language_string) = storage.get_string(LANGUAGE_STORAGE_KEY)
             && let Ok(Some(locale)) = serde_json::from_str::<Option<String>>(&language_string)
-            && language_settings.languages.contains(&locale)
         {
-            language_settings.selected_locale = Some(locale);
+            selected_locale = Some(locale);
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
@@ -219,6 +218,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             initial_volume = volume.clamp(0.0, 1.0);
         }
     }
+
+    let language_settings = LanguageSettings::new(selected_locale);
+    language_settings.apply();
 
     let mut library = setup_library().expect("Failed to initialize library.");
 
