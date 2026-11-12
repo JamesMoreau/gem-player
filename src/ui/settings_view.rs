@@ -26,7 +26,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add(unselectable_label(RichText::new(t!("music_library_path")).heading()));
                 ui.add_space(8.0);
                 ui.add(unselectable_label(t!("playlists_stored_here")));
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     let no_directory = t!("no_directory_selected").to_string();
 
                     let (display_path, full_path) = match gem.library.directory.as_ref() {
@@ -66,7 +66,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add(unselectable_label(RichText::new(t!("language")).heading()));
                 ui.add_space(8.0);
 
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     let settings = &mut gem.ui.language_settings;
 
                     let system_label = language_label(None);
@@ -148,8 +148,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.add_space(8.0);
 
-                ui.horizontal(|ui| {
-                    // TODO: This is overflowing with french. maybe add wrapping to whole page?
+                ui.horizontal_wrapped(|ui| {
                     ui.add(unselectable_label(t!("feedback_prompt")));
 
                     let issue_link = format!("{repo_link}/issues");
