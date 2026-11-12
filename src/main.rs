@@ -7,7 +7,7 @@ use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
     library::{Library, load_library, set_library_directory},
-    localization::LanguagePreference,
+    localization::{LanguagePreference, LanguageSettings},
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -179,7 +179,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let mut library_directory = None;
 
     let mut theme_preference = ThemePreference::System;
-    let mut language_preference = LanguagePreference::System;
+    let mut language_settings = LanguageSettings::new(LanguagePreference::System);
     let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
 
     #[cfg(target_os = "macos")]
@@ -207,10 +207,9 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
 
         if let Some(language_string) = storage.get_string(LANGUAGE_STORAGE_KEY)
-            && let Ok(language) = serde_json::from_str(&language_string)
+            && let Ok(language) = serde_json::from_str::<LanguagePreference>(&language_string)
         {
-            language_preference = language;
-            language_preference.apply();
+            language_settings.selected = language;
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
@@ -308,7 +307,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         ui: UIState {
             current_view: View::Library,
             theme_preference,
-            language_preference,
+            language_settings,
             search: String::new(),
             library: LibraryViewState {
                 selected_tracks: Vec::new(),
@@ -391,7 +390,8 @@ impl App for GemPlayer {
         let theme_json_string = serde_json::to_string(&self.ui.theme_preference).expect("Failed to serialize theme preference");
         storage.set_string(THEME_STORAGE_KEY, theme_json_string);
 
-        let language_json_string = serde_json::to_string(&self.ui.language_preference).expect("Failed to serialize theme preference");
+        let language_json_string =
+            serde_json::to_string(&self.ui.language_settings.selected).expect("Failed to serialize language preference");
         storage.set_string(LANGUAGE_STORAGE_KEY, language_json_string);
 
         if let Some(backend) = &self.player.backend {

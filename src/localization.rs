@@ -1,33 +1,55 @@
 use fully_pub::fully_pub;
 use rust_i18n::set_locale;
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
+use sys_locale::get_locale;
 
 #[fully_pub]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, Serialize, Deserialize)]
-enum LanguagePreference {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+enum LanguagePreference { // TODO: do we need System? could this just be a String.
     System,
-    English,
-    French,
+    Locale(String),
 }
 
-impl LanguagePreference {
-    pub fn label(self) -> String {
-        match self {
-            Self::System => t!("system").to_string(),
-            Self::English => "EN".to_string(),
-            Self::French => "FR".to_string(),
+#[fully_pub]
+struct LanguageSettings {
+    languages: Vec<String>,
+    selected: LanguagePreference,
+}
+
+impl LanguageSettings {
+    pub fn new(selected: LanguagePreference) -> Self {
+        Self {
+            languages: available_locales!().into_iter().map(|locale| locale.into_owned()).collect(),
+            selected,
         }
     }
 
-    pub fn locale(&self) -> &'static str {
-        match self {
-            Self::System => match sys_locale::get_locale().as_deref() {
-                Some(locale) if locale.starts_with("fr") => "fr-FR",
-                _ => "en-US",
-            },
-            Self::English => "en-US",
-            Self::French => "fr-FR",
+    pub fn label(&self, preference: &LanguagePreference) -> String {
+        match preference {
+            LanguagePreference::System => t!("system").to_string(),
+            LanguagePreference::Locale(locale) => locale.split('-').next().unwrap_or(locale).to_uppercase(),
+        }
+    }
+
+    pub fn locale(&self) -> &str {
+        match &self.selected {
+            LanguagePreference::System => {
+                let system_locale = get_locale();
+
+                self.languages
+                    .iter()
+                    .find(|locale| system_locale.as_ref().is_some_and(|system| locale.eq_ignore_ascii_case(system)))
+                    .or_else(|| {
+                        let system_language = system_locale.as_deref()?.split('-').next()?;
+
+                        self.languages
+                            .iter()
+                            .find(|locale| locale.split('-').next().unwrap_or("").eq_ignore_ascii_case(system_language))
+                    })
+                    .or_else(|| self.languages.first())
+                    .map_or("en-US", |locale| locale)
+            }
+            LanguagePreference::Locale(locale) => locale,
         }
     }
 

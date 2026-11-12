@@ -9,7 +9,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     GemPlayer,
-    localization::LanguagePreference,
+    localization::LanguageSettings,
     ui::{
         bottom_bar::bottom_bar,
         control_panel::control_panel,
@@ -56,7 +56,7 @@ impl View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
-    language_preference: LanguagePreference,
+    language_settings: LanguageSettings,
     marquee: Marquee,
     search: String,
     volume_popup_is_open: bool,

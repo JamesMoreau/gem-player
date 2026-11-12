@@ -3,7 +3,6 @@ use std::path::Path;
 use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::{error, info};
-use strum::IntoEnumIterator;
 
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
@@ -68,31 +67,41 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add_space(8.0);
 
                 ui.horizontal(|ui| {
-                    for language in LanguagePreference::iter() {
-                        if ui
-                            .selectable_value(&mut gem.ui.language_preference, language, language.label())
-                            .changed()
-                        {
-                            language.apply();
+                    let settings = &mut gem.ui.language_settings;
+                    let mut changed = false;
 
-                            if let Err(e) = remove_menu(&gem.menubar.menu) {
-                                error!("Unable to remove menu: {e}");
-                            } else {
-                                let (menu, receiver) = create_menu();
+                    let system = LanguagePreference::System;
+                    let system_label = settings.label(&system);
 
-                                match init_menu(&menu, gem.ui.theme_preference, _frame) {
-                                    Ok(()) => {
-                                        gem.menubar.menu = menu;
-                                        gem.menubar.menu_receiver = receiver;
-                                    }
-                                    Err(e) => {
-                                        error!("Unable to initialize menu: {e}");
-                                    }
+                    changed |= ui.selectable_value(&mut settings.selected, system, system_label).changed();
+
+                    for locale in settings.languages.clone() {
+                        let preference = LanguagePreference::Locale(locale);
+                        let label = settings.label(&preference);
+
+                        changed |= ui.selectable_value(&mut settings.selected, preference, label).changed();
+
+                        ui.add_space(4.0);
+                    }
+
+                    if changed {
+                        settings.apply();
+
+                        if let Err(e) = remove_menu(&gem.menubar.menu) {
+                            error!("Unable to remove menu: {e}");
+                        } else {
+                            let (menu, receiver) = create_menu();
+
+                            match init_menu(&menu, gem.ui.theme_preference, _frame) {
+                                Ok(()) => {
+                                    gem.menubar.menu = menu;
+                                    gem.menubar.menu_receiver = receiver;
+                                }
+                                Err(e) => {
+                                    error!("Unable to initialize menu: {e}");
                                 }
                             }
                         }
-
-                        ui.add_space(4.0);
                     }
                 });
 
