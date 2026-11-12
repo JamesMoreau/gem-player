@@ -7,7 +7,7 @@ use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
     library::{Library, load_library, set_library_directory},
-    localization::{LanguagePreference, LanguageSettings},
+    localization::LanguageSettings,
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -179,7 +179,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let mut library_directory = None;
 
     let mut theme_preference = ThemePreference::System;
-    let mut language_settings = LanguageSettings::new(LanguagePreference::System);
+    let mut language_settings = LanguageSettings::new(None);
     let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
 
     #[cfg(target_os = "macos")]
@@ -207,9 +207,10 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
 
         if let Some(language_string) = storage.get_string(LANGUAGE_STORAGE_KEY)
-            && let Ok(language) = serde_json::from_str::<LanguagePreference>(&language_string)
+            && let Ok(Some(locale)) = serde_json::from_str::<Option<String>>(&language_string)
+            && language_settings.languages.contains(&locale)
         {
-            language_settings.selected = language;
+            language_settings.selected = Some(locale);
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)

@@ -7,7 +7,6 @@ use log::{error, info};
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
     library::spawn_library_folder_picker,
-    localization::LanguagePreference,
     menu::{create_menu, init_menu, remove_menu},
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
@@ -68,20 +67,14 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.horizontal(|ui| {
                     let settings = &mut gem.ui.language_settings;
-                    let mut changed = false;
 
-                    let system = LanguagePreference::System;
-                    let system_label = settings.label(&system);
-
-                    changed |= ui.selectable_value(&mut settings.selected, system, system_label).changed();
+                    let system_label = settings.label(None);
+                    let mut changed = ui.selectable_value(&mut settings.selected, None, system_label).changed();
 
                     for locale in settings.languages.clone() {
-                        let preference = LanguagePreference::Locale(locale);
-                        let label = settings.label(&preference);
+                        let label = settings.label(Some(&locale));
 
-                        changed |= ui.selectable_value(&mut settings.selected, preference, label).changed();
-
-                        ui.add_space(4.0);
+                        changed |= ui.selectable_value(&mut settings.selected, Some(locale), label).changed();
                     }
 
                     if changed {
@@ -154,7 +147,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 ui.add_space(8.0);
 
-                ui.horizontal(|ui| {
+                ui.horizontal(|ui| { // TODO: This is overflowing with french. maybe add wrapping to whole page?
                     ui.add(unselectable_label(t!("feedback_prompt")));
 
                     let issue_link = format!("{repo_link}/issues");
