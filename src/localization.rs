@@ -5,26 +5,30 @@ use sys_locale::get_locale;
 #[fully_pub]
 struct LanguageSettings {
     languages: Vec<String>,
-    selected: Option<String>,
+    selected_locale: Option<String>,
+}
+
+pub fn language_label(locale: Option<&str>) -> String {
+    match locale {
+        None => t!("system").to_string(),
+        Some(locale) => locale.split('-').next().unwrap_or(locale).to_uppercase(),
+    }
 }
 
 impl LanguageSettings {
-    pub fn new(selected: Option<String>) -> Self {
-        Self {
-            languages: available_locales!().into_iter().map(|locale| locale.into_owned()).collect(),
-            selected,
-        }
-    }
+    pub fn new(selected_locale: Option<String>) -> Self {
+        let languages: Vec<String> = available_locales!().into_iter().map(|locale| locale.into_owned()).collect();
 
-    pub fn label(&self, locale: Option<&str>) -> String {
-        match locale {
-            None => t!("system").to_string(),
-            Some(locale) => locale.split('-').next().unwrap_or(locale).to_uppercase(),
+        let selected_locale = selected_locale.filter(|locale| languages.contains(locale));
+
+        Self {
+            languages,
+            selected_locale,
         }
     }
 
     pub fn locale(&self) -> &str {
-        let Some(selected) = &self.selected else {
+        let Some(selected_locale) = &self.selected_locale else {
             let system_locale = get_locale();
 
             return self
@@ -42,7 +46,7 @@ impl LanguageSettings {
                 .map_or("en-US", |locale| locale);
         };
 
-        selected
+        selected_locale
     }
 
     pub fn apply(&self) {

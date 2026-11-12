@@ -210,7 +210,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             && let Ok(Some(locale)) = serde_json::from_str::<Option<String>>(&language_string)
             && language_settings.languages.contains(&locale)
         {
-            language_settings.selected = Some(locale);
+            language_settings.selected_locale = Some(locale);
         }
 
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
@@ -392,7 +392,7 @@ impl App for GemPlayer {
         storage.set_string(THEME_STORAGE_KEY, theme_json_string);
 
         let language_json_string =
-            serde_json::to_string(&self.ui.language_settings.selected).expect("Failed to serialize language preference");
+            serde_json::to_string(&self.ui.language_settings.selected_locale).expect("Failed to serialize language preference");
         storage.set_string(LANGUAGE_STORAGE_KEY, language_json_string);
 
         if let Some(backend) = &self.player.backend {
