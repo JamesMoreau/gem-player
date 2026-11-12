@@ -2,14 +2,14 @@ use std::path::Path;
 
 use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
-use log::info;
+use log::{error, info};
 use strum::IntoEnumIterator;
 
 use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
     library::spawn_library_folder_picker,
     localization::LanguagePreference,
-    menu::create_menu,
+    menu::{create_menu, init_menu, remove_menu},
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
@@ -75,10 +75,21 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                         {
                             language.apply();
 
-                            let (menu, receiver) = create_menu();
+                            if let Err(e) = remove_menu(&gem.menubar.menu) {
+                                error!("Unable to remove menu: {e}");
+                            } else {
+                                let (menu, receiver) = create_menu();
 
-                            // delete old menu
-                            // replace new menu
+                                match init_menu(&menu, gem.ui.theme_preference, _frame) {
+                                    Ok(()) => {
+                                        gem.menubar.menu = menu;
+                                        gem.menubar.menu_receiver = receiver;
+                                    }
+                                    Err(e) => {
+                                        error!("Unable to initialize menu: {e}");
+                                    }
+                                }
+                            }
                         }
 
                         ui.add_space(4.0);
