@@ -514,6 +514,7 @@ fn poll_system_theme_change(ctx: &Context, _frame: &mut Frame, gem: &mut GemPlay
     }
 }
 
+// TODO: remove this and replace
 #[cfg(target_os = "windows")]
 fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
     let menu_theme = to_menu_theme(mode);

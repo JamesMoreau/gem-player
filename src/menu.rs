@@ -8,6 +8,12 @@ use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
 use crate::commands::GemCommand;
 
+#[cfg(target_os = "windows")]
+use {
+    crate::{resolve_theme_mode, to_menu_theme},
+    eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle},
+};
+
 #[fully_pub]
 struct MenuBar {
     menu: Menu,
@@ -65,12 +71,21 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
     (menu, receiver)
 }
 
-pub fn remove_menu(menu: &Menu) -> Result<()> {
+pub fn remove_menu(menu: &Menu, #[cfg(target_os = "windows")] frame: &Frame) -> Result<()> {
     #[cfg(target_os = "macos")]
     menu.remove_for_nsapp();
 
     #[cfg(target_os = "windows")]
-    menu.remove_for_hwnd(/* hwnd */)?;
+    unsafe {
+        let handle = frame.window_handle()?;
+
+        let hwnd = match handle.as_raw() {
+            RawWindowHandle::Win32(handle) => handle.hwnd.get(),
+            _ => anyhow::bail!("Window is not a Win32 window"),
+        };
+
+        menu.remove_for_hwnd(hwnd)?;
+    }
 
     #[cfg(target_os = "linux")]
     menu.remove_for_gtk_window(/* ... */)?;
@@ -78,17 +93,17 @@ pub fn remove_menu(menu: &Menu) -> Result<()> {
     Ok(())
 }
 
-pub fn init_menu(menu: &Menu, _theme_preference: ThemePreference, _frame: &Frame) -> anyhow::Result<()> {
+pub fn init_menu(menu: &Menu, theme_preference: ThemePreference, #[cfg(target_os = "windows")] frame: &Frame) -> anyhow::Result<()> {
     #[cfg(target_os = "windows")]
     unsafe {
-        let handle = _frame.window_handle()?;
+        let handle = frame.window_handle()?;
 
         let hwnd = match handle.as_raw() {
             RawWindowHandle::Win32(handle) => handle.hwnd.get(),
             _ => anyhow::bail!("Window is not a Win32 window"),
         };
 
-        let _mode = resolve_theme_mode(theme_preference);
+        let mode = resolve_theme_mode(theme_preference);
         let menu_theme = to_menu_theme(mode);
 
         menu.init_for_hwnd_with_theme(hwnd, menu_theme)?;

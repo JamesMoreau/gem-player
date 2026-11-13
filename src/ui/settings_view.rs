@@ -81,7 +81,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     if changed {
                         settings.apply();
 
-                        if let Err(e) = remove_menu(&gem.menubar.menu) {
+                        if let Err(e) = remove_menu(&gem.menubar.menu, _frame) {
                             error!("Unable to remove menu: {e}");
                         } else {
                             let (menu, receiver) = create_menu();
