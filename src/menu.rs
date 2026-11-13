@@ -71,11 +71,13 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
     (menu, receiver)
 }
 
-pub fn remove_menu(menu: &Menu, #[cfg(target_os = "windows")] frame: &Frame) -> Result<()> {
-    #[cfg(target_os = "macos")]
+#[cfg(target_os = "macos")]
+pub fn remove_menu(menu: &Menu) {
     menu.remove_for_nsapp();
+}
 
-    #[cfg(target_os = "windows")]
+#[cfg(target_os = "windows")]
+pub fn remove_menu(menu: &Menu, frame: &Frame) -> Result<()> {
     unsafe {
         let handle = frame.window_handle()?;
 
@@ -87,10 +89,12 @@ pub fn remove_menu(menu: &Menu, #[cfg(target_os = "windows")] frame: &Frame) -> 
         menu.remove_for_hwnd(hwnd)?;
     }
 
-    #[cfg(target_os = "linux")]
-    menu.remove_for_gtk_window(/* ... */)?;
-
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+pub fn remove_menu(menu: &Menu) {
+    todo!();
 }
 
 #[cfg(target_os = "macos")]

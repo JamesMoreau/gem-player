@@ -8,13 +8,13 @@ use crate::{
     APP_NAME, GemPlayer, apply_visuals_for_mode,
     library::spawn_library_folder_picker,
     localization::language_label,
-    menu::{create_menu, remove_menu, init_menu},
+    menu::{create_menu, init_menu, remove_menu},
     resolve_theme_mode,
     ui::{root::unselectable_label, widgets::toggle_switch::toggle},
 };
 
 #[cfg(target_os = "windows")]
-use crate::{apply_menu_theme_for_windows};
+use crate::apply_menu_theme_for_windows;
 
 pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
@@ -81,29 +81,30 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     if changed {
                         settings.apply();
 
-                        if let Err(e) = remove_menu(
-                            &gem.menubar.menu,
-                            #[cfg(target_os = "windows")]
-                            _frame,
-                        ) {
+                        #[cfg(target_os = "windows")]
+                        if let Err(e) = remove_menu(&gem.menubar.menu, _frame) {
                             error!("Unable to remove menu: {e}");
-                        } else {
-                            let (menu, receiver) = create_menu();
+                            return;
+                        }
 
-                            #[cfg(target_os = "windows")]
-                            let result = init_menu(&menu, gem.ui.theme_preference, _frame);
+                        #[cfg(target_os = "macos")]
+                        remove_menu(&gem.menubar.menu);
 
-                            #[cfg(target_os = "macos")]
-                            let result = init_menu(&menu);
+                        let (menu, receiver) = create_menu();
 
-                            match result {
-                                Ok(()) => {
-                                    gem.menubar.menu = menu;
-                                    gem.menubar.menu_receiver = receiver;
-                                }
-                                Err(e) => {
-                                    error!("Unable to initialize menu: {e}");
-                                }
+                        #[cfg(target_os = "windows")]
+                        let result = init_menu(&menu, gem.ui.theme_preference, _frame);
+
+                        #[cfg(target_os = "macos")]
+                        let result = init_menu(&menu);
+
+                        match result {
+                            Ok(()) => {
+                                gem.menubar.menu = menu;
+                                gem.menubar.menu_receiver = receiver;
+                            }
+                            Err(e) => {
+                                error!("Unable to initialize menu: {e}");
                             }
                         }
                     }
