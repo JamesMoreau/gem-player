@@ -1,4 +1,5 @@
 General:
+	- add app store build flavour for bookmark code.
 	- When eframe upgrades to a newer version of winit that doesn't use _CGSSetWindowBackgroundBlurRadius, 
 	we can remove vendor/winit
 

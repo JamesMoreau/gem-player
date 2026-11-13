@@ -35,9 +35,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         if gem.library.directory.is_none() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label(
-                        "No library directory set. Add your music folder in the settings.",
-                    ));
+                    ui.add(unselectable_label(t!("no_library_directory")));
                 });
             });
 
@@ -47,7 +45,7 @@ pub fn library_view(ui: &mut Ui, gem: &mut GemPlayer) {
         if gem.library.tracks.is_empty() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("The library is empty."));
+                    ui.add(unselectable_label(t!("library_empty")));
                 });
             });
 
@@ -238,14 +236,14 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.add_enabled(
         false,
-        Label::new(format!("{} track(s) selected", gem.ui.library.selected_tracks.len())),
+        Label::new(t!("tracks_selected", count = gem.ui.library.selected_tracks.len())),
     );
 
     ui.separator();
 
     let add_to_playlists_enabled = !gem.library.playlists.is_empty();
     ui.add_enabled_ui(add_to_playlists_enabled, |ui| {
-        ui.menu_button("Add to Playlist", |ui| {
+        ui.menu_button(t!("add_to_playlist"), |ui| {
             ui.set_min_width(menu_width);
 
             ScrollArea::vertical().max_height(164.0).show(ui, |ui| {
@@ -263,13 +261,13 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    if ui.button(("Play Next", ICON_PLAY_ARROW)).clicked() {
+    if ui.button((t!("play_next"), ICON_PLAY_ARROW)).clicked() {
         maybe_command = Some(GemCommand::EnqueueTracksNext {
             track_keys: gem.ui.library.selected_tracks.clone(),
         });
     }
 
-    if ui.button(("Add to Queue", ICON_QUEUE_MUSIC)).clicked() {
+    if ui.button((t!("add_to_queue"), ICON_QUEUE_MUSIC)).clicked() {
         maybe_command = Some(GemCommand::EnqueueTracks {
             track_keys: gem.ui.library.selected_tracks.clone(),
         });
@@ -277,7 +275,7 @@ fn library_context_menu(ui: &mut Ui, gem: &GemPlayer) -> Option<GemCommand> {
 
     ui.separator();
 
-    if ui.button(("Open File Location", ICON_FOLDER)).clicked()
+    if ui.button((t!("open_file_location"), ICON_FOLDER)).clicked()
         && let Some(track_path) = gem.ui.library.selected_tracks.first()
     {
         maybe_command = Some(GemCommand::OpenTrackLocation(track_path.clone()));

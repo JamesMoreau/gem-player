@@ -15,7 +15,7 @@ pub fn queue_view(ui: &mut Ui, player: &mut Player) {
         if player.queue.is_empty() {
             centered_frame(ui, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add(unselectable_label("The queue is empty."));
+                    ui.add(unselectable_label(t!("queue_empty")));
                 });
             });
 

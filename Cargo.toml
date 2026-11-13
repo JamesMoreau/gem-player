@@ -1,6 +1,6 @@
 [package]
 name = "gem-player"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 description = "A lightweight music player."
 build = "build.rs"
@@ -11,6 +11,7 @@ authors = ["James Moreau"]
 anyhow = "1.0.104"
 apple-scoped-bookmarks = "0.1.0"
 dark-light = "3.0.0"
+directories = "6.0.0"
 eframe = { version = "0.36.2", features = ["persistence"] }
 egui = "0.36.2"
 egui_extras = { version = "0.36.2", features = ["all_loaders"] }
@@ -22,6 +23,7 @@ env_logger = { version = "0.11.11", default-features = false, features = [
 ] }
 font-kit = "0.14.3"
 fully_pub = "0.1.5"
+image = "0.25.10"
 lofty = "0.25.5"
 log = "0.4.35"
 m3u = "1.0.0"
@@ -35,6 +37,7 @@ rand = "0.10.3"
 rayon = "1.12.0"
 rfd = "0.18.0"
 rodio = { version = "0.23.0", features = ["symphonia-all"] }
+rust-i18n = "4"
 rustfft = "6.4.1"
 sanitize-filename = "0.6.0"
 serde = "1.0.229"
@@ -42,10 +45,9 @@ serde_json = "1.0.151"
 souvlaki = "0.9.3"
 strum = "0.28.0"
 strum_macros = "0.28.0"
+sys-locale = "0.3.2"
 trash = "5.3.0"
 walkdir = "2.5.0"
-directories = "6.0.0"
-image = "0.25.10"
 
 [patch.crates-io]
 winit = { path = "vendor/winit" }

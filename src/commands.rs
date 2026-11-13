@@ -5,9 +5,15 @@ use log::{error, info, warn};
 use strum_macros::{Display, EnumString};
 
 use crate::{
-    GemPlayer, maybe_play_next, maybe_play_previous, os_media_controls::{OSMediaControlsState, update_metadata, update_playback}, player::{
-        enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_shuffle, set_volume, stop, toggle, toggle_repeat,
-    }, playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist}, track::{Track, TrackRetrieval, open_file_location}, ui::{
+    GemPlayer, maybe_play_next, maybe_play_previous,
+    os_media_controls::{OSMediaControlsState, update_metadata, update_playback},
+    player::{
+        enqueue, enqueue_next, get_position, mute_or_unmute, pause, play, replace_queue, seek, set_shuffle, set_volume, stop, toggle,
+        toggle_repeat,
+    },
+    playlist::{PlaylistRetrieval, add_to_playlist, remove_from_playlist},
+    track::{Track, TrackRetrieval, open_file_location},
+    ui::{
         root::format_duration_to_mmss,
         toasts::{error_toast, success_toast, warning_toast},
     },
@@ -191,11 +197,11 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             gem.ui.playlists.cache_dirty = true;
 
             if added_count > 0 {
-                let message = format!("Added {added_count} track(s) to playlist '{}'.", playlist.name);
+                let message = format!("{}", t!("tracks_added_to_playlist", count = added_count, playlist = playlist.name));
                 info!("{message}");
                 success_toast(&mut gem.ui.toasts, message);
             } else {
-                error_toast(&mut gem.ui.toasts, "No tracks were added.");
+                error_toast(&mut gem.ui.toasts, t!("no_tracks_added").to_string());
             }
         }
         GemCommand::RemoveTracksFromPlaylist { playlist_key, track_keys } => {
@@ -218,11 +224,11 @@ pub fn execute(ctx: &Context, gem: &mut GemPlayer, command: GemCommand) {
             gem.ui.playlists.cache_dirty = true;
 
             if added_count > 0 {
-                let message = format!("Removed {added_count} track(s) from playlist '{}'", playlist.name);
+                let message = t!("tracks_removed_from_playlist", count = added_count, playlist = playlist.name).to_string();
                 info!("{message}");
                 success_toast(&mut gem.ui.toasts, message);
             } else {
-                warning_toast(&mut gem.ui.toasts, "No tracks were removed.");
+                warning_toast(&mut gem.ui.toasts, t!("no_tracks_removed").to_string());
             }
         }
         GemCommand::EnqueueTracks { track_keys } => {

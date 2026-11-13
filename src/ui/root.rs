@@ -9,6 +9,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     GemPlayer,
+    localization::LanguageSettings,
     ui::{
         bottom_bar::bottom_bar,
         control_panel::control_panel,
@@ -30,6 +31,17 @@ pub enum View {
 }
 
 impl View {
+    pub fn label(&self) -> String {
+        match self {
+            Self::Library => t!("library").to_string(),
+            Self::Playlists => t!("playlists").to_string(),
+            Self::Queue => t!("queue").to_string(),
+            Self::Settings => t!("settings").to_string(),
+        }
+    }
+}
+
+impl View {
     pub fn icon(&self) -> &'static str {
         match self {
             View::Library => ICON_LIBRARY_MUSIC.codepoint,
@@ -44,6 +56,7 @@ impl View {
 pub struct UIState {
     current_view: View,
     theme_preference: ThemePreference,
+    language_settings: LanguageSettings,
     marquee: Marquee,
     search: String,
     volume_popup_is_open: bool,

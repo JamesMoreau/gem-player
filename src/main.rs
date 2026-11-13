@@ -7,6 +7,7 @@ use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
     library::{Library, load_library, set_library_directory},
+    localization::LanguageSettings,
     menu::{MenuBar, create_menu},
     nosleep_manager::NoSleepManager,
     os_media_controls::{OSMediaControlsState, poll_media_events, setup_os_media_controls, update_metadata, update_playback},
@@ -64,6 +65,7 @@ use {
 mod artwork_cache;
 mod commands;
 mod library;
+mod localization;
 mod menu;
 mod nosleep_manager;
 mod os_media_controls;
@@ -72,6 +74,9 @@ mod playlist;
 mod track;
 mod ui;
 mod visualizer;
+
+#[macro_use]
+extern crate rust_i18n;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -82,7 +87,10 @@ pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
 #[cfg(target_os = "macos")]
 pub const BOOKMARK_STORAGE_KEY: &str = "security_bookmark";
 pub const THEME_STORAGE_KEY: &str = "theme";
+pub const LANGUAGE_STORAGE_KEY: &str = "language";
 pub const VOLUME_STORAGE_KEY: &str = "volume";
+
+i18n!("locales", fallback = "en-US");
 
 #[fully_pub]
 struct GemPlayer {
@@ -171,6 +179,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
     let mut library_directory = None;
 
     let mut theme_preference = ThemePreference::System;
+    let mut selected_locale = None;
     let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
 
     #[cfg(target_os = "macos")]
@@ -197,12 +206,21 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             apply_visuals_for_mode(&cc.egui_ctx, mode);
         }
 
+        if let Some(language_string) = storage.get_string(LANGUAGE_STORAGE_KEY)
+            && let Ok(Some(locale)) = serde_json::from_str::<Option<String>>(&language_string)
+        {
+            selected_locale = Some(locale);
+        }
+
         if let Some(volume_string) = storage.get_string(VOLUME_STORAGE_KEY)
             && let Ok(volume) = serde_json::from_str::<f32>(&volume_string)
         {
             initial_volume = volume.clamp(0.0, 1.0);
         }
     }
+
+    let language_settings = LanguageSettings::new(selected_locale);
+    language_settings.apply();
 
     let mut library = setup_library().expect("Failed to initialize library.");
 
@@ -292,6 +310,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         ui: UIState {
             current_view: View::Library,
             theme_preference,
+            language_settings,
             search: String::new(),
             library: LibraryViewState {
                 selected_tracks: Vec::new(),
@@ -373,6 +392,10 @@ impl App for GemPlayer {
 
         let theme_json_string = serde_json::to_string(&self.ui.theme_preference).expect("Failed to serialize theme preference");
         storage.set_string(THEME_STORAGE_KEY, theme_json_string);
+
+        let language_json_string =
+            serde_json::to_string(&self.ui.language_settings.selected_locale).expect("Failed to serialize language preference");
+        storage.set_string(LANGUAGE_STORAGE_KEY, language_json_string);
 
         if let Some(backend) = &self.player.backend {
             let volume_json_string = serde_json::to_string(&backend.player.volume()).expect("Failed to serialize volume");
@@ -601,9 +624,8 @@ fn poll_library_folder_picker(gem: &mut GemPlayer) {
             let result = set_library_directory(&mut gem.library, &directory);
 
             if let Err(e) = result {
-                let message = format!("Failed to set library directory: {e:#}");
-                error!("{message}");
-                error_toast(&mut gem.ui.toasts, message);
+                error!("Failed to set library directory: {e:#}");
+                error_toast(&mut gem.ui.toasts, t!("failed_to_set_library_directory"));
             }
         }
         Ok(None) => {
@@ -627,7 +649,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
     let Some(library_path) = gem.library.directory.as_ref() else {
         error!("No library directory set.");
-        error_toast(&mut gem.ui.toasts, "No library directory set.");
+        error_toast(&mut gem.ui.toasts, t!("no_library_directory").to_string());
         return;
     };
 
@@ -642,7 +664,7 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
         if !is_audio_file(path) {
             error_toast(
                 &mut gem.ui.toasts,
-                format!("'{}' is not a supported audio file.", file_name.to_string_lossy()),
+                t!("unsupported_audio_file", filename = file_name.to_string_lossy()).to_string(),
             );
             continue;
         }
@@ -651,11 +673,17 @@ fn poll_file_drops(ctx: &Context, gem: &mut GemPlayer) {
 
         if let Err(e) = copy(path, &destination) {
             error!("Failed to copy '{}': {e}", path.display());
-            error_toast(&mut gem.ui.toasts, format!("Failed to add '{}'.", file_name.to_string_lossy()));
+            error_toast(
+                &mut gem.ui.toasts,
+                t!("failed_to_add_file", filename = file_name.to_string_lossy()).to_string(),
+            );
             continue;
         }
 
-        success_toast(&mut gem.ui.toasts, format!("Added '{}' to Library.", file_name.to_string_lossy()));
+        success_toast(
+            &mut gem.ui.toasts,
+            t!("added_to_library", filename = file_name.to_string_lossy()).to_string(),
+        );
     }
 }
 
@@ -713,7 +741,7 @@ fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
         Ok(()) => on_track_change(ctx, gem),
         Err(e) => {
             error!("{e}");
-            error_toast(&mut gem.ui.toasts, "Error playing the next track");
+            error_toast(&mut gem.ui.toasts, t!("error_playing_next_track").to_string());
         }
     }
 }
@@ -733,7 +761,7 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
             Ok(_) => on_track_change(ctx, gem),
             Err(e) => {
                 error!("{e}");
-                error_toast(&mut gem.ui.toasts, "Error playing the previous track");
+                error_toast(&mut gem.ui.toasts, t!("error_playing_previous_track").to_string());
             }
         }
     } else if let Some(backend) = &gem.player.backend {

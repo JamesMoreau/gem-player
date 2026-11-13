@@ -139,15 +139,15 @@ fn playback_controls(ui: &mut Ui, player: &mut Player) -> Option<GemCommand> {
 
     let response = ui
         .add_enabled(previous_enabled, previous_button)
-        .on_hover_text("Previous")
-        .on_disabled_hover_text("No previous track");
+        .on_hover_text(t!("previous"))
+        .on_disabled_hover_text(t!("no_previous_track"));
     if response.clicked() {
         command = Some(GemCommand::PreviousTrack);
     }
 
     let sink_is_paused = player.backend.as_ref().is_some_and(|b| b.player.is_paused());
     let play_pause_icon = if sink_is_paused { ICON_PLAY_ARROW } else { ICON_PAUSE };
-    let tooltip = if sink_is_paused { "Play" } else { "Pause" };
+    let tooltip = if sink_is_paused { t!("play") } else { t!("pause") };
     let play_pause_enabled = has_backend && track_is_playing;
     let play_pause_button = Button::new(RichText::new(play_pause_icon).size(28.0));
     let response = ui
@@ -163,8 +163,8 @@ fn playback_controls(ui: &mut Ui, player: &mut Player) -> Option<GemCommand> {
     let next_enabled = has_backend && !player.queue.is_empty();
     let response = ui
         .add_enabled(next_enabled, next_button)
-        .on_hover_text("Next")
-        .on_disabled_hover_text("No next track");
+        .on_hover_text(t!("next"))
+        .on_disabled_hover_text(t!("no_next_track"));
     if response.clicked() {
         command = Some(GemCommand::NextTrack);
     }
@@ -228,7 +228,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
         let color = get_button_color(ui, player.repeat);
         let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
 
-        if ui.add(repeat_button).on_hover_text("Repeat").clicked() {
+        if ui.add(repeat_button).on_hover_text(t!("repeat")).clicked() {
             command = Some(GemCommand::ToggleRepeat);
         }
 
@@ -240,8 +240,8 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
 
         let response = ui
             .add_enabled(shuffle_enabled, shuffle_button)
-            .on_hover_text("Shuffle")
-            .on_disabled_hover_text("Queue is empty");
+            .on_hover_text(t!("shuffle"))
+            .on_disabled_hover_text(t!("queue_empty"));
 
         if response.clicked() {
             let opposite = player.shuffle.is_none();
@@ -355,15 +355,19 @@ fn layout_marquee_and_playback_position_and_metadata(ui: &mut Ui, player: &Playe
 }
 
 fn display_track_marquee(ui: &mut Ui, maybe_track: Option<&Track>, marquee: &mut Marquee) {
-    let mut title = "-";
-    let mut artist = "-";
-    let mut album = "-";
+    let unknown_title = t!("unknown_title");
+    let unknown_artist = t!("unknown_artist");
+    let unknown_album = t!("unknown_album");
 
-    if let Some(playing_track) = maybe_track {
-        title = playing_track.title.as_deref().unwrap_or("Unknown Title");
-        artist = playing_track.artist.as_deref().unwrap_or("Unknown Artist");
-        album = playing_track.album.as_deref().unwrap_or("Unknown Album");
-    }
+    let (title, artist, album) = if let Some(track) = maybe_track {
+        (
+            track.title.as_deref().unwrap_or(&unknown_title),
+            track.artist.as_deref().unwrap_or(&unknown_artist),
+            track.album.as_deref().unwrap_or(&unknown_album),
+        )
+    } else {
+        ("-", "-", "-")
+    };
 
     let padding = "        ";
     let text = format!("{title} / {artist} / {album}{padding}");

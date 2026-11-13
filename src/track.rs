@@ -28,13 +28,13 @@ pub enum SortBy {
 }
 
 impl SortBy {
-    pub fn label(self) -> &'static str {
+    pub fn label(self) -> String {
         match self {
-            SortBy::Title => "Title",
-            SortBy::Artist => "Artist",
-            SortBy::Album => "Album",
-            SortBy::Time => "Time",
-            SortBy::DateAdded => "Date Added",
+            SortBy::Title => t!("title").to_string(),
+            SortBy::Artist => t!("artist").to_string(),
+            SortBy::Album => t!("album").to_string(),
+            SortBy::Time => t!("time").to_string(),
+            SortBy::DateAdded => t!("date_added").to_string(),
         }
     }
 }
@@ -43,6 +43,15 @@ impl SortBy {
 pub enum SortOrder {
     Ascending,
     Descending,
+}
+
+impl SortOrder {
+    pub fn label(self) -> String {
+        match self {
+            Self::Ascending => t!("ascending").to_string(),
+            Self::Descending => t!("descending").to_string(),
+        }
+    }
 }
 
 #[fully_pub]
