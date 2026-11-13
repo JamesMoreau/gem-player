@@ -93,12 +93,14 @@ pub fn remove_menu(menu: &Menu, #[cfg(target_os = "windows")] frame: &Frame) -> 
     Ok(())
 }
 
-pub fn init_menu(
-    menu: &Menu,
-    #[cfg(target_os = "windows")] theme_preference: ThemePreference,
-    #[cfg(target_os = "windows")] frame: &Frame,
-) -> anyhow::Result<()> {
-    #[cfg(target_os = "windows")]
+#[cfg(target_os = "macos")]
+pub fn init_menu(menu: &Menu) -> Result<()> {
+    menu.init_for_nsapp();
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+pub fn init_menu(menu: &Menu, theme_preference: ThemePreference, frame: &Frame) -> Result<()> {
     unsafe {
         let handle = frame.window_handle()?;
 
@@ -113,12 +115,6 @@ pub fn init_menu(
         menu.init_for_hwnd_with_theme(hwnd, menu_theme)?;
         menu.hide_for_hwnd(hwnd)?;
     }
-
-    #[cfg(target_os = "linux")]
-    menu.init_for_gtk_window(&gtk_window, Some(&vertical_gtk_box));
-
-    #[cfg(target_os = "macos")]
-    menu.init_for_nsapp();
 
     Ok(())
 }
