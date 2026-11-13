@@ -164,7 +164,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                     ui.add(unselectable_label(" / "));
 
-                    ui.hyperlink_to(t!("website"), "https://jamesmoreau.github.io");
+                    ui.hyperlink_to("jamesmoreau.github.io", "https://jamesmoreau.github.io");
                 });
 
                 ui.add_space(8.0);
