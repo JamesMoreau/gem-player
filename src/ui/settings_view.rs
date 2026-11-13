@@ -16,7 +16,7 @@ use crate::{
 #[cfg(target_os = "windows")]
 use crate::apply_menu_theme_for_windows;
 
-pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
+pub fn settings_view(ui: &mut Ui, #[cfg(target_os = "windows")] frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
         .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {
@@ -58,7 +58,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     apply_visuals_for_mode(ui.ctx(), mode);
 
                     #[cfg(target_os = "windows")]
-                    apply_menu_theme_for_windows(_frame, &gem.menubar.menu, mode);
+                    apply_menu_theme_for_windows(frame, &gem.menubar.menu, mode);
                 }
 
                 ui.add(Separator::default().spacing(divider_spacing));
@@ -81,12 +81,22 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     if changed {
                         settings.apply();
 
-                        if let Err(e) = remove_menu(&gem.menubar.menu) {
+                        if let Err(e) = remove_menu(
+                            &gem.menubar.menu,
+                            #[cfg(target_os = "windows")]
+                            frame,
+                        ) {
                             error!("Unable to remove menu: {e}");
                         } else {
                             let (menu, receiver) = create_menu();
 
-                            match init_menu(&menu) {
+                            match init_menu(
+                                &menu,
+                                #[cfg(target_os = "windows")]
+                                gem.ui.theme_preference,
+                                #[cfg(target_os = "windows")]
+                                frame,
+                            ) {
                                 Ok(()) => {
                                     gem.menubar.menu = menu;
                                     gem.menubar.menu_receiver = receiver;
