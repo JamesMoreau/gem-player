@@ -1,8 +1,6 @@
 use std::sync::mpsc::{Receiver, channel};
 
 use anyhow::Result;
-use eframe::Frame;
-use egui::ThemePreference;
 use fully_pub::fully_pub;
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
@@ -12,6 +10,8 @@ use crate::commands::GemCommand;
 use {
     crate::{resolve_theme_mode, to_menu_theme},
     eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle},
+    eframe::Frame,
+    egui::ThemePreference
 };
 
 #[fully_pub]
@@ -93,7 +93,7 @@ pub fn remove_menu(menu: &Menu, #[cfg(target_os = "windows")] frame: &Frame) -> 
     Ok(())
 }
 
-pub fn init_menu(menu: &Menu, theme_preference: ThemePreference, #[cfg(target_os = "windows")] frame: &Frame) -> anyhow::Result<()> {
+pub fn init_menu(menu: &Menu, #[cfg(target_os = "windows")] theme_preference: ThemePreference, #[cfg(target_os = "windows")] frame: &Frame) -> anyhow::Result<()> {
     #[cfg(target_os = "windows")]
     unsafe {
         let handle = frame.window_handle()?;
