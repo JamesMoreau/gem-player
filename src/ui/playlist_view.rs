@@ -86,15 +86,15 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                     ui,
                                     |ui| {
                                         ui.add_space(8.0);
-                                        ui.add(unselectable_label(RichText::new("Playlists").heading().strong()));
+                                        ui.add(unselectable_label(RichText::new(t!("playlists")).heading().strong()));
                                     },
                                     |ui| {
                                         ui.add_space(8.0);
 
                                         let add_button = Button::new(ICON_ADD);
-                                        if ui.add(add_button).on_hover_text("Add playlist").clicked() {
+                                        if ui.add(add_button).on_hover_text(t!("create_playlist")).clicked() {
                                             let directory = gem.library.directory.as_ref().unwrap(); // We checked earlier so this is safe.
-                                            let new_playlist_name = format!("Playlist {}", gem.library.playlists.len() + 1);
+                                            let new_playlist_name = t!("new_playlist_name", number = gem.library.playlists.len() + 1).to_string();
                                             let result = create(new_playlist_name, directory);
                                             match result {
                                                 Err(e) => {
