@@ -16,7 +16,7 @@ use crate::{
 #[cfg(target_os = "windows")]
 use crate::apply_menu_theme_for_windows;
 
-pub fn settings_view(ui: &mut Ui, #[cfg(target_os = "windows")] frame: &mut eframe::Frame, gem: &mut GemPlayer) {
+pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
         .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
         .show(ui, |ui| {

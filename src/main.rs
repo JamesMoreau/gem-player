@@ -442,8 +442,8 @@ impl App for GemPlayer {
         poll_commands(ctx, self);
     }
 
-    fn ui(&mut self, ui: &mut Ui, frame: &mut Frame) {
-        gem_player_ui(ui, frame, self);
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut Frame) {
+        gem_player_ui(ui, _frame, self);
 
         self.ui.toasts.show(ui);
 
