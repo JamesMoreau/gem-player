@@ -175,29 +175,11 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let (visualizer_command_sender, bands_receiver) = setup_visualizer_pipeline();
 
-    #[cfg(any(target_os = "windows", target_os = "linux"))]
-    let mut library_directory = None;
-
     let mut theme_preference = ThemePreference::System;
     let mut selected_locale = None;
     let mut initial_volume = 0.6; // If this is the first run, we want a reasonable default.
 
-    #[cfg(target_os = "macos")]
-    let mut bookmark = None;
-
     if let Some(storage) = cc.storage {
-        #[cfg(any(target_os = "windows", target_os = "linux"))]
-        if let Some(library_directory_string) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY) {
-            library_directory = Some(PathBuf::from(library_directory_string));
-        }
-
-        #[cfg(target_os = "macos")]
-        if let Some(bookmark_string) = storage.get_string(BOOKMARK_STORAGE_KEY)
-            && let Ok(b) = serde_json::from_str::<Vec<u8>>(&bookmark_string)
-        {
-            bookmark = Some(b);
-        }
-
         if let Some(theme_string) = storage.get_string(THEME_STORAGE_KEY)
             && let Ok(theme) = serde_json::from_str(&theme_string)
         {
@@ -219,14 +201,14 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    let language_settings = LanguageSettings::new(selected_locale);
-    language_settings.apply();
-
     let mut library = setup_library().expect("Failed to initialize library.");
 
     #[cfg(target_os = "macos")]
     {
-        if let Some(bytes) = bookmark {
+        if let Some(storage) = cc.storage
+            && let Some(bookmark_string) = storage.get_string(BOOKMARK_STORAGE_KEY)
+            && let Ok(bytes) = serde_json::from_str::<Vec<u8>>(&bookmark_string)
+        {
             let bookmark = Bookmark::from_bytes(bytes);
 
             match bookmark.resolve() {
@@ -246,20 +228,16 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     {
-        if let Some(directory) = &library_directory
-            && let Err(e) = set_library_directory(&mut library, directory)
+        if let Some(storage) = cc.storage
+            && let Some(directory) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY)
+            && let Err(e) = set_library_directory(&mut library, &PathBuf::from(directory))
         {
             error!("Failed to set the library directory: {e}");
         }
     }
 
-    let system_theme_watcher = match dark_light::subscribe() {
-        Ok(w) => Some(w),
-        Err(e) => {
-            error!("Failed to start watching system theme: {e}");
-            None
-        }
-    };
+    let language_settings = LanguageSettings::new(selected_locale);
+    language_settings.apply();
 
     if let Some(b) = &backend {
         b.player.set_volume(initial_volume);
@@ -302,6 +280,14 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         menu.init_for_nsapp();
 
         (menu, receiver)
+    };
+
+    let system_theme_watcher = match dark_light::subscribe() {
+        Ok(w) => Some(w),
+        Err(e) => {
+            error!("Failed to start watching system theme: {e}");
+            None
+        }
     };
 
     start_logic_wakeup_thread(&cc.egui_ctx);
