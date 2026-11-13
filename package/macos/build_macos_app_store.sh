@@ -32,6 +32,7 @@ PROVISIONING_PROFILE="package/macos/private/appstore.provisionprofile"
 
 echo "🚀 Building universal macOS application..."
 cargo bundle --release \
+  --features app-store \
   --format osx \
   --target x86_64-apple-darwin \
   --target aarch64-apple-darwin
