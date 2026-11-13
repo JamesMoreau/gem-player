@@ -21,7 +21,7 @@ use crate::{
     track::{Track, load_tracks_from_directory},
 };
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "app-store"))]
 use apple_scoped_bookmarks::{Bookmark, ScopedAccess};
 
 #[fully_pub]
@@ -31,11 +31,11 @@ struct Library {
 
     directory: Option<PathBuf>,
 
-    // On macos we must create and store a "security-scoped bookmark" to access the 
+    // On macos it is necessary to create and store a "security-scoped bookmark" to access the 
     // same directory across application runs.
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-store"))]
     bookmark: Option<Bookmark>,
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-store"))]
     access: Option<ScopedAccess>,
 
     dirty: Arc<AtomicBool>,
@@ -74,9 +74,9 @@ pub fn setup_library() -> Result<Library> {
         reload_receiver: None,
 
         folder_picker_receiver: None,
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", feature = "app-store"))]
         bookmark: None,
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", feature = "app-store"))]
         access: None,
     })
 }
@@ -108,7 +108,7 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
         return Ok(());
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-store"))]
     let (bookmark, access) = {
         let bookmark = Bookmark::create(new_directory).context("Failed to create security bookmark")?;
         let access = bookmark.resolve().context("Failed to resolve security bookmark")?;
@@ -135,7 +135,7 @@ pub fn set_library_directory(library: &mut Library, new_directory: &Path) -> Res
     library.directory = Some(new_directory.to_path_buf());
     library.dirty.store(true, Ordering::Relaxed);
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-store"))]
     {
         library.bookmark = Some(bookmark);
         library.access = Some(access);

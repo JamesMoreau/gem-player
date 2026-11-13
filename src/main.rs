@@ -53,6 +53,9 @@ use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
 #[cfg(target_os = "macos")]
+use std::path::PathBuf;
+
+#[cfg(all(target_os = "macos", feature = "app-store"))]
 use apple_scoped_bookmarks::Bookmark;
 
 #[cfg(target_os = "windows")]
@@ -84,7 +87,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 const APP_NAME: &str = "Gem Player";
 
 pub const LIBRARY_DIRECTORY_STORAGE_KEY: &str = "library_directory";
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "app-store"))]
 pub const BOOKMARK_STORAGE_KEY: &str = "security_bookmark";
 pub const THEME_STORAGE_KEY: &str = "theme";
 pub const LANGUAGE_STORAGE_KEY: &str = "language";
@@ -203,7 +206,7 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
 
     let mut library = setup_library().expect("Failed to initialize library.");
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "app-store"))]
     {
         if let Some(storage) = cc.storage
             && let Some(bookmark_string) = storage.get_string(BOOKMARK_STORAGE_KEY)
@@ -226,13 +229,46 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    #[cfg(all(target_os = "macos", not(feature = "app-store")))]
     {
         if let Some(storage) = cc.storage
             && let Some(directory) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY)
             && let Err(e) = set_library_directory(&mut library, &PathBuf::from(directory))
         {
-            error!("Failed to set the library directory: {e}");
+            error!("Failed to restore library directory: {e}");
+        }
+    }
+
+    #[cfg(all(target_os = "macos", feature = "app-store"))]
+    {
+        if let Some(storage) = cc.storage
+            && let Some(bookmark_string) = storage.get_string(BOOKMARK_STORAGE_KEY)
+            && let Ok(bytes) = serde_json::from_str::<Vec<u8>>(&bookmark_string)
+        {
+            let bookmark = Bookmark::from_bytes(bytes);
+
+            match bookmark.resolve() {
+                Ok(access) => {
+                    let directory = access.path().to_path_buf();
+
+                    if let Err(e) = set_library_directory(&mut library, &directory) {
+                        error!("Failed to restore library directory: {e}");
+                    } else {
+                        library.access = Some(access);
+                    }
+                }
+                Err(e) => error!("Failed to resolve library bookmark: {e}"),
+            }
+        }
+    }
+
+    #[cfg(any(target_os = "windows", target_os = "linux", all(target_os = "macos", not(feature = "app-store"))))]
+    {
+        if let Some(storage) = cc.storage
+            && let Some(directory) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY)
+            && let Err(e) = set_library_directory(&mut library, &PathBuf::from(directory))
+        {
+            error!("Failed to restore library directory: {e}");
         }
     }
 
@@ -369,7 +405,7 @@ impl App for GemPlayer {
             storage.set_string(LIBRARY_DIRECTORY_STORAGE_KEY, library_directory.to_string_lossy().to_string());
         }
 
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", feature = "app-store"))]
         if let Some(bookmark) = &self.library.bookmark {
             let bookmark_json = serde_json::to_string(bookmark.as_bytes()).expect("Failed to serialize library bookmark");
 
