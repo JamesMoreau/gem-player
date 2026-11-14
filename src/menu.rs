@@ -66,6 +66,15 @@ pub fn create_menu() -> (Menu, Receiver<MenuEvent>) {
     (menu, receiver)
 }
 
+#[cfg(target_os = "windows")]
+pub fn set_menu_theme(menu: &Menu, mode: Mode, hwnd: isize) -> Result<()> {
+    unsafe {
+        menu.set_theme_for_hwnd(hwnd, to_menu_theme(mode))?;
+    }
+
+    Ok(())
+}
+
 #[cfg(target_os = "macos")]
 pub fn remove_menu(menu: &Menu) {
     menu.remove_for_nsapp();

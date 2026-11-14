@@ -3,8 +3,6 @@
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 compile_error!("Gem Player only supports macOS and Windows.");
 
-#[cfg(target_os = "windows")]
-use crate::menu::to_menu_theme;
 use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
@@ -61,7 +59,7 @@ use std::path::PathBuf;
 use apple_scoped_bookmarks::Bookmark;
 
 #[cfg(target_os = "windows")]
-use {eframe::wgpu::rwh::RawWindowHandle, muda::Menu, std::path::PathBuf};
+use {crate::menu::set_menu_theme, muda::Menu, eframe::wgpu::rwh::RawWindowHandle, std::path::PathBuf};
 
 mod artwork_cache;
 mod commands;
@@ -497,7 +495,7 @@ fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
     }
 }
 
-fn poll_system_theme_change(ctx: &Context, _frame: &mut Frame, gem: &mut GemPlayer) {
+fn poll_system_theme_change(ctx: &Context, frame: &mut Frame, gem: &mut GemPlayer) {
     let Some(watcher) = gem.system_theme_watcher.as_ref() else {
         return;
     };
@@ -510,31 +508,24 @@ fn poll_system_theme_change(ctx: &Context, _frame: &mut Frame, gem: &mut GemPlay
         apply_visuals_for_mode(ctx, mode);
 
         #[cfg(target_os = "windows")]
-        apply_menu_theme_for_windows(_frame, &gem.menubar.menu, mode)
+        apply_menu_theme_for_windows(frame, &gem.menubar.menu, mode)
     }
 }
 
-// TODO: remove this and replace
 #[cfg(target_os = "windows")]
 fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
-    let menu_theme = to_menu_theme(mode);
-
-    unsafe {
-        match frame.window_handle() {
-            Ok(handle) => {
-                if let RawWindowHandle::Win32(handle) = handle.as_raw() {
-                    let hwnd = handle.hwnd.get();
-
-                    if let Err(e) = menu.set_theme_for_hwnd(hwnd, menu_theme) {
-                        error!("Unable to update menu theme for Windows: {e}");
-                    }
-                } else {
-                    error!("Unable to update menu theme: window is not a Win32 window");
+    match frame.window_handle() {
+        Ok(handle) => {
+            if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+                if let Err(e) = set_menu_theme(menu, mode, handle.hwnd.get()) {
+                    error!("Unable to update menu theme for Windows: {e}");
                 }
+            } else {
+                error!("Unable to update menu theme: window is not a Win32 window");
             }
-            Err(e) => {
-                error!("Unable to get Windows window handle: {e}");
-            }
+        }
+        Err(e) => {
+            error!("Unable to get Windows window handle: {e}");
         }
     }
 }
