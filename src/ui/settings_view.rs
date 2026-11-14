@@ -84,7 +84,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     }
 
                     if changed {
-                        if let Err(e) = apply_language_change(
+                        if let Err(e) = handle_language_change(
                             gem,
                             #[cfg(target_os = "windows")]
                             _frame,
@@ -172,7 +172,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
         });
 }
 
-fn apply_language_change(gem: &mut GemPlayer, #[cfg(target_os = "windows")] frame: &eframe::Frame) -> Result<()> {
+fn handle_language_change(gem: &mut GemPlayer, #[cfg(target_os = "windows")] frame: &eframe::Frame) -> Result<()> {
     gem.ui.language_settings.apply();
 
     #[cfg(target_os = "windows")]
