@@ -1,14 +1,18 @@
 use std::sync::mpsc::{Receiver, channel};
 
 use anyhow::Result;
+#[cfg(target_os = "windows")]
+use dark_light::Mode;
 use fully_pub::fully_pub;
+#[cfg(target_os = "windows")]
+use muda::MenuTheme;
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
 use crate::commands::GemCommand;
 
 #[cfg(target_os = "windows")]
 use {
-    crate::{resolve_theme_mode, to_menu_theme},
+    crate::resolve_theme_mode,
     eframe::Frame,
     eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle},
     egui::ThemePreference,
@@ -121,4 +125,13 @@ pub fn init_menu(menu: &Menu, theme_preference: ThemePreference, frame: &Frame) 
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "windows")]
+pub fn to_menu_theme(mode: Mode) -> MenuTheme {
+    match mode {
+        Mode::Dark => MenuTheme::Dark,
+        Mode::Light => MenuTheme::Light,
+        Mode::Unspecified => MenuTheme::Auto,
+    }
 }

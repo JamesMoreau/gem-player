@@ -3,6 +3,8 @@
 #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 compile_error!("Gem Player only supports macOS and Windows.");
 
+#[cfg(target_os = "windows")]
+use crate::menu::to_menu_theme;
 use crate::{
     artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
     commands::{GemCommand, execute},
@@ -59,11 +61,7 @@ use std::path::PathBuf;
 use apple_scoped_bookmarks::Bookmark;
 
 #[cfg(target_os = "windows")]
-use {
-    eframe::wgpu::rwh::RawWindowHandle,
-    muda::{Menu, MenuTheme},
-    std::path::PathBuf,
-};
+use {eframe::wgpu::rwh::RawWindowHandle, muda::Menu, std::path::PathBuf};
 
 mod artwork_cache;
 mod commands;
@@ -287,6 +285,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
             match cc.window_handle() {
                 Ok(handle) => {
                     if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+                        use crate::menu::to_menu_theme;
+
                         let hwnd = handle.hwnd.get();
 
                         let mode = resolve_theme_mode(theme_preference);
@@ -536,15 +536,6 @@ fn apply_menu_theme_for_windows(frame: &Frame, menu: &Menu, mode: Mode) {
                 error!("Unable to get Windows window handle: {e}");
             }
         }
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn to_menu_theme(mode: Mode) -> MenuTheme {
-    match mode {
-        Mode::Dark => MenuTheme::Dark,
-        Mode::Light => MenuTheme::Light,
-        Mode::Unspecified => MenuTheme::Auto,
     }
 }
 
