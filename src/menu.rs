@@ -7,16 +7,7 @@ use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use crate::commands::GemCommand;
 
 #[cfg(target_os = "windows")]
-use {
-    crate::resolve_theme_mode,
-    dark_light::Mode,
-    eframe::{
-        Frame,
-        wgpu::rwh::{HasWindowHandle, RawWindowHandle},
-    },
-    egui::ThemePreference,
-    muda::MenuTheme,
-};
+use {crate::resolve_theme_mode, dark_light::Mode, egui::ThemePreference, muda::MenuTheme, std::num::NonZeroIsize};
 
 #[fully_pub]
 struct MenuBar {
@@ -81,16 +72,9 @@ pub fn remove_menu(menu: &Menu) {
 }
 
 #[cfg(target_os = "windows")]
-pub fn remove_menu(menu: &Menu, frame: &Frame) -> Result<()> {
+pub fn remove_menu(menu: &Menu, hwnd: NonZeroIsize) -> Result<()> {
     unsafe {
-        let handle = frame.window_handle()?;
-
-        let hwnd = match handle.as_raw() {
-            RawWindowHandle::Win32(handle) => handle.hwnd.get(),
-            _ => anyhow::bail!("Window is not a Win32 window"),
-        };
-
-        menu.remove_for_hwnd(hwnd)?;
+        menu.remove_for_hwnd(hwnd.get())?;
     }
 
     Ok(())
@@ -108,23 +92,21 @@ pub fn init_menu(menu: &Menu) -> Result<()> {
 }
 
 #[cfg(target_os = "windows")]
-pub fn init_menu(menu: &Menu, theme_preference: ThemePreference, frame: &Frame) -> Result<()> {
+pub fn init_menu(menu: &Menu, theme_preference: ThemePreference, hwnd: NonZeroIsize) -> Result<()> {
     unsafe {
-        let handle = frame.window_handle()?;
-
-        let hwnd = match handle.as_raw() {
-            RawWindowHandle::Win32(handle) => handle.hwnd.get(),
-            _ => anyhow::bail!("Window is not a Win32 window"),
-        };
-
         let mode = resolve_theme_mode(theme_preference);
         let menu_theme = to_menu_theme(mode);
 
-        menu.init_for_hwnd_with_theme(hwnd, menu_theme)?;
-        menu.hide_for_hwnd(hwnd)?;
+        menu.init_for_hwnd_with_theme(hwnd.get(), menu_theme)?;
+        menu.hide_for_hwnd(hwnd.get())?;
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+pub fn init_menu(menu: &Menu) -> Result<()> {
+    todo!();
 }
 
 #[cfg(target_os = "windows")]

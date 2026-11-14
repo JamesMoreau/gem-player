@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use anyhow::Result;
 use egui::{Frame, RichText, ScrollArea, Separator, ThemePreference, Ui, epaint::MarginF32};
 use egui_material_icons::icons::ICON_FOLDER_OPEN;
 use log::{error, info};
@@ -14,7 +15,11 @@ use crate::{
 };
 
 #[cfg(target_os = "windows")]
-use crate::apply_menu_theme_for_windows;
+use {
+    crate::apply_menu_theme_for_windows,
+    anyhow::bail,
+    eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle},
+};
 
 pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
@@ -79,33 +84,12 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     }
 
                     if changed {
-                        settings.apply();
-
-                        #[cfg(target_os = "windows")]
-                        if let Err(e) = remove_menu(&gem.menubar.menu, _frame) {
-                            error!("Unable to remove menu: {e}");
-                            return;
-                        }
-
-                        #[cfg(target_os = "macos")]
-                        remove_menu(&gem.menubar.menu);
-
-                        let (menu, receiver) = create_menu();
-
-                        #[cfg(target_os = "windows")]
-                        let result = init_menu(&menu, gem.ui.theme_preference, _frame);
-
-                        #[cfg(target_os = "macos")]
-                        let result = init_menu(&menu);
-
-                        match result {
-                            Ok(()) => {
-                                gem.menubar.menu = menu;
-                                gem.menubar.menu_receiver = receiver;
-                            }
-                            Err(e) => {
-                                error!("Unable to initialize menu: {e}");
-                            }
+                        if let Err(e) = apply_language_change(
+                            gem,
+                            #[cfg(target_os = "windows")]
+                            _frame,
+                        ) {
+                            error!("Unable to apply language change: {e}");
                         }
                     }
                 });
@@ -186,6 +170,35 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 });
             });
         });
+}
+
+fn apply_language_change(gem: &mut GemPlayer, #[cfg(target_os = "windows")] frame: &eframe::Frame) -> Result<()> {
+    gem.ui.language_settings.apply();
+
+    #[cfg(target_os = "windows")]
+    let hwnd = match frame.window_handle()?.as_raw() {
+        RawWindowHandle::Win32(handle) => handle.hwnd,
+        _ => bail!("Window is not a Win32 window"),
+    };
+
+    #[cfg(target_os = "windows")]
+    remove_menu(&gem.menubar.menu, hwnd)?;
+
+    #[cfg(target_os = "macos")]
+    remove_menu(&gem.menubar.menu);
+
+    let (menu, receiver) = create_menu();
+
+    #[cfg(target_os = "windows")]
+    init_menu(&menu, gem.ui.theme_preference, hwnd)?;
+
+    #[cfg(target_os = "macos")]
+    init_menu(&menu)?;
+
+    gem.menubar.menu = menu;
+    gem.menubar.menu_receiver = receiver;
+
+    Ok(())
 }
 
 /// Elide a path string to something like `/Users/user1/…/Music`
