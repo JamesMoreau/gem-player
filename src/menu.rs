@@ -10,8 +10,10 @@ use crate::commands::GemCommand;
 use {
     crate::resolve_theme_mode,
     dark_light::Mode,
-    eframe::Frame,
-    eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle},
+    eframe::{
+        Frame,
+        wgpu::rwh::{HasWindowHandle, RawWindowHandle},
+    },
     egui::ThemePreference,
     muda::MenuTheme,
 };
