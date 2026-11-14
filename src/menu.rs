@@ -1,11 +1,7 @@
 use std::sync::mpsc::{Receiver, channel};
 
 use anyhow::Result;
-#[cfg(target_os = "windows")]
-use dark_light::Mode;
 use fully_pub::fully_pub;
-#[cfg(target_os = "windows")]
-use muda::MenuTheme;
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 
 use crate::commands::GemCommand;
@@ -13,9 +9,11 @@ use crate::commands::GemCommand;
 #[cfg(target_os = "windows")]
 use {
     crate::resolve_theme_mode,
+    dark_light::Mode,
     eframe::Frame,
     eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle},
     egui::ThemePreference,
+    muda::MenuTheme,
 };
 
 #[fully_pub]
