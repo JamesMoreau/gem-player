@@ -83,14 +83,14 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                         changed |= ui.selectable_value(&mut settings.selected_locale, Some(locale), label).changed();
                     }
 
-                    if changed {
-                        if let Err(e) = handle_language_change(
+                    if changed
+                        && let Err(e) = handle_language_change(
                             gem,
                             #[cfg(target_os = "windows")]
                             _frame,
-                        ) {
-                            error!("Unable to apply language change: {e}");
-                        }
+                        )
+                    {
+                        error!("Unable to apply language change: {e}");
                     }
                 });
 
