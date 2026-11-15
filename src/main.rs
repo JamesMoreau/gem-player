@@ -495,7 +495,7 @@ fn maybe_initialize_os_media_controls(gem: &mut GemPlayer, frame: &mut Frame) {
     }
 }
 
-fn poll_system_theme_change(ctx: &Context, frame: &mut Frame, gem: &mut GemPlayer) {
+fn poll_system_theme_change(ctx: &Context, _frame: &mut Frame, gem: &mut GemPlayer) {
     let Some(watcher) = gem.system_theme_watcher.as_ref() else {
         return;
     };
@@ -508,7 +508,7 @@ fn poll_system_theme_change(ctx: &Context, frame: &mut Frame, gem: &mut GemPlaye
         apply_visuals_for_mode(ctx, mode);
 
         #[cfg(target_os = "windows")]
-        apply_menu_theme_for_windows(frame, &gem.menubar.menu, mode)
+        apply_menu_theme_for_windows(_frame, &gem.menubar.menu, mode)
     }
 }
 
