@@ -225,39 +225,6 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         }
     }
 
-    #[cfg(all(target_os = "macos", not(feature = "app-store")))]
-    {
-        if let Some(storage) = cc.storage
-            && let Some(directory) = storage.get_string(LIBRARY_DIRECTORY_STORAGE_KEY)
-            && let Err(e) = set_library_directory(&mut library, &PathBuf::from(directory))
-        {
-            error!("Failed to restore library directory: {e}");
-        }
-    }
-
-    #[cfg(all(target_os = "macos", feature = "app-store"))]
-    {
-        if let Some(storage) = cc.storage
-            && let Some(bookmark_string) = storage.get_string(BOOKMARK_STORAGE_KEY)
-            && let Ok(bytes) = serde_json::from_str::<Vec<u8>>(&bookmark_string)
-        {
-            let bookmark = Bookmark::from_bytes(bytes);
-
-            match bookmark.resolve() {
-                Ok(access) => {
-                    let directory = access.path().to_path_buf();
-
-                    if let Err(e) = set_library_directory(&mut library, &directory) {
-                        error!("Failed to restore library directory: {e}");
-                    } else {
-                        library.access = Some(access);
-                    }
-                }
-                Err(e) => error!("Failed to resolve library bookmark: {e}"),
-            }
-        }
-    }
-
     #[cfg(any(target_os = "windows", target_os = "linux", all(target_os = "macos", not(feature = "app-store"))))]
     {
         if let Some(storage) = cc.storage
