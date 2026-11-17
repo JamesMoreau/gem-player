@@ -119,7 +119,7 @@ pub fn init_menu(menu: &Menu) -> Result<()> {
 }
 
 #[cfg(target_os = "windows")]
-pub fn to_menu_theme(mode: Mode) -> MenuTheme {
+fn to_menu_theme(mode: Mode) -> MenuTheme {
     match mode {
         Mode::Dark => MenuTheme::Dark,
         Mode::Light => MenuTheme::Light,

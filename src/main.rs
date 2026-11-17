@@ -59,7 +59,11 @@ use std::path::PathBuf;
 use apple_scoped_bookmarks::Bookmark;
 
 #[cfg(target_os = "windows")]
-use {crate::menu::set_menu_theme, eframe::wgpu::rwh::RawWindowHandle, muda::Menu};
+use {
+    crate::menu::{init_menu, set_menu_theme},
+    eframe::wgpu::rwh::RawWindowHandle,
+    muda::Menu,
+};
 
 mod artwork_cache;
 mod commands;
@@ -246,31 +250,18 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
         let (menu, receiver) = create_menu();
 
         #[cfg(target_os = "windows")]
-        unsafe {
-            match cc.window_handle() {
-                Ok(handle) => {
-                    if let RawWindowHandle::Win32(handle) = handle.as_raw() {
-                        use crate::menu::to_menu_theme;
-
-                        let hwnd = handle.hwnd.get();
-
-                        let mode = resolve_theme_mode(theme_preference);
-                        let menu_theme = to_menu_theme(mode);
-
-                        if let Err(e) = menu.init_for_hwnd_with_theme(hwnd, menu_theme) {
-                            error!("Unable to initialize menu for Windows: {}", e);
-                        }
-
-                        if let Err(e) = menu.hide_for_hwnd(hwnd) {
-                            error!("Unable to hide menu: {}", e);
-                        }
-                    } else {
-                        error!("Unable to initialize menu: window is not a Win32 window");
+        match cc.window_handle() {
+            Ok(handle) => {
+                if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+                    if let Err(e) = init_menu(&menu, theme_preference, handle.hwnd) {
+                        error!("Unable to initialize menu: {}", e);
                     }
+                } else {
+                    error!("Unable to initialize menu: window is not a Win32 window");
                 }
-                Err(e) => {
-                    error!("Unable to get Windows window handle: {}", e);
-                }
+            }
+            Err(e) => {
+                error!("Unable to get Windows window handle: {}", e);
             }
         }
 
