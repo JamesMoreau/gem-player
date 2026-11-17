@@ -52,14 +52,14 @@ use std::{
 use track::{SortBy, SortOrder, Track};
 use visualizer::{CENTER_FREQUENCIES, setup_visualizer_pipeline};
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "windows", target_os = "linux", all(target_os = "macos", not(feature = "app-store"))))]
 use std::path::PathBuf;
 
 #[cfg(all(target_os = "macos", feature = "app-store"))]
 use apple_scoped_bookmarks::Bookmark;
 
 #[cfg(target_os = "windows")]
-use {crate::menu::set_menu_theme, muda::Menu, eframe::wgpu::rwh::RawWindowHandle, std::path::PathBuf};
+use {crate::menu::set_menu_theme, eframe::wgpu::rwh::RawWindowHandle, muda::Menu};
 
 mod artwork_cache;
 mod commands;
