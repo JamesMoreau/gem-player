@@ -16,6 +16,7 @@ Now available on the [App Store](https://apps.apple.com/ca/app/gem-player-music-
 - Dark and light modes.
 - OS media controls integration.
 - Automatic library reloading.
+- UI support for multiple languages.
 - Privacy-first. No analytics. Your data stays on your machine.
 
 # Installation
