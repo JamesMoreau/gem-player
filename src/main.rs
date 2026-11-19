@@ -416,6 +416,8 @@ impl App for GemPlayer {
     }
 }
 
+const LOGIC_WAKEUP_INTERVAL_MILLISECONDS: u64 = 200;
+
 // Continuously wake the egui event loop so `logic()` continues running even
 // while the window is minimized or hidden. This keeps media playback,
 // OS media controls, and background polling responsive.
@@ -426,7 +428,7 @@ pub fn start_logic_wakeup_thread(ctx: &Context) {
         loop {
             ctx.request_repaint();
 
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(LOGIC_WAKEUP_INTERVAL_MILLISECONDS));
         }
     });
 }
