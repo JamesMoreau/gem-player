@@ -214,11 +214,14 @@ pub fn open_file_location(track: &Track) -> Result<()> {
     Ok(())
 }
 
-pub fn extract_artwork(track: &Track) -> Option<Picture> {
-    let mut file = File::open(&track.path).ok()?;
-    let tagged_file = read_from(&mut file).ok()?;
-    let tag = tagged_file.primary_tag().or_else(|| tagged_file.first_tag())?;
-    tag.pictures().first().cloned()
+pub fn extract_artwork(track: &Track) -> Result<Option<Picture>> {
+    let mut file = File::open(&track.path)?;
+    let tagged_file = read_from(&mut file)?;
+    let Some(tag) = tagged_file.primary_tag().or_else(|| tagged_file.first_tag()) else {
+        return Ok(None);
+    };
+
+    Ok(tag.pictures().first().cloned())
 }
 
 pub fn file_type_name(ft: FileType) -> &'static str {

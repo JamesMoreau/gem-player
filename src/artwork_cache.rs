@@ -20,13 +20,12 @@ const ARTWORK_CACHE_FILENAME: &str = "playing.png";
 // track, then normalize it to a png format. There is only ever a single
 // artwork cached at a time.
 pub fn cache_track_artwork(track: &Track) -> Result<()> {
-    let Some(picture) = extract_artwork(track) else {
+    let Some(picture) = extract_artwork(track)? else {
         clear_artwork_cache()?;
         return Ok(());
     };
 
     let image = load_from_memory(picture.data())?;
-
     image.save_with_format(artwork_cache_path()?, ImageFormat::Png)?;
 
     Ok(())
