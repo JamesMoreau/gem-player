@@ -1,7 +1,7 @@
 use std::{
     fs::{create_dir_all, remove_file},
     io,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use anyhow::Result;
@@ -14,25 +14,29 @@ use crate::{
     track::{Track, extract_artwork},
 };
 
-const ARTWORK_CACHE_FILENAME: &str = "playing.png";
+const ARTWORK_CACHE_FILENAME: &str = "playing_artwork.png";
 
 // To cache the playing track's artwork, we extract the picture from the
 // track, then normalize it to a png format. There is only ever a single
 // artwork cached at a time.
-pub fn cache_track_artwork(track: &Track) -> Result<()> {
+pub fn update_artwork_cache(track: &Track) -> Result<()> {
+    clear_artwork_cache()?;
+
     let Some(picture) = extract_artwork(track)? else {
-        clear_artwork_cache()?;
+        // Track has no artwork, which is fine.
         return Ok(());
     };
 
     let image = load_from_memory(picture.data())?;
-    image.save_with_format(artwork_cache_path()?, ImageFormat::Png)?;
+    let path = initialize_artwork_cache()?;
+
+    image.save_with_format(&path, ImageFormat::Png)?;
 
     Ok(())
 }
 
 pub fn clear_artwork_cache() -> Result<()> {
-    let path = artwork_cache_path()?;
+    let path = initialize_artwork_cache()?;
 
     match remove_file(path) {
         Ok(()) => Ok(()),
@@ -42,27 +46,25 @@ pub fn clear_artwork_cache() -> Result<()> {
 }
 
 pub fn artwork_uri() -> Option<String> {
-    let path = artwork_cache_path().ok()?;
+    let path = artwork_cache_path()?.join(ARTWORK_CACHE_FILENAME);
 
-    path.is_file().then(|| compute_uri(&path))
+    path.is_file().then(|| {
+        Url::from_file_path(&path)
+            .expect("cache path must always be a valid file URL path")
+            .to_string()
+    })
 }
 
-fn artwork_cache_path() -> Result<PathBuf> {
-    Ok(get_or_init_artwork_cache()?.join(ARTWORK_CACHE_FILENAME))
+fn artwork_cache_path() -> Option<PathBuf> {
+    let proj_dirs = ProjectDirs::from("", "", APP_NAME)?;
+
+    Some(proj_dirs.cache_dir().to_path_buf())
 }
 
-fn compute_uri(path: &Path) -> String {
-    Url::from_file_path(path)
-        .expect("cache path must always be a valid file URL path")
-        .to_string()
-}
-
-fn get_or_init_artwork_cache() -> io::Result<PathBuf> {
-    let proj_dirs = ProjectDirs::from("", "", APP_NAME).ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no project dirs"))?;
-
-    let directory = proj_dirs.cache_dir().join("artwork");
+fn initialize_artwork_cache() -> Result<PathBuf> {
+    let directory = artwork_cache_path().ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no project dirs"))?;
 
     create_dir_all(&directory)?;
 
-    Ok(directory)
+    Ok(directory.join(ARTWORK_CACHE_FILENAME))
 }
