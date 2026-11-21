@@ -4,7 +4,7 @@
 compile_error!("Gem Player only supports macOS and Windows.");
 
 use crate::{
-    artwork_cache::{artwork_uri, cache_track_artwork, clear_artwork_cache},
+    artwork_cache::{artwork_uri, clear_artwork_cache, update_artwork_cache},
     commands::{GemCommand, execute},
     library::{Library, load_library, set_library_directory},
     localization::LanguageSettings,
@@ -743,7 +743,7 @@ fn on_track_change(ctx: &Context, gem: &mut GemPlayer) {
     }
 
     if let Some(track) = &gem.player.playing {
-        if let Err(e) = cache_track_artwork(track) {
+        if let Err(e) = update_artwork_cache(track) {
             error!("Failed to cache artwork: {e}");
         }
     } else if let Err(e) = clear_artwork_cache() {
