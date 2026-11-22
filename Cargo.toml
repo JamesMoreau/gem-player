@@ -16,7 +16,7 @@ egui = "0.36.2"
 egui_extras = { version = "0.36.2", features = ["all_loaders"] }
 egui_material_icons = "0.8.0"
 egui-toast = "0.22.0"
-env_logger = { version = "0.11.11", default-features = false, features = [
+env_logger = { version = "0.11.12", default-features = false, features = [
 	"auto-color",
 	"humantime",
 ] }
@@ -29,8 +29,8 @@ m3u = "1.0.0"
 mimalloc = "0.1.52"
 muda = "0.21.2"
 nosleep = "0.2.1"
-notify = "8.2.2"
-notify-debouncer-mini = "0.7.0"
+notify = "9.0.0"
+notify-debouncer-mini = "0.8.0"
 opener = { version = "0.9.0", features = ["reveal"] }
 rand = "0.10.4"
 rayon = "1.12.0"
@@ -45,7 +45,7 @@ strum = "0.28.0"
 strum_macros = "0.28.0"
 sys-locale = "0.3.2"
 trash = "5.4.0"
-walkdir = "2.5.0"
+walkdir = "2.5.1"
 
 [patch.crates-io]
 winit = { path = "vendor/winit" }

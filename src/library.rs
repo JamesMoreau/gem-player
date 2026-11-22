@@ -13,7 +13,7 @@ use anyhow::{Context, Result, bail};
 use fully_pub::fully_pub;
 use log::{error, info};
 use notify::{RecommendedWatcher, RecursiveMode};
-use notify_debouncer_mini::{DebounceEventResult, Debouncer, new_debouncer};
+use notify_debouncer_mini::{DebouncedEventBatch, Debouncer, new_debouncer};
 use rfd::FileDialog;
 
 use crate::{
@@ -31,7 +31,7 @@ struct Library {
 
     directory: Option<PathBuf>,
 
-    // On macos it is necessary to create and store a "security-scoped bookmark" to access the 
+    // On macos it is necessary to create and store a "security-scoped bookmark" to access the
     // same directory across application runs.
     #[cfg(all(target_os = "macos", feature = "app-store"))]
     bookmark: Option<Bookmark>,
@@ -51,15 +51,21 @@ pub fn setup_library() -> Result<Library> {
     let dirty = Arc::new(AtomicBool::new(false));
 
     let callback_flag = Arc::clone(&dirty);
-    let debouncer = new_debouncer(Duration::from_millis(500), move |res: DebounceEventResult| match res {
-        Err(e) => error!("Watch error: {e}"),
-        Ok(events) => {
-            for e in events {
-                info!("Event for {}", e.path.display());
-            }
+    let debouncer = new_debouncer(Duration::from_millis(500), move |result| match result {
+        Ok(DebouncedEventBatch::Events(events)) => {
+            for event in events {
+                info!("Event for {}", event.path.display());
 
+                callback_flag.store(true, Ordering::Relaxed);
+            }
+        }
+        Ok(DebouncedEventBatch::Rescan) => {
+            // Refresh any cached state for all watched paths here.
+            info!("Events were missed; rescan all watched paths");
             callback_flag.store(true, Ordering::Relaxed);
         }
+        Ok(_) => {}
+        Err(error) => eprintln!("Watch error: {error}"),
     })
     .context("Failed to create filesystem debouncer")?;
 
