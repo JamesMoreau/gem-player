@@ -211,12 +211,13 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
     let mut command = None;
 
     ui.scope(|ui| {
-        ui.spacing_mut().item_spacing = Vec2::splat(0.0);
-        ui.spacing_mut().button_padding.x = 4.0;
+        ui.spacing_mut().item_spacing = Vec2::ZERO;
+        ui.spacing_mut().button_padding = Vec2::splat(4.0);
 
         let vertical_pad = 8.0;
-        let starting_point = (ui.available_height() / 2.0) - (vertical_pad / 2.0) - button_size; // this is how we align the buttons vertically center.
-        ui.add_space(starting_point);
+        let total_height = button_size * 2.0 + vertical_pad;
+
+        ui.add_space((ui.available_height() - total_height) / 2.0);
 
         let get_button_color = |ui: &Ui, is_enabled: bool| {
             if is_enabled {
@@ -227,20 +228,23 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
         };
 
         let color = get_button_color(ui, player.repeat);
-        let repeat_button = Button::new(ICON_REPEAT.rich_text().color(color)).min_size(Vec2::splat(button_size));
+        let response = ui
+            .add_sized(Vec2::splat(button_size), Button::new(ICON_REPEAT.rich_text().color(color)))
+            .on_hover_text(t!("repeat"));
 
-        if ui.add(repeat_button).on_hover_text(t!("repeat")).clicked() {
+        if response.clicked() {
             command = Some(GemCommand::ToggleRepeat);
         }
 
         ui.add_space(vertical_pad);
 
         let color = get_button_color(ui, player.shuffle.is_some());
-        let shuffle_button = Button::new(ICON_SHUFFLE.rich_text().color(color)).min_size(Vec2::splat(button_size));
+        let shuffle_button = Button::new(ICON_SHUFFLE.rich_text().color(color));
         let shuffle_enabled = !player.queue.is_empty();
 
         let response = ui
-            .add_enabled(shuffle_enabled, shuffle_button)
+            .add_enabled_ui(shuffle_enabled, |ui| ui.add_sized(Vec2::splat(button_size), shuffle_button))
+            .inner
             .on_hover_text(t!("shuffle"))
             .on_disabled_hover_text(t!("queue_empty"));
 
