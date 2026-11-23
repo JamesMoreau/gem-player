@@ -56,7 +56,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
 
                 let previous_preference = gem.ui.theme_preference;
 
-                ThemePreference::radio_buttons(&mut gem.ui.theme_preference, ui);
+                ThemePreference::buttons(&mut gem.ui.theme_preference, ui);
 
                 if gem.ui.theme_preference != previous_preference {
                     let mode = resolve_theme_mode(gem.ui.theme_preference);

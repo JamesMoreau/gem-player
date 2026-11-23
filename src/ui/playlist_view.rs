@@ -155,7 +155,7 @@ enum DeletePlaylistResult {
 fn delete_playlist_modal(ui: &mut Ui) -> Option<DeletePlaylistResult> {
     let mut result = None;
 
-    let modal = containers::Modal::new(Id::new("delete_playlist_modal"))
+    let modal = containers::Modal::new(Id::unique("delete_playlist_modal"))
         .backdrop_color(Color32::TRANSPARENT)
         .show(ui.ctx(), |ui| {
             ui.set_width(200.0);
