@@ -65,6 +65,9 @@ use {
     muda::Menu,
 };
 
+#[cfg(debug_assertions)]
+use crate::ui::debug::debug_window;
+
 mod artwork_cache;
 mod commands;
 mod library;
@@ -310,6 +313,8 @@ pub fn init_gem_player(cc: &CreationContext<'_>) -> GemPlayer {
                 .direction(Direction::BottomUp),
             marquee: Marquee::new(),
             volume_popup_is_open: false,
+            #[cfg(debug_assertions)]
+            debug_menu_open: false,
         },
 
         library,
@@ -400,6 +405,9 @@ impl App for GemPlayer {
 
     fn ui(&mut self, ui: &mut Ui, _frame: &mut Frame) {
         gem_player_ui(ui, _frame, self);
+
+        #[cfg(debug_assertions)]
+        debug_window(ui.ctx(), self);
 
         self.ui.toasts.show(ui);
 

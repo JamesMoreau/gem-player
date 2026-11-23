@@ -21,6 +21,9 @@ use {
     eframe::wgpu::rwh::{HasWindowHandle, RawWindowHandle},
 };
 
+#[cfg(debug_assertions)]
+use {egui::Color32, egui_material_icons::icons};
+
 pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {
     Frame::new()
         .outer_margin(MarginF32::symmetric(ui.available_width() * (1.0 / 4.0), 32.0))
@@ -69,6 +72,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add(Separator::default().spacing(divider_spacing));
 
                 ui.add(unselectable_label(RichText::new(t!("language")).heading()));
+
                 ui.add_space(8.0);
 
                 ui.horizontal_wrapped(|ui| {
@@ -119,6 +123,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add(Separator::default().spacing(divider_spacing));
 
                 ui.add(unselectable_label(RichText::new(t!("about_app", name = APP_NAME)).heading()));
+
                 ui.add_space(8.0);
 
                 ui.add(unselectable_label(t!("app_description")));
@@ -168,6 +173,21 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                     ui.add(unselectable_label(t!("support_author_prompt")));
                     ui.hyperlink_to("Ko-fi", "https://ko-fi.com/jamesmoreau");
                 });
+
+                #[cfg(debug_assertions)]
+                {
+                    ui.add(Separator::default().spacing(divider_spacing));
+
+                    ui.add(unselectable_label(
+                        RichText::new("Debug Utilities").heading().color(Color32::YELLOW),
+                    ));
+
+                    ui.add_space(8.0);
+
+                    if ui.button(("Open debug window", icons::ICON_BUG_REPORT)).clicked() {
+                        gem.ui.debug_menu_open = true;
+                    }
+                }
             });
         });
 }
