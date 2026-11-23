@@ -212,6 +212,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
 
     ui.scope(|ui| {
         ui.spacing_mut().item_spacing = Vec2::splat(0.0);
+        ui.spacing_mut().button_padding = Vec2::splat(4.0);
 
         let vertical_pad = 8.0;
         let starting_point = (ui.available_height() / 2.0) - (vertical_pad / 2.0) - button_size; // this is how we align the buttons vertically center.
