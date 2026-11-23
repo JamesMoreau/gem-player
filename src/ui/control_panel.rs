@@ -28,7 +28,7 @@ use crate::{
 pub fn control_panel(ui: &mut Ui, gem: &mut GemPlayer) {
     // Specifying the widths of the elements in the now playing component before-hand
     // allows us to center it horizontally.
-    let button_size = 20.0;
+    let button_size = 22.0;
     let gap = 10.0;
     let artwork_width = ui.available_height() - 4.0; // leave some space for the track info frame background.
     let slider_width = 420.0;
@@ -212,7 +212,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
 
     ui.scope(|ui| {
         ui.spacing_mut().item_spacing = Vec2::splat(0.0);
-        ui.spacing_mut().button_padding = Vec2::splat(4.0);
+        ui.spacing_mut().button_padding.x = 4.0;
 
         let vertical_pad = 8.0;
         let starting_point = (ui.available_height() / 2.0) - (vertical_pad / 2.0) - button_size; // this is how we align the buttons vertically center.
