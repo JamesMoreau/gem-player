@@ -19,6 +19,15 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                     info!("Switching to view: {:?}", view);
                     gem.ui.current_view = view;
                 }
+
+                #[cfg(debug_assertions)]
+                {
+                    ui.add_space(16.0);
+
+                    ui.add(unselectable_label(
+                        egui_material_icons::icons::ICON_BUG_REPORT.rich_text().color(egui::Color32::YELLOW),
+                    ));
+                }
             });
 
             center.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
@@ -28,15 +37,6 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
             });
 
             right.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                #[cfg(debug_assertions)]
-                {
-                    ui.add(unselectable_label(
-                        egui_material_icons::icons::ICON_BUG_REPORT.rich_text().color(egui::Color32::YELLOW),
-                    ));
-
-                    ui.add_space(16.0);
-                }
-
                 controls(ui, gem);
             });
         });
@@ -48,7 +48,7 @@ fn view_selector(ui: &mut Ui, current_view: View) -> Option<View> {
 
     for view in View::iter() {
         if ui
-            .selectable_label(current_view == view, format!("  {}  ", view.icon()))
+            .selectable_label(current_view == view, format!(" {} ", view.icon()))
             .on_hover_text(view.label())
             .clicked()
         {
