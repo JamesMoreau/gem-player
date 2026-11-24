@@ -13,6 +13,6 @@ pub fn artwork_ui(ui: &mut Ui, artwork_uri: Option<&str>, width: f32) {
             .show_loading_spinner(false)
             .fit_to_exact_size(Vec2::splat(width))
             .maintain_aspect_ratio(false)
-            .corner_radius(2.0),
+            .corner_radius(4.0),
     );
 }
