@@ -27,7 +27,9 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                 {
                     ui.add_space(16.0);
 
-                    ui.add(unselectable_label(icons::ICON_BUG_REPORT.rich_text().color(Color32::YELLOW)));
+                    if ui.button(icons::ICON_BUG_REPORT.rich_text().color(Color32::YELLOW)).clicked() {
+                        gem.ui.debug_menu_open = true;
+                    }
                 }
             });
 
