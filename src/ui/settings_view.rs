@@ -69,6 +69,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add(Separator::default().spacing(divider_spacing));
 
                 ui.add(unselectable_label(RichText::new(t!("language")).heading()));
+
                 ui.add_space(8.0);
 
                 ui.horizontal_wrapped(|ui| {
@@ -119,6 +120,7 @@ pub fn settings_view(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlaye
                 ui.add(Separator::default().spacing(divider_spacing));
 
                 ui.add(unselectable_label(RichText::new(t!("about_app", name = APP_NAME)).heading()));
+
                 ui.add_space(8.0);
 
                 ui.add(unselectable_label(t!("app_description")));

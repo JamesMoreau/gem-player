@@ -65,6 +65,9 @@ pub struct UIState {
     playlists: PlaylistsViewState,
 
     toasts: Toasts,
+
+    #[cfg(debug_assertions)]
+    debug_menu_open: bool,
 }
 
 pub fn gem_player_ui(ui: &mut Ui, _frame: &mut eframe::Frame, gem: &mut GemPlayer) {

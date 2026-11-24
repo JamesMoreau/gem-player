@@ -11,6 +11,9 @@ use crate::{
     ui::root::{View, format_duration_to_hhmmss, unselectable_label},
 };
 
+#[cfg(debug_assertions)]
+use {egui::Color32, egui_material_icons::icons};
+
 pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
     Frame::new().inner_margin(Margin::symmetric(16, 0)).show(ui, |ui| {
         ui.columns_const(|[left, center, right]| {
@@ -24,9 +27,9 @@ pub fn bottom_bar(ui: &mut Ui, gem: &mut GemPlayer) {
                 {
                     ui.add_space(16.0);
 
-                    ui.add(unselectable_label(
-                        egui_material_icons::icons::ICON_BUG_REPORT.rich_text().color(egui::Color32::YELLOW),
-                    ));
+                    if ui.button(icons::ICON_BUG_REPORT.rich_text().color(Color32::YELLOW)).clicked() {
+                        gem.ui.debug_menu_open = true;
+                    }
                 }
             });
 
