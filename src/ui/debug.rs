@@ -13,7 +13,8 @@ pub fn debug_window(ctx: &Context, gem: &mut GemPlayer) {
 
     let viewport_builder = egui::ViewportBuilder::default()
         .with_title(format!("{} Debug", APP_NAME))
-        .with_inner_size([320.0, 400.0]);
+        .with_inner_size([350.0, 400.0])
+        .with_min_inner_size([470.0, 300.0]);
 
     let close_requested = ctx.show_viewport_immediate(viewport_id, viewport_builder, |ui, _class| {
         egui::CentralPanel::default().show(ui, |ui| {
@@ -31,22 +32,21 @@ pub fn debug_window(ctx: &Context, gem: &mut GemPlayer) {
 }
 
 fn debug_ui(ui: &mut Ui, ctx: &Context, gem_viewport: &ViewportInfo) {
-    ui.heading("Window Information");
+    egui::CollapsingHeader::new("Window Information")
+        .default_open(false)
+        .show(ui, |ui| {
+            gem_viewport.ui(ui);
+        });
 
-    if let Some(rect) = gem_viewport.inner_rect {
-        ui.label(format!("Window size: {:.0} × {:.0} points", rect.width(), rect.height()));
-    }
+    ui.add_space(8.0);
 
-    ui.add_space(16.0);
-    ui.separator();
+    egui::CollapsingHeader::new("egui Debug Options").default_open(true).show(ui, |ui| {
+        let mut debug_options = ctx.global_style().debug;
 
-    ui.heading("egui Debug Options");
+        debug_options.ui(ui);
 
-    let mut debug_options = ctx.global_style().debug;
-
-    debug_options.ui(ui);
-
-    ctx.global_style_mut(|style| {
-        style.debug = debug_options;
+        ctx.global_style_mut(|style| {
+            style.debug = debug_options;
+        });
     });
 }
