@@ -1,5 +1,4 @@
 General:
-	- fix widgets forcing parent taller.
 	- update app store description.
 
 Linux:
