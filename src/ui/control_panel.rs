@@ -212,7 +212,7 @@ fn display_repeat_and_shuffle_buttons(ui: &mut Ui, player: &Player, button_size:
 
     ui.scope(|ui| {
         ui.spacing_mut().item_spacing = Vec2::ZERO;
-        ui.spacing_mut().button_padding = Vec2::splat(4.0);
+        ui.spacing_mut().button_padding = Vec2::ZERO;
 
         let vertical_pad = 8.0;
         let total_height = button_size * 2.0 + vertical_pad;
