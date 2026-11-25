@@ -502,9 +502,10 @@ fn poll_menu_events(gem: &mut GemPlayer) {
     let events: Vec<_> = gem.menubar.menu_receiver.try_iter().collect();
 
     for event in events {
-        match GemCommand::from_str(&event.id.0) {
-            Ok(command) => gem.commands.push(command),
-            Err(_) => error!("Unable to process menu event: {:?}", event),
+        if let Ok(command) = GemCommand::from_str(&event.id.0) {
+            gem.commands.push(command);
+        } else {
+            error!("Unable to process menu event: {:?}", event);
         }
     }
 }
@@ -730,12 +731,11 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
 
     let can_go_previous = under_threshold && previous_track_exists;
     if can_go_previous {
-        match play_previous(&mut gem.player) {
-            Ok(_) => on_track_change(ctx, gem),
-            Err(e) => {
-                error!("{e}");
-                error_toast(&mut gem.ui.toasts, t!("error_playing_previous_track").to_string());
-            }
+        if let Err(e) = play_previous(&mut gem.player) {
+            error!("{e}");
+            error_toast(&mut gem.ui.toasts, t!("error_playing_previous_track").to_string());
+        } else {
+            on_track_change(ctx, gem)
         }
     } else if let Some(backend) = &gem.player.backend {
         if let Err(e) = backend.player.try_seek(Duration::ZERO) {
