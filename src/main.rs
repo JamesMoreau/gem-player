@@ -723,13 +723,12 @@ fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
 // If we are near the beginning of the track, we go to the previously played track.
 // Otherwise, we seek to the beginning.
 pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
-    let rewind_threshold = 5.0;
-
-    let under_threshold = get_position(&gem.player).is_some_and(|position| position.as_secs_f32() < rewind_threshold);
+    let rewind_threshold = Duration::from_secs(5);
+    let is_under_threshold = get_position(&gem.player).is_some_and(|position| position < rewind_threshold);
 
     let previous_track_exists = !gem.player.history.is_empty();
 
-    let can_go_previous = under_threshold && previous_track_exists;
+    let can_go_previous = is_under_threshold && previous_track_exists;
     if can_go_previous {
         if let Err(e) = play_previous(&mut gem.player) {
             error!("{e}");
@@ -741,6 +740,7 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
         if let Err(e) = backend.player.try_seek(Duration::ZERO) {
             error!("Error rewinding track: {e}");
         }
+        
         backend.player.play();
     }
 }
