@@ -94,7 +94,8 @@ pub fn playlists_view(ui: &mut Ui, gem: &mut GemPlayer) {
                                         let add_button = Button::new(ICON_ADD);
                                         if ui.add(add_button).on_hover_text(t!("create_playlist")).clicked() {
                                             let directory = gem.library.directory.as_ref().unwrap(); // We checked earlier so this is safe.
-                                            let new_playlist_name = t!("new_playlist_name", number = gem.library.playlists.len() + 1).to_string();
+                                            let new_playlist_name =
+                                                t!("new_playlist_name", number = gem.library.playlists.len() + 1).to_string();
                                             let result = create(new_playlist_name, directory);
                                             match result {
                                                 Err(e) => {
@@ -227,17 +228,13 @@ fn playlist(ui: &mut Ui, gem: &mut GemPlayer) {
                             let name_buffer_clone = name_buffer.to_owned();
 
                             let playlist = &mut gem.library.playlists.get_by_path_mut(&playlist_key);
-                            let result = rename(playlist, name_buffer_clone);
-                            match result {
-                                Err(e) => {
-                                    error!("Error renaming playlist: {e}");
+                            if let Err(e) = rename(playlist, name_buffer_clone) {
+                                error!("Error renaming playlist: {e}");
 
-                                    error_toast(&mut gem.ui.toasts, format!("{}: {e}", t!("error_renaming_playlist")));
-                                }
-                                Ok(_) => {
-                                    // Update the selected playlist with the new path so that we remain selected.
-                                    gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
-                                }
+                                error_toast(&mut gem.ui.toasts, format!("{}: {e}", t!("error_renaming_playlist")));
+                            } else {
+                                // Update the selected playlist with the new path so that we remain selected.
+                                gem.ui.playlists.selected_playlist_key = Some(playlist.m3u_path.clone());
                             }
 
                             gem.ui.playlists.rename_buffer = None;
