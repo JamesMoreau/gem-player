@@ -14,10 +14,10 @@ impl NoSleepManager {
         if self.no_sleep.is_none()
             && let Ok(mut ns) = NoSleep::new()
         {
-            let result = ns.start(NoSleepType::PreventUserIdleDisplaySleep);
-            match result {
-                Ok(()) => self.no_sleep = Some(ns),
-                Err(e) => error!("Unable to enable no sleep mode: {e}"),
+            if let Err(e) = ns.start(NoSleepType::PreventUserIdleDisplaySleep) {
+                error!("Unable to enable no sleep mode: {e}");
+            } else {
+                self.no_sleep = Some(ns);
             }
         }
     }

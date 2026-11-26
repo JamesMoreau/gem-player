@@ -711,12 +711,11 @@ fn check_for_next_track(ctx: &Context, gem: &mut GemPlayer) {
 }
 
 fn maybe_play_next(ctx: &Context, gem: &mut GemPlayer) {
-    match play_next(&mut gem.player) {
-        Ok(()) => on_track_change(ctx, gem),
-        Err(e) => {
-            error!("{e}");
-            error_toast(&mut gem.ui.toasts, t!("error_playing_next_track").to_string());
-        }
+    if let Err(e) = play_next(&mut gem.player) {
+        error!("{e}");
+        error_toast(&mut gem.ui.toasts, t!("error_playing_next_track").to_string());
+    } else {
+        on_track_change(ctx, gem);
     }
 }
 
@@ -740,7 +739,7 @@ pub fn maybe_play_previous(ctx: &Context, gem: &mut GemPlayer) {
         if let Err(e) = backend.player.try_seek(Duration::ZERO) {
             error!("Error rewinding track: {e}");
         }
-        
+
         backend.player.play();
     }
 }
